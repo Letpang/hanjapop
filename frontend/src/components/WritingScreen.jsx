@@ -1,341 +1,425 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+/**
+ * WritingScreen.jsx (전면 개편)
+ * 1단계: 급수/주제 선택
+ * 2단계: 바둑판 한자 그리드 (해당 급수/주제의 한자 전부 표시)
+ * 3단계: HanziWriter 퀴즈 모드 (획순 채점, 힌트 감점)
+ */
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
-import { IconStrokeOrder } from './Icons';
 import { useLang } from '../LangContext.jsx';
 
-const WritingScreen = ({ onBack, onWritingComplete }) => {
-    const { lang, t } = useLang();
-    const [viewMode, setViewMode] = useState('grade'); // 'topic' or 'grade'
-    const [selectedGrade, setSelectedGrade] = useState('8급');
-    const categories = useMemo(() => {
-        return [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))];
-    }, []);
-    const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
-    const [currentIndex, setCurrentIndex] = useState(0);
-    
-    const [penColor, setPenColor] = useState('#6366f1');
-    const [penWidth, setPenWidth] = useState(8);
-    const [showNumbers, setShowNumbers] = useState(true);
-    const [isAnimating, setIsAnimating] = useState(false);
-    const [charData, setCharData] = useState(null);
+// ─── 상수 ─────────────────────────────────────────────────────────────────
+const HINT_PENALTY = 10;     // 힌트 1회 = -10점
+const WRONG_PENALTY = 5;     // 획 틀릴 때마다 -5점
+const MAX_SCORE = 100;
 
-    const currentHanjaList = useMemo(() => {
-        if (viewMode === 'grade') {
-            if (selectedGrade === '기타') {
-                return HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
-            }
-            return HANJA_DATA.filter(h => h.grade === selectedGrade);
-        }
-        return HANJA_DATA.filter(h => h.category === selectedCategory);
-    }, [viewMode, selectedCategory, selectedGrade]);
+const GRADE_LIST = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
 
-    const currentItem = currentHanjaList[currentIndex] || currentHanjaList[0];
+// 주제 목록 (중복 제거)
+const THEME_LIST = [...new Set(HANJA_DATA.map(h => h.theme).filter(Boolean))];
 
-    const containerRef = useRef(null);
-    const bgCanvasRef = useRef(null);
-    const fgCanvasRef = useRef(null);
-    const writerRef = useRef(null);
-    const guideContainerRef = useRef(null);
-    
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [size, setSize] = useState({ w: 0, h: 0 });
+// 급수별 색상
+const GRADE_COLORS = {
+    '8급': 'from-green-400 to-emerald-500',
+    '7급Ⅱ': 'from-teal-400 to-cyan-500',
+    '7급': 'from-sky-400 to-blue-500',
+    '6급Ⅱ': 'from-violet-400 to-purple-500',
+    '6급': 'from-pink-400 to-rose-500',
+};
 
-    const [allPaths, setAllPaths] = useState(() => {
-        try {
-            const saved = window.localStorage.getItem('hanja_writing_paths');
-            return saved ? JSON.parse(saved) : {};
-        } catch { return {}; }
-    });
-
-    const currentPaths = useMemo(() => {
-        if (!currentItem) return [];
-        return allPaths[currentItem.id] || [];
-    }, [allPaths, currentItem]);
-
-    useEffect(() => {
-        window.localStorage.setItem('hanja_writing_paths', JSON.stringify(allPaths));
-    }, [allPaths]);
-
-    // 한자 데이터 가져오기 (획순 번호 표시용)
-    useEffect(() => {
-        if (!currentItem) return;
-        setCharData(null);
-        // 한자 변경 시 캔버스 초기화 (선택 사항 - 여기서는 유지하고 지우기 버튼으로 유도)
-        fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${currentItem.hanja}.json`)
-            .then(res => res.json())
-            .then(data => setCharData(data))
-            .catch(err => console.error("한자 데이터를 불러오는데 실패했습니다.", err));
-    }, [currentItem]);
-
-    // 컨테이너 크기 추적
-    useEffect(() => {
-        if (!containerRef.current) return;
-        const observer = new ResizeObserver((entries) => {
-            const { width, height } = entries[0].contentRect;
-            if (width > 0 && height > 0) setSize({ w: width, h: height });
-        });
-        observer.observe(containerRef.current);
-        return () => observer.disconnect();
-    }, []);
-
-    // Hanzi Writer 초기화
-    useEffect(() => {
-        if (!guideContainerRef.current || size.w === 0 || !window.HanziWriter || !currentItem) return;
-
-        guideContainerRef.current.innerHTML = '';
-        writerRef.current = window.HanziWriter.create(guideContainerRef.current, currentItem.hanja, {
-            width: size.w,
-            height: size.h,
-            padding: size.w * 0.1,
-            showOutline: true,
-            strokeAnimationSpeed: 2,
-            delayBetweenStrokes: 150,
-            outlineColor: 'rgba(0, 0, 0, 0.05)',
-            strokeColor: 'rgba(99, 102, 241, 0.3)',
-            showCharacter: false
-        });
-
-        setTimeout(() => {
-            if (writerRef.current) {
-                setIsAnimating(true);
-                writerRef.current.animateCharacter({ onComplete: () => setIsAnimating(false) });
-            }
-        }, 300);
-    }, [size, currentItem]);
-
-    // 배경 캔버스 (격자 및 번호)
-    useEffect(() => {
-        if (size.w === 0 || size.h === 0) return;
-        const canvas = bgCanvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = size.w * dpr;
-        canvas.height = size.h * dpr;
-        
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.scale(dpr, dpr);
-        
-        // 격자
-        ctx.beginPath();
-        ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = '#f1f5f9';
-        ctx.lineWidth = 1;
-        ctx.moveTo(size.w / 2, 0); ctx.lineTo(size.w / 2, size.h);
-        ctx.moveTo(0, size.h / 2); ctx.lineTo(size.w, size.h / 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // 번호
-        if (showNumbers && charData && charData.medians) {
-            const padding = size.w * 0.1;
-            const scale = (size.w - 2 * padding) / 1024;
-            ctx.font = 'bold ' + Math.max(10, size.w * 0.035) + 'px "Nunito", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            charData.medians.forEach((median, index) => {
-                if (median && median.length > 0) {
-                    const [mx, my] = median[0];
-                    const cx = padding + mx * scale;
-                    const cy = padding + (1024 - my) * scale;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, Math.max(8, size.w * 0.025), 0, Math.PI * 2);
-                    ctx.fillStyle = '#f59e0b';
-                    ctx.fill();
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText((index + 1).toString(), cx, cy + 1);
-                }
-            });
-        }
-    }, [size, showNumbers, charData]);
-
-    // 전경 캔버스 (드로잉)
-    useEffect(() => {
-        if (size.w === 0 || size.h === 0) return;
-        const canvas = fgCanvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = size.w * dpr;
-        canvas.height = size.h * dpr;
-        
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.scale(dpr, dpr);
-
-        currentPaths.forEach(path => {
-            if (path.points.length < 2) return;
-            ctx.beginPath();
-            ctx.strokeStyle = path.color || '#6366f1';
-            ctx.lineWidth = path.width || 8;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.moveTo(path.points[0].x * size.w, path.points[0].y * size.h);
-            for (let i = 1; i < path.points.length; i++) {
-                ctx.lineTo(path.points[i].x * size.w, path.points[i].y * size.h);
-            }
-            ctx.stroke();
-        });
-    }, [size, currentPaths]);
-
-    const getPos = (e) => {
-        const rect = containerRef.current.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: (clientX - rect.left) / rect.width, y: (clientY - rect.top) / rect.height };
-    };
-
-    const handleStart = (e) => {
-        const pos = getPos(e);
-        setIsDrawing(true);
-        setAllPaths(prev => ({
-            ...prev,
-            [currentItem.id]: [...(prev[currentItem.id] || []), { points: [pos], color: penColor, width: penWidth }]
-        }));
-    };
-
-    const handleMove = (e) => {
-        if (!isDrawing) return;
-        const pos = getPos(e);
-        setAllPaths(prev => {
-            const paths = [...(prev[currentItem.id] || [])];
-            const last = { ...paths[paths.length - 1] };
-            last.points = [...last.points, pos];
-            paths[paths.length - 1] = last;
-            return { ...prev, [currentItem.id]: paths };
-        });
-    };
-
-    const clearCanvas = () => {
-        setAllPaths(prev => ({ ...prev, [currentItem.id]: [] }));
-    };
-
-    const playGuide = () => {
-        if (!writerRef.current || isAnimating) return;
-        clearCanvas();
-        setIsAnimating(true);
-        writerRef.current.animateCharacter({ onComplete: () => setIsAnimating(false) });
-    };
-
-    const colors = ['#6366f1', '#000000', '#ef4444', '#10b981', '#f59e0b', '#ec4899'];
-    const widths = [4, 8, 16, 24];
+// ─── 1단계: 필터 선택 화면 ────────────────────────────────────────────────
+const FilterScreen = ({ onSelect, onBack }) => {
+    const [tab, setTab] = useState('grade'); // 'grade' | 'theme'
 
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
-            {/* Header */}
-            <div className="w-full px-4 shrink-0 safe-top">
-                <div className="w-full flex justify-between items-center clay-panel p-4 sm:p-6 px-6 sm:px-12 rounded-[2.5rem] sm:rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
-                    <button onClick={onBack} className="text-slate-600 dark:text-slate-200 font-black bg-white/60 dark:bg-slate-800/60 px-5 sm:px-10 py-2.5 sm:py-4 rounded-2xl border-2 border-white/50 shadow-md hover:bg-white active:scale-95 transition-all flex items-center gap-2">
-                        <span className="text-xl sm:text-2xl">←</span> <span>{t('backMenu').replace('← ', '')}</span>
-                    </button>
-                    <h1 className="text-2xl sm:text-5xl font-black text-slate-700 dark:text-white m-0 tracking-tight premium-text-shadow text-center flex-1 px-4">{t('menuWriting')}</h1>
-                    <div className="w-[100px] sm:w-[140px] hidden sm:flex justify-end items-center">
-                        <img src="/assets/images/characters/uju.png" alt="uju" className="w-20 h-20 object-contain animate-float" />
-                    </div>
+        <div className="flex flex-col items-center w-full max-w-md mx-auto min-h-full px-4 pt-8 pb-32 gap-6">
+            {/* 헤더 */}
+            <div className="w-full flex items-center gap-4">
+                <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">
+                    ←
+                </button>
+                <h1 className="text-3xl font-black text-slate-700 dark:text-white">한자 쓰기</h1>
+            </div>
+
+            {/* 탭 */}
+            <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-3xl w-full border-2 border-white dark:border-slate-700">
+                <button onClick={() => setTab('grade')} className={`flex-1 py-3 rounded-2xl font-black text-lg transition-all ${tab === 'grade' ? 'bg-white dark:bg-slate-700 text-indigo-500 shadow-md' : 'text-slate-400'}`}>
+                    급수별
+                </button>
+                <button onClick={() => setTab('theme')} className={`flex-1 py-3 rounded-2xl font-black text-lg transition-all ${tab === 'theme' ? 'bg-white dark:bg-slate-700 text-indigo-500 shadow-md' : 'text-slate-400'}`}>
+                    주제별
+                </button>
+            </div>
+
+            {/* 급수 선택 */}
+            {tab === 'grade' && (
+                <div className="flex flex-col gap-3 w-full">
+                    {GRADE_LIST.map(g => {
+                        const count = HANJA_DATA.filter(h => h.grade === g).length;
+                        const gradient = GRADE_COLORS[g] || 'from-slate-400 to-slate-500';
+                        return (
+                            <button
+                                key={g}
+                                onClick={() => onSelect({ type: 'grade', value: g })}
+                                className={`w-full bg-gradient-to-r ${gradient} text-white rounded-[1.5rem] p-5 flex items-center justify-between shadow-lg active:scale-95 transition-all`}
+                            >
+                                <div className="flex flex-col items-start">
+                                    <span className="font-black text-2xl">{g}</span>
+                                    <span className="text-white/80 text-sm font-bold">{count}개 한자</span>
+                                </div>
+                                <span className="text-4xl">›</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* 주제 선택 */}
+            {tab === 'theme' && (
+                <div className="flex flex-col gap-2 w-full">
+                    {THEME_LIST.map(theme => {
+                        const count = HANJA_DATA.filter(h => h.theme === theme).length;
+                        return (
+                            <button
+                                key={theme}
+                                onClick={() => onSelect({ type: 'theme', value: theme })}
+                                className="w-full clay-panel rounded-[1.5rem] p-4 bg-white dark:bg-slate-800 border-2 border-white flex items-center justify-between active:scale-95 transition-all"
+                            >
+                                <span className="font-black text-slate-700 dark:text-white text-lg">{theme}</span>
+                                <span className="text-slate-400 text-sm font-bold">{count}개</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── 2단계: 바둑판 그리드 ─────────────────────────────────────────────────
+const GridScreen = ({ filter, onSelectHanja, onBack }) => {
+    const hanjaList = useMemo(() => {
+        if (filter.type === 'grade') return HANJA_DATA.filter(h => h.grade === filter.value);
+        return HANJA_DATA.filter(h => h.theme === filter.value);
+    }, [filter]);
+
+    return (
+        <div className="flex flex-col items-center w-full max-w-lg mx-auto min-h-full px-4 pt-8 pb-32 gap-6">
+            {/* 헤더 */}
+            <div className="w-full flex items-center gap-4">
+                <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">
+                    ←
+                </button>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-black text-slate-700 dark:text-white">{filter.value}</h1>
+                    <span className="text-slate-400 text-sm font-bold">한자 {hanjaList.length}개 · 연습할 한자를 선택하세요</span>
                 </div>
             </div>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto pt-4 pb-32">
-                <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center gap-4">
-                    
-                    {/* View Mode Toggle */}
-                    <div className="flex bg-slate-100/60 dark:bg-slate-900/60 p-1.5 rounded-3xl border-2 border-white dark:border-slate-700 shadow-inner">
-                        <button onClick={() => setViewMode('topic')} className={`px-8 py-2.5 rounded-2xl font-black text-lg transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>주제별</button>
-                        <button onClick={() => setViewMode('grade')} className={`px-8 py-2.5 rounded-2xl font-black text-lg transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>급수별</button>
-                    </div>
-
-                    {viewMode === 'topic' && (
-                        <div className="flex gap-2 pb-2 overflow-x-auto no-scrollbar w-full justify-start sm:justify-center px-4">
-                            {categories.map(cat => (
-                                <button key={cat} onClick={() => { setSelectedCategory(cat); setCurrentIndex(0); }} className={"px-8 py-2.5 rounded-2xl font-black whitespace-nowrap transition-all border-4 text-xl " + (selectedCategory === cat ? "bg-indigo-500 text-white border-white shadow-xl scale-110" : "bg-white/60 dark:bg-slate-800/60 text-slate-400 border-white/40")}>{cat}</button>
-                            ))}
-                        </div>
-                    )}
-
-                    {viewMode === 'grade' && (
-                        <div className="flex gap-4 flex-wrap justify-center">
-                            {['8급', '7급', '6급', '기타'].map(g => (
-                                <button key={g} onClick={() => { setSelectedGrade(g); setCurrentIndex(0); }} className={"px-10 py-3 rounded-[2rem] font-black transition-all border-4 text-2xl " + (selectedGrade === g ? "bg-indigo-500 text-white border-white shadow-xl scale-110" : "bg-white/60 dark:bg-slate-800/60 text-slate-400 border-white/40")}>{g}</button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Tools Area */}
-                    <div className="w-full max-w-4xl clay-panel !rounded-[2.5rem] p-4 flex flex-col md:flex-row gap-4 items-center justify-between bg-white/80 dark:bg-slate-800/80 border-4 border-white shadow-xl">
-                        <div className="flex gap-3 items-center">
-                            {colors.map(c => (
-                                <button key={c} onClick={() => setPenColor(c)} className={"w-8 h-8 md:w-10 md:h-10 rounded-full border-4 transition-transform " + (penColor === c ? "border-indigo-300 scale-125 shadow-lg" : "border-white")} style={{backgroundColor: c}} />
-                            ))}
-                        </div>
-                        <div className="flex gap-3 items-center">
-                            {widths.map(w => (
-                                <button key={w} onClick={() => setPenWidth(w)} className={"w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full border-2 transition-all " + (penWidth === w ? "bg-indigo-50 border-indigo-400 scale-110" : "bg-white border-slate-100")}>
-                                    <div className="bg-slate-700 rounded-full" style={{width: w/2+'px', height: w/2+'px'}} />
-                                </button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={playGuide} disabled={isAnimating} className="flex items-center gap-2 bg-indigo-500 text-white px-6 py-3 rounded-2xl font-black shadow-md active:scale-95 disabled:opacity-50">
-                                <IconStrokeOrder className="w-6 h-6" /> {isAnimating ? '...' : '획순'}
-                            </button>
-                            <button onClick={() => setShowNumbers(!showNumbers)} className={"px-6 py-3 rounded-2xl font-black border-2 transition-all " + (showNumbers ? "bg-amber-400 text-white border-white shadow-md" : "bg-white text-slate-400 border-slate-100")}>
-                                ① 번호
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Writing Main Area */}
-                    <div className="w-full max-w-2xl flex flex-col items-center gap-4 px-2">
-                        {/* 한자 정보 (캔버스 위에 한 줄로) */}
-                        <div className="flex items-center gap-4">
-                            <span className="text-6xl md:text-8xl font-black text-slate-700 dark:text-white premium-text-shadow" style={{fontFamily: "'Noto Sans KR', sans-serif"}}>{currentItem?.hanja}</span>
-                            <div className="flex flex-col">
-                                <span className="text-2xl md:text-4xl font-black text-indigo-500">{currentItem?.sound}</span>
-                                <span className="text-base md:text-xl font-bold text-slate-400">{lang === 'en' ? (currentItem?.meaning_en || currentItem?.meaning) : currentItem?.meaning}</span>
-                            </div>
-                        </div>
-
-                        {/* 캔버스 */}
-                        <div className="relative aspect-square w-full max-w-[500px] mx-auto group">
-                            <div ref={containerRef} className="absolute inset-0 bg-white dark:bg-slate-900 rounded-[3rem] shadow-inner border-8 border-slate-50 dark:border-slate-800 overflow-hidden">
-                                <div ref={guideContainerRef} className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none" />
-                                <canvas ref={bgCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none opacity-40" />
-                                <canvas
-                                    ref={fgCanvasRef}
-                                    onMouseDown={handleStart}
-                                    onMouseMove={handleMove}
-                                    onMouseUp={() => setIsDrawing(false)}
-                                    onMouseLeave={() => setIsDrawing(false)}
-                                    onTouchStart={handleStart}
-                                    onTouchMove={handleMove}
-                                    onTouchEnd={() => setIsDrawing(false)}
-                                    className="absolute inset-0 w-full h-full cursor-crosshair touch-none z-10"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Navigation Controls */}
-                    <div className="flex gap-4 w-full max-w-4xl px-2">
-                        <button onClick={() => { setCurrentIndex(prev => (prev - 1 + currentHanjaList.length) % currentHanjaList.length); }} className="flex-1 bg-white/60 dark:bg-slate-800/60 text-slate-600 py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-lg active:scale-95 transition-all">이전</button>
-                        <button onClick={clearCanvas} className="flex-1 bg-rose-400 text-white py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-xl active:scale-95 transition-all">지우기</button>
-                        <button onClick={() => {
-                                if (onWritingComplete && currentItem) onWritingComplete(currentItem.id);
-                                setCurrentIndex(prev => (prev + 1) % currentHanjaList.length);
-                            }} className="flex-1 bg-indigo-500 text-white py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-xl active:scale-95 transition-all">다음</button>
-                    </div>
-
-                    <p className="text-slate-400 font-bold text-xl mt-4">{currentIndex + 1} / {currentHanjaList.length}</p>
-                </div>
+            {/* 바둑판 그리드 */}
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 w-full">
+                {hanjaList.map(h => (
+                    <button
+                        key={h.id}
+                        onClick={() => onSelectHanja(h)}
+                        className="aspect-square clay-panel rounded-2xl bg-white dark:bg-slate-800 border-2 border-white flex flex-col items-center justify-center gap-1 active:scale-90 transition-all hover:-translate-y-1 shadow-md"
+                    >
+                        <span className="text-3xl font-black text-slate-700 dark:text-white leading-none">{h.hanja}</span>
+                        <span className="text-[10px] font-bold text-slate-400 leading-none">{h.sound}</span>
+                    </button>
+                ))}
             </div>
         </div>
     );
+};
+
+// ─── 3단계: HanziWriter 퀴즈 모드 ────────────────────────────────────────
+const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
+    const quizContainerRef = useRef(null);
+    const writerRef = useRef(null);
+    const [score, setScore] = useState(MAX_SCORE);
+    const [hintCount, setHintCount] = useState(0);
+    const [wrongCount, setWrongCount] = useState(0);
+    const [isComplete, setIsComplete] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+    const [currentStroke, setCurrentStroke] = useState(0);
+    const [totalStrokes, setTotalStrokes] = useState(0);
+    const [showResult, setShowResult] = useState(false);
+    const [mistakeOnStroke, setMistakeOnStroke] = useState(false);
+
+    // HanziWriter 퀴즈 초기화
+    useEffect(() => {
+        if (!quizContainerRef.current || !window.HanziWriter) return;
+
+        quizContainerRef.current.innerHTML = '';
+
+        const containerSize = Math.min(window.innerWidth - 48, 400);
+
+        const writer = window.HanziWriter.create(quizContainerRef.current, hanja.hanja, {
+            width: containerSize,
+            height: containerSize,
+            padding: containerSize * 0.08,
+            showOutline: true,
+            strokeColor: '#6366f1',
+            outlineColor: 'rgba(0,0,0,0.08)',
+            drawingColor: '#1e293b',
+            drawingWidth: Math.max(6, containerSize * 0.025),
+            showHintAfterMisses: false,   // 자동 힌트 비활성화 (수동 힌트 사용)
+            highlightOnComplete: true,
+            highlightColor: '#FFD700',
+        });
+
+        writerRef.current = writer;
+
+        // 총 획수 가져오기
+        fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${hanja.hanja}.json`)
+            .then(r => r.json())
+            .then(data => {
+                setTotalStrokes(data.strokes ? data.strokes.length : 0);
+                setIsReady(true);
+            })
+            .catch(() => setIsReady(true));
+
+        // 퀴즈 시작
+        writer.quiz({
+            onMistake: (strokeData) => {
+                setWrongCount(c => c + 1);
+                setScore(s => Math.max(0, s - WRONG_PENALTY));
+                setMistakeOnStroke(true);
+                setTimeout(() => setMistakeOnStroke(false), 600);
+            },
+            onCorrectStroke: (strokeData) => {
+                setCurrentStroke(strokeData.strokeNum + 1);
+                setMistakeOnStroke(false);
+            },
+            onComplete: (summaryData) => {
+                setIsComplete(true);
+                setShowResult(true);
+                if (onWritingComplete && hanja.id) onWritingComplete(hanja.id);
+            }
+        });
+
+        return () => {
+            // cleanup
+            if (quizContainerRef.current) quizContainerRef.current.innerHTML = '';
+        };
+    }, [hanja]);
+
+    const handleHint = useCallback(() => {
+        if (!writerRef.current || isComplete) return;
+        writerRef.current.showHint();
+        setHintCount(c => c + 1);
+        setScore(s => Math.max(0, s - HINT_PENALTY));
+    }, [isComplete]);
+
+    const getScoreEmoji = (s) => {
+        if (s >= 90) return '🏆';
+        if (s >= 70) return '⭐';
+        if (s >= 50) return '💪';
+        return '😓';
+    };
+
+    const getScoreColor = (s) => {
+        if (s >= 90) return 'text-yellow-500';
+        if (s >= 70) return 'text-green-500';
+        if (s >= 50) return 'text-blue-500';
+        return 'text-red-500';
+    };
+
+    return (
+        <div className="flex flex-col items-center w-full max-w-md mx-auto min-h-full px-4 pt-8 pb-32 gap-5">
+            {/* 헤더 */}
+            <div className="w-full flex items-center gap-4">
+                <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">
+                    ←
+                </button>
+                <div className="flex flex-col flex-1">
+                    <div className="flex items-baseline gap-3">
+                        <span className="text-4xl font-black text-slate-700 dark:text-white">{hanja.hanja}</span>
+                        <span className="text-xl font-black text-indigo-500">{hanja.sound}</span>
+                        <span className="text-base font-bold text-slate-400">{hanja.meaning}</span>
+                    </div>
+                    <span className="text-xs text-slate-400 font-bold">{hanja.grade} · {hanja.theme}</span>
+                </div>
+                {/* 점수 */}
+                <div className={`flex flex-col items-center ${getScoreColor(score)}`}>
+                    <span className="text-3xl font-black">{score}</span>
+                    <span className="text-xs font-bold">점</span>
+                </div>
+            </div>
+
+            {/* 획순 진행 바 */}
+            {totalStrokes > 0 && (
+                <div className="w-full flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 shrink-0">{currentStroke}/{totalStrokes}획</span>
+                    <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-indigo-400 rounded-full transition-all duration-300"
+                            style={{ width: `${totalStrokes > 0 ? (currentStroke / totalStrokes) * 100 : 0}%` }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* 퀴즈 캔버스 */}
+            <div className={`relative w-full max-w-[400px] aspect-square mx-auto rounded-[2.5rem] overflow-hidden shadow-xl border-4 transition-all duration-300 ${mistakeOnStroke ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-white dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
+                <div ref={quizContainerRef} className="w-full h-full flex items-center justify-center" />
+                {!isReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-900/80">
+                        <div className="text-slate-400 font-bold">로딩 중...</div>
+                    </div>
+                )}
+            </div>
+
+            {/* 안내 문구 */}
+            {!isComplete && (
+                <div className="text-slate-400 text-sm font-bold text-center">
+                    {mistakeOnStroke
+                        ? '❌ 획순이 틀렸어요! (-5점)'
+                        : '획순에 맞게 한자를 써보세요'}
+                </div>
+            )}
+
+            {/* 힌트 버튼 */}
+            {!isComplete && (
+                <button
+                    onClick={handleHint}
+                    className="w-full max-w-[400px] py-4 rounded-2xl bg-amber-400 text-white font-black text-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                    💡 획순 힌트 보기 <span className="text-sm font-bold opacity-80">(-{HINT_PENALTY}점)</span>
+                </button>
+            )}
+
+            {/* 통계 */}
+            {(hintCount > 0 || wrongCount > 0) && !isComplete && (
+                <div className="flex gap-4 text-sm font-bold">
+                    {hintCount > 0 && <span className="text-amber-500">힌트 {hintCount}회 (-{hintCount * HINT_PENALTY}점)</span>}
+                    {wrongCount > 0 && <span className="text-red-500">오류 {wrongCount}회 (-{wrongCount * WRONG_PENALTY}점)</span>}
+                </div>
+            )}
+
+            {/* 완료 결과 */}
+            {showResult && (
+                <div className="w-full max-w-[400px] clay-panel rounded-[2rem] p-6 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-4">
+                    <div className="text-5xl">{getScoreEmoji(score)}</div>
+                    <div className={`text-4xl font-black ${getScoreColor(score)}`}>{score}점</div>
+                    <div className="text-slate-500 text-sm font-bold text-center">
+                        {score >= 90 ? '완벽해요! 이 한자를 마스터했어요!' :
+                         score >= 70 ? '잘 했어요! 조금만 더 연습해봐요' :
+                         score >= 50 ? '아직 연습이 필요해요' : '다시 도전해봐요!'}
+                    </div>
+                    <div className="flex gap-3 w-full mt-2">
+                        <button
+                            onClick={() => {
+                                setScore(MAX_SCORE);
+                                setHintCount(0);
+                                setWrongCount(0);
+                                setIsComplete(false);
+                                setShowResult(false);
+                                setCurrentStroke(0);
+                                // 퀴즈 재시작
+                                if (quizContainerRef.current) {
+                                    quizContainerRef.current.innerHTML = '';
+                                    const containerSize = Math.min(window.innerWidth - 48, 400);
+                                    const writer = window.HanziWriter.create(quizContainerRef.current, hanja.hanja, {
+                                        width: containerSize,
+                                        height: containerSize,
+                                        padding: containerSize * 0.08,
+                                        showOutline: true,
+                                        strokeColor: '#6366f1',
+                                        outlineColor: 'rgba(0,0,0,0.08)',
+                                        drawingColor: '#1e293b',
+                                        drawingWidth: Math.max(6, containerSize * 0.025),
+                                        showHintAfterMisses: false,
+                                        highlightOnComplete: true,
+                                        highlightColor: '#FFD700',
+                                    });
+                                    writerRef.current = writer;
+                                    writer.quiz({
+                                        onMistake: () => {
+                                            setWrongCount(c => c + 1);
+                                            setScore(s => Math.max(0, s - WRONG_PENALTY));
+                                            setMistakeOnStroke(true);
+                                            setTimeout(() => setMistakeOnStroke(false), 600);
+                                        },
+                                        onCorrectStroke: (sd) => { setCurrentStroke(sd.strokeNum + 1); setMistakeOnStroke(false); },
+                                        onComplete: () => {
+                                            setIsComplete(true);
+                                            setShowResult(true);
+                                            if (onWritingComplete && hanja.id) onWritingComplete(hanja.id);
+                                        }
+                                    });
+                                }
+                            }}
+                            className="flex-1 py-4 rounded-2xl bg-indigo-500 text-white font-black text-lg active:scale-95 transition-all"
+                        >
+                            다시 도전
+                        </button>
+                        <button
+                            onClick={onBack}
+                            className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white font-black text-lg active:scale-95 transition-all"
+                        >
+                            목록으로
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── 메인 WritingScreen ───────────────────────────────────────────────────
+const WritingScreen = ({ onBack, onWritingComplete }) => {
+    const [stage, setStage] = useState('filter'); // 'filter' | 'grid' | 'quiz'
+    const [selectedFilter, setSelectedFilter] = useState(null);
+    const [selectedHanja, setSelectedHanja] = useState(null);
+
+    const handleSelectFilter = (filter) => {
+        setSelectedFilter(filter);
+        setStage('grid');
+    };
+
+    const handleSelectHanja = (hanja) => {
+        setSelectedHanja(hanja);
+        setStage('quiz');
+    };
+
+    if (stage === 'filter') {
+        return (
+            <div className="w-full h-[100dvh] overflow-y-auto">
+                <FilterScreen
+                    onSelect={handleSelectFilter}
+                    onBack={onBack}
+                />
+            </div>
+        );
+    }
+
+    if (stage === 'grid') {
+        return (
+            <div className="w-full h-[100dvh] overflow-y-auto">
+                <GridScreen
+                    filter={selectedFilter}
+                    onSelectHanja={handleSelectHanja}
+                    onBack={() => setStage('filter')}
+                />
+            </div>
+        );
+    }
+
+    if (stage === 'quiz') {
+        return (
+            <div className="w-full h-[100dvh] overflow-y-auto">
+                <QuizScreen
+                    hanja={selectedHanja}
+                    onBack={() => setStage('grid')}
+                    onWritingComplete={onWritingComplete}
+                />
+            </div>
+        );
+    }
+
+    return null;
 };
 
 export default WritingScreen;
