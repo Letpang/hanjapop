@@ -146,6 +146,7 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
     const [totalStrokes, setTotalStrokes] = useState(0);
     const [showResult, setShowResult] = useState(false);
     const [mistakeOnStroke, setMistakeOnStroke] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     // HanziWriter 퀴즈 초기화
     useEffect(() => {
@@ -206,11 +207,37 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
     }, [hanja]);
 
     const handleHint = useCallback(() => {
-        if (!writerRef.current || isComplete) return;
-        writerRef.current.showHint();
+        if (!writerRef.current || isComplete || isAnimating) return;
         setHintCount(c => c + 1);
         setScore(s => Math.max(0, s - HINT_PENALTY));
-    }, [isComplete]);
+        setIsAnimating(true);
+        // 퀴즈 일시 중지 후 전체 획순 애니메이션 재생
+        try { writerRef.current.cancelQuiz(); } catch(e) {}
+        writerRef.current.animateCharacter({
+            onComplete: () => {
+                setIsAnimating(false);
+                // 애니메이션 완료 후 퀴즈 모드 재개
+                if (writerRef.current) {
+                    writerRef.current.quiz({
+                        onMistake: () => {
+                            setWrongCount(c => c + 1);
+                            setScore(s => Math.max(0, s - WRONG_PENALTY));
+                            setMistakeOnStroke(true);
+                            setTimeout(() => setMistakeOnStroke(false), 600);
+                        },
+                        onCorrectStroke: (sd) => {
+                            setCurrentStroke(sd.strokeNum + 1);
+                            setMistakeOnStroke(false);
+                        },
+                        onComplete: () => {
+                            setIsComplete(true);
+                            setShowResult(true);
+                        }
+                    });
+                }
+            }
+        });
+    }, [isComplete, isAnimating]);
 
     const getScoreEmoji = (s) => {
         if (s >= 90) return '🏆';
@@ -284,9 +311,14 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
             {!isComplete && (
                 <button
                     onClick={handleHint}
-                    className="w-full max-w-[400px] py-4 rounded-2xl bg-amber-400 text-white font-black text-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                    disabled={isAnimating}
+                    className={`w-full max-w-[400px] py-4 rounded-2xl font-black text-lg shadow-md transition-all flex items-center justify-center gap-2 ${
+                        isAnimating
+                            ? 'bg-amber-200 text-amber-400 cursor-not-allowed'
+                            : 'bg-amber-400 text-white active:scale-95'
+                    }`}
                 >
-                    💡 획순 힌트 보기 <span className="text-sm font-bold opacity-80">(-{HINT_PENALTY}점)</span>
+                    {isAnimating ? '▶ 획순 재생 중...' : <>💡 획순 힌트 보기 <span className="text-sm font-bold opacity-80">(-{HINT_PENALTY}점)</span></>}
                 </button>
             )}
 
