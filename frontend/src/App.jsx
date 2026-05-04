@@ -5,6 +5,7 @@ import WritingScreen from './components/WritingScreen.jsx';
 import MatchGameScreen from './components/MatchGameScreen.jsx';
 import ShootGameScreen from './components/ShootGameScreen.jsx';
 import StickerBookScreen from './components/StickerBookScreen.jsx';
+import ReviewScreen from './components/ReviewScreen.jsx';
 import SentenceQuizScreen from './components/SentenceQuizScreen.jsx';
 import RankingsScreen from './components/RankingsScreen.jsx';
 import { LangProvider } from './LangContext.jsx';
@@ -109,6 +110,7 @@ const App = () => {
                         allDone={allDone}
                         doneCount={doneCount}
                         getStats={getStats}
+                        mastery={mastery}
                     />
                 );
             case 'flashcard':
@@ -127,6 +129,13 @@ const App = () => {
                 return <ShootGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('shootGame', 1, addBonusXp); }} selectedCharacter={selectedCharacter} onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)} />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
+            case 'review':
+                return <ReviewScreen
+                    onBack={() => setCurrentScreen('main')}
+                    mastery={mastery}
+                    markCorrect={markCorrect}
+                    markWrong={markWrong}
+                />;
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
                     onBack={() => setCurrentScreen('main')}

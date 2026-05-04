@@ -7,13 +7,18 @@ import GradeBadges from './GradeBadges.jsx';
 
 const TOTAL_STICKERS = 300;
 
-const MenuButton = ({ label, icon, activeColor, onClick, locked }) => {
+const MenuButton = ({ label, icon, activeColor, onClick, locked, badge }) => {
     return (
         <button
             onClick={locked ? null : onClick}
             className={'clay-button group relative flex flex-col items-center justify-center p-6 gap-3 transition-all duration-300 ' + (locked ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 hover:-translate-y-2')}
             style={{ borderColor: 'white' }}
         >
+            {badge > 0 && (
+                <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-black min-w-[1.5rem] h-6 px-1.5 rounded-full flex items-center justify-center z-20 shadow-md border-2 border-white">
+                    {badge > 99 ? '99+' : badge}
+                </div>
+            )}
             <div className={'w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 mb-1 md:mb-3 transition-transform duration-300 relative ' + (locked ? '' : 'group-hover:scale-110 drop-shadow-md')}>
                 {!locked && (
                     <div className="absolute inset-0 bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-inner opacity-80 border-2 border-slate-50 dark:border-slate-700"></div>
@@ -49,12 +54,22 @@ const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
 const MainMenu = ({
     onNavigate, activePlanet, onSelectPlanet, unlockedStickers, userXp,
     isDarkMode, setIsDarkMode, selectedCharacter, setSelectedCharacter, unlockedCharacters,
-    missions, streak, allDone, doneCount, getStats
+    missions, streak, allDone, doneCount, getStats, mastery
 }) => {
     const { t } = useLang();
     const [showCharSelect, setShowCharSelect] = useState(false);
 
-    const uniqueStickersCount = Object.keys(unlockedStickers).length;
+    const uniqueStickersCount = Object.keys(unlockedStickers || {}).length;
+
+    // 오답노트 뱃지: 복습 권장(1일 이상 지난 오답) 개수
+    const reviewBadge = useMemo(() => {
+        if (!mastery) return 0;
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        return Object.values(mastery).filter(m =>
+            m.wrongCount > 0 && m.lastWrong &&
+            Date.now() - new Date(m.lastWrong).getTime() >= DAY_MS
+        ).length;
+    }, [mastery]);
 
     const myXp = userXp || 0;
     const position = useMemo(() => getLeaderboardPosition(myXp), [myXp]);
@@ -237,10 +252,11 @@ const MainMenu = ({
                     onClick={() => onNavigate('sentenceQuiz')}
                 />
                 <MenuButton
-                    label={t('menuStickerBook')}
-                    icon="/assets/images/icons/icon_sticker.png"
-                    activeColor="#87CEFA"
-                    onClick={() => onNavigate('stickerBook')}
+                    label={t('menuReview')}
+                    icon="/assets/images/icons/icon_review.png"
+                    activeColor="#FF8FAB"
+                    onClick={() => onNavigate('review')}
+                    badge={reviewBadge > 0 ? reviewBadge : null}
                 />
             </div>
 

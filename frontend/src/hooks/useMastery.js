@@ -77,13 +77,15 @@ export const useMastery = () => {
     const markWrong = useCallback((hanjaId) => {
         const id = String(hanjaId);
         setMastery(prev => {
-            const current = prev[id] || { level: 0, streak: 0 };
+            const current = prev[id] || { level: 0, streak: 0, wrongCount: 0 };
             return {
                 ...prev,
                 [id]: {
                     level: Math.max(0, current.level - 1), // 레벨 하락
                     streak: 0, // 연속 초기화
-                    lastSeen: new Date().toISOString()
+                    lastSeen: new Date().toISOString(),
+                    wrongCount: (current.wrongCount || 0) + 1,
+                    lastWrong: new Date().toISOString()
                 }
             };
         });
