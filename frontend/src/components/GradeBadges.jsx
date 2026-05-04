@@ -62,19 +62,40 @@ const GRADE_BADGES = [
 
 const BadgeItem = ({ badge, unlocked, isNew }) => {
     return (
-        <div className={"relative flex flex-col items-center gap-1.5 transition-all duration-500 " + (unlocked ? "opacity-100" : "opacity-40 grayscale")}>
-            <div className={"w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg border-4 border-white dark:border-slate-700 " +
-                (unlocked ? ("bg-gradient-to-br " + badge.color + " " + badge.glow) : "bg-slate-100 dark:bg-slate-800")}>
-                {badge.emoji}
+        <div className={"relative flex flex-col items-center gap-3 transition-all duration-500 " + (unlocked ? "opacity-100" : "opacity-30 grayscale")}>
+            {/* Medal Container (3D Card Feel) */}
+            <div className={"w-16 h-16 md:w-24 md:h-24 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center border-[4px] border-white dark:border-slate-700 relative overflow-hidden group transition-transform hover:scale-110 " +
+                (unlocked 
+                    ? "bg-white dark:bg-slate-800 shadow-[0_15px_30px_rgba(148,163,184,0.2)]" 
+                    : "bg-slate-100 dark:bg-slate-900/50 shadow-inner")}>
+                
+                {/* Internal Color Glow */}
+                {unlocked && (
+                    <div className={"absolute inset-2 rounded-3xl opacity-20 blur-xl bg-gradient-to-br " + badge.color}></div>
+                )}
+                
+                {/* The Medal Icon */}
+                <div className={"w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-3xl md:text-5xl relative z-10 " + 
+                    (unlocked ? ("bg-gradient-to-br " + badge.color + " shadow-lg animate-float") : "bg-slate-200 dark:bg-slate-800 text-slate-400")}>
+                    {/* Gloss on medal */}
+                    <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30 rounded-t-2xl"></div>
+                    <span className="relative z-10 filter drop-shadow-md">{badge.emoji}</span>
+                </div>
+
                 {isNew && unlocked && (
-                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-400 rounded-full border-2 border-white text-white text-[9px] font-black flex items-center justify-center animate-pulse">
+                    <div className="absolute -top-1 -right-1 w-8 h-8 bg-rose-500 rounded-full border-[3px] border-white text-white text-[9px] font-black flex items-center justify-center animate-bounce z-20 shadow-xl">
                         NEW
                     </div>
                 )}
             </div>
-            <div className="text-center">
-                <div className={"font-black text-xs leading-tight " + (unlocked ? "text-slate-700 dark:text-white" : "text-slate-400")}>{badge.label}</div>
-                <div className="text-[10px] text-slate-400 font-bold">{badge.subLabel}</div>
+            
+            <div className="text-center px-1">
+                <div className={"font-black text-[11px] md:text-sm leading-tight mb-0.5 " + (unlocked ? "text-slate-700 dark:text-slate-100" : "text-slate-400")}>
+                    {badge.label}
+                </div>
+                <div className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
+                    {badge.subLabel}
+                </div>
             </div>
         </div>
     );
@@ -86,38 +107,46 @@ const GradeBadges = ({ userXp }) => {
     const xp = userXp || 0;
     const unlockedCount = GRADE_BADGES.filter(b => xp >= b.requiredXp).length;
 
-    // 방금 달성한 뱃지 (XP가 딱 해당 구간에 걸친 것)
     const newBadgeIds = GRADE_BADGES
         .filter(b => b.requiredXp > 0 && xp >= b.requiredXp && xp < b.requiredXp + 50)
         .map(b => b.id);
 
     return (
-        <div className="w-full clay-panel !rounded-[2.5rem] border-4 border-white dark:border-slate-700 overflow-hidden shadow-xl">
+        <div className="w-full clay-panel !rounded-[3rem] border-[6px] md:border-[10px] border-white dark:border-slate-700 overflow-hidden shadow-[0_40px_80px_rgba(148,163,184,0.3)] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md">
             <button
                 onClick={() => setExpanded(v => !v)}
-                className="w-full flex items-center justify-between px-6 py-4 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all"
+                className="w-full flex items-center justify-between px-6 py-6 md:px-10 md:py-8 hover:bg-white/40 dark:hover:bg-slate-700/40 transition-all group"
             >
-                <div className="flex items-center gap-3">
-                    <span className="text-2xl">🏅</span>
+                <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-200 rounded-[2rem] flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-500 animate-float overflow-hidden p-2">
+                        <img src="/assets/images/dashboard/medal.png" alt="Medal" className="w-full h-full object-contain filter drop-shadow-md" />
+                    </div>
                     <div className="text-left">
-                        <div className="font-black text-slate-700 dark:text-white text-base leading-tight">급수 달성 뱃지</div>
-                        <div className="text-xs text-slate-400 font-bold">{unlockedCount}/{GRADE_BADGES.length} 획득</div>
+                        <div className="font-black text-slate-700 dark:text-slate-100 text-xl md:text-3xl leading-none mb-2 premium-text-shadow">
+                            급수 달성 뱃지
+                        </div>
+                        <div className="text-xs md:text-base text-indigo-500 dark:text-indigo-300 font-black tracking-wider uppercase opacity-100">
+                            {unlockedCount} / {GRADE_BADGES.length} 획득 완료
+                        </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    {/* 미니 뱃지 미리보기 */}
-                    <div className="flex gap-1">
-                        {GRADE_BADGES.slice(0, 3).map(b => (
-                            <span key={b.id} className={"text-lg " + (xp >= b.requiredXp ? "" : "grayscale opacity-40")}>{b.emoji}</span>
+                <div className="flex items-center gap-5">
+                    <div className="hidden sm:flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                        {GRADE_BADGES.slice(0, 4).map(b => (
+                            <span key={b.id} className={"text-2xl " + (xp >= b.requiredXp ? "scale-110 drop-shadow-md" : "grayscale opacity-30")}>{b.emoji}</span>
                         ))}
                     </div>
-                    <span className="text-slate-400 text-xl">{expanded ? '▲' : '▼'}</span>
+                    <div className={"w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center transition-transform duration-300 shadow-md " + (expanded ? "rotate-180" : "")}>
+                        <span className="text-slate-400 text-lg">▼</span>
+                    </div>
                 </div>
             </button>
 
             {expanded && (
-                <div className="px-6 pb-6 pt-3 bg-white/20 dark:bg-slate-900/20">
-                    <div className="grid grid-cols-5 gap-3">
+                <div className="px-6 pb-8 pt-2 md:px-10 md:pb-10 relative">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-50/30 dark:to-indigo-900/10 pointer-events-none"></div>
+                    
+                    <div className="grid grid-cols-5 gap-3 md:gap-6 relative z-10">
                         {GRADE_BADGES.map(badge => (
                             <BadgeItem
                                 key={badge.id}
@@ -128,11 +157,13 @@ const GradeBadges = ({ userXp }) => {
                         ))}
                     </div>
 
-                    {/* 다음 뱃지까지 진행도 */}
+                    {/* Next Badge Progress Bar */}
                     {(() => {
                         const nextBadge = GRADE_BADGES.find(b => xp < b.requiredXp);
                         if (!nextBadge) return (
-                            <div className="mt-5 text-center text-emerald-500 font-black text-sm">🎉 모든 뱃지 달성!</div>
+                            <div className="mt-8 text-center bg-emerald-100 dark:bg-emerald-900/30 py-3 rounded-2xl border-2 border-white dark:border-emerald-800 shadow-inner">
+                                <span className="text-emerald-600 dark:text-emerald-400 font-black text-sm md:text-lg animate-pulse">✨ 모든 한자 급수 마스터! ✨</span>
+                            </div>
                         );
                         const prevBadge = GRADE_BADGES[GRADE_BADGES.indexOf(nextBadge) - 1];
                         const prevXp = prevBadge ? prevBadge.requiredXp : 0;
@@ -140,16 +171,25 @@ const GradeBadges = ({ userXp }) => {
                         const progress = xp - prevXp;
                         const pct = Math.min(100, (progress / range) * 100);
                         return (
-                            <div className="mt-5">
-                                <div className="flex justify-between text-xs font-bold text-slate-400 mb-1.5">
-                                    <span>다음 뱃지: {nextBadge.emoji} {nextBadge.label}</span>
-                                    <span>{xp} / {nextBadge.requiredXp} XP</span>
+                            <div className="mt-8 relative z-10">
+                                <div className="flex justify-between items-end mb-2.5 px-1">
+                                    <span className="text-slate-500 dark:text-slate-300 font-black text-xs md:text-sm">
+                                        다음 목표: <span className="text-indigo-500 dark:text-indigo-300">{nextBadge.emoji} {nextBadge.label}</span>
+                                    </span>
+                                    <span className="text-slate-400 dark:text-slate-400 font-black text-[10px] md:text-xs tracking-tighter">
+                                        {xp} / {nextBadge.requiredXp} XP
+                                    </span>
                                 </div>
-                                <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border-2 border-white dark:border-slate-700">
+                                <div className="w-full h-4 md:h-6 bg-slate-100 dark:bg-slate-900 rounded-full p-1 border-2 border-white dark:border-slate-700 shadow-inner overflow-hidden">
                                     <div
-                                        className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 transition-all duration-700"
-                                        style={{ width: pct + '%' }}
-                                    />
+                                        className="h-full rounded-full transition-all duration-1000 ease-out relative shadow-lg"
+                                        style={{ 
+                                            width: pct + '%', 
+                                            background: 'linear-gradient(90deg, #A5B4FC, #818CF8, #6366F1)' 
+                                        }}
+                                    >
+                                        <div className="absolute top-0 left-0 w-full h-1/2 bg-white/20 rounded-t-full"></div>
+                                    </div>
                                 </div>
                             </div>
                         );

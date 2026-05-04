@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     port: 3001,
     strictPort: true,
+    allowedHosts: true,
   },
   build: {
     outDir: '../public',

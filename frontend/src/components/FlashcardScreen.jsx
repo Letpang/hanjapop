@@ -46,7 +46,7 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
                                 e.target.src = '/assets/images/hanja_placeholder.png';
                             }
                         }}
-                        className="w-full h-full max-h-[90px] sm:max-h-[130px] md:max-h-[160px] object-contain drop-shadow-2xl transition-transform group-hover:scale-110"
+                        className="w-full h-full max-h-[90px] sm:max-h-[130px] md:max-h-[160px] object-contain drop-shadow-2xl transition-transform group-hover:scale-110 mix-blend-multiply dark:mix-blend-normal"
                         alt={item.hanja}
                     />
                 </div>
