@@ -4,6 +4,7 @@ import { getLeaderboardPosition, getRankDetails } from '../utils/rankUtils.js';
 import DailyMissionCard from './DailyMissionCard.jsx';
 import MasteryBar from './MasteryBar.jsx';
 import GradeBadges from './GradeBadges.jsx';
+import CoachCard from './CoachCard.jsx';
 
 const TOTAL_STICKERS = 300;
 
@@ -54,7 +55,7 @@ const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
 const MainMenu = ({
     onNavigate, activePlanet, onSelectPlanet, unlockedStickers, userXp,
     isDarkMode, setIsDarkMode, selectedCharacter, setSelectedCharacter, unlockedCharacters,
-    missions, streak, allDone, doneCount, getStats, mastery
+    missions, streak, allDone, doneCount, getStats, mastery, todayStats
 }) => {
     const { t } = useLang();
     const [showCharSelect, setShowCharSelect] = useState(false);
@@ -219,6 +220,16 @@ const MainMenu = ({
                     </div>
                 </div>
             </div>
+
+            {/* 코치 카드 */}
+            <CoachCard
+                missions={missions}
+                streak={streak}
+                mastery={mastery}
+                userXp={myXp}
+                todayStats={todayStats}
+                onNavigate={onNavigate}
+            />
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-10 w-full mb-10 relative z-10">
                 <MenuButton

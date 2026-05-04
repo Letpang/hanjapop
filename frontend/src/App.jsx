@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import MainMenu from './components/MainMenu.jsx';
+import OnboardingScreen from './components/OnboardingScreen.jsx';
 import FlashcardScreen from './components/FlashcardScreen.jsx';
 import WritingScreen from './components/WritingScreen.jsx';
 import MatchGameScreen from './components/MatchGameScreen.jsx';
@@ -15,6 +16,10 @@ import { useDailyMission } from './hooks/useDailyMission.js';
 import { useMastery } from './hooks/useMastery.js';
 
 const App = () => {
+    // 온보딩 완료 여부
+    const [onboardingDone, setOnboardingDone] = useState(() => {
+        try { return localStorage.getItem('onboarding_done') === 'true'; } catch(e) { return false; }
+    });
     const [currentScreen, setCurrentScreen] = useState('main');
     const [userXp, setUserXp] = useState(() => {
         try { return Number(localStorage.getItem('user_xp')) || 0; } catch(e) { return 0; }
@@ -67,6 +72,24 @@ const App = () => {
     }, [isDarkMode]);
 
     const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission();
+
+    // 오늘 활동 통계 (CoachCard용)
+    const [todayStats, setTodayStats] = useState(() => {
+        try {
+            const saved = localStorage.getItem('today_stats');
+            const today = new Date().toDateString();
+            const parsed = saved ? JSON.parse(saved) : null;
+            if (parsed && parsed.date === today) return parsed;
+            return { date: today, flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0 };
+        } catch(e) { return { date: new Date().toDateString(), flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0 }; }
+    });
+    const addTodayStat = useCallback((type) => {
+        setTodayStats(prev => {
+            const updated = { ...prev, [type]: (prev[type] || 0) + 1 };
+            localStorage.setItem('today_stats', JSON.stringify(updated));
+            return updated;
+        });
+    }, []);
     const { mastery, markSeen, markCorrect, markWrong, getStats, getMasteryLevel } = useMastery();
 
     // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
@@ -111,22 +134,24 @@ const App = () => {
                         doneCount={doneCount}
                         getStats={getStats}
                         mastery={mastery}
+                        todayStats={todayStats}
                     />
                 );
             case 'flashcard':
-                return <FlashcardScreen onBack={() => setCurrentScreen('main')} onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5, addBonusXp); }} onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); if (id) markSeen(id); }} />;
+                return <FlashcardScreen onBack={() => setCurrentScreen('main')} onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5, addBonusXp); }} onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); addTodayStat('flashcard'); if (id) markSeen(id); }} />;
             case 'writing':
                 return <WritingScreen
                     onBack={() => setCurrentScreen('main')}
                     onWritingComplete={(id) => {
                         updateMissionProgress('writing', 1, addBonusXp);
+                        addTodayStat('writing');
                         if (id) markSeen(id);
                     }}
                 />;
             case 'matchGame':
-                return <MatchGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); if (id) markCorrect(id); }} onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); }} />;
+                return <MatchGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); if (id) markCorrect(id); }} onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); }} />;
             case 'shootGame':
-                return <ShootGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('shootGame', 1, addBonusXp); }} selectedCharacter={selectedCharacter} onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)} />;
+                return <ShootGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); }} selectedCharacter={selectedCharacter} onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)} />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
             case 'review':
@@ -139,7 +164,7 @@ const App = () => {
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
                     onBack={() => setCurrentScreen('main')}
-                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); }}
+                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('sentenceQuiz'); }}
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
                 />;
@@ -168,7 +193,13 @@ const App = () => {
                 <div className="space-bg"></div>
                 <div className="stars-overlay"></div>
                 <div className="content-area relative z-10">
-                    {renderScreen()}
+                    {!onboardingDone
+                        ? <OnboardingScreen onComplete={(grade) => {
+                            setOnboardingDone(true);
+                          }}
+                          />
+                        : renderScreen()
+                    }
                 </div>
             </div>
         </LangProvider>
