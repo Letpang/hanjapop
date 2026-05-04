@@ -21,6 +21,8 @@ const App = () => {
         try { return localStorage.getItem('onboarding_done') === 'true'; } catch(e) { return false; }
     });
     const [currentScreen, setCurrentScreen] = useState('main');
+    // 한자 카드에서 쓰기로 직접 진입할 때 사용
+    const [writeTargetHanja, setWriteTargetHanja] = useState(null);
     const [userXp, setUserXp] = useState(() => {
         try { return Number(localStorage.getItem('user_xp')) || 0; } catch(e) { return 0; }
     });
@@ -138,15 +140,32 @@ const App = () => {
                     />
                 );
             case 'flashcard':
-                return <FlashcardScreen onBack={() => setCurrentScreen('main')} onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5, addBonusXp); }} onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); addTodayStat('flashcard'); if (id) markSeen(id); }} />;
+                return <FlashcardScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5, addBonusXp); }}
+                    onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); addTodayStat('flashcard'); if (id) markSeen(id); }}
+                    onWriteHanja={(hanja) => {
+                        setWriteTargetHanja(hanja);
+                        setCurrentScreen('writing');
+                    }}
+                />;
             case 'writing':
                 return <WritingScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={() => {
+                        // 카드에서 진입했으면 카드화면으로, 아니면 메인으로
+                        if (writeTargetHanja) {
+                            setWriteTargetHanja(null);
+                            setCurrentScreen('flashcard');
+                        } else {
+                            setCurrentScreen('main');
+                        }
+                    }}
                     onWritingComplete={(id) => {
                         updateMissionProgress('writing', 1, addBonusXp);
                         addTodayStat('writing');
                         if (id) markSeen(id);
                     }}
+                    initialHanja={writeTargetHanja}
                 />;
             case 'matchGame':
                 return <MatchGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); if (id) markCorrect(id); }} onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); }} />;

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
 import { useLang } from '../LangContext.jsx';
 
-const Flashcard = ({ item, isLocked, onFlip }) => {
+const Flashcard = ({ item, isLocked, onFlip, onWriteHanja }) => {
     const { lang } = useLang();
     const [flipped, setFlipped] = useState(false);
     const [selectedWord, setSelectedWord] = useState(null);
@@ -10,11 +10,9 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
     const handleFlip = () => {
         if (isLocked) return;
         
-        // Toggle flip state
         const nextFlipped = !flipped;
         setFlipped(nextFlipped);
         
-        // Only trigger audio and progress when flipping to back (revealing meaning)
         if (nextFlipped) {
             onFlip(item.id, item.stage);
             const audioId = String(item.id).padStart(2, '0');
@@ -24,7 +22,6 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
     };
 
     const meaning = lang === 'en' ? (item.meaning_en || item.meaning) : item.meaning;
-
     const quizInfo = item;
 
     return (
@@ -33,7 +30,7 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
                 (isLocked ? "cursor-not-allowed" : "cursor-pointer")}
             onClick={handleFlip}
         >
-            {/* Front Face - PREMIUM GLOSSY */}
+            {/* Front Face */}
             <div className={"card-face-front clay-panel !rounded-[2.5rem] flex flex-col items-center p-3 sm:p-5 justify-between border-4 border-white dark:border-slate-700 overflow-hidden " + (flipped ? "is-flipped" : "")}>
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/40 to-transparent pointer-events-none z-10"></div>
                 <div className="flex-1 flex items-center justify-center w-full min-h-0 py-2 relative z-0">
@@ -55,7 +52,7 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
                 </div>
             </div>
 
-            {/* Back Face - PREMIUM CLAY */}
+            {/* Back Face */}
             <div className={"card-face-back clay-panel !rounded-[2.5rem] flex flex-col items-center justify-center p-4 border-4 border-white dark:border-slate-700 !bg-slate-50 dark:!bg-slate-900 " + (flipped ? "is-flipped" : "")}>
                 {/* Hun & Eum */}
                 <div className="w-full flex flex-col items-center px-2">
@@ -64,19 +61,31 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
                     <div className="w-12 h-1 bg-indigo-100 dark:bg-indigo-900/50 rounded-full mt-3"></div>
                 </div>
 
-                {/* Vocabulary Icon Button */}
-                {quizInfo?.words?.length > 0 && (
+                {/* 버튼 영역: 단어 + 쓰기 */}
+                <div className="flex gap-2 mt-4">
+                    {/* 단어 버튼 */}
+                    {quizInfo?.words?.length > 0 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedWord(true); }}
+                            className="bg-white dark:bg-slate-800 px-3 py-2.5 rounded-2xl border-2 border-indigo-100 dark:border-indigo-800 shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center gap-1.5"
+                        >
+                            <span className="text-lg">📖</span>
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider">단어</span>
+                        </button>
+                    )}
+
+                    {/* 쓰기 연습 버튼 */}
                     <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedWord(true); }}
-                        className="mt-4 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-2xl border-2 border-indigo-100 dark:border-indigo-800 shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center gap-2"
+                        onClick={(e) => { e.stopPropagation(); if (onWriteHanja) onWriteHanja(item); }}
+                        className="bg-white dark:bg-slate-800 px-3 py-2.5 rounded-2xl border-2 border-emerald-100 dark:border-emerald-800 shadow-lg hover:scale-110 active:scale-95 transition-all flex items-center gap-1.5"
                     >
-                        <span className="text-xl">📖</span>
-                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-wider">단어</span>
+                        <span className="text-lg">✏️</span>
+                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider">쓰기</span>
                     </button>
-                )}
+                </div>
             </div>
 
-            {/* Vocabulary List - OVERLAY POPUP (카드 밖으로 튀어나옴) */}
+            {/* Vocabulary List Popup */}
             {selectedWord && (
                 <div
                     className="absolute inset-0 z-[100] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
@@ -118,7 +127,7 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
     );
 };
 
-const FlashcardScreen = ({ onBack, onStageClear, unlockedStages, onCardFlip }) => {
+const FlashcardScreen = ({ onBack, onStageClear, unlockedStages, onCardFlip, onWriteHanja }) => {
     const { t } = useLang();
     const [viewMode, setViewMode] = useState('grade');
     const [viewedIds, setViewedIds] = useState(new Set());
@@ -144,7 +153,6 @@ const FlashcardScreen = ({ onBack, onStageClear, unlockedStages, onCardFlip }) =
     }, [viewMode, gradeData, selectedCategory]);
 
     const handleCardFlip = (id) => {
-        // 숫달도 + 미션 연동: 카드를 처음 보는 순간 호출
         if (onCardFlip) onCardFlip(id);
         if (viewedIds.has(id)) return;
         setViewedIds(prev => {
@@ -211,6 +219,7 @@ const FlashcardScreen = ({ onBack, onStageClear, unlockedStages, onCardFlip }) =
                                         item={item}
                                         isLocked={false}
                                         onFlip={handleCardFlip}
+                                        onWriteHanja={onWriteHanja}
                                     />
                                 ))}
                             </div>

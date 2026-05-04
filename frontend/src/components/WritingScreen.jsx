@@ -515,10 +515,12 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
 };
 
 // ─── 메인 WritingScreen ───────────────────────────────────────────────────
-const WritingScreen = ({ onBack, onWritingComplete }) => {
-    const [stage, setStage] = useState('filter'); // 'filter' | 'grid' | 'quiz'
+// initialHanja: 한자 카드에서 직접 진입 시 이 한자로 바로 퀴즈 시작
+const WritingScreen = ({ onBack, onWritingComplete, initialHanja }) => {
+    // initialHanja가 있으면 바로 quiz 단계로 시작
+    const [stage, setStage] = useState(initialHanja ? 'quiz' : 'filter');
     const [selectedFilter, setSelectedFilter] = useState(null);
-    const [selectedHanja, setSelectedHanja] = useState(null);
+    const [selectedHanja, setSelectedHanja] = useState(initialHanja || null);
 
     const handleSelectFilter = (filter) => {
         setSelectedFilter(filter);
@@ -528,6 +530,15 @@ const WritingScreen = ({ onBack, onWritingComplete }) => {
     const handleSelectHanja = (hanja) => {
         setSelectedHanja(hanja);
         setStage('quiz');
+    };
+
+    // quiz에서 뒤로 가기: initialHanja로 진입했으면 onBack(카드화면), 아니면 grid로
+    const handleQuizBack = () => {
+        if (initialHanja) {
+            onBack();
+        } else {
+            setStage('grid');
+        }
     };
 
     if (stage === 'filter') {
@@ -558,7 +569,7 @@ const WritingScreen = ({ onBack, onWritingComplete }) => {
             <div className="w-full h-[100dvh] overflow-y-auto">
                 <QuizScreen
                     hanja={selectedHanja}
-                    onBack={() => setStage('grid')}
+                    onBack={handleQuizBack}
                     onWritingComplete={onWritingComplete}
                 />
             </div>
