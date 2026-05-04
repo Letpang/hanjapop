@@ -1,8 +1,9 @@
 /**
- * WritingScreen.jsx (전면 개편)
+ * WritingScreen.jsx (전면 개편 + 기능 복구)
  * 1단계: 급수/주제 선택
  * 2단계: 바둑판 한자 그리드 (해당 급수/주제의 한자 전부 표시)
  * 3단계: HanziWriter 퀴즈 모드 (획순 채점, 힌트 감점)
+ *        ↳ 연필 색상 선택, 연필 굵기 선택, 획순 번호 표시 기능 포함
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
@@ -26,6 +27,25 @@ const GRADE_COLORS = {
     '6급Ⅱ': 'from-violet-400 to-purple-500',
     '6급': 'from-pink-400 to-rose-500',
 };
+
+// ─── 연필 색상 팔레트 ─────────────────────────────────────────────────────
+const STROKE_COLORS = [
+    { label: '인디고', value: '#6366f1', bg: 'bg-indigo-500' },
+    { label: '빨강',   value: '#ef4444', bg: 'bg-red-500' },
+    { label: '파랑',   value: '#3b82f6', bg: 'bg-blue-500' },
+    { label: '초록',   value: '#22c55e', bg: 'bg-green-500' },
+    { label: '주황',   value: '#f97316', bg: 'bg-orange-500' },
+    { label: '보라',   value: '#a855f7', bg: 'bg-purple-500' },
+    { label: '검정',   value: '#1e293b', bg: 'bg-slate-800' },
+    { label: '갈색',   value: '#92400e', bg: 'bg-amber-800' },
+];
+
+// ─── 연필 굵기 옵션 ───────────────────────────────────────────────────────
+const STROKE_WIDTHS = [
+    { label: '가늘게', value: 4,  icon: '─' },
+    { label: '보통',   value: 8,  icon: '━' },
+    { label: '굵게',   value: 14, icon: '▬' },
+];
 
 // ─── 1단계: 필터 선택 화면 ────────────────────────────────────────────────
 const FilterScreen = ({ onSelect, onBack }) => {
@@ -148,12 +168,15 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
     const [mistakeOnStroke, setMistakeOnStroke] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
-    // HanziWriter 퀴즈 초기화
-    useEffect(() => {
-        if (!quizContainerRef.current || !window.HanziWriter) return;
+    // ─── 연필 설정 상태 ───────────────────────────────────────────────────
+    const [strokeColor, setStrokeColor] = useState(STROKE_COLORS[0].value);   // 기본: 인디고
+    const [strokeWidth, setStrokeWidth] = useState(STROKE_WIDTHS[1].value);   // 기본: 보통(8)
+    const [showStrokeNumbers, setShowStrokeNumbers] = useState(true);          // 획순 번호 표시
 
+    // ─── Writer 재생성 함수 ───────────────────────────────────────────────
+    const createWriter = useCallback((color, width, showNumbers, callbacks) => {
+        if (!quizContainerRef.current || !window.HanziWriter) return null;
         quizContainerRef.current.innerHTML = '';
-
         const containerSize = Math.min(window.innerWidth - 48, 400);
 
         const writer = window.HanziWriter.create(quizContainerRef.current, hanja.hanja, {
@@ -161,15 +184,51 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
             height: containerSize,
             padding: containerSize * 0.08,
             showOutline: true,
-            strokeColor: '#6366f1',
+            strokeColor: color,
             outlineColor: 'rgba(0,0,0,0.08)',
-            drawingColor: '#1e293b',
-            drawingWidth: Math.max(6, containerSize * 0.025),
-            showHintAfterMisses: false,   // 자동 힌트 비활성화 (수동 힌트 사용)
+            drawingColor: color,
+            drawingWidth: Math.max(4, width),
+            showHintAfterMisses: false,
             highlightOnComplete: true,
             highlightColor: '#FFD700',
+            // 획순 번호 표시 옵션
+            showCharacter: showNumbers,
+            charColor: 'rgba(0,0,0,0.08)',
+            strokeAnimationSpeed: 1,
+            delayBetweenStrokes: 200,
         });
 
+        return writer;
+    }, [hanja]);
+
+    // ─── 퀴즈 시작 함수 ──────────────────────────────────────────────────
+    const startQuiz = useCallback((writer) => {
+        if (!writer) return;
+        writer.quiz({
+            onMistake: () => {
+                setWrongCount(c => c + 1);
+                setScore(s => Math.max(0, s - WRONG_PENALTY));
+                setMistakeOnStroke(true);
+                setTimeout(() => setMistakeOnStroke(false), 600);
+            },
+            onCorrectStroke: (sd) => {
+                setCurrentStroke(sd.strokeNum + 1);
+                setMistakeOnStroke(false);
+            },
+            onComplete: () => {
+                setIsComplete(true);
+                setShowResult(true);
+                if (onWritingComplete && hanja.id) onWritingComplete(hanja.id);
+            }
+        });
+    }, [hanja, onWritingComplete]);
+
+    // ─── 초기화 ──────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!quizContainerRef.current || !window.HanziWriter) return;
+
+        const writer = createWriter(strokeColor, strokeWidth, showStrokeNumbers, null);
+        if (!writer) return;
         writerRef.current = writer;
 
         // 총 획수 가져오기
@@ -181,42 +240,55 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
             })
             .catch(() => setIsReady(true));
 
-        // 퀴즈 시작
-        writer.quiz({
-            onMistake: (strokeData) => {
-                setWrongCount(c => c + 1);
-                setScore(s => Math.max(0, s - WRONG_PENALTY));
-                setMistakeOnStroke(true);
-                setTimeout(() => setMistakeOnStroke(false), 600);
-            },
-            onCorrectStroke: (strokeData) => {
-                setCurrentStroke(strokeData.strokeNum + 1);
-                setMistakeOnStroke(false);
-            },
-            onComplete: (summaryData) => {
-                setIsComplete(true);
-                setShowResult(true);
-                if (onWritingComplete && hanja.id) onWritingComplete(hanja.id);
-            }
-        });
+        startQuiz(writer);
 
         return () => {
-            // cleanup
             if (quizContainerRef.current) quizContainerRef.current.innerHTML = '';
         };
     }, [hanja]);
 
+    // ─── 연필 색상 변경 ──────────────────────────────────────────────────
+    const handleColorChange = useCallback((color) => {
+        if (isComplete || isAnimating) return;
+        setStrokeColor(color);
+        // Writer 재생성
+        const writer = createWriter(color, strokeWidth, showStrokeNumbers, null);
+        if (!writer) return;
+        writerRef.current = writer;
+        startQuiz(writer);
+    }, [isComplete, isAnimating, strokeWidth, showStrokeNumbers, createWriter, startQuiz]);
+
+    // ─── 연필 굵기 변경 ──────────────────────────────────────────────────
+    const handleWidthChange = useCallback((width) => {
+        if (isComplete || isAnimating) return;
+        setStrokeWidth(width);
+        const writer = createWriter(strokeColor, width, showStrokeNumbers, null);
+        if (!writer) return;
+        writerRef.current = writer;
+        startQuiz(writer);
+    }, [isComplete, isAnimating, strokeColor, showStrokeNumbers, createWriter, startQuiz]);
+
+    // ─── 획순 번호 토글 ──────────────────────────────────────────────────
+    const handleToggleNumbers = useCallback(() => {
+        if (isComplete || isAnimating) return;
+        const next = !showStrokeNumbers;
+        setShowStrokeNumbers(next);
+        const writer = createWriter(strokeColor, strokeWidth, next, null);
+        if (!writer) return;
+        writerRef.current = writer;
+        startQuiz(writer);
+    }, [isComplete, isAnimating, strokeColor, strokeWidth, showStrokeNumbers, createWriter, startQuiz]);
+
+    // ─── 힌트 버튼 ───────────────────────────────────────────────────────
     const handleHint = useCallback(() => {
         if (!writerRef.current || isComplete || isAnimating) return;
         setHintCount(c => c + 1);
         setScore(s => Math.max(0, s - HINT_PENALTY));
         setIsAnimating(true);
-        // 퀴즈 일시 중지 후 전체 획순 애니메이션 재생
         try { writerRef.current.cancelQuiz(); } catch(e) {}
         writerRef.current.animateCharacter({
             onComplete: () => {
                 setIsAnimating(false);
-                // 애니메이션 완료 후 퀴즈 모드 재개
                 if (writerRef.current) {
                     writerRef.current.quiz({
                         onMistake: () => {
@@ -232,15 +304,32 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
                         onComplete: () => {
                             setIsComplete(true);
                             setShowResult(true);
+                            if (onWritingComplete && hanja.id) onWritingComplete(hanja.id);
                         }
                     });
                 }
             }
         });
-    }, [isComplete, isAnimating]);
+    }, [isComplete, isAnimating, hanja, onWritingComplete]);
+
+    // ─── 다시 도전 ───────────────────────────────────────────────────────
+    const handleRetry = useCallback(() => {
+        setScore(MAX_SCORE);
+        setHintCount(0);
+        setWrongCount(0);
+        setIsComplete(false);
+        setShowResult(false);
+        setCurrentStroke(0);
+        setMistakeOnStroke(false);
+        setIsAnimating(false);
+        const writer = createWriter(strokeColor, strokeWidth, showStrokeNumbers, null);
+        if (!writer) return;
+        writerRef.current = writer;
+        startQuiz(writer);
+    }, [strokeColor, strokeWidth, showStrokeNumbers, createWriter, startQuiz]);
 
     const getScoreEmoji = (s) => {
-        if (s >= 90) return '🏆';
+        if (s >= 90) return '🌟';
         if (s >= 70) return '⭐';
         if (s >= 50) return '💪';
         return '😓';
@@ -254,7 +343,7 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
     };
 
     return (
-        <div className="flex flex-col items-center w-full max-w-md mx-auto min-h-full px-4 pt-8 pb-32 gap-5">
+        <div className="flex flex-col items-center w-full max-w-md mx-auto min-h-full px-4 pt-8 pb-32 gap-4">
             {/* 헤더 */}
             <div className="w-full flex items-center gap-4">
                 <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">
@@ -288,6 +377,69 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
                 </div>
             )}
 
+            {/* ─── 연필 설정 패널 ─────────────────────────────────────── */}
+            {!isComplete && (
+                <div className="w-full max-w-[400px] clay-panel rounded-2xl bg-white dark:bg-slate-800 border-2 border-white dark:border-slate-700 p-3 flex flex-col gap-3">
+
+                    {/* 연필 색상 */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-500 dark:text-slate-400 shrink-0 w-14">✏️ 색상</span>
+                        <div className="flex gap-1.5 flex-wrap">
+                            {STROKE_COLORS.map(c => (
+                                <button
+                                    key={c.value}
+                                    onClick={() => handleColorChange(c.value)}
+                                    title={c.label}
+                                    className={`w-7 h-7 rounded-full ${c.bg} transition-all active:scale-90 ${
+                                        strokeColor === c.value
+                                            ? 'ring-2 ring-offset-2 ring-slate-400 scale-110'
+                                            : 'opacity-70 hover:opacity-100'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 연필 굵기 */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-500 dark:text-slate-400 shrink-0 w-14">굵기</span>
+                        <div className="flex gap-2">
+                            {STROKE_WIDTHS.map(w => (
+                                <button
+                                    key={w.value}
+                                    onClick={() => handleWidthChange(w.value)}
+                                    className={`px-3 py-1.5 rounded-xl font-black text-sm transition-all active:scale-90 ${
+                                        strokeWidth === w.value
+                                            ? 'bg-indigo-500 text-white shadow-md'
+                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300'
+                                    }`}
+                                >
+                                    {w.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 획순 번호 토글 */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-500 dark:text-slate-400 shrink-0 w-14">획순 번호</span>
+                        <button
+                            onClick={handleToggleNumbers}
+                            className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+                                showStrokeNumbers ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-600'
+                            }`}
+                        >
+                            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${
+                                showStrokeNumbers ? 'left-6' : 'left-0.5'
+                            }`} />
+                        </button>
+                        <span className={`text-xs font-bold ${showStrokeNumbers ? 'text-indigo-500' : 'text-slate-400'}`}>
+                            {showStrokeNumbers ? '표시 중' : '숨김'}
+                        </span>
+                    </div>
+                </div>
+            )}
+
             {/* 퀴즈 캔버스 */}
             <div className={`relative w-full max-w-[400px] aspect-square mx-auto rounded-[2.5rem] overflow-hidden shadow-xl border-4 transition-all duration-300 ${mistakeOnStroke ? 'border-red-400 bg-red-50 dark:bg-red-900/20' : 'border-white dark:border-slate-700 bg-white dark:bg-slate-900'}`}>
                 <div ref={quizContainerRef} className="w-full h-full flex items-center justify-center" />
@@ -303,6 +455,8 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
                 <div className="text-slate-400 text-sm font-bold text-center">
                     {mistakeOnStroke
                         ? '❌ 획순이 틀렸어요! (-5점)'
+                        : isAnimating
+                        ? '▶ 획순 재생 중...'
                         : '획순에 맞게 한자를 써보세요'}
                 </div>
             )}
@@ -342,47 +496,7 @@ const QuizScreen = ({ hanja, onBack, onComplete, onWritingComplete }) => {
                     </div>
                     <div className="flex gap-3 w-full mt-2">
                         <button
-                            onClick={() => {
-                                setScore(MAX_SCORE);
-                                setHintCount(0);
-                                setWrongCount(0);
-                                setIsComplete(false);
-                                setShowResult(false);
-                                setCurrentStroke(0);
-                                // 퀴즈 재시작
-                                if (quizContainerRef.current) {
-                                    quizContainerRef.current.innerHTML = '';
-                                    const containerSize = Math.min(window.innerWidth - 48, 400);
-                                    const writer = window.HanziWriter.create(quizContainerRef.current, hanja.hanja, {
-                                        width: containerSize,
-                                        height: containerSize,
-                                        padding: containerSize * 0.08,
-                                        showOutline: true,
-                                        strokeColor: '#6366f1',
-                                        outlineColor: 'rgba(0,0,0,0.08)',
-                                        drawingColor: '#1e293b',
-                                        drawingWidth: Math.max(6, containerSize * 0.025),
-                                        showHintAfterMisses: false,
-                                        highlightOnComplete: true,
-                                        highlightColor: '#FFD700',
-                                    });
-                                    writerRef.current = writer;
-                                    writer.quiz({
-                                        onMistake: () => {
-                                            setWrongCount(c => c + 1);
-                                            setScore(s => Math.max(0, s - WRONG_PENALTY));
-                                            setMistakeOnStroke(true);
-                                            setTimeout(() => setMistakeOnStroke(false), 600);
-                                        },
-                                        onCorrectStroke: (sd) => { setCurrentStroke(sd.strokeNum + 1); setMistakeOnStroke(false); },
-                                        onComplete: () => {
-                                            setIsComplete(true);
-                                            setShowResult(true);
-                                            if (onWritingComplete && hanja.id) onWritingComplete(hanja.id);
-                                        }
-                                    });
-                                }
-                            }}
+                            onClick={handleRetry}
                             className="flex-1 py-4 rounded-2xl bg-indigo-500 text-white font-black text-lg active:scale-95 transition-all"
                         >
                             다시 도전
