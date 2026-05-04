@@ -291,15 +291,17 @@ const WritingScreen = ({ onBack, onWritingComplete }) => {
                     </div>
 
                     {/* Writing Main Area */}
-                    <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-center px-2">
-                        <div className="clay-panel !rounded-[3rem] p-8 flex flex-col items-center bg-white/80 dark:bg-slate-800/80 border-4 border-white shadow-2xl relative overflow-hidden">
-                            <div className="text-9xl md:text-[12rem] font-black text-slate-700 dark:text-white mb-6 premium-text-shadow" style={{fontFamily: "'Noto Sans KR', sans-serif"}}>{currentItem?.hanja}</div>
-                            <div className="flex flex-col items-center gap-1">
-                                <span className="text-4xl md:text-6xl font-black text-indigo-500">{currentItem?.sound}</span>
-                                <span className="text-xl md:text-3xl font-bold text-slate-400">{lang === 'en' ? (currentItem?.meaning_en || currentItem?.meaning) : currentItem?.meaning}</span>
+                    <div className="w-full max-w-2xl flex flex-col items-center gap-4 px-2">
+                        {/* 한자 정보 (캔버스 위에 한 줄로) */}
+                        <div className="flex items-center gap-4">
+                            <span className="text-6xl md:text-8xl font-black text-slate-700 dark:text-white premium-text-shadow" style={{fontFamily: "'Noto Sans KR', sans-serif"}}>{currentItem?.hanja}</span>
+                            <div className="flex flex-col">
+                                <span className="text-2xl md:text-4xl font-black text-indigo-500">{currentItem?.sound}</span>
+                                <span className="text-base md:text-xl font-bold text-slate-400">{lang === 'en' ? (currentItem?.meaning_en || currentItem?.meaning) : currentItem?.meaning}</span>
                             </div>
                         </div>
 
+                        {/* 캔버스 */}
                         <div className="relative aspect-square w-full max-w-[500px] mx-auto group">
                             <div ref={containerRef} className="absolute inset-0 bg-white dark:bg-slate-900 rounded-[3rem] shadow-inner border-8 border-slate-50 dark:border-slate-800 overflow-hidden">
                                 <div ref={guideContainerRef} className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none" />
