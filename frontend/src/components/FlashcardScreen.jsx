@@ -38,9 +38,9 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/40 to-transparent pointer-events-none z-10"></div>
                 <div className="flex-1 flex items-center justify-center w-full min-h-0 py-2 relative z-0">
                     <img
-                        src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.png`}
-                        onError={(e) => { 
-                            if (e.target.src.endsWith('.png')) {
+                        src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
+                        onError={(e) => {
+                            if (e.target.src.endsWith('.webp')) {
                                 e.target.src = `/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.svg`;
                             } else {
                                 e.target.src = '/assets/images/hanja_placeholder.png';
