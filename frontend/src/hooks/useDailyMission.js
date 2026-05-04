@@ -121,18 +121,28 @@ export const useDailyMission = () => {
      * 미션 진행도 업데이트
      * @param {string} type - 미션 타입 (e.g. 'flashcard', 'matchGame', 'shootGame')
      * @param {number} amount - 증가량 (기본 1)
-     * @returns {number} 획득한 보너스 XP (완료된 미션이 있을 경우)
+     * @param {function} onBonusXp - 보너스 XP 발생 시 호출되는 콜백 (xp: number) => void
+     *
+     * 주의: setState는 비동기라 return으로 XP를 전달할 수 없음.
+     * 대신 onBonusXp 콜백으로 완료된 미션의 XP를 전달한다.
      */
-    const updateMissionProgress = useCallback((type, amount = 1) => {
-        let bonusXp = 0;
-        setMissions(prev => prev.map(m => {
-            if (m.done || m.type !== type) return m;
-            const newProgress = m.progress + amount;
-            const done = newProgress >= m.target;
-            if (done) bonusXp += m.xp;
-            return { ...m, progress: newProgress, done };
-        }));
-        return bonusXp;
+    const updateMissionProgress = useCallback((type, amount = 1, onBonusXp) => {
+        setMissions(prev => {
+            let bonusXp = 0;
+            const next = prev.map(m => {
+                if (m.done || m.type !== type) return m;
+                const newProgress = m.progress + amount;
+                const done = newProgress >= m.target;
+                if (done && !m.done) bonusXp += m.xp;
+                return { ...m, progress: newProgress, done };
+            });
+            // setState 내부에서 콜백 호출 (동기적으로 XP 전달)
+            if (bonusXp > 0 && onBonusXp) {
+                // setTimeout 0으로 렌더 사이클 밖에서 호출
+                setTimeout(() => onBonusXp(bonusXp), 0);
+            }
+            return next;
+        });
     }, []);
 
     const allDone = missions.every(m => m.done);

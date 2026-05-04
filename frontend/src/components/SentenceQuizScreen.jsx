@@ -43,7 +43,7 @@ const playSound = (type) => {
     }
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired }) => {
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong }) => {
     const { lang, t } = useLang();
     
     // Selection State
@@ -93,7 +93,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired }) => {
             const correct = randomHanja.meaning + " " + randomHanja.sound;
             const distractors = HANJA_DATA.filter(h => h.id !== randomHanja.id).sort(() => 0.5 - Math.random()).slice(0, 3).map(h => h.meaning + " " + h.sound);
             const quizOptions = [...distractors, correct].sort(() => 0.5 - Math.random());
-            setCurrentQuiz({ type: 'simple', char: randomHanja.hanja, answer: correct, meaning: randomHanja.meaning, sound: randomHanja.sound });
+            setCurrentQuiz({ type: 'simple', char: randomHanja.hanja, answer: correct, meaning: randomHanja.meaning, sound: randomHanja.sound, _hanjaId: randomHanja.id });
             setOptions(quizOptions);
             setFeedback(null); setTimeLeft(15); setGameState('playing');
             return;
@@ -111,7 +111,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired }) => {
         }
         
         const quizOptions = [...distractors, targetWord.word].sort(() => 0.5 - Math.random());
-        setCurrentQuiz({ type: 'sentence', char: randomChar.hanja, target: targetWord, sentence: targetWord.example || `다음 한자어 '${targetWord.word}'의 뜻은?` });
+        setCurrentQuiz({ type: 'sentence', char: randomChar.hanja, target: targetWord, sentence: targetWord.example || `다음 한자어 '${targetWord.word}'의 뜻은?`, _hanjaId: randomChar.id });
         setOptions(quizOptions);
         setFeedback(null); setTimeLeft(15); setGameState('playing');
     }, [quizPool, activeHanjaSet]);
@@ -146,11 +146,15 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired }) => {
         const isCorrect = currentQuiz.type === 'sentence' ? selected === currentQuiz.target.word : selected === currentQuiz.answer;
         setFeedback({ isCorrect, selected });
         setTotalAnswered(prev => prev + 1);
+        // 숙달도 연동: 현재 퀴즈 한자의 id 추출
+        const hanjaId = currentQuiz._hanjaId || null;
         if (isCorrect) {
             setScore(prev => prev + 1); setCombo(prev => prev + 1); playSound('correct');
             if (onHanjaAcquired) onHanjaAcquired(null, 25);
+            if (onMarkCorrect && hanjaId) onMarkCorrect(hanjaId);
         } else {
             setCombo(0); playSound('wrong');
+            if (onMarkWrong && hanjaId) onMarkWrong(hanjaId);
         }
         setGameState('feedback');
         setTimeout(() => {

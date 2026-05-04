@@ -3,7 +3,7 @@ import HANJA_DATA from '../hanja_unified.json';
 import { IconStrokeOrder } from './Icons';
 import { useLang } from '../LangContext.jsx';
 
-const WritingScreen = ({ onBack }) => {
+const WritingScreen = ({ onBack, onWritingComplete }) => {
     const { lang, t } = useLang();
     const [viewMode, setViewMode] = useState('grade'); // 'topic' or 'grade'
     const [selectedGrade, setSelectedGrade] = useState('8급');
@@ -323,7 +323,10 @@ const WritingScreen = ({ onBack }) => {
                     <div className="flex gap-4 w-full max-w-4xl px-2">
                         <button onClick={() => { setCurrentIndex(prev => (prev - 1 + currentHanjaList.length) % currentHanjaList.length); }} className="flex-1 bg-white/60 dark:bg-slate-800/60 text-slate-600 py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-lg active:scale-95 transition-all">이전</button>
                         <button onClick={clearCanvas} className="flex-1 bg-rose-400 text-white py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-xl active:scale-95 transition-all">지우기</button>
-                        <button onClick={() => { setCurrentIndex(prev => (prev + 1) % currentHanjaList.length); }} className="flex-1 bg-indigo-500 text-white py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-xl active:scale-95 transition-all">다음</button>
+                        <button onClick={() => {
+                                if (onWritingComplete && currentItem) onWritingComplete(currentItem.id);
+                                setCurrentIndex(prev => (prev + 1) % currentHanjaList.length);
+                            }} className="flex-1 bg-indigo-500 text-white py-6 rounded-[2rem] font-black text-2xl border-4 border-white shadow-xl active:scale-95 transition-all">다음</button>
                     </div>
 
                     <p className="text-slate-400 font-bold text-xl mt-4">{currentIndex + 1} / {currentHanjaList.length}</p>

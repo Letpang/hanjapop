@@ -118,7 +118,7 @@ const Flashcard = ({ item, isLocked, onFlip }) => {
     );
 };
 
-const FlashcardScreen = ({ onBack, onStageClear, unlockedStages }) => {
+const FlashcardScreen = ({ onBack, onStageClear, unlockedStages, onCardFlip }) => {
     const { t } = useLang();
     const [viewMode, setViewMode] = useState('grade');
     const [viewedIds, setViewedIds] = useState(new Set());
@@ -144,6 +144,8 @@ const FlashcardScreen = ({ onBack, onStageClear, unlockedStages }) => {
     }, [viewMode, gradeData, selectedCategory]);
 
     const handleCardFlip = (id) => {
+        // 숫달도 + 미션 연동: 카드를 처음 보는 순간 호출
+        if (onCardFlip) onCardFlip(id);
         if (viewedIds.has(id)) return;
         setViewedIds(prev => {
             const next = new Set(prev);

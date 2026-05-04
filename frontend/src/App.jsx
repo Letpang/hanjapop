@@ -68,6 +68,12 @@ const App = () => {
     const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission();
     const { mastery, markSeen, markCorrect, markWrong, getStats, getMasteryLevel } = useMastery();
 
+    // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
+    const addBonusXp = useCallback((xp) => {
+        if (!xp || xp <= 0) return;
+        setUserXp(prev => prev + xp);
+    }, []);
+
     const handleHanjaAcquired = (id, xpAmount = 10) => {
         setUserXp(prev => {
             const newXp = prev + xpAmount;
@@ -106,17 +112,28 @@ const App = () => {
                     />
                 );
             case 'flashcard':
-                return <FlashcardScreen onBack={() => setCurrentScreen('main')} onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5); }} onCardFlip={(id) => { updateMissionProgress('flashcard', 1); if (id) markSeen(id); }} />;
+                return <FlashcardScreen onBack={() => setCurrentScreen('main')} onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5, addBonusXp); }} onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); if (id) markSeen(id); }} />;
             case 'writing':
-                return <WritingScreen onBack={() => setCurrentScreen('main')} />;
+                return <WritingScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onWritingComplete={(id) => {
+                        updateMissionProgress('writing', 1, addBonusXp);
+                        if (id) markSeen(id);
+                    }}
+                />;
             case 'matchGame':
-                return <MatchGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); if (id) markCorrect(id); }} onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1); }} />;
+                return <MatchGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); if (id) markCorrect(id); }} onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); }} />;
             case 'shootGame':
-                return <ShootGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('shootGame', 1); }} selectedCharacter={selectedCharacter} onWaveClear={() => updateMissionProgress('shootGame_wave', 1)} />;
+                return <ShootGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('shootGame', 1, addBonusXp); }} selectedCharacter={selectedCharacter} onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)} />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
             case 'sentenceQuiz':
-                return <SentenceQuizScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1); }} />;
+                return <SentenceQuizScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); }}
+                    onMarkCorrect={markCorrect}
+                    onMarkWrong={markWrong}
+                />;
             case 'rankings':
                 return <RankingsScreen onBack={() => setCurrentScreen('main')} userXp={userXp} selectedCharacter={selectedCharacter} />;
             default:
