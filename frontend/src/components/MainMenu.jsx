@@ -231,13 +231,13 @@ const MainMenu = ({
                     onClick={() => onNavigate('shootGame')}
                 />
                 <MenuButton
-                    label="어휘 정복"
+                    label={t('menuSentenceQuiz')}
                     icon="/assets/images/icons/icon_quiz.png"
                     activeColor="#FFD700"
                     onClick={() => onNavigate('sentenceQuiz')}
                 />
                 <MenuButton
-                    label={t('stickerBook')}
+                    label={t('menuStickerBook')}
                     icon="/assets/images/icons/icon_sticker.png"
                     activeColor="#87CEFA"
                     onClick={() => onNavigate('stickerBook')}

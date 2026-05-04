@@ -6,6 +6,14 @@ import {
 } from './Icons.jsx';
 import { useLang } from '../LangContext.jsx';
 
+// 단어 → reading 역조회 맵 (보기에 한글 독음 병기용)
+const wordReadingMap = {};
+HANJA_DATA.forEach(h => {
+    (h.words || []).forEach(w => {
+        if (w.word && w.reading) wordReadingMap[w.word] = w.reading;
+    });
+});
+
 const stageThemes = [
     { Icon: IconToyCar, bgStart: "#FFE5E5", bgEnd: "#FFB7B2", shadow: "#ef4444" },
     { Icon: IconTeddy, bgStart: "#FFF0E5", bgEnd: "#FFDAB9", shadow: "#f59e0b" },
@@ -280,16 +288,20 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                     )}
                 </div>
                 <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-4xl">
-                    {options.map((opt, i) => (
+                    {options.map((opt, i) => {
+                        const reading = currentQuiz.type === 'sentence' ? wordReadingMap[opt] : null;
+                        return (
                         <button key={i} disabled={gameState !== 'playing'} onClick={() => handleAnswer(opt)}
-                            className={"clay-button !rounded-[2.5rem] py-6 sm:py-10 text-2xl sm:text-4xl font-black border-4 transition-all " + 
+                            className={"clay-button !rounded-[2.5rem] py-4 sm:py-8 font-black border-4 transition-all flex flex-col items-center justify-center gap-1 " + 
                                 (gameState === 'playing' ? "bg-white dark:bg-slate-800 border-white hover:-translate-y-2" : 
                                 (opt === (currentQuiz.type === 'sentence' ? currentQuiz.target.word : currentQuiz.answer) ? "bg-emerald-400 border-emerald-200 text-white scale-105 z-10" : 
                                 (opt === feedback?.selected ? "bg-rose-400 border-rose-200 text-white opacity-50" : "bg-slate-100 dark:bg-slate-900 opacity-30")))}
                         >
-                            {opt}
+                            <span className="text-2xl sm:text-4xl">{opt}</span>
+                            {reading && <span className="text-base sm:text-xl opacity-70 font-bold">{reading}</span>}
                         </button>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>

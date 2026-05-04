@@ -166,7 +166,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
             const [first, second] = flippedCards;
             if (first.pairId === second.pairId) {
                 playSound('match');
-                if (onHanjaAcquired) onHanjaAcquired(first.pairId);
+                if (onHanjaAcquired) onHanjaAcquired(first.pairId, 0); // XP는 스테이지 클리어 시에만 지급
                 setTimeout(() => {
                     setCards((prev) => prev.map((card) => card.pairId === first.pairId ? { ...card, isMatched: true } : card));
                     setFlippedCards([]);
