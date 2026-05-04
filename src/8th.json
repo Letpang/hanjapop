@@ -1,0 +1,61 @@
+[
+  { "id": 1, "hanja": "一", "meaning": "한", "sound": "일", "stage": 1 },
+  { "id": 2, "hanja": "二", "meaning": "두", "sound": "이", "stage": 1 },
+  { "id": 3, "hanja": "三", "meaning": "석", "sound": "삼", "stage": 1 },
+  { "id": 4, "hanja": "四", "meaning": "넉", "sound": "사", "stage": 1 },
+  { "id": 5, "hanja": "五", "meaning": "다섯", "sound": "오", "stage": 1 },
+  
+  { "id": 6, "hanja": "六", "meaning": "여섯", "sound": "육", "stage": 2 },
+  { "id": 7, "hanja": "七", "meaning": "일곱", "sound": "칠", "stage": 2 },
+  { "id": 8, "hanja": "八", "meaning": "여덟", "sound": "팔", "stage": 2 },
+  { "id": 9, "hanja": "九", "meaning": "아홉", "sound": "구", "stage": 2 },
+  { "id": 10, "hanja": "十", "meaning": "열", "sound": "십", "stage": 2 },
+  
+  { "id": 11, "hanja": "日", "meaning": "날", "sound": "일", "stage": 3 },
+  { "id": 12, "hanja": "月", "meaning": "달", "sound": "월", "stage": 3 },
+  { "id": 13, "hanja": "火", "meaning": "불", "sound": "화", "stage": 3 },
+  { "id": 14, "hanja": "水", "meaning": "물", "sound": "수", "stage": 3 },
+  { "id": 15, "hanja": "木", "meaning": "나무", "sound": "목", "stage": 3 },
+  
+  { "id": 16, "hanja": "金", "meaning": "쇠", "sound": "금", "stage": 4 },
+  { "id": 17, "hanja": "土", "meaning": "흙", "sound": "토", "stage": 4 },
+  { "id": 18, "hanja": "山", "meaning": "뫼", "sound": "산", "stage": 4 },
+  { "id": 19, "hanja": "白", "meaning": "흰", "sound": "백", "stage": 4 },
+  { "id": 20, "hanja": "靑", "meaning": "푸를", "sound": "청", "stage": 4 },
+  
+  { "id": 21, "hanja": "東", "meaning": "동녘", "sound": "동", "stage": 5 },
+  { "id": 22, "hanja": "西", "meaning": "서녘", "sound": "서", "stage": 5 },
+  { "id": 23, "hanja": "南", "meaning": "남녘", "sound": "남", "stage": 5 },
+  { "id": 24, "hanja": "北", "meaning": "북녘", "sound": "북", "stage": 5 },
+  { "id": 25, "hanja": "中", "meaning": "가운데", "sound": "중", "stage": 5 },
+  
+  { "id": 26, "hanja": "人", "meaning": "사람", "sound": "인", "stage": 6 },
+  { "id": 27, "hanja": "父", "meaning": "아비", "sound": "부", "stage": 6 },
+  { "id": 28, "hanja": "母", "meaning": "어미", "sound": "모", "stage": 6 },
+  { "id": 29, "hanja": "兄", "meaning": "맏", "sound": "형", "stage": 6 },
+  { "id": 30, "hanja": "弟", "meaning": "아우", "sound": "제", "stage": 6 },
+  
+  { "id": 31, "hanja": "女", "meaning": "계집", "sound": "녀", "stage": 7 },
+  { "id": 32, "hanja": "王", "meaning": "임금", "sound": "왕", "stage": 7 },
+  { "id": 33, "hanja": "民", "meaning": "백성", "sound": "민", "stage": 7 },
+  { "id": 34, "hanja": "軍", "meaning": "군사", "sound": "군", "stage": 7 },
+  { "id": 35, "hanja": "長", "meaning": "길", "sound": "장", "stage": 7 },
+  
+  { "id": 36, "hanja": "校", "meaning": "학교", "sound": "교", "stage": 8 },
+  { "id": 37, "hanja": "敎", "meaning": "가르칠", "sound": "교", "stage": 8 },
+  { "id": 38, "hanja": "學", "meaning": "배울", "sound": "학", "stage": 8 },
+  { "id": 39, "hanja": "先", "meaning": "먼저", "sound": "선", "stage": 8 },
+  { "id": 40, "hanja": "生", "meaning": "날", "sound": "생", "stage": 8 },
+  
+  { "id": 41, "hanja": "大", "meaning": "큰", "sound": "대", "stage": 9 },
+  { "id": 42, "hanja": "小", "meaning": "작을", "sound": "소", "stage": 9 },
+  { "id": 43, "hanja": "外", "meaning": "바깥", "sound": "외", "stage": 9 },
+  { "id": 44, "hanja": "門", "meaning": "문", "sound": "문", "stage": 9 },
+  { "id": 45, "hanja": "室", "meaning": "방", "sound": "실", "stage": 9 },
+  
+  { "id": 46, "hanja": "國", "meaning": "나라", "sound": "국", "stage": 10 },
+  { "id": 47, "hanja": "韓", "meaning": "한국", "sound": "한", "stage": 10 },
+  { "id": 48, "hanja": "年", "meaning": "해", "sound": "년", "stage": 10 },
+  { "id": 49, "hanja": "萬", "meaning": "일만", "sound": "만", "stage": 10 },
+  { "id": 50, "hanja": "寸", "meaning": "마디", "sound": "촌", "stage": 10 }
+]
