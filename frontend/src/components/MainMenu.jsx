@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useLang } from '../LangContext.jsx';
 import { getLeaderboardPosition, getRankDetails } from '../utils/rankUtils.js';
+import DailyMissionCard from './DailyMissionCard.jsx';
+import MasteryBar from './MasteryBar.jsx';
+import GradeBadges from './GradeBadges.jsx';
 
 const TOTAL_STICKERS = 300;
 
@@ -45,7 +48,8 @@ const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
 
 const MainMenu = ({
     onNavigate, activePlanet, onSelectPlanet, unlockedStickers, userXp,
-    isDarkMode, setIsDarkMode, selectedCharacter, setSelectedCharacter, unlockedCharacters
+    isDarkMode, setIsDarkMode, selectedCharacter, setSelectedCharacter, unlockedCharacters,
+    missions, streak, allDone, doneCount, getStats
 }) => {
     const { t } = useLang();
     const [showCharSelect, setShowCharSelect] = useState(false);
@@ -239,6 +243,22 @@ const MainMenu = ({
                     onClick={() => onNavigate('stickerBook')}
                 />
             </div>
+
+            {/* 급수 달성 뼌지 */}
+            <GradeBadges userXp={myXp} />
+
+            {/* 단어 숙달도 */}
+            {getStats && <MasteryBar getStats={getStats} />}
+
+            {/* 오늘의 미션 + 스트릭 */}
+            {missions && missions.length > 0 && (
+                <DailyMissionCard
+                    missions={missions}
+                    streak={streak || { count: 0 }}
+                    allDone={allDone}
+                    doneCount={doneCount || 0}
+                />
+            )}
 
             <button
                 onClick={() => {

@@ -104,8 +104,12 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
         const pairsToUse = getPairsCount(stageNum);
         const pool = fromGrade ? currentGradeData : currentCategoryData;
 
-        const shuffled = [...pool].sort(() => Math.random() - 0.5);
-        const stageItems = shuffled.slice(0, Math.min(pairsToUse, pool.length));
+        // 중복 id 제거 후 셔플
+        const uniquePool = Object.values(
+            pool.reduce((acc, item) => { acc[item.id] = item; return acc; }, {})
+        );
+        const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
+        const stageItems = shuffled.slice(0, Math.min(pairsToUse, shuffled.length));
 
         if (stageItems.length === 0) return;
 
@@ -146,8 +150,12 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
     const handleCardClick = useCallback((clickedCard) => {
         if (isLocked || clickedCard.isFlipped || clickedCard.isMatched || gameState !== 'playing') return;
         setFlippedCards(prev => {
+            // 이미 2장 뒤집혔거나, 같은 카드 중복 클릭 방지
             if (prev.length >= 2 || prev.find(c => c.uniqueId === clickedCard.uniqueId)) return prev;
-            return [...prev, clickedCard];
+            const next = [...prev, clickedCard];
+            // 2장이 되는 순간 즉시 lock (빠른 연속 클릭 방지)
+            if (next.length === 2) setIsLocked(true);
+            return next;
         });
         playSound('flip');
         setCards((prev) => prev.map((card) => card.uniqueId === clickedCard.uniqueId ? { ...card, isFlipped: true } : card));
@@ -155,7 +163,6 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
 
     useEffect(() => {
         if (flippedCards.length === 2) {
-            setIsLocked(true);
             const [first, second] = flippedCards;
             if (first.pairId === second.pairId) {
                 playSound('match');

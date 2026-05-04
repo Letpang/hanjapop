@@ -5,6 +5,57 @@ import {
 } from './Icons.jsx';
 import { useLang } from '../LangContext.jsx';
 
+// ─────────────────────────────────────────────
+// 난이도 설정
+// ─────────────────────────────────────────────
+const DIFFICULTY_CONFIG = {
+    easy: {
+        label: '쉬움',
+        labelEn: 'Easy',
+        emoji: '🌱',
+        dropSpeedBase: 0.12,       // 낙하 속도 (% per tick, 50ms)
+        dropSpeedPerWave: 0.015,   // 웨이브당 속도 증가
+        maxOnScreen: 2,            // 동시 등장 최대 수
+        spawnIntervalBase: 3200,   // 스폰 간격 (ms)
+        spawnIntervalPerWave: -150,
+        wrongAnswerMode: 'other_theme', // 오답 유사도: 다른 테마
+        wavesTotal: 5,
+        killsPerWave: 10,
+        hp: 5,
+    },
+    normal: {
+        label: '보통',
+        labelEn: 'Normal',
+        emoji: '⚡',
+        dropSpeedBase: 0.20,
+        dropSpeedPerWave: 0.025,
+        maxOnScreen: 3,
+        spawnIntervalBase: 2500,
+        spawnIntervalPerWave: -200,
+        wrongAnswerMode: 'same_theme', // 오답 유사도: 같은 테마
+        wavesTotal: 5,
+        killsPerWave: 12,
+        hp: 5,
+    },
+    hard: {
+        label: '어려움',
+        labelEn: 'Hard',
+        emoji: '🔥',
+        dropSpeedBase: 0.30,
+        dropSpeedPerWave: 0.04,
+        maxOnScreen: 4,
+        spawnIntervalBase: 1800,
+        spawnIntervalPerWave: -200,
+        wrongAnswerMode: 'same_reading_prefix', // 오답 유사도: reading 앞글자 같은 것
+        wavesTotal: 5,
+        killsPerWave: 15,
+        hp: 4,
+    },
+};
+
+// ─────────────────────────────────────────────
+// 사운드
+// ─────────────────────────────────────────────
 const playSound = (type) => {
     try {
         if (!window.AudioContext && !window.webkitAudioContext) return;
@@ -31,12 +82,45 @@ const playSound = (type) => {
             osc.type = 'triangle'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(50, now + 0.3);
             gainNode.gain.setValueAtTime(0.25, now); gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
             osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'wave') {
+            osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now + 0.3);
+            gainNode.gain.setValueAtTime(0.15, now); gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
         }
-    } catch (e) {
-        // Audio API blocked by browser policy
-    }
+    } catch (e) {}
 };
 
+// ─────────────────────────────────────────────
+// 오답 선택 로직
+// ─────────────────────────────────────────────
+const getWrongOptions = (target, allChars, mode, targetCategory) => {
+    const targetAnswer = target.answer;
+    let pool = allChars.filter(h => h && (h.meaning + ' ' + (h.sound || '')) !== targetAnswer);
+
+    if (mode === 'same_theme' && targetCategory) {
+        // 같은 카테고리에서 우선 선택
+        const sameTheme = pool.filter(h => h.category === targetCategory);
+        if (sameTheme.length >= 3) pool = sameTheme;
+    } else if (mode === 'same_reading_prefix' && target.sound) {
+        // reading 앞글자 같은 것 우선
+        const prefix = target.sound.charAt(0);
+        const samePrefix = pool.filter(h => h.sound && h.sound.charAt(0) === prefix);
+        if (samePrefix.length >= 3) pool = samePrefix;
+    } else if (mode === 'other_theme' && targetCategory) {
+        // 다른 카테고리에서 선택
+        const otherTheme = pool.filter(h => h.category !== targetCategory);
+        if (otherTheme.length >= 3) pool = otherTheme;
+    }
+
+    return pool
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3)
+        .map(h => h.meaning + ' ' + (h.sound || ''));
+};
+
+// ─────────────────────────────────────────────
+// 메인 컴포넌트
+// ─────────────────────────────────────────────
 const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
     const { lang, t } = useLang();
     
@@ -52,6 +136,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
     
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
+    const [selectedDifficulty, setSelectedDifficulty] = useState('normal');
 
     useEffect(() => {
         if (!selectedCategory && categories.length > 0) {
@@ -60,9 +145,10 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
     }, [categories, selectedCategory]);
 
     const [status, setStatus] = useState('idle');
-    const [level, setLevel] = useState(1);
+    const [wave, setWave] = useState(1);
+    const [waveKills, setWaveKills] = useState(0);
+    const [waveTransition, setWaveTransition] = useState(false);
     const [score, setScore] = useState(0);
-    const [targetScore, setTargetScore] = useState(20);
     const [hp, setHp] = useState(5);
     const [words, setWords] = useState([]);
     const [options, setOptions] = useState([]);
@@ -78,6 +164,8 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
     const hpRef = useRef(hp);
     useEffect(() => { hpRef.current = hp; }, [hp]);
 
+    const diffConfig = useMemo(() => DIFFICULTY_CONFIG[selectedDifficulty] || DIFFICULTY_CONFIG.normal, [selectedDifficulty]);
+
     const gamePoolData = useMemo(() => {
         let pool = [];
         if (viewMode === 'grade') {
@@ -86,14 +174,11 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
         } else {
             pool = HANJA_DATA.filter(h => h.category === selectedCategory);
         }
-        
         const relevantWords = pool.filter(h => h.words && h.words.length > 0);
-
         return { chars: pool, words: relevantWords };
     }, [viewMode, selectedGrade, selectedCategory]);
 
     const startGame = () => {
-        // 오디오 컨텍스트 초기화 유도
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (AudioCtx) {
@@ -102,41 +187,69 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
             }
         } catch (e) {}
 
-        setLevel(1); setScore(0); setHp(5); hpRef.current = 5;
-        setWords([]); setTargetId(null); setShake(false);
-        setTargetScore(20); 
+        setWave(1);
+        setWaveKills(0);
+        setWaveTransition(false);
+        setScore(0);
+        setHp(diffConfig.hp);
+        hpRef.current = diffConfig.hp;
+        setWords([]);
+        setTargetId(null);
+        setShake(false);
         setStatus('playing');
     };
 
-    const getDropSpeed = useCallback(() => 0.25 + (level - 1) * 0.12, [level]);
-    const getSpawnInterval = useCallback(() => Math.max(1000, 3000 - (level - 1) * 500), [level]);
+    // 현재 웨이브 기반 속도/간격 계산
+    const getDropSpeed = useCallback((currentWave) => {
+        return diffConfig.dropSpeedBase + (currentWave - 1) * diffConfig.dropSpeedPerWave;
+    }, [diffConfig]);
 
+    const getSpawnInterval = useCallback((currentWave) => {
+        return Math.max(800, diffConfig.spawnIntervalBase + (currentWave - 1) * diffConfig.spawnIntervalPerWave);
+    }, [diffConfig]);
+
+    // HP 0 → game over
     useEffect(() => {
         if (hp <= 0 && status === 'playing') {
             setStatus('over');
         }
     }, [hp, status]);
 
+    // 웨이브 킬 수 체크 → 다음 웨이브 or 게임 클리어
     useEffect(() => {
-        if (score >= targetScore && status === 'playing') {
-            setStatus('clear');
+        if (status !== 'playing' || waveTransition) return;
+        if (waveKills >= diffConfig.killsPerWave) {
+            if (wave >= diffConfig.wavesTotal) {
+                setStatus('clear');
+            } else {
+                setWaveTransition(true);
+                setWords([]);
+                playSound('wave');
+                setTimeout(() => {
+                    setWave(prev => prev + 1);
+                    setWaveKills(0);
+                    setWaveTransition(false);
+                }, 2000);
+            }
         }
-    }, [score, status, targetScore]);
+    }, [waveKills, wave, diffConfig, status, waveTransition]);
 
+    // 낙하 + 스폰 루프
     useEffect(() => {
-        if (status !== 'playing') return;
+        if (status !== 'playing' || waveTransition) return;
 
         const dropInterval = setInterval(() => {
             setWords(prev => {
                 let hpDelta = 0;
                 const newWords = prev.map(w => {
                     if (w.state === 'exploding') return { ...w, timer: w.timer - 1 };
-                    return { ...w, y: w.y + getDropSpeed() };
+                    return { ...w, y: w.y + getDropSpeed(wave) };
                 }).filter(w => {
                     if (w.state === 'exploding' && w.timer <= 0) return false;
                     if (w.state !== 'exploding' && w.y >= 90) {
                         hpDelta += 1;
-                        playSound('damage'); setShake(true);
+                        playSound('damage');
+                        setShake(true);
                         setTimeout(() => setShake(false), 300);
                         return false;
                     }
@@ -152,7 +265,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
 
         const spawnInterval = setInterval(() => {
             setWords(prev => {
-                if (prev.length >= 6) return prev;
+                if (prev.filter(w => w.state === 'falling').length >= diffConfig.maxOnScreen) return prev;
                 
                 let nextItem;
                 let isWord = false;
@@ -163,14 +276,21 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
                     if (wordObj && wordObj.words && wordObj.words.length > 0) {
                         const randomWord = wordObj.words[Math.floor(Math.random() * wordObj.words.length)];
                         if (randomWord) {
-                            nextItem = { id: wordObj.id, hanja: randomWord.word, meaning: randomWord.meaning, sound: randomWord.reading };
+                            nextItem = {
+                                id: wordObj.id,
+                                hanja: randomWord.word,
+                                meaning: randomWord.meaning,
+                                sound: randomWord.reading,
+                                category: wordObj.category,
+                            };
                             isWord = true;
                         }
                     }
                 }
                 
                 if (!nextItem && gamePoolData.chars.length > 0) {
-                    nextItem = gamePoolData.chars[Math.floor(Math.random() * gamePoolData.chars.length)];
+                    const ch = gamePoolData.chars[Math.floor(Math.random() * gamePoolData.chars.length)];
+                    nextItem = { ...ch };
                 }
 
                 if (!nextItem) return prev;
@@ -180,18 +300,21 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
                     pairId: nextItem.id,
                     hanja: nextItem.hanja,
                     answer: (nextItem.meaning || getMeaning(nextItem) || "") + " " + (nextItem.sound || ""),
+                    sound: nextItem.sound || "",
+                    category: nextItem.category || "",
                     x: Math.floor(Math.random() * 80) + 10,
                     y: 0,
                     emojiId: Math.floor(Math.random() * MONSTER_COMPONENTS.length),
                     state: 'falling',
-                    isWord: isWord
+                    isWord: isWord,
                 }];
             });
-        }, getSpawnInterval());
+        }, getSpawnInterval(wave));
 
         return () => { clearInterval(dropInterval); clearInterval(spawnInterval); };
-    }, [status, level, gamePoolData, getDropSpeed, getSpawnInterval, getMeaning]);
+    }, [status, wave, waveTransition, gamePoolData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig]);
 
+    // 타겟 & 보기 갱신
     useEffect(() => {
         if (status !== 'playing' || words.length === 0) { setOptions([]); setTargetId(null); return; }
         const fallingWords = words.filter(w => w.state === 'falling');
@@ -199,16 +322,11 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
         const lowestWord = fallingWords.reduce((prev, curr) => (prev.y > curr.y ? prev : curr), fallingWords[0]);
         if (lowestWord.id !== targetId) {
             setTargetId(lowestWord.id);
-            let incorrects = [];
-            const incorrectPool = (gamePoolData.chars.length > 10 ? gamePoolData.chars : HANJA_DATA) || [];
-            incorrects = incorrectPool
-                .filter(h => h && (getMeaning(h) + " " + (h.sound || "")) !== lowestWord.answer)
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 3)
-                .map(h => getMeaning(h) + " " + (h.sound || ""));
-            setOptions([...incorrects, lowestWord.answer].sort(() => 0.5 - Math.random()));
+            const allChars = gamePoolData.chars.length > 10 ? gamePoolData.chars : HANJA_DATA;
+            const wrongOpts = getWrongOptions(lowestWord, allChars, diffConfig.wrongAnswerMode, lowestWord.category);
+            setOptions([...wrongOpts, lowestWord.answer].sort(() => 0.5 - Math.random()));
         }
-    }, [words, status, targetId, gamePoolData, getMeaning]);
+    }, [words, status, targetId, gamePoolData, diffConfig, getMeaning]);
 
     const handleOptionClick = (selectedAnswer) => {
         if (status !== 'playing' || !targetId || isInputLocked) return;
@@ -217,23 +335,30 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
         if (selectedAnswer === target.answer) {
             const dx = target.x - 50; const dy = target.y - 85;
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            setTurretAngle(angle); playSound('shoot');
+            setTurretAngle(angle);
+            playSound('shoot');
             const laserId = Date.now();
             setLasers(prev => [...prev, { id: laserId, targetX: target.x, targetY: target.y, shipX: 50, shipY: 95 }]);
             setTimeout(() => { setLasers(prev => prev.filter(l => l.id !== laserId)); playSound('boom'); }, 100);
             setWords(prev => prev.map(w => w.id === targetId ? { ...w, state: 'exploding', timer: 6 } : w));
             setScore(prev => prev + 1);
+            setWaveKills(prev => prev + 1);
             if (onHanjaAcquired) onHanjaAcquired(target.pairId);
             const acqId = Date.now();
             setAcquisitions(prev => [...prev, { id: acqId, x: target.x, y: target.y, hanja: target.hanja }]);
             setTimeout(() => setAcquisitions(prev => prev.filter(a => a.id !== acqId)), 1000);
         } else {
-            playSound('damage'); setShake(true); setIsInputLocked(true);
+            playSound('damage');
+            setShake(true);
+            setIsInputLocked(true);
             setHp(prev => Math.max(0, prev - 1));
             setTimeout(() => { setShake(false); setIsInputLocked(false); }, 800);
         }
     };
 
+    // ─────────────────────────────────────────
+    // IDLE 화면
+    // ─────────────────────────────────────────
     if (status === 'idle') {
         return (
             <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center justify-center p-5 aesthetic-space-bg">
@@ -241,13 +366,14 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
                     <div className="w-full max-w-sm md:max-w-2xl mx-auto flex flex-col items-center justify-center relative z-10 p-6 md:p-10 clay-panel !rounded-[3rem] border-4 border-white dark:border-slate-700 !bg-white/40 dark:!bg-slate-900/40 backdrop-blur-xl">
                         <h2 className="text-4xl md:text-7xl font-black text-slate-700 dark:text-white mb-8 premium-text-shadow text-center">{t('shootTitle')}</h2>
                         
+                        {/* 급수/주제 탭 */}
                         <div className="flex bg-white/60 dark:bg-slate-800/60 p-1.5 rounded-2xl border-2 border-white dark:border-slate-700 shadow-inner mb-6">
-                            <button onClick={() => setViewMode('topic')} className={`px-8 py-2.5 rounded-xl font-black text-lg transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-700 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>주제별</button>
-                            <button onClick={() => setViewMode('grade')} className={`px-8 py-2.5 rounded-xl font-black text-lg transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-700 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>급수별</button>
+                            <button onClick={() => setViewMode('grade')} className={"px-8 py-2.5 rounded-xl font-black text-lg transition-all " + (viewMode === 'grade' ? "bg-white dark:bg-slate-700 text-indigo-500 shadow-md" : "text-slate-400")}>급수별</button>
+                            <button onClick={() => setViewMode('topic')} className={"px-8 py-2.5 rounded-xl font-black text-lg transition-all " + (viewMode === 'topic' ? "bg-white dark:bg-slate-700 text-indigo-500 shadow-md" : "text-slate-400")}>주제별</button>
                         </div>
 
                         {viewMode === 'grade' && (
-                            <div className="flex gap-3 mb-8 flex-wrap justify-center">
+                            <div className="flex gap-3 mb-6 flex-wrap justify-center">
                                 {['8급', '7급', '6급', '기타'].map(g => (
                                     <button key={g} onClick={() => setSelectedGrade(g)} className={"px-8 py-3 rounded-2xl font-black transition-all border-4 text-xl " + (selectedGrade === g ? "bg-indigo-500 text-white border-white shadow-xl scale-110" : "bg-white/60 dark:bg-slate-800/60 text-slate-400 border-white/40")}>{g}</button>
                                 ))}
@@ -255,15 +381,58 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
                         )}
                         
                         {viewMode === 'topic' && (
-                            <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2 px-4 w-full justify-start sm:justify-center">
+                            <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 px-4 w-full justify-start sm:justify-center">
                                 {categories.map(cat => (
                                     <button key={cat} onClick={() => setSelectedCategory(cat)} className={"px-6 py-2.5 rounded-xl font-black transition-all border-4 text-lg whitespace-nowrap " + (selectedCategory === cat ? "bg-indigo-500 text-white border-white shadow-xl scale-105" : "bg-white/60 dark:bg-slate-800/60 text-slate-400 border-white/40")}>{cat}</button>
                                 ))}
                             </div>
                         )}
 
-                        <div className="flex flex-col items-center mb-10">
-                            <div className="w-32 h-32 md:w-48 md:h-48 rounded-[3rem] bg-white p-4 flex items-center justify-center shadow-2xl border-4 border-indigo-200">
+                        {/* 난이도 선택 */}
+                        <div className="w-full mb-8">
+                            <p className="text-center text-slate-400 font-black text-sm mb-3 uppercase tracking-widest">난이도 선택</p>
+                            <div className="grid grid-cols-3 gap-3">
+                                {Object.entries(DIFFICULTY_CONFIG).map(([key, cfg]) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setSelectedDifficulty(key)}
+                                        className={"py-4 rounded-2xl font-black text-lg border-4 transition-all flex flex-col items-center gap-1 " +
+                                            (selectedDifficulty === key
+                                                ? "bg-indigo-500 text-white border-white shadow-xl scale-105"
+                                                : "bg-white/60 dark:bg-slate-800/60 text-slate-500 border-white/40 dark:border-slate-700")}
+                                    >
+                                        <span className="text-2xl">{cfg.emoji}</span>
+                                        <span>{cfg.label}</span>
+                                        <span className="text-xs opacity-70">{cfg.wavesTotal}웨이브</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 난이도 설명 */}
+                        <div className="w-full bg-white/50 dark:bg-slate-800/50 rounded-2xl p-4 mb-8 border-2 border-white dark:border-slate-700 text-sm text-slate-500 dark:text-slate-300 font-bold">
+                            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                <div>
+                                    <div className="text-slate-400 mb-1">낙하 속도</div>
+                                    <div className="font-black text-indigo-500">
+                                        {selectedDifficulty === 'easy' ? '느림' : selectedDifficulty === 'normal' ? '보통' : '빠름'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-slate-400 mb-1">동시 등장</div>
+                                    <div className="font-black text-indigo-500">{diffConfig.maxOnScreen}개</div>
+                                </div>
+                                <div>
+                                    <div className="text-slate-400 mb-1">오답 유형</div>
+                                    <div className="font-black text-indigo-500">
+                                        {selectedDifficulty === 'easy' ? '다른 주제' : selectedDifficulty === 'normal' ? '같은 주제' : '비슷한 음'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center mb-8">
+                            <div className="w-28 h-28 md:w-40 md:h-40 rounded-[3rem] bg-white p-4 flex items-center justify-center shadow-2xl border-4 border-indigo-200">
                                 <img src={`/assets/images/characters/${selectedCharacter || 'eunha'}.png`} className="w-full h-full object-contain filter drop-shadow-lg" />
                             </div>
                             <p className="mt-4 font-black text-slate-500 dark:text-slate-300">Ready to Battle!</p>
@@ -277,15 +446,21 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
         );
     }
 
+    // ─────────────────────────────────────────
+    // 결과 화면
+    // ─────────────────────────────────────────
     if (status === 'over' || status === 'clear') {
         return (
             <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center justify-center p-6 aesthetic-space-bg">
                 <div className="w-full max-sm:p-6 max-w-sm md:max-w-2xl mx-auto flex flex-col items-center justify-center relative z-10 p-10 clay-panel !rounded-[3rem] border-4 border-white dark:border-slate-700 !bg-white/40 dark:!bg-slate-900/40 backdrop-blur-xl">
-                    <div className="mb-10 text-8xl md:text-[10rem] animate-float">{status === 'clear' ? '🏆' : '💥'}</div>
-                    <h2 className={"text-5xl md:text-8xl font-black mb-10 premium-text-shadow " + (status === 'clear' ? 'text-emerald-400' : 'text-rose-400')}>{status === 'clear' ? 'SUCCESS!' : 'GAME OVER'}</h2>
-                    <div className="bg-white/80 dark:bg-slate-800/80 px-12 py-8 rounded-[3rem] shadow-xl border-4 border-white dark:border-slate-700 flex flex-col items-center mb-10 w-full">
-                        <span className="text-slate-400 font-black uppercase text-sm mb-2 tracking-widest text-center">Score</span>
-                        <div className="text-6xl md:text-8xl font-black text-slate-700 dark:text-white">{score} <span className="text-2xl md:text-4xl text-slate-400">/ {targetScore}</span></div>
+                    <div className="mb-6 text-8xl md:text-[10rem] animate-float">{status === 'clear' ? '🏆' : '💥'}</div>
+                    <h2 className={"text-5xl md:text-8xl font-black mb-6 premium-text-shadow " + (status === 'clear' ? 'text-emerald-400' : 'text-rose-400')}>
+                        {status === 'clear' ? 'SUCCESS!' : 'GAME OVER'}
+                    </h2>
+                    <div className="bg-white/80 dark:bg-slate-800/80 px-12 py-6 rounded-[3rem] shadow-xl border-4 border-white dark:border-slate-700 flex flex-col items-center mb-6 w-full">
+                        <span className="text-slate-400 font-black uppercase text-sm mb-2 tracking-widest">Score</span>
+                        <div className="text-6xl md:text-8xl font-black text-slate-700 dark:text-white">{score}</div>
+                        <div className="text-slate-400 font-bold mt-1">Wave {wave} / {diffConfig.wavesTotal} · {diffConfig.label}</div>
                     </div>
                     <div className="flex flex-col gap-4 w-full">
                         <button onClick={startGame} className={"py-6 rounded-[2rem] font-black text-2xl md:text-4xl shadow-xl border-4 border-white " + (status === 'clear' ? "bg-emerald-400 text-white" : "bg-rose-400 text-white")}>
@@ -298,23 +473,57 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
         );
     }
 
+    // ─────────────────────────────────────────
+    // 게임 화면
+    // ─────────────────────────────────────────
     return (
         <div className="fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden aesthetic-space-bg">
             <div className={"w-full mx-auto h-full flex flex-col relative " + (shake ? "animate-shake" : "")}>
+                {/* 상단 HUD */}
                 <div className="absolute left-4 right-4 flex justify-between items-start z-40 safe-top pt-4">
                     <div className="bg-white/90 dark:bg-slate-800/90 rounded-2xl p-2 px-4 shadow-xl border border-white dark:border-slate-700 flex flex-col">
                         <span className="text-[10px] font-black text-rose-400 mb-1 tracking-widest uppercase">Energy</span>
-                        <div className="flex gap-1.5">{Array.from({ length: 5 }).map((_, i) => (<div key={i} className={"w-4 h-4 rounded-full shadow-inner transition-all " + (i < hp ? "bg-rose-400 scale-110" : "bg-slate-200 dark:bg-slate-700 scale-90")}></div>))}</div>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="bg-indigo-600/90 rounded-2xl p-2 px-6 flex flex-col items-center shadow-xl border-2 border-indigo-300">
-                            <span className="text-[10px] text-indigo-100 font-black uppercase">Battle</span>
-                            <div className="font-black text-white text-2xl leading-none">{score} <span className="text-sm text-indigo-200">/ {targetScore}</span></div>
+                        <div className="flex gap-1.5">
+                            {Array.from({ length: diffConfig.hp }).map((_, i) => (
+                                <div key={i} className={"w-4 h-4 rounded-full shadow-inner transition-all " + (i < hp ? "bg-rose-400 scale-110" : "bg-slate-200 dark:bg-slate-700 scale-90")}></div>
+                            ))}
                         </div>
-                        <button onClick={() => setStatus('idle')} className="bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 px-6 rounded-2xl font-black hover:bg-white border border-white shadow-xl transition-all">EXIT</button>
+                    </div>
+                    <div className="flex gap-2">
+                        {/* 웨이브 표시 */}
+                        <div className="bg-white/90 dark:bg-slate-800/90 rounded-2xl p-2 px-4 flex flex-col items-center shadow-xl border border-white dark:border-slate-700">
+                            <span className="text-[10px] text-slate-400 font-black uppercase">Wave</span>
+                            <div className="font-black text-slate-700 dark:text-white text-xl leading-none">
+                                {wave}<span className="text-sm text-slate-400">/{diffConfig.wavesTotal}</span>
+                            </div>
+                            {/* 웨이브 진행 바 */}
+                            <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
+                                <div
+                                    className="h-full bg-indigo-400 rounded-full transition-all duration-300"
+                                    style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%` }}
+                                />
+                            </div>
+                        </div>
+                        <div className="bg-indigo-600/90 rounded-2xl p-2 px-4 flex flex-col items-center shadow-xl border-2 border-indigo-300">
+                            <span className="text-[10px] text-indigo-100 font-black uppercase">Score</span>
+                            <div className="font-black text-white text-2xl leading-none">{score}</div>
+                        </div>
+                        <button onClick={() => setStatus('idle')} className="bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 px-4 rounded-2xl font-black hover:bg-white border border-white shadow-xl transition-all text-sm">EXIT</button>
                     </div>
                 </div>
 
+                {/* 웨이브 전환 오버레이 */}
+                {waveTransition && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                        <div className="text-center animate-float">
+                            <div className="text-7xl mb-4">⚡</div>
+                            <div className="text-5xl font-black text-white premium-text-shadow">WAVE {wave + 1}</div>
+                            <div className="text-2xl text-indigo-200 font-bold mt-2">GET READY!</div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 게임 영역 */}
                 <div className="flex-1 relative overflow-hidden min-h-0" ref={gameAreaRef}>
                     <svg className="absolute w-full h-full pointer-events-none z-20">
                         {lasers.map(l => (
@@ -325,17 +534,21 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
                         ))}
                     </svg>
 
+                    {/* 캐릭터 */}
                     <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-30" ref={shipRef}>
                         <div className="w-24 h-24 md:w-44 md:h-44 transition-transform duration-100 drop-shadow-2xl" style={{ transform: 'rotate(' + (turretAngle + 90) + 'deg)' }}>
                             <img src={`/assets/images/characters/${selectedCharacter || 'eunha'}.png`} className="w-full h-full object-contain" />
                         </div>
                     </div>
 
+                    {/* 몬스터 */}
                     {words.map(w => {
                         const MonsterIcon = MONSTER_COMPONENTS[w.emojiId] || MONSTER_COMPONENTS[0];
                         return (
                             <div key={w.id} className={"absolute flex flex-col items-center transition-all duration-300 " + (w.state === 'exploding' ? "opacity-0 scale-150" : (w.id === targetId ? "scale-110 z-10" : "scale-100"))} style={{ left: w.x + '%', top: w.y + '%', transform: 'translate(-50%, 0)' }}>
-                                {w.state === 'exploding' ? (<div className="w-24 h-24 absolute flex items-center justify-center animate-ping opacity-50"><IconExplosionBig /></div>) : (
+                                {w.state === 'exploding' ? (
+                                    <div className="w-24 h-24 absolute flex items-center justify-center animate-ping opacity-50"><IconExplosionBig /></div>
+                                ) : (
                                     <div className="flex flex-col items-center">
                                         <div className={"w-14 h-14 md:w-24 md:h-24 animate-bounce " + (w.id === targetId ? "drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "drop-shadow-md")}><MonsterIcon /></div>
                                         <div className={"font-black bg-white/90 dark:bg-slate-800/90 text-indigo-900 dark:text-white flex items-center justify-center rounded-full shadow-2xl border-4 " +
@@ -348,8 +561,16 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
                             </div>
                         );
                     })}
+
+                    {/* 획득 애니메이션 */}
+                    {acquisitions.map(a => (
+                        <div key={a.id} className="absolute pointer-events-none z-30 animate-float font-black text-amber-400 text-2xl drop-shadow-lg" style={{ left: a.x + '%', top: a.y + '%', transform: 'translate(-50%, -50%)' }}>
+                            +1 ✨
+                        </div>
+                    ))}
                 </div>
 
+                {/* 보기 버튼 */}
                 <div className="shrink-0 px-4 grid grid-cols-2 gap-3 z-40" style={{ paddingTop: '8px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
                     {options.map((opt, i) => {
                         const parts = opt.split(' '); const sound = parts.pop(); const meaning = parts.join(' ');
