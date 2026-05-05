@@ -223,29 +223,29 @@ const MainMenu = ({
                 />
             )}
 
-            {/* 1라인: 퀴즈/학습 */}
+            {/* 1라인: 학습 */}
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10">
-                <MenuButton
-                    label={t('menuSentenceQuiz')}
-                    icon="/assets/images/icons/icon_sentencequiz.png"
-                    activeColor="#C9B8FF"
-                    onClick={() => onNavigate('sentenceQuiz')}
-                />
-                <MenuButton
-                    label={t('menuWordQuiz')}
-                    icon="/assets/images/icons/icon_quiz.png"
-                    activeColor="#FFD700"
-                    onClick={() => onNavigate('wordQuiz')}
-                />
                 <MenuButton
                     label={t('menuFlashcard')}
                     icon="/assets/images/icons/icon_flashcard.png"
                     activeColor="#A8E6CF"
                     onClick={() => onNavigate('flashcard')}
                 />
+                <MenuButton
+                    label={t('menuWriting')}
+                    icon="/assets/images/icons/icon_writing.png"
+                    activeColor="#FFD3B6"
+                    onClick={() => onNavigate('writing')}
+                />
+                <MenuButton
+                    label={t('menuCombinedQuiz')}
+                    icon="/assets/images/icons/icon_quiz.png"
+                    activeColor="#FFD700"
+                    onClick={() => onNavigate('combinedQuiz')}
+                />
             </div>
 
-            {/* 2라인: 게임/테스트 */}
+            {/* 2라인: 게임 + 레벨테스트 */}
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10 mb-4">
                 <MenuButton
                     label={t('menuMonster')}
@@ -260,10 +260,10 @@ const MainMenu = ({
                     onClick={() => onNavigate('matchGame')}
                 />
                 <MenuButton
-                    label={t('menuWriting')}
-                    icon="/assets/images/icons/icon_writing.png"
-                    activeColor="#FFD3B6"
-                    onClick={() => onNavigate('writing')}
+                    label={t('menuLevelTest')}
+                    icon="/assets/images/icons/icon_review.png"
+                    activeColor="#C9B8FF"
+                    onClick={() => onNavigate('levelTest')}
                 />
             </div>
 

@@ -9,6 +9,8 @@ import StickerBookScreen from './components/StickerBookScreen.jsx';
 import ReviewScreen from './components/ReviewScreen.jsx';
 import SentenceQuizScreen from './components/SentenceQuizScreen.jsx';
 import WordQuizScreen from './components/WordQuizScreen.jsx';
+import CombinedQuizScreen from './components/CombinedQuizScreen.jsx';
+import LevelTestScreen from './components/LevelTestScreen.jsx';
 import RankingsScreen from './components/RankingsScreen.jsx';
 import CharacterSelectionScreen from './components/CharacterSelectionScreen.jsx';
 import { LangProvider } from './LangContext.jsx';
@@ -204,6 +206,16 @@ const App = () => {
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
                 />;
+            case 'combinedQuiz':
+                return <CombinedQuizScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); increment('wordQuiz'); }}
+                    onWordCorrect={() => increment('wordCorrect')}
+                    onMarkCorrect={markCorrect}
+                    onMarkWrong={markWrong}
+                />;
+            case 'levelTest':
+                return <LevelTestScreen onBack={() => setCurrentScreen('main')} />;
             case 'rankings':
                 return <RankingsScreen onBack={() => setCurrentScreen('main')} userXp={userXp} selectedCharacter={selectedCharacter} />;
             default:
