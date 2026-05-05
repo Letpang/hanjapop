@@ -63,7 +63,7 @@ const CardItem = memo(({ card, theme, onClick }) => {
     );
 });
 
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
+const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong }) => {
     const { lang, t } = useLang();
     const getMeaning = (item) => lang === 'en' ? (item.meaning_en || item.meaning) : item.meaning;
     
@@ -167,6 +167,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
             if (first.pairId === second.pairId) {
                 playSound('match');
                 if (onHanjaAcquired) onHanjaAcquired(first.pairId, 0); // XP는 스테이지 클리어 시에만 지급
+                if (onMarkCorrect) onMarkCorrect(first.pairId);
                 setTimeout(() => {
                     setCards((prev) => prev.map((card) => card.pairId === first.pairId ? { ...card, isMatched: true } : card));
                     setFlippedCards([]);
@@ -175,6 +176,10 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
                 }, 500);
             } else {
                 playSound('wrong');
+                if (onMarkWrong) {
+                    onMarkWrong(first.pairId);
+                    onMarkWrong(second.pairId);
+                }
                 setTimeout(() => {
                     setCards((prev) => prev.map((card) => card.uniqueId === first.uniqueId || card.uniqueId === second.uniqueId ? { ...card, isFlipped: false } : card));
                     setFlippedCards([]);
@@ -182,7 +187,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear }) => {
                 }, 900);
             }
         }
-    }, [flippedCards, onHanjaAcquired]);
+    }, [flippedCards, onHanjaAcquired, onMarkCorrect, onMarkWrong]);
 
     useEffect(() => {
         if (targetMatches > 0 && matches === targetMatches && gameState === 'playing') {

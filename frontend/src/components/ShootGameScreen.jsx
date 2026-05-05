@@ -121,7 +121,7 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
+const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong }) => {
     const { lang, t } = useLang();
     
     const getMeaning = useCallback((item) => {
@@ -352,6 +352,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter }) => {
             setShake(true);
             setIsInputLocked(true);
             setHp(prev => Math.max(0, prev - 1));
+            if (onMarkWrong) onMarkWrong(target.pairId);
             setTimeout(() => { setShake(false); setIsInputLocked(false); }, 800);
         }
     };

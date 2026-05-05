@@ -62,28 +62,21 @@ const GRADE_BADGES = [
 
 const BadgeItem = ({ badge, unlocked, isNew }) => {
     return (
-        <div className={"relative flex flex-col items-center gap-3 transition-all duration-500 " + (unlocked ? "opacity-100" : "opacity-30 grayscale")}>
-            {/* Medal Container (3D Card Feel) */}
-            <div className={"w-16 h-16 md:w-24 md:h-24 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center border-[4px] border-white dark:border-slate-700 relative overflow-hidden group transition-transform hover:scale-110 " +
+        <div className={"relative flex flex-col items-center gap-2 transition-all duration-500 " + (unlocked ? "opacity-100" : "opacity-30 grayscale")}>
+            {/* Medal Container (Flat Glass Feel) */}
+            <div className={"w-14 h-14 md:w-20 md:h-20 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center border-2 border-white/50 dark:border-slate-700/50 relative overflow-hidden group transition-transform hover:-translate-y-1 " +
                 (unlocked 
-                    ? "bg-white dark:bg-slate-800 shadow-[0_15px_30px_rgba(148,163,184,0.2)]" 
-                    : "bg-slate-100 dark:bg-slate-900/50 shadow-inner")}>
-                
-                {/* Internal Color Glow */}
-                {unlocked && (
-                    <div className={"absolute inset-2 rounded-3xl opacity-20 blur-xl bg-gradient-to-br " + badge.color}></div>
-                )}
+                    ? "bg-white/60 dark:bg-slate-800/60 shadow-md backdrop-blur-sm" 
+                    : "bg-slate-100/50 dark:bg-slate-900/30 shadow-inner")}>
                 
                 {/* The Medal Icon */}
-                <div className={"w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-3xl md:text-5xl relative z-10 " + 
-                    (unlocked ? ("bg-gradient-to-br " + badge.color + " shadow-lg animate-float") : "bg-slate-200 dark:bg-slate-800 text-slate-400")}>
-                    {/* Gloss on medal */}
-                    <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30 rounded-t-2xl"></div>
-                    <span className="relative z-10 filter drop-shadow-md">{badge.emoji}</span>
+                <div className={"w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center text-2xl md:text-4xl relative z-10 " + 
+                    (unlocked ? ("bg-gradient-to-br " + badge.color + " shadow-inner") : "bg-slate-200 dark:bg-slate-800 text-slate-400")}>
+                    <span className="relative z-10 filter drop-shadow-sm">{badge.emoji}</span>
                 </div>
 
                 {isNew && unlocked && (
-                    <div className="absolute -top-1 -right-1 w-8 h-8 bg-rose-500 rounded-full border-[3px] border-white text-white text-[9px] font-black flex items-center justify-center animate-bounce z-20 shadow-xl">
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 rounded-full border-2 border-white text-white text-[8px] font-bold flex items-center justify-center animate-bounce z-20 shadow-md">
                         NEW
                     </div>
                 )}
@@ -112,32 +105,32 @@ const GradeBadges = ({ userXp }) => {
         .map(b => b.id);
 
     return (
-        <div className="w-full clay-panel !rounded-[3rem] border-[6px] md:border-[10px] border-white dark:border-slate-700 overflow-hidden shadow-[0_40px_80px_rgba(148,163,184,0.3)] bg-white/90 dark:bg-slate-800/90 backdrop-blur-md">
+        <div className="w-full clay-panel p-4 md:p-6 bg-white/60 dark:bg-slate-900/40 border-2 border-white/50 backdrop-blur-md shadow-lg relative overflow-hidden group">
             <button
                 onClick={() => setExpanded(v => !v)}
-                className="w-full flex items-center justify-between px-6 py-6 md:px-10 md:py-8 hover:bg-white/40 dark:hover:bg-slate-700/40 transition-all group"
+                className="w-full flex items-center justify-between transition-all group relative z-10"
             >
-                <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white dark:bg-slate-200 rounded-[2rem] flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-500 animate-float overflow-hidden p-2">
-                        <img src="/assets/images/dashboard/medal.png" alt="Medal" className="w-full h-full object-contain filter drop-shadow-md" />
+                <div className="flex items-center gap-3 md:gap-5">
+                    <div className="w-12 h-12 md:w-16 md:h-16 bg-white dark:bg-slate-200 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center shadow-md border border-white/80 dark:border-slate-500 overflow-hidden p-2">
+                        <img src="/assets/images/dashboard/medal.png" alt="Medal" className="w-full h-full object-contain filter drop-shadow-sm" />
                     </div>
                     <div className="text-left">
-                        <div className="font-black text-slate-700 dark:text-slate-100 text-xl md:text-3xl leading-none mb-2 premium-text-shadow">
+                        <div className="font-bold text-slate-700 dark:text-slate-100 text-lg md:text-2xl leading-none mb-1">
                             급수 달성 뱃지
                         </div>
-                        <div className="text-xs md:text-base text-indigo-500 dark:text-indigo-300 font-black tracking-wider uppercase opacity-100">
+                        <div className="text-[10px] md:text-sm text-indigo-500 dark:text-indigo-300 font-bold tracking-wider uppercase opacity-100">
                             {unlockedCount} / {GRADE_BADGES.length} 획득 완료
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-3 md:gap-5">
                     <div className="hidden sm:flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                         {GRADE_BADGES.slice(0, 4).map(b => (
-                            <span key={b.id} className={"text-2xl " + (xp >= b.requiredXp ? "scale-110 drop-shadow-md" : "grayscale opacity-30")}>{b.emoji}</span>
+                            <span key={b.id} className={"text-xl " + (xp >= b.requiredXp ? "scale-110 drop-shadow-sm" : "grayscale opacity-30")}>{b.emoji}</span>
                         ))}
                     </div>
-                    <div className={"w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center transition-transform duration-300 shadow-md " + (expanded ? "rotate-180" : "")}>
-                        <span className="text-slate-400 text-lg">▼</span>
+                    <div className={"w-8 h-8 md:w-10 md:h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center transition-transform duration-300 shadow-inner border border-white/50 " + (expanded ? "rotate-180" : "")}>
+                        <span className="text-slate-400 text-sm md:text-lg">▼</span>
                     </div>
                 </div>
             </button>

@@ -21,7 +21,7 @@ export const strings = {
     menuShort: '메뉴로 가기',
     stickerBookTitle: '나의 한자 스티커북',
     menuStickerBook: '스티커북',
-    menuSentenceQuiz: '말해보자',
+    menuSentenceQuiz: '문장 퀴즈',
     menuWordQuizTitle: '단어 퀴즈',
     menuReview: '오답노트',
     timeOutMsg: '시간이 다 됐어요! 다시 도전해볼까요?',

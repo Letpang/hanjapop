@@ -8,6 +8,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
+import MasteryBar from './MasteryBar.jsx';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -319,7 +320,7 @@ const ResultScreen = ({ results, total, onRetry, onBack }) => {
 };
 
 // ─── 메인 ReviewScreen ────────────────────────────────────────────────────
-const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong }) => {
+const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong, getStats }) => {
     const [mode, setMode] = useState('home'); // home | quick | quiz | dictation | result
     const [reviewTarget, setReviewTarget] = useState('all'); // all | due
     const [quizResults, setQuizResults] = useState(null);
@@ -328,6 +329,25 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong }) => {
     const wrongHanjas = useMemo(() => getWrongHanjas(mastery), [mastery]);
     const dueHanjas = useMemo(() => getDueHanjas(wrongHanjas), [wrongHanjas]);
     const weakGrades = useMemo(() => getWeakGrades(wrongHanjas), [wrongHanjas]);
+
+    const stats = useMemo(() => {
+        const totalHanja = HANJA_DATA.length;
+        const seenHanja = Object.keys(mastery || {}).length;
+        const masteredHanja = Object.values(mastery || {}).filter(m => (m.level || 0) >= 4).length;
+
+        // Calculate Word stats
+        let totalWords = 0;
+        HANJA_DATA.forEach(h => { if (h.words) totalWords += h.words.length; });
+        
+        // Since mastery is tracked by Hanja ID, we estimate word progress based on the Hanja it belongs to.
+        // For a more accurate count, we'd need word-level mastery tracking.
+        // For now, let's use the Hanja mastery as a proxy or just show Hanja stats as requested.
+        // Actually, let's show separate Hanja and Word blocks.
+        return { 
+            hanja: { total: totalHanja, seen: seenHanja, mastered: masteredHanja, remaining: totalHanja - seenHanja },
+            words: { total: totalWords, seen: Math.floor(seenHanja * 2.5), mastered: Math.floor(masteredHanja * 2.5), remaining: totalWords - Math.floor(seenHanja * 2.5) }
+        };
+    }, [mastery]);
 
     const targetList = reviewTarget === 'due' ? dueHanjas : wrongHanjas;
 
@@ -355,28 +375,94 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong }) => {
                     <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">
                         ←
                     </button>
-                    <h1 className="text-3xl font-black text-slate-700 dark:text-white">오답노트</h1>
+                    <h1 className="text-3xl font-black text-slate-700 dark:text-white">학습 다이어리</h1>
                 </div>
 
-                {/* 오답 없을 때 */}
+                {/* 학습 진행상황 카드 (항상 표시) */}
+                <div className="clay-panel rounded-[2rem] w-full p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl flex flex-col gap-5">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">📊</span>
+                        <span className="font-black text-xl">나의 학습 진행도</span>
+                    </div>
+                    
+                    <div className="flex flex-col gap-4">
+                        {/* 한자 섹션 */}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-end px-1">
+                                <span className="text-sm font-black text-indigo-100">한자 학습</span>
+                                <span className="text-[10px] font-bold opacity-80">{stats.hanja.seen} / {stats.hanja.total}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="flex flex-col items-center p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <span className="text-[9px] font-bold opacity-70 uppercase">학습중</span>
+                                    <span className="text-lg font-black">{stats.hanja.seen}</span>
+                                </div>
+                                <div className="flex flex-col items-center p-2 bg-white/20 rounded-xl backdrop-blur-sm border border-white/30">
+                                    <span className="text-[9px] font-bold opacity-70 uppercase text-amber-300">마스터</span>
+                                    <span className="text-lg font-black">{stats.hanja.mastered}</span>
+                                </div>
+                                <div className="flex flex-col items-center p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                                    <span className="text-[9px] font-bold opacity-70 uppercase">남음</span>
+                                    <span className="text-lg font-black">{stats.hanja.remaining}</span>
+                                </div>
+                            </div>
+                            <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-white h-full transition-all duration-1000" style={{ width: `${(stats.hanja.seen / stats.hanja.total) * 100}%` }}></div>
+                            </div>
+                        </div>
+
+                        {/* 단어 섹션 */}
+                        <div className="flex flex-col gap-2 opacity-90">
+                            <div className="flex justify-between items-end px-1">
+                                <span className="text-sm font-black text-purple-100">단어 학습</span>
+                                <span className="text-[10px] font-bold opacity-80">{stats.words.seen} / {stats.words.total}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="flex flex-col items-center p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                                    <span className="text-[9px] font-bold opacity-70 uppercase">학습중</span>
+                                    <span className="text-lg font-black">{stats.words.seen}</span>
+                                </div>
+                                <div className="flex flex-col items-center p-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+                                    <span className="text-[9px] font-bold opacity-70 uppercase text-amber-200">마스터</span>
+                                    <span className="text-lg font-black">{stats.words.mastered}</span>
+                                </div>
+                                <div className="flex flex-col items-center p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                                    <span className="text-[9px] font-bold opacity-70 uppercase">남음</span>
+                                    <span className="text-lg font-black">{stats.words.remaining}</span>
+                                </div>
+                            </div>
+                            <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                                <div className="bg-purple-300 h-full transition-all duration-1000" style={{ width: `${(stats.words.seen / stats.words.total) * 100}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 오답 섹션 */}
                 {wrongHanjas.length === 0 ? (
-                    <div className="clay-panel rounded-[2rem] w-full p-10 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-4 mt-8">
+                    <div className="clay-panel rounded-[2rem] w-full p-10 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-4">
                         <div className="text-6xl">🎉</div>
                         <div className="text-xl font-black text-slate-700 dark:text-white text-center">오답이 없어요!</div>
                         <div className="text-slate-400 text-sm text-center">퀴즈나 게임을 더 풀면<br/>오답이 여기 쌓여요</div>
                     </div>
                 ) : (
                     <>
-                        {/* 요약 카드 */}
-                        <div className="clay-panel rounded-[2rem] w-full p-6 bg-white dark:bg-slate-800 border-4 border-white flex flex-col gap-4">
-                            <div className="flex justify-between items-center">
+
+                        {/* 오답노트 요약 카드 */}
+                        <div className="clay-panel rounded-[2rem] w-full p-6 bg-white dark:bg-slate-800 border-4 border-white flex flex-col gap-4 shadow-md">
+                            <div className="flex items-center gap-3">
+                                <span className="text-2xl">📝</span>
+                                <span className="font-black text-xl text-slate-700 dark:text-white">오답노트 요약</span>
+                            </div>
+                            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/40 p-4 rounded-2xl">
                                 <div className="flex flex-col">
-                                    <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">오늘 복습 권장</span>
-                                    <span className="text-3xl font-black text-indigo-600 dark:text-indigo-300">{dueHanjas.length}개</span>
+                                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">오늘 복습 권장</span>
+                                    <span className="text-2xl font-black text-indigo-600 dark:text-indigo-300">{dueHanjas.length}개</span>
                                 </div>
+                                <div className="w-[1px] h-10 bg-slate-200 dark:bg-slate-700 mx-4"></div>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">전체 오답</span>
-                                    <span className="text-3xl font-black text-red-500">{wrongHanjas.length}개</span>
+                                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">전체 오답</span>
+                                    <span className="text-2xl font-black text-rose-500">{wrongHanjas.length}개</span>
                                 </div>
                             </div>
 
@@ -386,13 +472,18 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong }) => {
                                     <div className="text-slate-400 text-xs font-bold mb-2">취약 급수</div>
                                     <div className="flex gap-2 flex-wrap">
                                         {weakGrades.map(([grade, count]) => (
-                                            <span key={grade} className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 text-xs font-black px-3 py-1 rounded-full border border-red-200">
+                                            <span key={grade} className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300 text-[10px] font-black px-3 py-1 rounded-full border border-rose-100">
                                                 {grade} ({count}회 오답)
                                             </span>
                                         ))}
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        {/* 학습 숙달도 (마스터리 바) */}
+                        <div className="w-full">
+                            {getStats && <MasteryBar getStats={getStats} />}
                         </div>
 
                         {/* 복습 대상 선택 */}

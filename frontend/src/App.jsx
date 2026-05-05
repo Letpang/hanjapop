@@ -10,6 +10,7 @@ import ReviewScreen from './components/ReviewScreen.jsx';
 import SentenceQuizScreen from './components/SentenceQuizScreen.jsx';
 import WordQuizScreen from './components/WordQuizScreen.jsx';
 import RankingsScreen from './components/RankingsScreen.jsx';
+import CharacterSelectionScreen from './components/CharacterSelectionScreen.jsx';
 import { LangProvider } from './LangContext.jsx';
 import { useAdMob } from './hooks/useAdMob.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
@@ -37,21 +38,18 @@ const App = () => {
         try { return localStorage.getItem('dark_mode') === 'true'; } catch(e) { return false; }
     });
     const [selectedCharacter, setSelectedCharacter] = useState(() => {
-        try { return localStorage.getItem('selected_character') || 'eunha'; } catch(e) { return 'eunha'; }
-    });
-    const [unlockedCharacters, setUnlockedCharacters] = useState(() => {
-        try {
-            const saved = localStorage.getItem('unlocked_characters');
-            return saved ? JSON.parse(saved) : ['eunha', 'uju'];
-        } catch(e) { return ['eunha', 'uju']; }
+        try { 
+            const saved = localStorage.getItem('selected_character');
+            if (saved === 'eunha' || saved === 'uju') return null;
+            return saved || null; 
+        } catch(e) { return null; }
     });
 
     // Persistence
     useEffect(() => { localStorage.setItem('user_xp', userXp); }, [userXp]);
     useEffect(() => { localStorage.setItem('unlocked_stickers', JSON.stringify(unlockedStickers)); }, [unlockedStickers]);
     useEffect(() => { localStorage.setItem('dark_mode', isDarkMode); }, [isDarkMode]);
-    useEffect(() => { localStorage.setItem('selected_character', selectedCharacter); }, [selectedCharacter]);
-    useEffect(() => { localStorage.setItem('unlocked_characters', JSON.stringify(unlockedCharacters)); }, [unlockedCharacters]);
+    useEffect(() => { if (selectedCharacter) localStorage.setItem('selected_character', selectedCharacter); }, [selectedCharacter]);
 
     // Wake Lock for learning sessions
     useEffect(() => {
@@ -102,13 +100,7 @@ const App = () => {
     }, []);
 
     const handleHanjaAcquired = (id, xpAmount = 10) => {
-        setUserXp(prev => {
-            const newXp = prev + xpAmount;
-            if (newXp >= 1000 && !unlockedCharacters.includes('lv5_injeolmi')) {
-                setUnlockedCharacters(current => [...current, 'lv5_injeolmi', 'lv5_garaetteok', 'lv5_chapssaltteok']);
-            }
-            return newXp;
-        });
+        setUserXp(prev => prev + xpAmount);
 
         if (id) {
             setUnlockedStickers(prev => ({
@@ -129,8 +121,6 @@ const App = () => {
                         isDarkMode={isDarkMode}
                         setIsDarkMode={setIsDarkMode}
                         selectedCharacter={selectedCharacter}
-                        setSelectedCharacter={setSelectedCharacter}
-                        unlockedCharacters={unlockedCharacters}
                         missions={missions}
                         streak={streak}
                         allDone={allDone}
@@ -169,9 +159,21 @@ const App = () => {
                     initialHanja={writeTargetHanja}
                 />;
             case 'matchGame':
-                return <MatchGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); if (id) markCorrect(id); }} onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); }} />;
+                return <MatchGameScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onHanjaAcquired={handleHanjaAcquired}
+                    onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); }}
+                    onMarkCorrect={markCorrect}
+                    onMarkWrong={markWrong}
+                />;
             case 'shootGame':
-                return <ShootGameScreen onBack={() => setCurrentScreen('main')} onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); }} selectedCharacter={selectedCharacter} onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)} />;
+                return <ShootGameScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onHanjaAcquired={handleHanjaAcquired}
+                    selectedCharacter={selectedCharacter}
+                    onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)}
+                    onMarkWrong={markWrong}
+                />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
             case 'review':
@@ -180,6 +182,7 @@ const App = () => {
                     mastery={mastery}
                     markCorrect={markCorrect}
                     markWrong={markWrong}
+                    getStats={getStats}
                 />;
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
@@ -192,6 +195,8 @@ const App = () => {
                 return <WordQuizScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); }}
+                    onMarkCorrect={markCorrect}
+                    onMarkWrong={markWrong}
                 />;
             case 'rankings':
                 return <RankingsScreen onBack={() => setCurrentScreen('main')} userXp={userXp} selectedCharacter={selectedCharacter} />;
@@ -223,7 +228,9 @@ const App = () => {
                             setOnboardingDone(true);
                           }}
                           />
-                        : renderScreen()
+                        : !selectedCharacter
+                            ? <CharacterSelectionScreen onSelect={(id) => setSelectedCharacter(id)} />
+                            : renderScreen()
                     }
                 </div>
             </div>

@@ -14,30 +14,11 @@ import { useState, useEffect, useCallback } from 'react';
 // 미션 정의
 // ─────────────────────────────────────────────────────────────
 const MISSION_POOL = [
-    // 쉬운 미션 (easy)
-    { id: 'flashcard_5',   type: 'flashcard',    target: 5,  label: '한자 카드 5장 보기',         xp: 20, difficulty: 'easy' },
-    { id: 'flashcard_10',  type: 'flashcard',    target: 10, label: '한자 카드 10장 보기',        xp: 30, difficulty: 'easy' },
-    { id: 'match_1',       type: 'matchGame',    target: 1,  label: '짝맞추기 1판 완료',          xp: 25, difficulty: 'easy' },
-    { id: 'shoot_5',       type: 'shootGame',    target: 5,  label: '몬스터 5마리 처치',          xp: 20, difficulty: 'easy' },
-    { id: 'quiz_3',        type: 'sentenceQuiz', target: 3,  label: '문장 퀴즈 3문제 맞추기',     xp: 20, difficulty: 'easy' },
-    { id: 'writing_3',     type: 'writing',      target: 3,  label: '한자 쓰기 3개 완료',         xp: 20, difficulty: 'easy' },
-    { id: 'wordquiz_5',    type: 'wordQuiz',     target: 5,  label: '단어 뜻 보기 5문제 맞추기',  xp: 20, difficulty: 'easy' },
-    { id: 'wordquiz_10',   type: 'wordQuiz',     target: 10, label: '단어 뜻 보기 10문제 맞추기', xp: 30, difficulty: 'easy' },
-    { id: 'writing_1',     type: 'writing',      target: 1,  label: '한자 쓰기 1개 완료',         xp: 10, difficulty: 'easy' },
-    { id: 'match_2',       type: 'matchGame',    target: 2,  label: '짝맞추기 2판 완료',          xp: 35, difficulty: 'easy' },
-    { id: 'shoot_10',      type: 'shootGame',    target: 10, label: '몬스터 10마리 처치',         xp: 30, difficulty: 'easy' },
-    { id: 'flashcard_3',   type: 'flashcard',    target: 3,  label: '한자 카드 3장 보기',         xp: 10, difficulty: 'easy' },
-    // 도전 미션 (hard)
-    { id: 'match_3',       type: 'matchGame',    target: 3,  label: '짝맞추기 3판 클리어',        xp: 60, difficulty: 'hard' },
-    { id: 'shoot_20',      type: 'shootGame',    target: 20, label: '몬스터 20마리 처치',         xp: 60, difficulty: 'hard' },
-    { id: 'quiz_10',       type: 'sentenceQuiz', target: 10, label: '문장 퀴즈 10문제 맞추기',    xp: 60, difficulty: 'hard' },
-    { id: 'flashcard_30',  type: 'flashcard',    target: 30, label: '한자 카드 30장 보기',        xp: 50, difficulty: 'hard' },
-    { id: 'shoot_wave5',   type: 'shootGame_wave', target: 1, label: '몬스터 슈팅 5웨이브 클리어', xp: 80, difficulty: 'hard' },
-    { id: 'wordquiz_20',   type: 'wordQuiz',     target: 20, label: '단어 뜻 보기 20문제 맞추기', xp: 60, difficulty: 'hard' },
-    { id: 'writing_10',    type: 'writing',      target: 10, label: '한자 쓰기 10개 완료',        xp: 70, difficulty: 'hard' },
-    { id: 'flashcard_50',  type: 'flashcard',    target: 50, label: '한자 카드 50장 보기',        xp: 70, difficulty: 'hard' },
-    { id: 'shoot_30',      type: 'shootGame',    target: 30, label: '몬스터 30마리 처치',         xp: 80, difficulty: 'hard' },
-    { id: 'quiz_20',       type: 'sentenceQuiz', target: 20, label: '문장 퀴즈 20문제 맞추기',    xp: 80, difficulty: 'hard' },
+    { id: 'quiz_5',       type: 'sentenceQuiz', target: 5,  label: '문장 퀴즈 5문제 풀기',       xp: 50 },
+    { id: 'wordquiz_5',    type: 'wordQuiz',     target: 5,  label: '단어 퀴즈 5문제 풀기',       xp: 50 },
+    { id: 'flashcard_1',   type: 'flashcard',    target: 1,  label: '뭉치 학습지 1개 완료',       xp: 30 },
+    { id: 'writing_1',     type: 'writing',      target: 1,  label: '학습지 1개 완료',           xp: 30 },
+    { id: 'match_1',       type: 'matchGame',    target: 1,  label: '메모리 게임 1판 완료',       xp: 40 },
 ];
 
 // 날짜 문자열 "YYYY-MM-DD"
@@ -46,16 +27,9 @@ const getTodayStr = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-// 오늘 미션 3개 선택 (쉬운 2개 + 도전 1개)
+// 오늘 미션 5개 선택 (전체)
 const pickTodayMissions = () => {
-    const easy = MISSION_POOL.filter(m => m.difficulty === 'easy');
-    const hard = MISSION_POOL.filter(m => m.difficulty === 'hard');
-    const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
-    const picked = [
-        ...shuffle(easy).slice(0, 2),
-        ...shuffle(hard).slice(0, 1),
-    ];
-    return picked.map(m => ({ ...m, progress: 0, done: false }));
+    return MISSION_POOL.map(m => ({ ...m, progress: 0, done: false }));
 };
 
 // ─────────────────────────────────────────────────────────────
