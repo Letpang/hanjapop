@@ -208,7 +208,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setTotalRounds(total);
         setGameStarted(true);
         launchRound(pool, 0, 0);
-    }, [activeHanjaSet, wordPool, launchRound]);
+    }, [activeHanjaSet, launchRound]);
 
     // ── 타이머 ──────────────────────────────────────────────────────────────
     useEffect(() => {
