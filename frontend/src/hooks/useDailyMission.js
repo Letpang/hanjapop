@@ -6,7 +6,10 @@
  *   - daily_missions_date: "YYYY-MM-DD" (오늘 날짜)
  *   - daily_missions: JSON (오늘 미션 목록 + 완료 여부)
  *   - streak_data: JSON { lastDate, count }
+ *   - mission_history: JSON { "YYYY-MM-DD": ["missionId", ...] }
  */
+
+const HISTORY_KEY = 'mission_history';
 
 import { useState, useEffect, useCallback } from 'react';
 
@@ -70,11 +73,15 @@ export const useDailyMission = () => {
         }
     }, [today]);
 
-    // 미션 저장
+    // 미션 저장 + 이력 기록
     useEffect(() => {
         try {
             localStorage.setItem('daily_missions_date', today);
             localStorage.setItem('daily_missions', JSON.stringify(missions));
+            // 날짜별 완료 미션 이력 저장
+            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
+            history[today] = missions.filter(m => m.done).map(m => m.id);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
         } catch (e) {}
     }, [missions, today]);
 
