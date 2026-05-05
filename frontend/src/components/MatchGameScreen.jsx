@@ -113,11 +113,11 @@ const CardItem = memo(({ card, theme, onClick }) => {
             onClick={() => onClick(card)}
         >
             {/* 앞면 (테마 아이콘) */}
-            <div className={"card-face-front clay-panel !rounded-3xl flex items-center justify-center border-[4px] border-white dark:border-slate-700 overflow-hidden bg-white/95 dark:bg-slate-800/95 shadow-xl " + (isFlipped ? "is-flipped" : "")}>
+            <div className={"card-face-front inset-0 clay-panel !rounded-3xl flex items-center justify-center border-[4px] border-white dark:border-slate-700 overflow-hidden bg-white/95 dark:bg-slate-800/95 shadow-xl " + (isFlipped ? "is-flipped" : "")}>
                 <div className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 opacity-80 drop-shadow-lg"><theme.Icon /></div>
             </div>
             {/* 뒷면 (내용) */}
-            <div className={"card-face-back clay-panel !rounded-3xl flex items-center justify-center p-2 border-[4px] border-white dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl " + (isFlipped ? "is-flipped" : "")}>
+            <div className={"card-face-back inset-0 clay-panel !rounded-3xl flex items-center justify-center p-2 border-[4px] border-white dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl " + (isFlipped ? "is-flipped" : "")}>
                 <span className={
                     (card.type === 'hanja'
                         ? "text-3xl sm:text-5xl md:text-7xl text-slate-700 dark:text-white"
