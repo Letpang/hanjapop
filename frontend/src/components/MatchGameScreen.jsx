@@ -139,7 +139,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const getMeaning = (item) => lang === 'en' ? (item.meaning_en || item.meaning) : item.meaning;
 
     // ── 선택 화면 상태 ──────────────────────────────────────────────────────
-    const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic' | 'word'
+    const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
@@ -162,19 +162,13 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const poolIndexRef = useRef(0);
     const pairPoolRef = useRef([]);
 
-    // ── 단어 풀 (word 탭용) ─────────────────────────────────────────────────
-    const wordPool = useMemo(() =>
-        HANJA_DATA.flatMap(h => (h.words || []).filter(w => w.word && w.reading && w.meaning)),
-    []);
-
     // ── 현재 선택된 한자 풀 ─────────────────────────────────────────────────
     const activeHanjaSet = useMemo(() => {
         if (viewMode === 'grade') {
             if (selectedGrade === '기타') return HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
             return HANJA_DATA.filter(h => h.grade === selectedGrade);
         }
-        if (viewMode === 'topic') return HANJA_DATA.filter(h => h.category === selectedCategory);
-        return [];
+        return HANJA_DATA.filter(h => h.category === selectedCategory);
     }, [viewMode, selectedGrade, selectedCategory]);
 
     // ── 라운드 실행 ─────────────────────────────────────────────────────────
@@ -204,20 +198,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
     // ── 게임 시작 ───────────────────────────────────────────────────────────
     const startGame = useCallback((mode) => {
-        let pool;
-        if (mode === 'word') {
-            const shuffled = [...wordPool].sort(() => Math.random() - 0.5);
-            pool = shuffled.map((w, i) => ({
-                pairId: `w_${w.word}_${i}`,
-                a: `${w.word}\n${w.reading}`,
-                b: w.meaning,
-                typeA: 'hanja',
-                typeB: 'meaning',
-                hanjaId: null,
-            }));
-        } else {
-            pool = buildPairPool(activeHanjaSet);
-        }
+        const pool = buildPairPool(activeHanjaSet);
         const total = calcTotalRounds(pool.length);
         pairPoolRef.current = pool;
         poolIndexRef.current = 0;
@@ -481,12 +462,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         >
                             급수별
                         </button>
-                        <button
-                            onClick={() => setViewMode('word')}
-                            className={`px-6 py-3 rounded-2xl font-black text-lg transition-all ${viewMode === 'word' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}
-                        >
-                            단어
-                        </button>
+
                     </div>
 
                     <div className="w-full clay-panel rounded-[4rem] p-8 sm:p-14 border-4 border-white dark:border-slate-700 bg-white/40 dark:bg-slate-900/40 shadow-[0_40px_80px_rgba(148,163,184,0.3)] relative overflow-hidden">
@@ -521,13 +497,6 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                         </button>
                                     ))}
                                 </div>
-                            )}
-
-                            {/* 단어 탭 안내 */}
-                            {viewMode === 'word' && (
-                                <p className="text-center text-slate-400 font-bold text-base">
-                                    전체 단어 {wordPool.length}개에서 랜덤으로 출제됩니다.
-                                </p>
                             )}
 
                             <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full opacity-50" />
@@ -575,17 +544,6 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                 );
                             })()}
 
-                            {/* 단어 탭: 시작 버튼 */}
-                            {viewMode === 'word' && (
-                                <div className="flex flex-col items-center gap-6">
-                                    <button
-                                        onClick={() => startGame('word')}
-                                        className="w-full py-5 rounded-[2rem] bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-xl shadow-xl active:scale-95 transition-all"
-                                    >
-                                        시작하기! 🚀
-                                    </button>
-                                </div>
-                            )}
 
                         </div>
                     </div>
