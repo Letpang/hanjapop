@@ -17,14 +17,14 @@ export const getLeaderboardPosition = (xp, mockUsers = MOCK_USERS) => {
 };
 
 export const getRankDetails = (xp, charType, position = 9999) => {
-    // 기본값은 garae로 설정
-    const type = charType || 'garae';
+    const VALID = ['garae', 'jeolmi', 'chapssal'];
+    const type = VALID.includes(charType) ? charType : 'garae';
 
     let level = 1;
-    if (xp >= 1000) level = 5;
-    else if (xp >= 600) level = 4;
-    else if (xp >= 300) level = 3;
-    else if (xp >= 100) level = 2;
+    if (xp >= 6000) level = 5;
+    else if (xp >= 3000) level = 4;
+    else if (xp >= 1500) level = 3;
+    else if (xp >= 500) level = 2;
     else level = 1;
 
     const fullName = {

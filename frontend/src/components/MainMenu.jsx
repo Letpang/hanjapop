@@ -124,93 +124,28 @@ const MainMenu = ({
                 />
             </div>
 
-            {/* 3-Box Header Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full relative z-10 mb-8">
-                {/* Box 1: Character Profile */}
-                <div className="clay-panel p-6 bg-white/60 dark:bg-slate-900/40 border-[4px] border-white/80 backdrop-blur-md shadow-lg rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden aspect-square">
-                    <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/40 to-transparent dark:from-indigo-900/20 pointer-events-none"></div>
-                    <div className="w-24 h-24 md:w-32 md:h-32 relative z-10 flex items-center justify-center animate-float mb-4">
-                        <img src={rank.avatar} alt="Avatar" className="w-full h-full object-contain filter drop-shadow-xl" />
-                        <div className="absolute -bottom-2 bg-amber-400 text-white font-black text-xs md:text-sm px-4 py-1 rounded-full border-2 border-white shadow-md whitespace-nowrap tracking-wide">
-                            LV.{rank.level}
-                        </div>
+            {/* Character Bar */}
+            <button
+                onClick={() => onNavigate('profile')}
+                className="w-full clay-panel px-5 py-4 md:py-5 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] flex items-center gap-4 active:scale-[0.98] transition-all relative z-10"
+            >
+                <div className="relative shrink-0">
+                    <img src={rank.avatar} alt="Avatar" className="w-16 h-16 md:w-20 md:h-20 object-contain filter drop-shadow-lg animate-float" />
+                    <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white font-black text-[10px] md:text-xs px-2 py-0.5 rounded-full border-2 border-white shadow-sm whitespace-nowrap">
+                        LV.{rank.level}
                     </div>
-                    <span className="font-black text-slate-700 dark:text-white text-xl md:text-2xl tracking-tight mb-2 z-10">{rank.name}</span>
-                    <div className="w-full bg-slate-100/80 dark:bg-slate-900/50 rounded-full h-3 p-1 relative z-10 border border-white dark:border-slate-700 shadow-inner overflow-hidden mb-2">
-                        <div className="h-full rounded-full transition-all duration-1000 ease-out relative shadow-sm" style={{ width: progress + "%", background: 'linear-gradient(90deg, #FFB7B2, #FF9B9B)' }}></div>
-                    </div>
-                    <span className="text-[10px] md:text-xs font-bold text-slate-400 z-10">XP {myXp} / {nextXp}</span>
                 </div>
-
-                {/* Box 2: Activity Badges */}
-                {(() => {
-                    const ts = totalStats || {};
-                    const masteredCount = Object.values(mastery || {}).filter(m => m.level >= 2).length;
-                    const BADGES = [
-                        { emoji: '🔥', label: '연속출석', count: streak?.count || 0, unit: '일' },
-                        { emoji: '📅', label: '출석왕', count: ts.totalDays || 0, unit: '일' },
-                        { emoji: '🏆', label: '한자 마스터', count: masteredCount, unit: '개' },
-                        { emoji: '📖', label: '단어 마스터', count: ts.wordCorrect || 0, unit: '개' },
-                        { emoji: '👾', label: '몬스터버스터즈', count: ts.shootGame || 0, unit: '회' },
-                        { emoji: '🧩', label: '암기 천재', count: ts.matchGame || 0, unit: '회' },
-                        { emoji: '✍️', label: '획순 마스터', count: ts.writing || 0, unit: '개' },
-                        { emoji: '🎯', label: '단어퀴즈', count: ts.wordQuiz || 0, unit: '회' },
-                        { emoji: '📝', label: '문장퀴즈', count: ts.sentenceQuiz || 0, unit: '회' },
-                    ];
-                    return (
-                        <div className="clay-panel p-4 md:p-5 bg-white/60 dark:bg-slate-900/40 border-[4px] border-white/80 backdrop-blur-md shadow-lg rounded-[2.5rem] flex flex-col relative overflow-hidden aspect-square w-full">
-                            <span className="font-black text-slate-600 dark:text-slate-300 text-xs md:text-sm tracking-tight mb-3 text-center">뱃지 획득 카드</span>
-                            <div className="grid grid-cols-3 gap-2 flex-1">
-                                {BADGES.map((b) => {
-                                    const hasAny = b.count > 0;
-                                    return (
-                                        <div key={b.label} className="flex flex-col items-center justify-center gap-0.5">
-                                            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center transition-all ${
-                                                hasAny
-                                                    ? 'bg-white dark:bg-slate-800 shadow-md border-2 border-white'
-                                                    : 'border-2 border-dashed border-slate-200 dark:border-slate-700'
-                                            }`}>
-                                                {hasAny ? (
-                                                    <>
-                                                        <span className="text-sm md:text-base leading-none">{b.emoji}</span>
-                                                        <span className="text-[9px] md:text-[10px] font-black text-indigo-500 leading-none">{b.count}{b.unit}</span>
-                                                    </>
-                                                ) : (
-                                                    <span className="text-slate-300 dark:text-slate-600 text-xs font-black">0</span>
-                                                )}
-                                            </div>
-                                            <span className={`text-[8px] md:text-[9px] font-bold text-center leading-tight break-keep ${hasAny ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600'}`}>
-                                                {b.label}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-black text-slate-700 dark:text-white text-lg md:text-xl tracking-tight">{rank.name}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 bg-slate-100/80 dark:bg-slate-700/50 rounded-full h-2 overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: progress + '%', background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B)' }} />
                         </div>
-                    );
-                })()}
-
-                {/* Box 3: Learning Diary */}
-                <button 
-                    onClick={() => onNavigate('review')}
-                    className="clay-panel p-4 md:p-6 bg-white/60 dark:bg-slate-900/40 border-[4px] border-white/80 backdrop-blur-md shadow-lg rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform aspect-square w-full"
-                >
-                    {reviewBadge > 0 && (
-                        <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-rose-400 text-white text-[10px] md:text-xs font-black px-2 py-1 rounded-full shadow-md border-2 border-white z-20 animate-bounce">
-                            {reviewBadge}
-                        </div>
-                    )}
-                    <div className="w-16 h-16 md:w-24 md:h-24 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/40 rounded-[2.5rem] flex items-center justify-center shadow-inner mb-3 border-2 border-white/50 group-hover:scale-110 transition-transform">
-                        <span className="text-4xl md:text-5xl drop-shadow-md">📖</span>
+                        <span className="text-[10px] md:text-xs font-bold text-slate-400 shrink-0">XP {myXp}</span>
                     </div>
-                    <div className="flex flex-col items-center z-10">
-                        <span className="font-black text-slate-700 dark:text-white text-base md:text-lg tracking-tight">학습 다이어리</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[10px] md:text-xs font-bold text-emerald-500">한자 마스터: {Object.keys(mastery || {}).length}개</span>
-                        </div>
-                    </div>
-                </button>
-            </div>
+                </div>
+                <span className="text-slate-300 dark:text-slate-500 text-2xl shrink-0">›</span>
+            </button>
 
             {/* 오늘의 미션 (Quest Preview) */}
             {missions && missions.length > 0 && (

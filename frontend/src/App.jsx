@@ -13,6 +13,7 @@ import CombinedQuizScreen from './components/CombinedQuizScreen.jsx';
 import LevelTestScreen from './components/LevelTestScreen.jsx';
 import RankingsScreen from './components/RankingsScreen.jsx';
 import CharacterSelectionScreen from './components/CharacterSelectionScreen.jsx';
+import CharacterProfileScreen from './components/CharacterProfileScreen.jsx';
 import { LangProvider } from './LangContext.jsx';
 import { useAdMob } from './hooks/useAdMob.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
@@ -41,10 +42,10 @@ const App = () => {
         try { return localStorage.getItem('dark_mode') === 'true'; } catch(e) { return false; }
     });
     const [selectedCharacter, setSelectedCharacter] = useState(() => {
-        try { 
+        try {
             const saved = localStorage.getItem('selected_character');
-            if (saved === 'eunha' || saved === 'uju') return null;
-            return saved || null; 
+            const VALID = ['garae', 'jeolmi', 'chapssal'];
+            return VALID.includes(saved) ? saved : null;
         } catch(e) { return null; }
     });
 
@@ -216,6 +217,16 @@ const App = () => {
                 />;
             case 'levelTest':
                 return <LevelTestScreen onBack={() => setCurrentScreen('main')} />;
+            case 'profile':
+                return <CharacterProfileScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onNavigate={setCurrentScreen}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
+                    mastery={mastery}
+                    totalStats={totalStats}
+                    streak={streak}
+                />;
             case 'rankings':
                 return <RankingsScreen onBack={() => setCurrentScreen('main')} userXp={userXp} selectedCharacter={selectedCharacter} />;
             default:
@@ -224,10 +235,10 @@ const App = () => {
     };
 
     const getLevel = (xp) => {
-        if (xp < 100) return 1;
-        if (xp < 300) return 2;
-        if (xp < 600) return 3;
-        if (xp < 1000) return 4;
+        if (xp < 500) return 1;
+        if (xp < 1500) return 2;
+        if (xp < 3000) return 3;
+        if (xp < 6000) return 4;
         return 5;
     };
     const currentLevel = getLevel(userXp);

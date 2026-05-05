@@ -67,12 +67,17 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const { lang, t } = useLang();
     const getMeaning = (item) => lang === 'en' ? (item.meaning_en || item.meaning) : item.meaning;
     
-    const [viewMode, setViewMode] = useState('grade');
+    const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'category' | 'word'
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
     const [selectedStage, setSelectedStage] = useState(null);
     const [isGradeMode, setIsGradeMode] = useState(false);
+
+    // 단어 풀: 뜻이 있는 단어만
+    const wordPool = useMemo(() =>
+        HANJA_DATA.flatMap(h => (h.words || []).filter(w => w.word && w.reading && w.meaning)),
+    []);
 
     const [cards, setCards] = useState([]);
     const [flippedCards, setFlippedCards] = useState([]);
@@ -100,40 +105,47 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         return 8; // 16장 (Max)
     };
 
-    const initializeGame = (stageNum, fromGrade = false) => {
+    const initializeGame = (stageNum, mode = 'grade') => {
         const pairsToUse = getPairsCount(stageNum);
-        const pool = fromGrade ? currentGradeData : currentCategoryData;
-
-        // 중복 id 제거 후 셔플
-        const uniquePool = Object.values(
-            pool.reduce((acc, item) => { acc[item.id] = item; return acc; }, {})
-        );
-        const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
-        const stageItems = shuffled.slice(0, Math.min(pairsToUse, shuffled.length));
-
-        if (stageItems.length === 0) return;
-
         const newCards = [];
-        stageItems.forEach((item, idx) => {
-            const pairId = item.id;
-            newCards.push({ uniqueId: `h-${pairId}-${idx}-${Math.random()}`, pairId, content: item.hanja, type: 'hanja', isFlipped: false, isMatched: false });
-            newCards.push({ uniqueId: `m-${pairId}-${idx}-${Math.random()}`, pairId, content: getMeaning(item) + " " + item.sound, type: 'meaning', isFlipped: false, isMatched: false });
-        });
-        
+
+        if (mode === 'word') {
+            const shuffled = [...wordPool].sort(() => Math.random() - 0.5);
+            const picked = shuffled.slice(0, Math.min(pairsToUse, shuffled.length));
+            if (picked.length === 0) return;
+            picked.forEach((w, idx) => {
+                const pairId = `w-${w.word}-${idx}`;
+                newCards.push({ uniqueId: `wa-${pairId}-${Math.random()}`, pairId, content: `${w.word}\n${w.reading}`, type: 'hanja', isFlipped: false, isMatched: false });
+                newCards.push({ uniqueId: `wb-${pairId}-${Math.random()}`, pairId, content: w.meaning, type: 'meaning', isFlipped: false, isMatched: false });
+            });
+        } else {
+            const pool = mode === 'grade' ? currentGradeData : currentCategoryData;
+            const uniquePool = Object.values(pool.reduce((acc, item) => { acc[item.id] = item; return acc; }, {}));
+            const shuffled = [...uniquePool].sort(() => Math.random() - 0.5);
+            const stageItems = shuffled.slice(0, Math.min(pairsToUse, shuffled.length));
+            if (stageItems.length === 0) return;
+            stageItems.forEach((item, idx) => {
+                const pairId = item.id;
+                newCards.push({ uniqueId: `h-${pairId}-${idx}-${Math.random()}`, pairId, content: item.hanja, type: 'hanja', isFlipped: false, isMatched: false });
+                newCards.push({ uniqueId: `m-${pairId}-${idx}-${Math.random()}`, pairId, content: getMeaning(item) + " " + item.sound, type: 'meaning', isFlipped: false, isMatched: false });
+            });
+        }
+
         for (let i = newCards.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [newCards[i], newCards[j]] = [newCards[j], newCards[i]];
         }
 
-        setTargetMatches(stageItems.length);
+        setTargetMatches(newCards.length / 2);
         setCards(newCards);
         setFlippedCards([]);
         setMatches(0);
         setTimeLeft(60);
         setGameState('playing');
         setIsLocked(false);
-        setIsGradeMode(fromGrade);
+        setIsGradeMode(mode === 'grade');
         setSelectedStage(stageNum);
+        setViewMode(mode);
     };
 
     useEffect(() => {
@@ -226,8 +238,9 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 <div className="flex-1 overflow-y-auto pt-4 pb-32 px-4">
                     <div className="w-full max-w-5xl mx-auto flex flex-col items-center gap-10">
                         <div className="flex bg-slate-100/60 dark:bg-slate-900/60 p-2 rounded-[2rem] border-2 border-white dark:border-slate-700 shadow-inner">
-                            <button onClick={() => setViewMode('topic')} className={`px-10 py-3 rounded-2xl font-black text-xl transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>주제별</button>
-                            <button onClick={() => setViewMode('grade')} className={`px-10 py-3 rounded-2xl font-black text-xl transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>급수별</button>
+                            <button onClick={() => setViewMode('topic')} className={`px-6 py-3 rounded-2xl font-black text-lg transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>주제별</button>
+                            <button onClick={() => setViewMode('grade')} className={`px-6 py-3 rounded-2xl font-black text-lg transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>급수별</button>
+                            <button onClick={() => setViewMode('word')} className={`px-6 py-3 rounded-2xl font-black text-lg transition-all ${viewMode === 'word' ? 'bg-white dark:bg-slate-800 text-indigo-500 shadow-md scale-105' : 'text-slate-400'}`}>단어</button>
                         </div>
                         <div className="w-full clay-panel rounded-[4rem] p-8 sm:p-14 border-4 border-white dark:border-slate-700 bg-white/40 dark:bg-slate-900/40 shadow-[0_40px_80px_rgba(148,163,184,0.3)] relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none"></div>
@@ -263,15 +276,15 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                 <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full opacity-50"></div>
 
                                 {/* 레벨 선택 */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 md:gap-10">
-                                    {Array.from({length: 20}).map((_, i) => {
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
+                                    {Array.from({length: 6}).map((_, i) => {
                                         const theme = stageThemes[i % 10]; const stageNum = i + 1;
                                         return (
-                                            <button key={i} onClick={() => initializeGame(stageNum, viewMode === 'grade')} className="group text-slate-700 p-8 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] flex flex-col items-center justify-center gap-4 transition-all duration-300 clay-panel relative overflow-hidden border-4 border-white dark:border-slate-700 hover:shadow-2xl hover:-translate-y-2">
+                                            <button key={i} onClick={() => initializeGame(stageNum, viewMode)} className="group text-slate-700 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] flex flex-col items-center justify-center gap-3 transition-all duration-300 clay-panel relative overflow-hidden border-4 border-white dark:border-slate-700 hover:shadow-2xl hover:-translate-y-2">
                                                 <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none"></div>
-                                                <div className="w-14 h-14 md:w-24 md:h-24 mb-1 transition-transform group-hover:scale-125 drop-shadow-lg"><theme.Icon /></div>
-                                                <span className="font-black text-2xl md:text-5xl text-slate-700 dark:text-white premium-text-shadow">Level {stageNum}</span>
-                                                <span className="text-xs md:text-sm font-bold text-slate-400">카드 {getPairsCount(stageNum) * 2}장</span>
+                                                <div className="w-12 h-12 md:w-20 md:h-20 mb-1 transition-transform group-hover:scale-125 drop-shadow-lg"><theme.Icon /></div>
+                                                <span className="font-black text-xl md:text-3xl text-slate-700 dark:text-white premium-text-shadow">Level {stageNum}</span>
+                                                <span className="text-xs font-bold text-slate-400">카드 {getPairsCount(stageNum) * 2}장</span>
                                             </button>
                                         );
                                     })}
@@ -311,7 +324,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                             {gameState === 'clear' ? (selectedStage < 7 ? `Next Level: ${getPairsCount(selectedStage + 1) * 2} Cards!` : "Mastered all levels!") : "Try again!"}
                         </p>
                         <div className="flex gap-6 w-full px-8 max-w-4xl">
-                            {gameState === 'clear' && selectedStage < 20 ? (
+                            {gameState === 'clear' && selectedStage < 6 ? (
                                 <button onClick={() => initializeGame(selectedStage + 1, isGradeMode)} className="flex-1 text-white font-black py-6 md:py-10 rounded-[2.5rem] shadow-2xl border-4 border-white text-2xl md:text-4xl active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg, ' + currentTheme.bgStart + ', ' + currentTheme.bgEnd + ')' }}>NEXT LEVEL →</button>
                             ) : (
                                 <button onClick={() => initializeGame(selectedStage, isGradeMode)} className="flex-1 text-white font-black py-6 md:py-10 rounded-[2.5rem] shadow-2xl border-4 border-white text-2xl md:text-4xl active:scale-95 transition-all" style={{ background: 'linear-gradient(135deg, ' + currentTheme.bgStart + ', ' + currentTheme.bgEnd + ')' }}>TRY AGAIN</button>
