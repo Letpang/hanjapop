@@ -34,7 +34,7 @@ const CoachCard = ({
         // 오늘 활동
         const stats = todayStats || {};
         const totalActivity = (stats.flashcard || 0) + (stats.writing || 0) +
-            (stats.matchGame || 0) + (stats.shootGame || 0) + (stats.sentenceQuiz || 0);
+            (stats.matchGame || 0) + (stats.shootGame || 0) + (stats.sentenceQuiz || 0) + (stats.wordQuiz || 0);
         if (totalActivity > 0) {
             list.push({ icon: '📚', text: `오늘 ${totalActivity}번 학습했어요` });
         }
@@ -80,12 +80,14 @@ const CoachCard = ({
                 matchGame: 'matchGame',
                 shootGame: 'shootGame',
                 sentenceQuiz: 'sentenceQuiz',
+                shootGame_wave: 'shootGame',
+                wordQuiz: 'wordQuiz',
             };
             const screen = missionScreenMap[pendingMission.type] || 'flashcard';
             return {
                 icon: '🎯',
-                text: pendingMission.description,
-                sub: `${pendingMission.current}/${pendingMission.target} 완료`,
+                text: pendingMission.label,
+                sub: `${pendingMission.progress}/${pendingMission.target} 완료`,
                 screen,
                 btnText: '바로 시작',
                 color: 'from-indigo-400 to-purple-500',

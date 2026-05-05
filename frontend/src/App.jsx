@@ -83,8 +83,8 @@ const App = () => {
             const today = new Date().toDateString();
             const parsed = saved ? JSON.parse(saved) : null;
             if (parsed && parsed.date === today) return parsed;
-            return { date: today, flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0 };
-        } catch(e) { return { date: new Date().toDateString(), flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0 }; }
+            return { date: today, flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0, wordQuiz: 0 };
+        } catch(e) { return { date: new Date().toDateString(), flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0, wordQuiz: 0 }; }
     });
     const addTodayStat = useCallback((type) => {
         setTodayStats(prev => {
