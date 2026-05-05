@@ -19,3 +19,10 @@
 2026-05-04T16:23:38Z INF Starting metrics server on 127.0.0.1:20242/metrics
 2026-05-04T16:23:38Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 ip=198.41.192.77
 2026-05-04T16:23:38Z INF Registered tunnel connection connIndex=0 connection=8f2f01cc-3aa9-4e10-add6-d0ff7435df69 event=0 ip=198.41.192.77 location=icn06 protocol=quic
+2026-05-04T16:30:02Z INF Initiating graceful shutdown due to signal terminated ...
+2026-05-04T16:30:02Z INF Unregistered tunnel connection connIndex=0 event=0 ip=198.41.192.77
+2026-05-04T16:30:32Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.192.77
+2026-05-04T16:30:32Z INF Metrics server stopped
+2026-05-04T16:30:32Z ERR failed to serve tunnel connection error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.192.77
+2026-05-04T16:30:32Z ERR Serve tunnel error error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.192.77
+2026-05-04T16:30:32Z INF Tunnel server stopped

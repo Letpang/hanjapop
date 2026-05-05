@@ -80,15 +80,20 @@ const QuickReview = ({ hanjas, onDone, onMarkCorrect, onMarkWrong }) => {
     const handleResult = (isCorrect) => {
         if (isCorrect) {
             onMarkCorrect(current.id);
-            setResults(r => ({ ...r, correct: r.correct + 1 }));
         } else {
             onMarkWrong(current.id);
-            setResults(r => ({ ...r, wrong: r.wrong + 1 }));
         }
         setFlipped(false);
-        if (idx + 1 >= hanjas.length) {
-            setTimeout(() => onDone(results), 300);
-        } else {
+        setResults(prev => {
+            const updated = isCorrect
+                ? { ...prev, correct: prev.correct + 1 }
+                : { ...prev, wrong: prev.wrong + 1 };
+            if (idx + 1 >= hanjas.length) {
+                setTimeout(() => onDone(updated), 300);
+            }
+            return updated;
+        });
+        if (idx + 1 < hanjas.length) {
             setIdx(i => i + 1);
         }
     };
