@@ -36,7 +36,7 @@ export const getRankDetails = (xp, charType, position = 9999) => {
     // 뭉치 폴더 안의 이미지 사용
     return { 
         name: fullName[type] || '뭉치', 
-        avatar: `/assets/images/characters/뭉치/${type}/rank_${level}.png`, 
+        avatar: `/assets/images/characters/mungchi/${type}/rank_${level}.png`, 
         level 
     };
 };
