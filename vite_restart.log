@@ -12,3 +12,19 @@
 8:46:34 AM [vite] (client) hmr update /src/components/FlashcardScreen.jsx
 8:46:34 AM [vite] (client) hmr update /src/components/WritingScreen.jsx
 9:46:00 AM [vite] (client) hmr update /src/components/ReviewScreen.jsx
+10:00:23 AM [vite] (client) hmr update /src/LangContext.jsx
+10:00:23 AM [vite] (client) hmr invalidate /src/LangContext.jsx Could not Fast Refresh ("useLang" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:00:23 AM [vite] (client) hmr update /src/App.jsx, /src/components/MainMenu.jsx, /src/components/FlashcardScreen.jsx, /src/components/WritingScreen.jsx, /src/components/StickerBookScreen.jsx, /src/components/MatchGameScreen.jsx, /src/components/ShootGameScreen.jsx, /src/components/SentenceQuizScreen.jsx
+10:00:28 AM [vite] (client) hmr update /src/LangContext.jsx
+10:00:28 AM [vite] (client) hmr invalidate /src/LangContext.jsx Could not Fast Refresh ("useLang" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:00:28 AM [vite] (client) hmr update /src/App.jsx, /src/components/MainMenu.jsx, /src/components/FlashcardScreen.jsx, /src/components/WritingScreen.jsx, /src/components/StickerBookScreen.jsx, /src/components/MatchGameScreen.jsx, /src/components/ShootGameScreen.jsx, /src/components/SentenceQuizScreen.jsx
+10:00:31 AM [vite] (client) hmr update /src/LangContext.jsx
+10:00:31 AM [vite] (client) hmr invalidate /src/LangContext.jsx Could not Fast Refresh ("useLang" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:00:31 AM [vite] (client) hmr update /src/App.jsx, /src/components/MainMenu.jsx, /src/components/FlashcardScreen.jsx, /src/components/WritingScreen.jsx, /src/components/StickerBookScreen.jsx, /src/components/MatchGameScreen.jsx, /src/components/ShootGameScreen.jsx, /src/components/SentenceQuizScreen.jsx
+10:00:34 AM [vite] (client) hmr update /src/LangContext.jsx
+10:00:34 AM [vite] (client) hmr invalidate /src/LangContext.jsx Could not Fast Refresh ("useLang" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+10:00:34 AM [vite] (client) hmr update /src/App.jsx, /src/components/MainMenu.jsx, /src/components/FlashcardScreen.jsx, /src/components/WritingScreen.jsx, /src/components/StickerBookScreen.jsx, /src/components/MatchGameScreen.jsx, /src/components/ShootGameScreen.jsx, /src/components/SentenceQuizScreen.jsx
+10:00:49 AM [vite] (client) hmr update /src/components/MainMenu.jsx
+10:00:57 AM [vite] (client) hmr update /src/components/MainMenu.jsx
+10:01:53 AM [vite] (client) hmr update /src/App.jsx
+10:01:59 AM [vite] (client) hmr update /src/App.jsx

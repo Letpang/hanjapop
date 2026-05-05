@@ -8,6 +8,7 @@ import ShootGameScreen from './components/ShootGameScreen.jsx';
 import StickerBookScreen from './components/StickerBookScreen.jsx';
 import ReviewScreen from './components/ReviewScreen.jsx';
 import SentenceQuizScreen from './components/SentenceQuizScreen.jsx';
+import WordQuizScreen from './components/WordQuizScreen.jsx';
 import RankingsScreen from './components/RankingsScreen.jsx';
 import { LangProvider } from './LangContext.jsx';
 import { useAdMob } from './hooks/useAdMob.js';
@@ -186,6 +187,11 @@ const App = () => {
                     onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('sentenceQuiz'); }}
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
+                />;
+            case 'wordQuiz':
+                return <WordQuizScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); }}
                 />;
             case 'rankings':
                 return <RankingsScreen onBack={() => setCurrentScreen('main')} userXp={userXp} selectedCharacter={selectedCharacter} />;

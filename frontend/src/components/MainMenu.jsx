@@ -231,7 +231,8 @@ const MainMenu = ({
                 onNavigate={onNavigate}
             />
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 md:gap-10 w-full mb-10 relative z-10">
+            {/* 1라인: 학습 3종 */}
+            <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10">
                 <MenuButton
                     label={t('menuFlashcard')}
                     icon="/assets/images/icons/icon_flashcard.png"
@@ -245,6 +246,22 @@ const MainMenu = ({
                     onClick={() => onNavigate('writing')}
                 />
                 <MenuButton
+                    label={t('menuWordQuiz')}
+                    icon="/assets/images/icons/icon_quiz.png"
+                    activeColor="#FFD700"
+                    onClick={() => onNavigate('wordQuiz')}
+                />
+            </div>
+
+            {/* 2라인: 게임 3종 */}
+            <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10 mb-4">
+                <MenuButton
+                    label={t('menuSentenceQuiz')}
+                    icon="/assets/images/icons/icon_review.png"
+                    activeColor="#C9B8FF"
+                    onClick={() => onNavigate('sentenceQuiz')}
+                />
+                <MenuButton
                     label={t('menuMatch')}
                     icon="/assets/images/icons/icon_match.png"
                     activeColor="#BDB2FF"
@@ -256,20 +273,19 @@ const MainMenu = ({
                     activeColor="#FFADAD"
                     onClick={() => onNavigate('shootGame')}
                 />
-                <MenuButton
-                    label={t('menuSentenceQuiz')}
-                    icon="/assets/images/icons/icon_quiz.png"
-                    activeColor="#FFD700"
-                    onClick={() => onNavigate('sentenceQuiz')}
-                />
-                <MenuButton
-                    label={t('menuReview')}
-                    icon="/assets/images/icons/icon_review.png"
-                    activeColor="#FF8FAB"
-                    onClick={() => onNavigate('review')}
-                    badge={reviewBadge > 0 ? reviewBadge : null}
-                />
             </div>
+
+            {/* 오답노트 - 은은하게 */}
+            <button
+                onClick={() => onNavigate('review')}
+                className="flex items-center gap-2 text-slate-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-all text-sm font-bold mb-4"
+            >
+                <span className="text-base">📝</span>
+                <span>오답노트</span>
+                {reviewBadge > 0 && (
+                    <span className="bg-red-400 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{reviewBadge}</span>
+                )}
+            </button>
 
             {/* 급수 달성 뼌지 */}
             <GradeBadges userXp={myXp} />
