@@ -204,7 +204,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired }) => {
                         <span className="text-xl sm:text-2xl">←</span>
                     </button>
                     <h1 className="text-2xl sm:text-4xl font-black text-slate-700 dark:text-white m-0 tracking-tight premium-text-shadow text-center flex-1 px-4">
-                        {t('menuWordQuizTitle') || '단어 뜻 보기'}
+                        {t('menuWordQuizTitle') || '다어 퀴즈'}
                     </h1>
                     <div className="w-[60px] sm:w-[80px]" />
                 </div>

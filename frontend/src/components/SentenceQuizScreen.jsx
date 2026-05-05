@@ -180,7 +180,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                     </button>
                     <div className="flex-1 flex flex-col items-center">
                         <span className="text-slate-400 font-black text-xs uppercase tracking-widest">Question {totalAnswered + 1}/10</span>
-                        <h1 className="text-2xl sm:text-4xl font-black text-slate-700 dark:text-white m-0 premium-text-shadow">문장속 단어 맞추기</h1>
+                        <h1 className="text-2xl sm:text-4xl font-black text-slate-700 dark:text-white m-0 premium-text-shadow">말해보자</h1>
                     </div>
                     <div className="bg-rose-50 dark:bg-rose-900/30 px-6 py-2 rounded-2xl border-2 border-rose-200 dark:border-rose-800 text-rose-400 font-black text-2xl shadow-inner">
                         {timeLeft}s
@@ -264,7 +264,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <span className="text-xl sm:text-2xl">←</span>
                     </button>
                     <h1 className="text-2xl sm:text-4xl font-black text-slate-700 dark:text-white m-0 tracking-tight premium-text-shadow text-center flex-1 px-4">
-                        문장속 단어 맞추기
+                        말해보자
                     </h1>
                     <div className="w-[60px] sm:w-[80px]" />
                 </div>
