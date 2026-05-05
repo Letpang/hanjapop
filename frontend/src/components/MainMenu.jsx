@@ -257,7 +257,7 @@ const MainMenu = ({
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10 mb-4">
                 <MenuButton
                     label={t('menuSentenceQuiz')}
-                    icon="/assets/images/icons/icon_review.png"
+                    icon="/assets/images/icons/icon_sentencequiz.png"
                     activeColor="#C9B8FF"
                     onClick={() => onNavigate('sentenceQuiz')}
                 />
