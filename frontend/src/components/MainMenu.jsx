@@ -48,7 +48,7 @@ const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
 const MainMenu = ({
     onNavigate, activePlanet, onSelectPlanet, unlockedStickers, userXp,
     isDarkMode, setIsDarkMode, selectedCharacter,
-    missions, streak, allDone, doneCount, getStats, mastery, todayStats
+    missions, streak, allDone, doneCount, getStats, mastery, todayStats, totalStats
 }) => {
     const { t } = useLang();
     const [showBadges, setShowBadges] = useState(false);
@@ -142,31 +142,53 @@ const MainMenu = ({
                     <span className="text-[10px] md:text-xs font-bold text-slate-400 z-10">XP {myXp} / {nextXp}</span>
                 </div>
 
-                {/* Box 2: Badges Collection */}
-                <button 
-                    onClick={() => setShowBadges(true)}
-                    className="clay-panel p-4 md:p-6 bg-white/60 dark:bg-slate-900/40 border-[4px] border-white/80 backdrop-blur-md shadow-lg rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden group hover:-translate-y-2 transition-transform aspect-square w-full"
-                >
-                    <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-3 z-10">
-                        {/* Seed Badge (Always unlocked as it is 0 XP) */}
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900/40 dark:to-green-800/40 rounded-full flex items-center justify-center shadow-inner border-2 border-white/50 animate-pulse transition-transform hover:scale-110">
-                            <span className="text-xl md:text-2xl" title="새싹 급수">🌱</span>
+                {/* Box 2: Activity Badges */}
+                {(() => {
+                    const ts = totalStats || {};
+                    const masteredCount = Object.values(mastery || {}).filter(m => m.level >= 2).length;
+                    const BADGES = [
+                        { emoji: '🔥', label: '연속출석', count: streak?.count || 0, unit: '일' },
+                        { emoji: '📅', label: '출석왕', count: ts.totalDays || 0, unit: '일' },
+                        { emoji: '🏆', label: '한자 마스터', count: masteredCount, unit: '개' },
+                        { emoji: '📖', label: '단어 마스터', count: ts.wordCorrect || 0, unit: '개' },
+                        { emoji: '👾', label: '몬스터버스터즈', count: ts.shootGame || 0, unit: '회' },
+                        { emoji: '🧩', label: '암기 천재', count: ts.matchGame || 0, unit: '회' },
+                        { emoji: '✍️', label: '획순 마스터', count: ts.writing || 0, unit: '개' },
+                        { emoji: '🎯', label: '단어퀴즈', count: ts.wordQuiz || 0, unit: '회' },
+                        { emoji: '📝', label: '문장퀴즈', count: ts.sentenceQuiz || 0, unit: '회' },
+                    ];
+                    return (
+                        <div className="clay-panel p-4 md:p-5 bg-white/60 dark:bg-slate-900/40 border-[4px] border-white/80 backdrop-blur-md shadow-lg rounded-[2.5rem] flex flex-col relative overflow-hidden aspect-square w-full">
+                            <span className="font-black text-slate-600 dark:text-slate-300 text-xs md:text-sm tracking-tight mb-3 text-center">뱃지 획득 카드</span>
+                            <div className="grid grid-cols-3 gap-2 flex-1">
+                                {BADGES.map((b) => {
+                                    const hasAny = b.count > 0;
+                                    return (
+                                        <div key={b.label} className="flex flex-col items-center justify-center gap-0.5">
+                                            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex flex-col items-center justify-center transition-all ${
+                                                hasAny
+                                                    ? 'bg-white dark:bg-slate-800 shadow-md border-2 border-white'
+                                                    : 'border-2 border-dashed border-slate-200 dark:border-slate-700'
+                                            }`}>
+                                                {hasAny ? (
+                                                    <>
+                                                        <span className="text-sm md:text-base leading-none">{b.emoji}</span>
+                                                        <span className="text-[9px] md:text-[10px] font-black text-indigo-500 leading-none">{b.count}{b.unit}</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-300 dark:text-slate-600 text-xs font-black">0</span>
+                                                )}
+                                            </div>
+                                            <span className={`text-[8px] md:text-[9px] font-bold text-center leading-tight break-keep ${hasAny ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600'}`}>
+                                                {b.label}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        {/* Attendance Badge (Show if streak or just placeholder) */}
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 rounded-full flex items-center justify-center shadow-inner border-2 border-white/50 transition-transform hover:scale-110">
-                            <span className="text-xl md:text-2xl" title="최초 출석">📅</span>
-                        </div>
-                        {/* Beginner Badge */}
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-800/40 rounded-full flex items-center justify-center shadow-inner border-2 border-white/50 transition-transform hover:scale-110">
-                            <span className="text-xl md:text-2xl" title="단어 초보">👶</span>
-                        </div>
-                    </div>
-                    <span className="font-black text-slate-700 dark:text-white text-base md:text-lg tracking-tight z-10 mb-0.5">뱃지 획득 카드</span>
-                    <div className="flex items-center gap-1.5 z-10">
-                        <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                        <span className="text-[10px] md:text-xs font-bold text-slate-500">3개 획득 중</span>
-                    </div>
-                </button>
+                    );
+                })()}
 
                 {/* Box 3: Learning Diary */}
                 <button 

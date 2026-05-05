@@ -161,7 +161,7 @@ const QuizCard = ({ q, index, total, onAnswer }) => {
 };
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
-const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong }) => {
+const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onWordCorrect }) => {
     const { t } = useLang();
     const [gradeFilter, setGradeFilter] = useState('8급');
     const [phase, setPhase] = useState('select'); // 'select' | 'quiz' | 'result'
@@ -180,10 +180,9 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong })
         const q = questions[currentIdx];
         if (isCorrect) {
             setCorrectCount(c => c + 1);
-            if (onHanjaAcquired) {
-                onHanjaAcquired(q?.hanja_id, 5);
-            }
+            if (onHanjaAcquired) onHanjaAcquired(q?.hanja_id, 5);
             if (onMarkCorrect && q?.hanja_id) onMarkCorrect(q.hanja_id);
+            if (onWordCorrect) onWordCorrect();
         } else {
             if (onMarkWrong && q?.hanja_id) onMarkWrong(q.hanja_id);
         }

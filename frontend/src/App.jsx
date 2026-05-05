@@ -16,6 +16,7 @@ import { useAdMob } from './hooks/useAdMob.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
 import { useMastery } from './hooks/useMastery.js';
+import { useTotalStats } from './hooks/useTotalStats.js';
 
 const App = () => {
     // 온보딩 완료 여부
@@ -92,6 +93,7 @@ const App = () => {
         });
     }, []);
     const { mastery, markSeen, markCorrect, markWrong, getStats, getMasteryLevel } = useMastery();
+    const { totalStats, increment } = useTotalStats();
 
     // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
     const addBonusXp = useCallback((xp) => {
@@ -128,6 +130,8 @@ const App = () => {
                         getStats={getStats}
                         mastery={mastery}
                         todayStats={todayStats}
+                        totalStats={totalStats}
+                        streak={streak}
                     />
                 );
             case 'flashcard':
@@ -154,6 +158,7 @@ const App = () => {
                     onWritingComplete={(id) => {
                         updateMissionProgress('writing', 1, addBonusXp);
                         addTodayStat('writing');
+                        increment('writing');
                         if (id) markSeen(id);
                     }}
                     initialHanja={writeTargetHanja}
@@ -162,7 +167,7 @@ const App = () => {
                 return <MatchGameScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); }}
+                    onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); increment('matchGame'); }}
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
                 />;
@@ -171,7 +176,7 @@ const App = () => {
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
-                    onWaveClear={() => updateMissionProgress('shootGame_wave', 1, addBonusXp)}
+                    onWaveClear={() => { updateMissionProgress('shootGame_wave', 1, addBonusXp); increment('shootGame'); }}
                     onMarkWrong={markWrong}
                 />;
             case 'stickerBook':
@@ -187,14 +192,15 @@ const App = () => {
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
                     onBack={() => setCurrentScreen('main')}
-                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('sentenceQuiz'); }}
+                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('sentenceQuiz'); increment('sentenceQuiz'); }}
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
                 />;
             case 'wordQuiz':
                 return <WordQuizScreen
                     onBack={() => setCurrentScreen('main')}
-                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); }}
+                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); increment('wordQuiz'); }}
+                    onWordCorrect={() => increment('wordCorrect')}
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
                 />;
