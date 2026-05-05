@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
-import { 
+import {
     MONSTER_COMPONENTS, IconTarget, IconHpDrop, IconExplosionBig
 } from './Icons.jsx';
 import { useLang } from '../LangContext.jsx';
+import { getRankDetails } from '../utils/rankUtils.js';
+
+const getStoredXp = () => {
+    try { return Number(localStorage.getItem('user_xp') || '0'); } catch { return 0; }
+};
 
 // ─────────────────────────────────────────────
 // 난이도 설정
@@ -123,6 +128,7 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
 // ─────────────────────────────────────────────
 const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong }) => {
     const { lang, t } = useLang();
+    const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
     const getMeaning = useCallback((item) => {
         if (!item) return "";
@@ -434,7 +440,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
 
                         <div className="flex flex-col items-center mb-8">
                             <div className="w-28 h-28 md:w-40 md:h-40 rounded-[3rem] bg-white p-4 flex items-center justify-center shadow-2xl border-4 border-indigo-200">
-                                <img src={`/assets/images/characters/${selectedCharacter || 'eunha'}.png`} className="w-full h-full object-contain filter drop-shadow-lg" />
+                                <img src={characterAvatar} className="w-full h-full object-contain filter drop-shadow-lg" />
                             </div>
                             <p className="mt-4 font-black text-slate-500 dark:text-slate-300">Ready to Battle!</p>
                         </div>
@@ -538,7 +544,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                     {/* 캐릭터 */}
                     <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-30" ref={shipRef}>
                         <div className="w-24 h-24 md:w-44 md:h-44 transition-transform duration-100 drop-shadow-2xl" style={{ transform: 'rotate(' + (turretAngle + 90) + 'deg)' }}>
-                            <img src={`/assets/images/characters/${selectedCharacter || 'eunha'}.png`} className="w-full h-full object-contain" />
+                            <img src={characterAvatar} className="w-full h-full object-contain" />
                         </div>
                     </div>
 
