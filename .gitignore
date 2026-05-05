@@ -191,6 +191,12 @@ hanja_prompt_guide.txt
 missing_hanja_prompts.txt
 3초안에*
 
+# Build output (Vite)
+public/js/
+
+# Cloudflare / deploy logs
+cloudflare_*.log
+
 # Separate projects / assets not for this repo
 hanja-explorer/
 youtube_production/

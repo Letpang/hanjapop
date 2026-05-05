@@ -163,15 +163,16 @@ const FocusQuiz = ({ hanjas, onDone, onMarkCorrect, onMarkWrong }) => {
     const handleSelect = (opt) => {
         if (selected !== null) return;
         setSelected(opt.id);
+        const nextCorrect = opt.isCorrect ? correct + 1 : correct;
         if (opt.isCorrect) {
             onMarkCorrect(current.id);
-            setCorrect(c => c + 1);
+            setCorrect(nextCorrect);
         } else {
             onMarkWrong(current.id);
         }
         setTimeout(() => {
             if (idx + 1 >= hanjas.length) {
-                onDone({ correct: opt.isCorrect ? correct + 1 : correct, wrong: hanjas.length - (opt.isCorrect ? correct + 1 : correct) });
+                onDone({ correct: nextCorrect, wrong: hanjas.length - nextCorrect });
             } else {
                 setSelected(null);
                 setIdx(i => i + 1);
@@ -233,15 +234,16 @@ const Dictation = ({ hanjas, onDone, onMarkCorrect, onMarkWrong }) => {
     const handleSelect = (opt) => {
         if (selected !== null) return;
         setSelected(opt.id);
+        const nextCorrect = opt.isCorrect ? correct + 1 : correct;
         if (opt.isCorrect) {
             onMarkCorrect(current.id);
-            setCorrect(c => c + 1);
+            setCorrect(nextCorrect);
         } else {
             onMarkWrong(current.id);
         }
         setTimeout(() => {
             if (idx + 1 >= hanjas.length) {
-                onDone({ correct: opt.isCorrect ? correct + 1 : correct, wrong: hanjas.length - (opt.isCorrect ? correct + 1 : correct) });
+                onDone({ correct: nextCorrect, wrong: hanjas.length - nextCorrect });
             } else {
                 setSelected(null);
                 setIdx(i => i + 1);
