@@ -255,6 +255,8 @@ const App = () => {
                     {!onboardingDone
                         ? <OnboardingScreen onComplete={(grade) => {
                             setOnboardingDone(true);
+                            const onboardingXpMap = { '8급': 50, '7급': 100, '6급': 200 };
+                            handleHanjaAcquired(null, onboardingXpMap[grade] || 50);
                           }}
                           />
                         : !selectedCharacter
