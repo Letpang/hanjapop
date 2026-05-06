@@ -385,6 +385,12 @@ body {
 }
 .animate-glossy-pulse { animation: glossyPulse 2s ease-in-out infinite; }
 
+@keyframes journeyGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0), 0 4px 16px rgba(251,191,36,0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.3), 0 4px 24px rgba(251,191,36,0.4); }
+}
+.animate-journey-glow { animation: journeyGlow 1.6s ease-in-out infinite; }
+
 /* 크리스탈 스파클 */
 @keyframes sparkle {
     0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }

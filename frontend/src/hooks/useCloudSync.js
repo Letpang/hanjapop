@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getLevel } from '../utils/rankUtils.js';
 import {
     isSupabaseEnabled,
     upsertUserProfile,
@@ -57,7 +58,7 @@ export const useCloudSync = ({
         }
         setSyncStatus('syncing');
         try {
-            const level = Math.floor(Math.log2(Math.max(1, userXp / 100) + 1)) + 1;
+            const level = getLevel(userXp);
             // 프로필 업데이트
             const { error: profileError } = await upsertUserProfile({
                 nickname: userNickname || '한자학습자',

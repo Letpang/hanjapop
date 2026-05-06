@@ -47,14 +47,21 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
 
     const handleConfirm = () => {
         const actualNick = nicknameRef.current ? nicknameRef.current.value.trim() : nickname.trim();
+        console.log('[CharacterSelection] handleConfirm:', { selected, actualNick });
         if (selected && actualNick.length > 0) {
+            console.log('[CharacterSelection] calling onSelect');
             onSelect(selected, actualNick);
         }
     };
 
+    // 캐릭터 + 이름 모두 선택되면 자동 진행
+    const handleNicknameKeyDown = (e) => {
+        if (e.key === 'Enter' && canConfirm) handleConfirm();
+    };
+
     return (
-        <div className="fixed inset-0 w-full h-full z-[100] flex flex-col items-center justify-center aesthetic-space-bg bg-[#f6edff] overflow-hidden">
-            <div className="w-full h-full flex flex-col items-center justify-center gap-4 md:gap-12 relative z-50 px-4 pt-10 pb-8 md:pt-14 md:pb-10 md:px-10 max-w-4xl mx-auto">
+        <div className="fixed inset-0 w-full z-[100] aesthetic-space-bg bg-[#f6edff] overflow-y-auto">
+            <div className="w-full min-h-full flex flex-col items-center justify-center gap-4 md:gap-12 relative z-50 px-4 pt-10 pb-8 md:pt-14 md:pb-10 md:px-10 max-w-4xl mx-auto">
                 {/* Back Button */}
                 {onBack && (
                     <button
@@ -78,6 +85,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                         type="text"
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value.slice(0, 10))}
+                        onKeyDown={handleNicknameKeyDown}
                         placeholder="나의 이름을 입력하세요 (최대 10자)"
                         maxLength={10}
                         className="w-full rounded-2xl border-4 border-white bg-white/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-center text-base md:text-lg px-4 py-3 shadow-md focus:outline-none focus:border-indigo-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
@@ -91,7 +99,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                         return (
                             <button
                                 key={char.id}
-                                onClick={() => setSelected(char.id)}
+                                onClick={() => { setSelected(char.id); setTimeout(() => nicknameRef.current?.focus(), 50); }}
                                 className="group relative flex flex-col items-center justify-center rounded-[2rem] md:rounded-[3rem] transition-all duration-300 active:scale-95 focus:outline-none h-fit"
                                 style={{
                                     padding: 'clamp(20px, 5vw, 40px) clamp(8px, 2vw, 24px)',
@@ -172,7 +180,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                 {/* Confirm button */}
                 <button
                     onClick={handleConfirm}
-                    disabled={!selected}
+                    disabled={!canConfirm}
                     className="shrink-0 w-full max-w-xs md:max-w-md font-black text-lg md:text-2xl rounded-[2rem] border-4 border-white shadow-2xl transition-all duration-300"
                     style={{
                         padding: 'clamp(16px, 3.5vw, 28px) 24px',

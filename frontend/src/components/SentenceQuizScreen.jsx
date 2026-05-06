@@ -34,7 +34,7 @@ const playSound = (type) => {
     }
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong }) => {
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onStageClear }) => {
     const { t } = useLang();
 
     // ── 선택 상태 ──────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         }
         setGameState('feedback');
         setTimeout(() => {
-            if (totalAnswered >= 9) setGameState('result');
+            if (totalAnswered >= 9) { setGameState('result'); if (onStageClear) onStageClear(); }
             else generateQuiz();
         }, 1500);
     };

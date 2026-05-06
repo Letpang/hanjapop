@@ -2,7 +2,7 @@ import { useState } from 'react';
 import WordQuizScreen from './WordQuizScreen.jsx';
 import SentenceQuizScreen from './SentenceQuizScreen.jsx';
 
-const CombinedQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onWordCorrect }) => {
+const CombinedQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onWordCorrect, onStageClear }) => {
     const [mode, setMode] = useState('select'); // 'select' | 'word' | 'sentence'
 
     if (mode === 'word') {
@@ -13,6 +13,7 @@ const CombinedQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 onMarkCorrect={onMarkCorrect}
                 onMarkWrong={onMarkWrong}
                 onWordCorrect={onWordCorrect}
+                onStageClear={onStageClear}
             />
         );
     }
@@ -24,6 +25,7 @@ const CombinedQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 onHanjaAcquired={onHanjaAcquired}
                 onMarkCorrect={onMarkCorrect}
                 onMarkWrong={onMarkWrong}
+                onStageClear={onStageClear}
             />
         );
     }

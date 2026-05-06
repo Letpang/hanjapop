@@ -14,6 +14,7 @@ import LevelTestScreen from './components/LevelTestScreen.jsx';
 import RankingsScreen from './components/RankingsScreen.jsx';
 import CharacterSelectionScreen from './components/CharacterSelectionScreen.jsx';
 import CharacterProfileScreen from './components/CharacterProfileScreen.jsx';
+import CharacterToast from './components/CharacterToast.jsx';
 import { LangProvider } from './LangContext.jsx';
 import { getLevel } from './utils/rankUtils.js';
 import { useAdMob } from './hooks/useAdMob.js';
@@ -120,11 +121,55 @@ const App = () => {
         setUserXp(prev => prev + finalXp);
     }, [streak]);
 
+    // ── 여정 시스템 ──────────────────────────────────────────────────────────
+    const [isTodayStudyDone, setIsTodayStudyDone] = useState(() => {
+        try {
+            const s = JSON.parse(localStorage.getItem('journey_state') || '{}');
+            return s.date === new Date().toDateString() && !!s.studyDone;
+        } catch { return false; }
+    });
+    const [isDailyQuizDone, setIsDailyQuizDone] = useState(() => {
+        try {
+            const s = JSON.parse(localStorage.getItem('journey_state') || '{}');
+            return s.date === new Date().toDateString() && !!s.quizDone;
+        } catch { return false; }
+    });
+    const [xpBuffExpiresAt, setXpBuffExpiresAt] = useState(() => {
+        try { return Number(localStorage.getItem('xp_buff_expires') || '0'); } catch { return 0; }
+    });
+    const saveJourneyState = (studyDone, quizDone) => {
+        localStorage.setItem('journey_state', JSON.stringify({ date: new Date().toDateString(), studyDone, quizDone }));
+    };
+
+    // 캐릭터 토스트 메시지
+    const [charToast, setCharToast] = useState(null);
+    const reviewToastShownRef = useRef(false);
+    const missionToastShownRef = useRef(false);
+
+    // 앱 오픈 시: 틀린 한자 10개 이상이면 복습 토스트
+    useEffect(() => {
+        if (!selectedCharacter || reviewToastShownRef.current) return;
+        const totalWrong = Object.values(mastery).reduce((sum, m) => sum + (m.wrongCount || 0), 0);
+        if (totalWrong >= 10) {
+            reviewToastShownRef.current = true;
+            setTimeout(() => setCharToast('review_reminder'), 1500);
+        }
+    }, [selectedCharacter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 미션 전체 완료 시: 팡파레 토스트 + 보너스 XP
+    useEffect(() => {
+        if (!allDone || missionToastShownRef.current) return;
+        missionToastShownRef.current = true;
+        setCharToast('mission_complete');
+        addBonusXp(50);
+    }, [allDone]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const handleHanjaAcquired = (id, xpAmount = 10) => {
         // 스트릭 XP 배율 적용: 3~6일 1.2배, 7일+ 1.5배
         const streakCount = streak?.count || 0;
         const multiplier = streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
-        const finalXp = Math.round(xpAmount * multiplier);
+        const buffMult = Date.now() < xpBuffExpiresAt ? 2.0 : 1.0;
+        const finalXp = Math.round(xpAmount * multiplier * buffMult);
         setUserXp(prev => prev + finalXp);
         if (id) {
             setUnlockedStickers(prev => ({
@@ -156,12 +201,19 @@ const App = () => {
                         totalStats={totalStats}
                         srsData={srsData}
                         getDueItems={getDueItems}
+                        isTodayStudyDone={isTodayStudyDone}
+                        isDailyQuizDone={isDailyQuizDone}
+                        xpBuffExpiresAt={xpBuffExpiresAt}
                     />
                 );
             case 'flashcard':
                 return <FlashcardScreen
                     onBack={() => setCurrentScreen('main')}
-                    onStageClear={() => { handleHanjaAcquired(null, 50); updateMissionProgress('flashcard', 5, addBonusXp); }}
+                    onStageClear={() => {
+                        handleHanjaAcquired(null, 50);
+                        updateMissionProgress('flashcard', 5, addBonusXp);
+                        if (!isTodayStudyDone) { setIsTodayStudyDone(true); saveJourneyState(true, isDailyQuizDone); }
+                    }}
                     onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); addTodayStat('flashcard'); if (id) markSeen(id); }}
                     onWriteHanja={(hanja) => {
                         setWriteTargetHanja(hanja);
@@ -202,7 +254,8 @@ const App = () => {
                     selectedCharacter={selectedCharacter}
                     onWaveClear={() => { updateMissionProgress('shootGame_wave', 1, addBonusXp); increment('shootGame'); }}
                     onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
-                    srsWeightedPool={getWeightedPool}
+                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                    masteryData={mastery}
                 />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
@@ -238,6 +291,15 @@ const App = () => {
                     onWordCorrect={() => increment('wordCorrect')}
                     onMarkCorrect={markCorrect}
                     onMarkWrong={markWrong}
+                    onStageClear={() => {
+                        if (isTodayStudyDone && !isDailyQuizDone) {
+                            setIsDailyQuizDone(true);
+                            saveJourneyState(true, true);
+                            const buffEnd = Date.now() + 15 * 60 * 1000;
+                            setXpBuffExpiresAt(buffEnd);
+                            localStorage.setItem('xp_buff_expires', String(buffEnd));
+                        }
+                    }}
                 />;
             case 'levelTest':
                 return <LevelTestScreen onBack={() => setCurrentScreen('main')} />;
@@ -277,6 +339,14 @@ const App = () => {
                 <div className="space-bg"></div>
                 <div className="stars-overlay"></div>
                 <div className="content-area relative z-10">
+                    {charToast && selectedCharacter && (
+                        <CharacterToast
+                            type={charToast}
+                            selectedCharacter={selectedCharacter}
+                            userXp={userXp}
+                            onDismiss={() => setCharToast(null)}
+                        />
+                    )}
                     {!onboardingDone
                         ? <OnboardingScreen onComplete={(grade) => {
                             setOnboardingDone(true);

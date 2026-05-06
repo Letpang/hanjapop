@@ -134,7 +134,7 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong, onWaveClear }) => {
+const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong, onMarkCorrect, onWaveClear, masteryData }) => {
     const { lang, t } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -192,6 +192,30 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
         const relevantWords = pool.filter(h => h.words && h.words.length > 0);
         return { chars: pool, words: relevantWords };
     }, [viewMode, selectedGrade, selectedCategory]);
+
+    // 1순위: wrongCount 상위 3개, 2순위: 오늘 학습한 5개, 3순위: 나머지
+    const priorityPool = useMemo(() => {
+        if (!masteryData || gamePoolData.chars.length === 0) return gamePoolData.chars;
+        const today = new Date().toDateString();
+        const wrongChars = gamePoolData.chars
+            .filter(c => (masteryData[String(c.id)]?.wrongCount || 0) >= 1)
+            .sort((a, b) => (masteryData[String(b.id)]?.wrongCount || 0) - (masteryData[String(a.id)]?.wrongCount || 0))
+            .slice(0, 3);
+        const wrongIds = new Set(wrongChars.map(c => String(c.id)));
+        const todayChars = gamePoolData.chars
+            .filter(c => {
+                if (wrongIds.has(String(c.id))) return false;
+                const lastSeen = masteryData[String(c.id)]?.lastSeen;
+                return lastSeen && new Date(lastSeen).toDateString() === today;
+            })
+            .slice(0, 5);
+        const priorityIds = new Set([...wrongChars, ...todayChars].map(c => String(c.id)));
+        const pool = [];
+        wrongChars.forEach(c => { for (let i = 0; i < 5; i++) pool.push(c); });
+        todayChars.forEach(c => { for (let i = 0; i < 3; i++) pool.push(c); });
+        gamePoolData.chars.filter(c => !priorityIds.has(String(c.id))).forEach(c => pool.push(c));
+        return pool.length > 0 ? pool : gamePoolData.chars;
+    }, [gamePoolData, masteryData]);
 
     const startGame = () => {
         try {
@@ -307,15 +331,16 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                                 meaning: randomWord.meaning,
                                 sound: randomWord.reading,
                                 category: wordObj.category,
+                                isWrongItem: (masteryData?.[String(wordObj.id)]?.wrongCount || 0) >= 1,
                             };
                             isWord = true;
                         }
                     }
                 }
-                
-                if (!nextItem && gamePoolData.chars.length > 0) {
-                    const ch = gamePoolData.chars[Math.floor(Math.random() * gamePoolData.chars.length)];
-                    nextItem = { ...ch };
+
+                if (!nextItem && priorityPool.length > 0) {
+                    const ch = priorityPool[Math.floor(Math.random() * priorityPool.length)];
+                    nextItem = { ...ch, isWrongItem: (masteryData?.[String(ch.id)]?.wrongCount || 0) >= 1 };
                 }
 
                 if (!nextItem) return prev;
@@ -332,12 +357,13 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                     emojiId: Math.floor(Math.random() * MONSTER_COMPONENTS.length),
                     state: 'falling',
                     isWord: isWord,
+                    isWrongItem: nextItem.isWrongItem || false,
                 }];
             });
         }, getSpawnInterval(wave));
 
         return () => { clearInterval(dropInterval); clearInterval(spawnInterval); };
-    }, [status, wave, waveTransition, gamePoolData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig]);
+    }, [status, wave, waveTransition, gamePoolData, priorityPool, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig]);
 
     // 타겟 & 보기 갱신
     useEffect(() => {
@@ -369,6 +395,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
             setScore(prev => prev + 1);
             setWaveKills(prev => prev + 1);
             if (onHanjaAcquired) onHanjaAcquired(target.pairId);
+            if (onMarkCorrect) onMarkCorrect(target.pairId);
             const acqId = Date.now();
             setAcquisitions(prev => [...prev, { id: acqId, x: target.x, y: target.y, hanja: target.hanja }]);
             setTimeout(() => setAcquisitions(prev => prev.filter(a => a.id !== acqId)), 1000);
@@ -581,9 +608,12 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                                     <div className="w-24 h-24 absolute flex items-center justify-center animate-ping opacity-50"><IconExplosionBig /></div>
                                 ) : (
                                     <div className="flex flex-col items-center">
-                                        <div className={"w-14 h-14 md:w-24 md:h-24 animate-bounce " + (w.id === targetId ? "drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "drop-shadow-md")}><MonsterIcon /></div>
+                                        {w.isWrongItem && (
+                                            <div className="text-[10px] font-black text-rose-500 mb-0.5 bg-rose-50/90 px-1.5 py-0.5 rounded-full border border-rose-200">복습</div>
+                                        )}
+                                        <div className={"w-14 h-14 md:w-24 md:h-24 animate-bounce " + (w.isWrongItem ? "drop-shadow-[0_0_16px_rgba(239,68,68,0.85)]" : w.id === targetId ? "drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "drop-shadow-md")}><MonsterIcon /></div>
                                         <div className={"font-black bg-white/90 dark:bg-slate-800/90 text-indigo-900 dark:text-white flex items-center justify-center rounded-full shadow-2xl border-4 " +
-                                            (w.id === targetId ? "border-amber-400 " : "border-white dark:border-slate-700 ") +
+                                            (w.isWrongItem ? "border-rose-400 " : w.id === targetId ? "border-amber-400 " : "border-white dark:border-slate-700 ") +
                                             (w.isWord ? "w-28 h-18 md:w-44 md:h-28 text-lg md:text-2xl px-2" : "w-14 h-14 md:w-24 md:h-24 text-3xl md:text-5xl")}>
                                             <span className="text-center break-all">{w.hanja}</span>
                                         </div>
