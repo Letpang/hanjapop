@@ -161,8 +161,25 @@ const MainMenu = ({
                         {userNickname && <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 shrink-0">({rank.name})</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                        <div className="flex-1 bg-slate-100/80 dark:bg-slate-700/50 rounded-full h-2 overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-700" style={{ width: progress + '%', background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B)' }} />
+                        <div className="flex-1 rounded-full overflow-hidden relative"
+                            style={{
+                                height: '14px',
+                                background: '#e2e8f0',
+                                boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.12)',
+                            }}>
+                            <div
+                                className="h-full rounded-full transition-all duration-700 relative overflow-hidden"
+                                style={{
+                                    width: progress + '%',
+                                    background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B,#ff6b6b)',
+                                    boxShadow: 'inset 0 2px 3px rgba(255,255,255,0.5), 0 1px 4px rgba(255,107,107,0.35)',
+                                    minWidth: progress > 0 ? '0.75rem' : '0',
+                                }}
+                            >
+                                {/* 반짝임 하이라이트 */}
+                                <div className="absolute top-0 left-0 right-0 h-1/2 rounded-full"
+                                    style={{ background: 'linear-gradient(180deg,rgba(255,255,255,0.55),transparent)' }} />
+                            </div>
                         </div>
                         <span className="text-[10px] md:text-xs font-bold text-slate-400 shrink-0">XP {myXp}</span>
                         {(streak?.count || 0) >= 3 && (

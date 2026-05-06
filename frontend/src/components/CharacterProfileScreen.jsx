@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { getRankDetails, getLeaderboardPosition } from '../utils/rankUtils.js';
 
 // LV.10 시스템 임계값
@@ -6,7 +6,6 @@ const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000
 const getNextXp = (level) => level >= 10 ? null : LEVEL_THRESHOLDS[level];
 
 // 6개 카테고리 뱃지 정의
-// 각 카테고리별 5단계 달성 기준
 const BADGE_CATEGORIES = [
     {
         id: 'attendance',
@@ -59,7 +58,6 @@ const BADGE_CATEGORIES = [
     },
 ];
 
-// 현재 단계 계산 (0 = 미획득, 1~5 = 단계)
 const getCurrentStage = (count, thresholds) => {
     let stage = 0;
     for (let i = 0; i < thresholds.length; i++) {
@@ -68,10 +66,8 @@ const getCurrentStage = (count, thresholds) => {
     return stage;
 };
 
-// 이미지 경로 반환
 const getBadgeImage = (cat, stage) => {
     if (stage === 0) {
-        // 미획득: 1단계 이미지를 흑백으로 표시
         if (cat.imageNames) return `${cat.imageBase}${cat.imageNames[0]}.webp`;
         return `${cat.imageBase}1.webp`;
     }
@@ -80,6 +76,16 @@ const getBadgeImage = (cat, stage) => {
 };
 
 const STAGE_LABELS = ['', '입문', '탐험가', '고수', '사범', '전설'];
+
+// 단계별 색상
+const STAGE_COLORS = [
+    null,
+    { bg: 'linear-gradient(135deg,#fef9c3,#fef08a)', border: '#fde047', text: '#92400e' },   // 1 크림
+    { bg: 'linear-gradient(135deg,#d1fae5,#a7f3d0)', border: '#6ee7b7', text: '#065f46' },   // 2 민트
+    { bg: 'linear-gradient(135deg,#e0e7ff,#c7d2fe)', border: '#818cf8', text: '#3730a3' },   // 3 인디고
+    { bg: 'linear-gradient(135deg,#f3e8ff,#e9d5ff)', border: '#c084fc', text: '#6b21a8' },   // 4 퍼플
+    { bg: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '#f59e0b', text: '#78350f' },   // 5 골드
+];
 
 const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter, userNickname, mastery, totalStats, streak }) => {
     const myXp = userXp || 0;
@@ -94,7 +100,6 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
     );
     const ts = totalStats || {};
 
-    // 6개 카테고리 뱃지 상태 계산
     const badgeStates = useMemo(() => BADGE_CATEGORIES.map(cat => {
         const count = cat.getCount(ts, masteredCount, streak);
         const stage = getCurrentStage(count, cat.thresholds);
@@ -107,6 +112,9 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
             image: getBadgeImage(cat, stage),
         };
     }), [ts, masteredCount, streak]);
+
+    // 뱃지 팡 애니메이션 상태
+    const [popBadge, setPopBadge] = useState(null);
 
     return (
         <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
@@ -130,14 +138,16 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
             <div className="flex-1 overflow-y-auto px-4 pb-10 pt-4 flex flex-col gap-5">
 
                 {/* 캐릭터 카드 */}
-                <div className="clay-panel rounded-[2.5rem] p-6 bg-white dark:bg-slate-800 border-4 border-white shadow-xl flex flex-col items-center gap-3">
+                <div className="clay-panel rounded-[2.5rem] p-6 bg-white dark:bg-slate-800 border-4 border-white shadow-xl flex flex-col items-center gap-3"
+                    style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.8)' }}>
                     <div className="relative">
                         <img
                             src={rank.avatar}
                             alt={rank.name}
                             className="w-36 h-36 md:w-48 md:h-48 object-contain filter drop-shadow-2xl animate-float"
                         />
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-amber-400 text-white font-black text-sm px-5 py-1.5 rounded-full border-2 border-white shadow-lg whitespace-nowrap">
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-white font-black text-sm px-5 py-1.5 rounded-full border-2 border-white shadow-lg whitespace-nowrap"
+                            style={{ background: 'linear-gradient(135deg,#f59e0b,#f97316)', boxShadow: '0 3px 0 #b45309' }}>
                             LV.{rank.level}
                         </div>
                     </div>
@@ -149,63 +159,97 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                     ) : (
                         <span className="font-black text-slate-700 dark:text-white text-2xl md:text-3xl mt-3">{rank.name}</span>
                     )}
+
+                    {/* XP 바 — 두께 2배 + 클레이 질감 */}
                     <div className="w-full max-w-xs">
-                        <div className="flex justify-between text-xs font-bold text-slate-400 mb-1">
+                        <div className="flex justify-between text-xs font-bold text-slate-400 mb-1.5">
                             <span>XP {myXp}</span>
                             <span>{rank.level < 10 ? `다음 레벨까지 ${nextXp - myXp} XP` : 'MAX'}</span>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
+                        <div className="w-full rounded-full overflow-hidden relative"
+                            style={{
+                                height: '18px',
+                                background: '#e2e8f0',
+                                boxShadow: 'inset 0 3px 6px rgba(0,0,0,0.12)',
+                            }}>
                             <div
-                                className="h-full rounded-full transition-all duration-1000"
-                                style={{ width: progress + '%', background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B)' }}
-                            />
+                                className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
+                                style={{
+                                    width: progress + '%',
+                                    background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B,#ff6b6b)',
+                                    boxShadow: 'inset 0 2px 3px rgba(255,255,255,0.5), 0 2px 6px rgba(255,107,107,0.4)',
+                                    minWidth: progress > 0 ? '1rem' : '0',
+                                }}
+                            >
+                                {/* 반짝임 하이라이트 */}
+                                <div className="absolute top-0 left-0 right-0 h-1/2 rounded-full"
+                                    style={{ background: 'linear-gradient(180deg,rgba(255,255,255,0.5),transparent)' }} />
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* 뱃지 컬렉션 */}
-                <div className="clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
+                <div className="clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md"
+                    style={{ boxShadow: '0 6px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)' }}>
                     <div className="font-black text-slate-600 dark:text-slate-300 text-sm mb-4">🏅 뱃지 컬렉션</div>
                     <div className="grid grid-cols-3 gap-3">
                         {badgeStates.map((b) => {
                             const unlocked = b.stage > 0;
+                            const colors = unlocked ? STAGE_COLORS[b.stage] : null;
+                            const isPopping = popBadge === b.id;
                             return (
                                 <div
                                     key={b.id}
-                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
-                                        unlocked
-                                            ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700'
-                                            : 'bg-slate-50 dark:bg-slate-700/30 border-2 border-dashed border-slate-200 dark:border-slate-600'
-                                    }`}
+                                    onClick={() => unlocked && setPopBadge(isPopping ? null : b.id)}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all cursor-pointer active:scale-95 ${unlocked ? '' : ''}`}
+                                    style={unlocked ? {
+                                        background: colors.bg,
+                                        border: `2px solid ${colors.border}`,
+                                        boxShadow: `0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)`,
+                                    } : {
+                                        background: 'linear-gradient(135deg,#f1f5f9,#e2e8f0)',
+                                        border: '2px dashed #cbd5e1',
+                                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.06)',
+                                    }}
                                 >
                                     <div className="relative">
                                         <img
                                             src={b.image}
                                             alt={b.label}
-                                            className={`w-14 h-14 object-contain transition-all ${
-                                                unlocked ? 'drop-shadow-md' : 'grayscale opacity-30'
+                                            className={`w-14 h-14 object-contain transition-all duration-300 ${
+                                                unlocked
+                                                    ? `drop-shadow-md ${isPopping ? 'scale-125' : 'hover:scale-110'}`
+                                                    : 'grayscale opacity-25'
                                             }`}
+                                            style={!unlocked ? { filter: 'grayscale(100%) brightness(0.7)' } : {}}
                                         />
                                         {unlocked && (
-                                            <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border border-white shadow-sm leading-none">
+                                            <div className="absolute -bottom-1 -right-1 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border border-white shadow-sm leading-none"
+                                                style={{ background: colors.border }}>
                                                 {b.stage}단계
                                             </div>
                                         )}
+                                        {/* 잠금 아이콘 */}
+                                        {!unlocked && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-2xl opacity-40">🔒</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <span className={`text-[11px] font-black text-center leading-tight ${
-                                        unlocked ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'
-                                    }`}>
+                                    <span className={`text-[11px] font-black text-center leading-tight`}
+                                        style={{ color: unlocked ? colors.text : '#94a3b8' }}>
                                         {b.label}
                                     </span>
-                                    <span className={`text-[9px] text-center leading-tight ${
-                                        unlocked ? 'text-amber-500 font-bold' : 'text-slate-300 dark:text-slate-600'
-                                    }`}>
+                                    <span className={`text-[9px] text-center leading-tight font-bold`}
+                                        style={{ color: unlocked ? colors.border : '#94a3b8' }}>
                                         {unlocked
                                             ? STAGE_LABELS[b.stage]
                                             : `${b.thresholds[0]}${b.unit}부터`}
                                     </span>
                                     {unlocked && b.nextThreshold && (
-                                        <span className="text-[8px] text-slate-400 text-center leading-tight">
+                                        <span className="text-[8px] text-center leading-tight font-bold"
+                                            style={{ color: '#94a3b8' }}>
                                             다음: {b.nextThreshold}{b.unit}
                                         </span>
                                     )}
@@ -215,17 +259,45 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                     </div>
                 </div>
 
-                {/* 학습 다이어리 바로가기 */}
+                {/* 나의 학습 캘린더 바로가기 */}
                 <button
                     onClick={() => onNavigate('review')}
                     className="w-full clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md flex items-center gap-4 active:scale-[0.98] transition-all group"
+                    style={{ boxShadow: '0 6px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)' }}
                 >
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-200 dark:from-emerald-900/40 dark:to-teal-800/40 flex items-center justify-center text-3xl shadow-inner group-hover:scale-110 transition-transform shrink-0">
-                        📖
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 group-hover:scale-110 transition-transform"
+                        style={{
+                            background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
+                        }}>
+                        📅
                     </div>
-                    <div className="flex flex-col items-start">
-                        <span className="font-black text-slate-700 dark:text-white text-lg">학습 다이어리</span>
-                        <span className="text-slate-400 text-sm">달력 · 진행도 · 오답노트</span>
+                    <div className="flex flex-col items-start gap-1.5">
+                        <span className="font-black text-slate-700 dark:text-white text-lg">나의 학습 캘린더</span>
+                        <div className="flex items-center gap-2">
+                            <span
+                                className="text-xs font-black px-2.5 py-0.5 rounded-full border-2"
+                                style={{
+                                    background: 'linear-gradient(135deg,#d1fae5,#a7f3d0)',
+                                    borderColor: '#6ee7b7',
+                                    color: '#065f46',
+                                    boxShadow: '0 2px 4px rgba(52,211,153,0.2)',
+                                }}
+                            >
+                                🏆 {masteredCount}자 숙달
+                            </span>
+                            <span
+                                className="text-xs font-black px-2.5 py-0.5 rounded-full border-2"
+                                style={{
+                                    background: 'linear-gradient(135deg,#e0e7ff,#c7d2fe)',
+                                    borderColor: '#818cf8',
+                                    color: '#3730a3',
+                                    boxShadow: '0 2px 4px rgba(99,102,241,0.2)',
+                                }}
+                            >
+                                🔥 {streak?.count || 0}일 연속
+                            </span>
+                        </div>
                     </div>
                     <span className="ml-auto text-slate-300 text-2xl">›</span>
                 </button>
