@@ -15,6 +15,7 @@ import RankingsScreen from './components/RankingsScreen.jsx';
 import CharacterSelectionScreen from './components/CharacterSelectionScreen.jsx';
 import CharacterProfileScreen from './components/CharacterProfileScreen.jsx';
 import { LangProvider } from './LangContext.jsx';
+import { getLevel } from './utils/rankUtils.js';
 import { useAdMob } from './hooks/useAdMob.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
@@ -113,8 +114,11 @@ const App = () => {
     }, [streak]);
 
     const handleHanjaAcquired = (id, xpAmount = 10) => {
-        setUserXp(prev => prev + xpAmount);
-
+        // 스트릭 XP 배율 적용: 3~6일 1.2배, 7일+ 1.5배
+        const streakCount = streak?.count || 0;
+        const multiplier = streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
+        const finalXp = Math.round(xpAmount * multiplier);
+        setUserXp(prev => prev + finalXp);
         if (id) {
             setUnlockedStickers(prev => ({
                 ...prev,
