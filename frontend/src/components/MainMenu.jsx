@@ -11,19 +11,32 @@ const TOTAL_STICKERS = 300;
 // ─────────────────────────────────────────────────────────────
 // 여정 카드: 학습지 → 퀴즈 → 게임 2배 버프
 // ─────────────────────────────────────────────────────────────
-const JourneyStep = ({ icon, label, done, active, locked, onClick }) => (
+const JourneyStep = ({ icon, label, done, active, locked, onClick, iconPath }) => (
     <button
         onClick={locked ? undefined : onClick}
-        className={`flex flex-col items-center gap-1 flex-1 transition-all ${locked ? 'opacity-40 cursor-default' : 'cursor-pointer active:scale-95'}`}
+        className={`flex flex-col items-center gap-1.5 flex-1 transition-all ${locked ? 'opacity-40 cursor-default' : 'cursor-pointer active:scale-95'}`}
     >
-        <div className={`w-11 h-11 md:w-14 md:h-14 rounded-full flex items-center justify-center text-xl md:text-2xl border-[3px] transition-all duration-300
+        <div className={`w-12 h-12 md:w-16 md:h-16 rounded-3xl flex items-center justify-center text-xl md:text-2xl border-[3px] transition-all duration-300 relative
             ${done ? 'bg-emerald-100 border-emerald-400 dark:bg-emerald-900/40 dark:border-emerald-500' :
-              active ? 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-400 animate-journey-glow' :
+              active ? 'bg-amber-50 border-amber-300 dark:bg-amber-900/20 dark:border-amber-400' :
               'bg-white/80 border-slate-200 dark:bg-slate-800/60 dark:border-slate-600'}`}
         >
-            {done ? '✅' : icon}
+            {done ? (
+                <span className="text-2xl md:text-3xl">✅</span>
+            ) : active && iconPath ? (
+                <>
+                    <img src={iconPath} alt={label} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                    <div className="absolute inset-0 rounded-3xl animate-pulse" style={{
+                        boxShadow: '0 0 20px rgba(251, 191, 36, 0.6), inset 0 0 15px rgba(251, 191, 36, 0.3)'
+                    }} />
+                </>
+            ) : iconPath ? (
+                <img src={iconPath} alt={label} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+            ) : (
+                icon
+            )}
         </div>
-        <span className={`text-[10px] md:text-xs font-black leading-tight text-center
+        <span className={`text-[9px] md:text-xs font-black leading-tight text-center
             ${done ? 'text-emerald-600 dark:text-emerald-400' :
               active ? 'text-amber-600 dark:text-amber-400' :
               'text-slate-400 dark:text-slate-500'}`}
@@ -32,29 +45,50 @@ const JourneyStep = ({ icon, label, done, active, locked, onClick }) => (
 );
 
 const JourneyCard = ({ isTodayStudyDone, isDailyQuizDone, isBuffActive, buffMins, onNavigate }) => (
-    <div className="w-full clay-panel px-4 py-3.5 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative z-10">
-        <div className="flex items-center justify-between mb-3">
-            <span className="font-black text-slate-600 dark:text-slate-300 text-xs tracking-wide">⚡ 오늘의 여정</span>
+    <div className="w-full clay-panel px-4 py-4 md:py-5 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative z-10">
+        <div className="flex items-center justify-between mb-4">
+            <span className="font-black text-slate-600 dark:text-slate-300 text-xs md:text-sm tracking-wide">⚡ 오늘의 여정</span>
             {isBuffActive && (
-                <span className="text-[10px] font-black text-rose-600 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-700 animate-pulse">
+                <span className="text-[9px] md:text-[10px] font-black text-rose-600 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/30 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-700 animate-pulse">
                     ×2 XP 버프 {buffMins}분 남음
                 </span>
             )}
         </div>
-        <div className="flex items-center gap-1">
-            <JourneyStep icon="📚" label="학습지" done={isTodayStudyDone} active={!isTodayStudyDone} locked={false} onClick={() => onNavigate('flashcard')} />
+        <div className="flex items-center gap-2 md:gap-3">
+            <JourneyStep 
+                iconPath="/assets/images/icons/icon_mission_flashcard_glossy.png" 
+                label="학습지" 
+                done={isTodayStudyDone} 
+                active={!isTodayStudyDone} 
+                locked={false} 
+                onClick={() => onNavigate('flashcard')} 
+            />
             {/* 연결선 1 */}
-            <div className="flex-1 flex items-center justify-center relative" style={{ height: 3 }}>
-                <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${isTodayStudyDone ? 'bg-gradient-to-r from-emerald-400 to-amber-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                {isTodayStudyDone && !isDailyQuizDone && <span className="absolute text-[10px] -mt-5 animate-bounce text-amber-400">▶</span>}
+            <div className="flex-1 flex items-center justify-center relative" style={{ height: 4 }}>
+                <div className={`w-full h-1 rounded-full transition-all duration-500 ${isTodayStudyDone ? 'bg-gradient-to-r from-emerald-400 to-amber-400 shadow-lg shadow-emerald-400/50' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                {isTodayStudyDone && !isDailyQuizDone && <span className="absolute text-xs md:text-sm -mt-6 animate-bounce text-amber-500 font-black">▶</span>}
             </div>
-            <JourneyStep icon="✏️" label="퀴즈" done={isDailyQuizDone} active={isTodayStudyDone && !isDailyQuizDone} locked={!isTodayStudyDone} onClick={() => onNavigate('combinedQuiz')} />
+            <JourneyStep 
+                iconPath="/assets/images/icons/icon_mission_quiz_glossy.png" 
+                label="퀴즈" 
+                done={isDailyQuizDone} 
+                active={isTodayStudyDone && !isDailyQuizDone} 
+                locked={!isTodayStudyDone} 
+                onClick={() => onNavigate('combinedQuiz')} 
+            />
             {/* 연결선 2 */}
-            <div className="flex-1 flex items-center justify-center relative" style={{ height: 3 }}>
-                <div className={`w-full h-0.5 rounded-full transition-all duration-500 ${isDailyQuizDone ? 'bg-gradient-to-r from-amber-400 to-rose-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                {isDailyQuizDone && !isBuffActive && <span className="absolute text-[10px] -mt-5 animate-bounce text-rose-400">▶</span>}
+            <div className="flex-1 flex items-center justify-center relative" style={{ height: 4 }}>
+                <div className={`w-full h-1 rounded-full transition-all duration-500 ${isDailyQuizDone ? 'bg-gradient-to-r from-amber-400 to-rose-400 shadow-lg shadow-amber-400/50' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                {isDailyQuizDone && !isBuffActive && <span className="absolute text-xs md:text-sm -mt-6 animate-bounce text-rose-500 font-black">▶</span>}
             </div>
-            <JourneyStep icon="🎮" label={isBuffActive ? `${buffMins}분` : '게임 2배'} done={isBuffActive} active={isDailyQuizDone && !isBuffActive} locked={!isDailyQuizDone} onClick={() => onNavigate('shootGame')} />
+            <JourneyStep 
+                iconPath="/assets/images/icons/icon_sentencequiz_glossy.png" 
+                label={isBuffActive ? `${buffMins}분` : '게임 2배'} 
+                done={isBuffActive} 
+                active={isDailyQuizDone && !isBuffActive} 
+                locked={!isDailyQuizDone} 
+                onClick={() => onNavigate('shootGame')} 
+            />
         </div>
     </div>
 );
