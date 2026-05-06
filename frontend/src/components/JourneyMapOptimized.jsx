@@ -127,15 +127,15 @@ const JourneyMapOptimized = ({
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // 노드 위치 (백분율)
+  // 노드 위치 (백분율) - 시안 기반 Up-Down 지그재그 배치
   const nodePositions = [
-    { x: 15, y: 50 },   // 리뷰 테스트 (시작점, 좌측)
-    { x: 25, y: 30 },   // 학습지
-    { x: 40, y: 20 },   // 단어 퀴즈
-    { x: 60, y: 20 },   // 문장 퀴즈
-    { x: 75, y: 30 },   // 몬스터 슈팅
-    { x: 85, y: 50 },   // 메모리 게임
-    { x: 60, y: 70 },   // 획순 테스트
+    { x: 10, y: 30 },   // 1. 리뷰 테스트 (상)
+    { x: 25, y: 70 },   // 2. 뭉치 학습지 (하)
+    { x: 40, y: 30 },   // 3. 단어 퀴즈 (상)
+    { x: 55, y: 70 },   // 4. 문장 퀴즈 (하)
+    { x: 70, y: 30 },   // 5. 몬스터 슈팅 (상)
+    { x: 85, y: 70 },   // 6. 메모리 게임 (하)
+    { x: 95, y: 30 },   // 7. 획순 테스트 (상/우측)
   ];
 
   // 노드 데이터
@@ -203,28 +203,31 @@ const JourneyMapOptimized = ({
     <div
       ref={containerRef}
       onClick={onMapClick}
-      className="w-full h-80 md:h-96 lg:h-[28rem] clay-panel px-4 py-6 md:py-8 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative cursor-pointer hover:shadow-xl transition-shadow overflow-hidden"
+      className="w-full clay-panel px-4 py-6 md:py-8 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative cursor-pointer hover:shadow-xl transition-shadow overflow-hidden min-h-[280px] md:min-h-[360px]"
     >
+      {/* 맵 타이틀 */}
+      <div className="flex justify-between items-center mb-10 relative z-20 px-2">
+        <h3 className="font-black text-slate-700 dark:text-white text-lg md:text-xl flex items-center gap-2">
+          🗺️ 오늘의 여정 ({completedStages}/{nodes.length})
+        </h3>
+        <div className="text-[10px] md:text-xs font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-100 dark:border-indigo-800 animate-pulse">
+          미션 바 활성화
+        </div>
+      </div>
+
       {/* SVG 연결선 */}
       <svg
         ref={svgRef}
         className="absolute inset-0 w-full h-full"
-        style={{ pointerEvents: 'none' }}
+        style={{ pointerEvents: 'none', top: '40px' }} // 타이틀 영역 고려
       >
         <defs>
-          {/* 완료된 연결선 그라데이션 */}
           <linearGradient id="completedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#10b981" stopOpacity="1" />
             <stop offset="100%" stopColor="#06b6d4" stopOpacity="1" />
           </linearGradient>
-          {/* 미완료 연결선 그라데이션 */}
-          <linearGradient id="pendingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#cbd5e1" stopOpacity="1" />
-            <stop offset="100%" stopColor="#e2e8f0" stopOpacity="1" />
-          </linearGradient>
         </defs>
 
-        {/* 연결선 렌더링 */}
         {connections.map((conn, idx) => {
           const fromPos = nodePositions[conn[0]];
           const toPos = nodePositions[conn[1]];
@@ -233,69 +236,34 @@ const JourneyMapOptimized = ({
           const toX = percentToPixel(toPos.x, 'width');
           const toY = percentToPixel(toPos.y, 'height');
 
-          const isCompleted = conn[0] < currentStage;
+          const isCompleted = conn[0] < completedStages;
 
           return (
             <g key={idx}>
-              {/* 배경 선 (더 굵음, 그림자 효과) */}
               <line
                 x1={fromX}
                 y1={fromY}
                 x2={toX}
                 y2={toY}
                 stroke={isCompleted ? '#10b981' : '#cbd5e1'}
-                strokeWidth={isCompleted ? 5 : 3}
+                strokeWidth={isCompleted ? 6 : 3}
                 strokeLinecap="round"
-                opacity={isCompleted ? 0.3 : 0.2}
+                strokeDasharray={isCompleted ? 'none' : '8,8'}
+                opacity={isCompleted ? 0.6 : 0.3}
+                className={isCompleted ? 'animate-pulse' : ''}
               />
-
-              {/* 메인 선 */}
-              <line
-                x1={fromX}
-                y1={fromY}
-                x2={toX}
-                y2={toY}
-                stroke={isCompleted ? '#10b981' : '#cbd5e1'}
-                strokeWidth={isCompleted ? 3 : 2}
-                strokeLinecap="round"
-                className={isCompleted ? 'drop-shadow-md' : 'dark:stroke-slate-600'}
-              />
-
-              {/* 완료 표시: 선 위에 체크마크 */}
-              {isCompleted && (
-                <>
-                  <circle
-                    cx={(fromX + toX) / 2}
-                    cy={(fromY + toY) / 2}
-                    r={7}
-                    fill="#10b981"
-                    className="drop-shadow-md"
-                  />
-                  <text
-                    x={(fromX + toX) / 2}
-                    y={(fromY + toY) / 2}
-                    textAnchor="middle"
-                    dy="0.3em"
-                    fill="white"
-                    fontSize="10"
-                    fontWeight="bold"
-                    pointerEvents="none"
-                  >
-                    ✓
-                  </text>
-                </>
-              )}
             </g>
           );
         })}
       </svg>
 
       {/* 노드들 */}
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full mt-4">
         {nodes.map((node, idx) => {
           const pos = nodePositions[idx];
-          const isCompleted = idx < currentStage;
-          const isLocked = idx > currentStage;
+          const isCompleted = idx < completedStages;
+          const isLocked = idx > completedStages;
+          const isCurrent = idx === completedStages;
 
           return (
             <JourneyNode
@@ -305,8 +273,11 @@ const JourneyMapOptimized = ({
               icon={node.icon}
               completed={isCompleted}
               locked={isLocked}
-              isStartNode={node.isStartNode}
-              onClick={() => !isLocked && onNodeClick(idx + 1)}
+              isStartNode={node.isStartNode || isCurrent}
+              onClick={(e) => {
+                e.stopPropagation(); // 맵 클릭 이벤트 방지
+                if (!isLocked) onNodeClick(idx + 1);
+              }}
               position={{
                 x: `${pos.x}%`,
                 y: `${pos.y}%`,
@@ -314,11 +285,6 @@ const JourneyMapOptimized = ({
             />
           );
         })}
-      </div>
-
-      {/* 중앙 안내 텍스트 */}
-      <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 text-center pointer-events-none">
-        노드를 클릭하여 여정을 시작하세요
       </div>
     </div>
   );

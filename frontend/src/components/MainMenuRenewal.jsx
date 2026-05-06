@@ -51,7 +51,8 @@ const MainMenuRenewal = ({
   const { t } = useLang();
   const [showBadges, setShowBadges] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(false);
-  const [completedStages, setCompletedStages] = useState(0);
+  // 시안의 (n/7) 진행도를 위해 doneCount(0~5)를 7단계 스케일로 조정하거나 직접 사용
+  const completedStages = Math.min(7, doneCount); 
   const [missionData, setMissionData] = useState({
     review: 0,
     flashcard: 0,
@@ -140,45 +141,51 @@ const MainMenuRenewal = ({
         <img 
           src="/assets/images/logo.webp"
           alt={t('appTitle')} 
-          className="h-14 md:h-18 lg:h-20 object-contain animate-float drop-shadow-lg"
+          className="h-14 md:h-18 lg:h-20 object-contain animate-float animate-fade-in-up delay-100 drop-shadow-lg"
         />
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
           1. 상단: 통합 프로필 & 뱃지 대시보드
           ───────────────────────────────────────────────────────────── */}
-      <ProfileDashboard
-        selectedCharacter={selectedCharacter}
-        userNickname={userNickname}
-        userXp={myXp}
-        unlockedStickers={unlockedStickers}
-        onNavigateToCalendar={() => onNavigate('calendar')}
-        onShowXpPopup={() => {}}
-      />
+      <div className="w-full animate-fade-in-up delay-200">
+        <ProfileDashboard
+          selectedCharacter={selectedCharacter}
+          userNickname={userNickname}
+          userXp={myXp}
+          unlockedStickers={unlockedStickers}
+          onNavigateToCalendar={() => onNavigate('calendar')}
+          onShowXpPopup={() => {}}
+        />
+      </div>
 
       {/* ─────────────────────────────────────────────────────────────
           2. 중앙: 7단계 여정 맵
           ───────────────────────────────────────────────────────────── */}
-      <JourneyMapOptimized
-        completedStages={completedStages}
-        currentStage={completedStages + 1}
-        onNodeClick={handleNodeClick}
-        onMapClick={handleMapClick}
-      />
+      <div className="w-full animate-fade-in-up delay-300">
+        <JourneyMapOptimized
+          completedStages={completedStages}
+          currentStage={completedStages + 1}
+          onNodeClick={handleNodeClick}
+          onMapClick={handleMapClick}
+        />
+      </div>
 
       {/* ─────────────────────────────────────────────────────────────
           3. 하단 슬라이드업 미션 바
           ───────────────────────────────────────────────────────────── */}
-      <JourneyProgressBar
-        isOpen={showProgressBar}
-        missionData={missionData}
-        onClose={handleCloseProgressBar}
-        completedStages={completedStages}
-      />
+      <div className="w-full animate-fade-in-up delay-400">
+        <JourneyProgressBar
+          isOpen={showProgressBar}
+          missionData={missionData}
+          onClose={handleCloseProgressBar}
+          completedStages={completedStages}
+        />
+      </div>
 
       {/* 일일 미션 카드 (요약형) */}
       {missions && missions.length > 0 && (
-        <div className="w-full">
+        <div className="w-full animate-fade-in-up delay-500">
           <DailyMissionCard 
             missions={missions} 
             streak={streak} 
@@ -190,7 +197,7 @@ const MainMenuRenewal = ({
       )}
 
       {/* 기존 메뉴 버튼들 (옵션: 필요시 유지) */}
-      <div className="w-full grid grid-cols-2 gap-4 md:gap-6">
+      <div className="w-full grid grid-cols-2 gap-4 md:gap-6 animate-fade-in-up delay-600">
         <button
           onClick={() => onNavigate('rankings')}
           className="clay-panel px-4 py-6 md:py-8 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-2xl active:scale-95 transition-all text-center"
