@@ -45,6 +45,13 @@ const generateOptions = (correct, allHanjas, type = 'meaning') => {
     }));
 };
 
+// 숫자 약어 (52401 → 52k+)
+const fmtNum = (n) => {
+    if (n >= 10000) return Math.floor(n / 1000) + 'k+';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(n);
+};
+
 // ─── 달력 ───────────────────────────────────────────────────────────────────
 const MissionCalendar = () => {
     const [viewDate, setViewDate] = useState(new Date());
@@ -56,7 +63,7 @@ const MissionCalendar = () => {
 
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
-    const firstDow = new Date(year, month, 1).getDay(); // 0=Sun
+    const firstDow = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
@@ -78,25 +85,18 @@ const MissionCalendar = () => {
     for (let i = 0; i < firstDow; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-    const cellStyle = {
-        today:  'bg-indigo-500 text-white shadow-md',
-        green:  'bg-emerald-400 text-white',
-        red:    'bg-rose-200 dark:bg-rose-900/50 text-rose-400 dark:text-rose-300',
-        future: 'text-slate-300 dark:text-slate-600',
-    };
-
     return (
-        <div className="clay-panel rounded-[2rem] w-full p-4 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
+        <div className="clay-panel rounded-[2rem] w-full p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 border-4 border-white shadow-lg">
             {/* Month nav */}
             <div className="flex justify-between items-center mb-3">
                 <button
                     onClick={() => { setViewDate(new Date(year, month - 1, 1)); setSelectedDay(null); }}
-                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-black text-slate-600 dark:text-white active:scale-90"
+                    className="w-9 h-9 rounded-full bg-white/80 dark:bg-slate-700 flex items-center justify-center font-black text-slate-600 dark:text-white shadow-md active:scale-90 border border-white"
                 >‹</button>
                 <span className="font-black text-slate-700 dark:text-white text-sm">{year}년 {month + 1}월</span>
                 <button
                     onClick={() => { setViewDate(new Date(year, month + 1, 1)); setSelectedDay(null); }}
-                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-black text-slate-600 dark:text-white active:scale-90"
+                    className="w-9 h-9 rounded-full bg-white/80 dark:bg-slate-700 flex items-center justify-center font-black text-slate-600 dark:text-white shadow-md active:scale-90 border border-white"
                 >›</button>
             </div>
 
@@ -115,28 +115,82 @@ const MissionCalendar = () => {
                     const ds = getDayStr(day);
                     const isSelected = selectedDay === ds;
                     const clickable = state === 'green' || state === 'today';
+
+                    if (state === 'today') {
+                        return (
+                            <button
+                                key={day}
+                                onClick={() => clickable && setSelectedDay(isSelected ? null : ds)}
+                                className={`aspect-square flex items-center justify-center transition-all active:scale-90 ${isSelected ? 'scale-110' : ''}`}
+                            >
+                                {/* 3D 인디고 링 버튼 */}
+                                <div className="w-full aspect-square rounded-full flex items-center justify-center relative"
+                                    style={{
+                                        background: 'linear-gradient(145deg, #818cf8, #4f46e5)',
+                                        boxShadow: '0 4px 0 #3730a3, 0 6px 12px rgba(79,70,229,0.4)',
+                                    }}>
+                                    <span className="text-[10px] font-black text-white drop-shadow-sm">{day}</span>
+                                </div>
+                            </button>
+                        );
+                    }
+
+                    if (state === 'green') {
+                        return (
+                            <button
+                                key={day}
+                                onClick={() => setSelectedDay(isSelected ? null : ds)}
+                                className={`aspect-square flex items-center justify-center transition-all active:scale-90 ${isSelected ? 'scale-110' : ''}`}
+                            >
+                                {/* 3D 도장 자국 */}
+                                <div className="w-full aspect-square rounded-full flex items-center justify-center relative"
+                                    style={{
+                                        background: 'linear-gradient(145deg, #6ee7b7, #10b981)',
+                                        boxShadow: '0 3px 0 #059669, 0 5px 10px rgba(16,185,129,0.3)',
+                                    }}>
+                                    <span className="text-[10px] font-black text-white drop-shadow-sm">{day}</span>
+                                </div>
+                            </button>
+                        );
+                    }
+
+                    if (state === 'red') {
+                        return (
+                            <div key={day} className="aspect-square flex items-center justify-center">
+                                <div className="w-full aspect-square rounded-full flex items-center justify-center bg-rose-100 dark:bg-rose-900/30">
+                                    <span className="text-[10px] font-bold text-rose-300 dark:text-rose-600">{day}</span>
+                                </div>
+                            </div>
+                        );
+                    }
+
                     return (
-                        <button
-                            key={day}
-                            onClick={() => clickable && setSelectedDay(isSelected ? null : ds)}
-                            className={`aspect-square rounded-full flex items-center justify-center text-[10px] font-black transition-all ${clickable ? 'active:scale-90' : 'cursor-default'} ${cellStyle[state] || 'text-slate-300'} ${isSelected ? 'ring-2 ring-offset-1 ring-emerald-500' : ''}`}
-                        >
-                            {day}
-                        </button>
+                        <div key={day} className="aspect-square flex items-center justify-center">
+                            <span className="text-[10px] text-slate-300 dark:text-slate-600 font-bold">{day}</span>
+                        </div>
                     );
                 })}
             </div>
 
             {/* Legend */}
-            <div className="flex gap-3 mt-3 justify-center">
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-emerald-400" /><span className="text-[9px] text-slate-400 font-bold">달성</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-rose-200" /><span className="text-[9px] text-slate-400 font-bold">미달성</span></div>
-                <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-indigo-500" /><span className="text-[9px] text-slate-400 font-bold">오늘</span></div>
+            <div className="flex gap-4 mt-3 justify-center">
+                <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ background: 'linear-gradient(145deg,#6ee7b7,#10b981)', boxShadow: '0 2px 0 #059669' }} />
+                    <span className="text-[9px] text-slate-400 font-bold">달성</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-rose-200" />
+                    <span className="text-[9px] text-slate-400 font-bold">미달성</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ background: 'linear-gradient(145deg,#818cf8,#4f46e5)', boxShadow: '0 2px 0 #3730a3' }} />
+                    <span className="text-[9px] text-slate-400 font-bold">오늘</span>
+                </div>
             </div>
 
             {/* Selected day detail */}
             {selectedDay && (
-                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <div className="mt-3 pt-3 border-t border-amber-100 dark:border-slate-700">
                     <div className="text-xs font-black text-slate-500 dark:text-slate-400 mb-2">
                         {selectedDay === todayStr ? '오늘' : selectedDay} 달성 미션
                     </div>
@@ -158,13 +212,14 @@ const MissionCalendar = () => {
     );
 };
 
-// ─── 학습 진행도 ─────────────────────────────────────────────────────────────
+// ─── 학습 진행도 (스택형 바 차트) ─────────────────────────────────────────────
 const ProgressSection = ({ mastery }) => {
     const stats = useMemo(() => {
         const totalHanja = HANJA_DATA.length;
         const seenIds = Object.keys(mastery || {});
         const seenCount = seenIds.length;
         const masteredCount = seenIds.filter(id => (mastery[id]?.level || 0) >= 2).length;
+        const learningCount = seenCount - masteredCount;
 
         let totalWords = 0;
         let seenWords = 0;
@@ -178,166 +233,178 @@ const ProgressSection = ({ mastery }) => {
                 if ((m.level || 0) >= 2) masteredWords += words.length;
             }
         });
+        const learningWords = seenWords - masteredWords;
 
         return {
-            hanja: { total: totalHanja, done: masteredCount, incomplete: seenCount - masteredCount, unseen: totalHanja - seenCount },
-            words: { total: totalWords, done: masteredWords, incomplete: seenWords - masteredWords, unseen: totalWords - seenWords },
+            hanja: { total: totalHanja, done: masteredCount, learning: learningCount, unseen: totalHanja - seenCount },
+            words: { total: totalWords, done: masteredWords, learning: learningWords, unseen: totalWords - seenWords },
         };
     }, [mastery]);
 
-    const Box = ({ label, emoji, stats: s, color }) => (
-        <div className={`flex-1 clay-panel rounded-[1.5rem] p-4 bg-white dark:bg-slate-800 border-4 border-white flex flex-col gap-3`}>
-            <div className="flex items-center gap-2">
-                <span className="text-xl">{emoji}</span>
-                <span className="font-black text-slate-700 dark:text-white text-sm">{label}</span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-emerald-500">✅ 학습완료</span>
-                    <span className="text-sm font-black text-slate-700 dark:text-white">{s.done}개</span>
+    const StackBar = ({ label, s }) => {
+        const donePct = (s.done / s.total) * 100;
+        const learningPct = (s.learning / s.total) * 100;
+        const totalPct = Math.round((s.done / s.total) * 100);
+
+        return (
+            <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-300">{label}</span>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-slate-700 dark:text-white leading-none">{totalPct}%</span>
+                        <span className="text-[10px] text-slate-400 font-bold">{s.done}/{s.total}</span>
+                    </div>
                 </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-amber-500">📖 학습중</span>
-                    <span className="text-sm font-black text-slate-700 dark:text-white">{s.incomplete}개</span>
+                {/* 스택형 바 */}
+                <div className="w-full h-5 rounded-full overflow-hidden flex"
+                    style={{
+                        background: '#f1f5f9',
+                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)',
+                    }}>
+                    {/* 완료 (민트) */}
+                    {donePct > 0 && (
+                        <div
+                            className="h-full transition-all duration-700 relative"
+                            style={{
+                                width: `${donePct}%`,
+                                background: 'linear-gradient(90deg, #6ee7b7, #34d399)',
+                                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.5)',
+                                borderRadius: learningPct > 0 ? '9999px 0 0 9999px' : '9999px',
+                            }}
+                        />
+                    )}
+                    {/* 학습중 (인디고) */}
+                    {learningPct > 0 && (
+                        <div
+                            className="h-full transition-all duration-700"
+                            style={{
+                                width: `${learningPct}%`,
+                                background: 'linear-gradient(90deg, #818cf8, #6366f1)',
+                                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3)',
+                                borderRadius: donePct > 0 ? '0 9999px 9999px 0' : '9999px',
+                            }}
+                        />
+                    )}
                 </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-slate-400">🔒 미학습</span>
-                    <span className="text-sm font-black text-slate-400">{s.unseen}개</span>
+                {/* 범례 */}
+                <div className="flex gap-3">
+                    <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full" style={{ background: '#34d399' }} />
+                        <span className="text-[9px] text-slate-400 font-bold">완료 {s.done}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }} />
+                        <span className="text-[9px] text-slate-400 font-bold">학습중 {s.learning}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-slate-200" />
+                        <span className="text-[9px] text-slate-400 font-bold">미학습 {s.unseen}</span>
+                    </div>
                 </div>
             </div>
-            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${(s.done / s.total) * 100}%`, background: color }}
-                />
-            </div>
-            <span className="text-[10px] text-slate-400 font-bold text-right">{s.done} / {s.total}</span>
-        </div>
-    );
+        );
+    };
 
     return (
-        <div className="w-full">
-            <div className="text-slate-500 dark:text-slate-400 font-black text-sm mb-3">📊 나의 학습 진행도</div>
-            <div className="flex gap-3">
-                <Box label="한자 학습" emoji="漢" stats={stats.hanja} color="linear-gradient(90deg,#6366f1,#8b5cf6)" />
-                <Box label="단어 학습" emoji="📚" stats={stats.words} color="linear-gradient(90deg,#10b981,#34d399)" />
+        <div className="clay-panel rounded-[2rem] w-full p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
+            <div className="text-slate-600 dark:text-slate-300 font-black text-sm mb-4">🔥 나의 열공 지수</div>
+            <div className="flex flex-col gap-5">
+                <StackBar label="한자 학습" s={stats.hanja} />
+                <StackBar label="단어 학습" s={stats.words} />
             </div>
         </div>
     );
 };
 
-// ─── 오답 노트 ───────────────────────────────────────────────────────────────
-const WrongSection = ({ wrongHanjas, onStartReview }) => {
-    const [open, setOpen] = useState({ hanja: true, word: false, sentence: false, writing: false });
+// ─── 오답 섹션 (상태 칩 + 랭킹 차트) ─────────────────────────────────────────
+const WrongSection = ({ wrongHanjas }) => {
+    const top5 = wrongHanjas.slice(0, 5);
+    const maxWrong = top5.length > 0 ? top5[0].wrongCount : 1;
 
-    const toggle = (key) => setOpen(prev => ({ ...prev, [key]: !prev[key] }));
-
-    const wrongWords = useMemo(() => {
-        const result = [];
-        wrongHanjas.slice(0, 10).forEach(h => {
-            (h.words || []).slice(0, 2).forEach(w => result.push({ ...w, hanja: h.hanja, wrongCount: h.wrongCount }));
-        });
-        return result;
-    }, [wrongHanjas]);
-
-    const AccordionItem = ({ id, emoji, label, count, children }) => (
-        <div className="clay-panel rounded-[1.5rem] overflow-hidden bg-white dark:bg-slate-800 border-4 border-white">
-            <button
-                onClick={() => toggle(id)}
-                className="w-full flex items-center justify-between p-4 active:bg-slate-50 dark:active:bg-slate-700 transition-colors"
-            >
-                <div className="flex items-center gap-3">
-                    <span className="text-xl">{emoji}</span>
-                    <span className="font-black text-slate-700 dark:text-white text-sm">{label}</span>
-                    {count > 0 && (
-                        <span className="bg-rose-100 dark:bg-rose-900/40 text-rose-500 text-[10px] font-black px-2 py-0.5 rounded-full">{count}개</span>
-                    )}
-                </div>
-                <span className={`text-slate-400 font-black text-lg transition-transform duration-200 ${open[id] ? 'rotate-180' : ''}`}>∨</span>
-            </button>
-            {open[id] && (
-                <div className="px-4 pb-4 border-t border-slate-100 dark:border-slate-700 pt-3">
-                    {children}
-                </div>
-            )}
-        </div>
-    );
+    // 문장/획순 오답 수 (현재는 0, 준비 중)
+    const sentenceWrong = 0;
+    const writingWrong = 0;
 
     return (
-        <div className="w-full">
-            <div className="flex items-center justify-between mb-3">
-                <span className="text-slate-500 dark:text-slate-400 font-black text-sm">📝 오답 노트</span>
-                {wrongHanjas.length > 0 && (
-                    <button
-                        onClick={onStartReview}
-                        className="text-xs font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full border border-indigo-100 dark:border-indigo-700 active:scale-95 transition-all"
-                    >
-                        복습하기 →
-                    </button>
+        <div className="clay-panel rounded-[2rem] w-full p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
+            <div className="text-slate-600 dark:text-slate-300 font-black text-sm mb-4">📊 요주의 한자 TOP {Math.min(5, top5.length)}</div>
+
+            {/* 상태 칩 */}
+            <div className="flex gap-2 mb-4 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-700 px-3 py-1.5 rounded-full">
+                    <span className="text-xs">漢</span>
+                    <span className="text-xs font-black text-rose-600 dark:text-rose-300">한자 오답 {wrongHanjas.length}</span>
+                </div>
+                {sentenceWrong > 0 && (
+                    <div className="flex items-center gap-1.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 px-3 py-1.5 rounded-full">
+                        <span className="text-xs">💬</span>
+                        <span className="text-xs font-black text-purple-600 dark:text-purple-300">문장 오답 {sentenceWrong}</span>
+                    </div>
+                )}
+                {writingWrong > 0 && (
+                    <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 px-3 py-1.5 rounded-full">
+                        <span className="text-xs">✍️</span>
+                        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">획순 오답 {writingWrong}</span>
+                    </div>
                 )}
             </div>
-            <div className="flex flex-col gap-3">
-                {/* 한자 오답 */}
-                <AccordionItem id="hanja" emoji="漢" label="한자 오답" count={wrongHanjas.length}>
-                    {wrongHanjas.length === 0 ? (
-                        <div className="text-slate-400 text-sm text-center py-3">오답이 없어요 🎉</div>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            {wrongHanjas.slice(0, 15).map(h => (
-                                <div key={h.id} className={`flex items-center gap-3 p-3 rounded-xl border ${h.urgency === 'urgent' ? 'border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800' : h.urgency === 'due' ? 'border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800' : 'border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30'}`}>
-                                    <span className="text-3xl font-black text-slate-700 dark:text-white w-10 text-center">{h.hanja}</span>
-                                    <div className="flex flex-col flex-1">
-                                        <span className="font-black text-slate-700 dark:text-slate-200 text-sm">{h.sound} · {h.meaning}</span>
-                                        <span className="text-[10px] text-slate-400">{h.grade}</span>
+
+            {/* 오답 랭킹 차트 */}
+            {top5.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-6">
+                    <span className="text-3xl">🎉</span>
+                    <span className="text-slate-400 text-sm font-bold">오답이 없어요!</span>
+                </div>
+            ) : (
+                <div className="flex flex-col gap-3">
+                    {top5.map((h, idx) => {
+                        const barPct = (h.wrongCount / maxWrong) * 100;
+                        const urgencyColor = h.urgency === 'urgent'
+                            ? 'from-red-400 to-rose-500'
+                            : h.urgency === 'due'
+                            ? 'from-amber-400 to-orange-400'
+                            : 'from-violet-400 to-purple-500';
+
+                        return (
+                            <div key={h.id} className="flex items-center gap-3">
+                                {/* 순위 */}
+                                <span className="text-[10px] font-black text-slate-300 w-3 text-center">{idx + 1}</span>
+                                {/* 한자 */}
+                                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                                    style={{
+                                        background: 'linear-gradient(145deg, #f8fafc, #e2e8f0)',
+                                        boxShadow: '0 3px 0 #cbd5e1, 0 4px 8px rgba(0,0,0,0.08)',
+                                    }}>
+                                    <span className="text-xl font-black text-slate-700 dark:text-slate-800">{h.hanja}</span>
+                                </div>
+                                {/* 바 + 수치 */}
+                                <div className="flex-1 flex flex-col gap-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{h.sound} · {h.meaning}</span>
+                                        <span className="text-xs font-black text-purple-600 dark:text-purple-300">{fmtNum(h.wrongCount)}회</span>
                                     </div>
-                                    <div className="flex flex-col items-end gap-0.5">
-                                        <span className="bg-rose-100 dark:bg-rose-900/40 text-rose-500 text-[10px] font-black px-2 py-0.5 rounded-full">오답 {h.wrongCount}회</span>
-                                        {h.urgency === 'urgent' && <span className="text-[9px] text-red-400 font-bold">3일 경과</span>}
-                                        {h.urgency === 'due' && <span className="text-[9px] text-amber-400 font-bold">복습 권장</span>}
+                                    <div className="w-full h-3 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700">
+                                        <div
+                                            className={`h-full rounded-full bg-gradient-to-r ${urgencyColor} transition-all duration-700`}
+                                            style={{
+                                                width: `${barPct}%`,
+                                                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4)',
+                                            }}
+                                        />
                                     </div>
                                 </div>
-                            ))}
-                            {wrongHanjas.length > 15 && (
-                                <div className="text-center text-slate-400 text-xs py-1">외 {wrongHanjas.length - 15}개 더…</div>
-                            )}
-                        </div>
+                            </div>
+                        );
+                    })}
+                    {wrongHanjas.length > 5 && (
+                        <div className="text-center text-slate-400 text-xs pt-1">외 {wrongHanjas.length - 5}개 더…</div>
                     )}
-                </AccordionItem>
+                </div>
+            )}
 
-                {/* 단어 오답 */}
-                <AccordionItem id="word" emoji="📖" label="단어 오답" count={wrongWords.length}>
-                    {wrongWords.length === 0 ? (
-                        <div className="text-slate-400 text-sm text-center py-3">오답이 없어요 🎉</div>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            {wrongWords.map((w, i) => (
-                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/30">
-                                    <span className="text-base font-black text-indigo-600 dark:text-indigo-300 w-16">{w.word}</span>
-                                    <div className="flex flex-col flex-1">
-                                        <span className="font-bold text-slate-700 dark:text-slate-200 text-xs">{w.reading} — {w.meaning}</span>
-                                        <span className="text-[10px] text-slate-400">{w.hanja} 관련</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </AccordionItem>
-
-                {/* 문장 오답 */}
-                <AccordionItem id="sentence" emoji="💬" label="문장 오답" count={0}>
-                    <div className="text-center py-3">
-                        <div className="text-2xl mb-2">🚧</div>
-                        <div className="text-slate-400 text-sm font-bold">문장 퀴즈 오답 기록은<br />준비 중이에요</div>
-                    </div>
-                </AccordionItem>
-
-                {/* 획순 오답 */}
-                <AccordionItem id="writing" emoji="✍️" label="획순 오답" count={0}>
-                    <div className="text-center py-3">
-                        <div className="text-2xl mb-2">🚧</div>
-                        <div className="text-slate-400 text-sm font-bold">획순 테스트 오답 기록은<br />준비 중이에요</div>
-                    </div>
-                </AccordionItem>
+            {/* 준비 중 안내 */}
+            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <span className="text-[10px] text-slate-300 dark:text-slate-600 font-bold">✨ 더 많은 분석 기능이 곧 추가돼요!</span>
             </div>
         </div>
     );
@@ -560,7 +627,7 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong, getStats }) => 
     // ── 홈 화면 ──
     if (mode === 'home') {
         return (
-            <div className="flex flex-col items-center w-full max-w-md mx-auto min-h-full px-6 pt-10 pb-32 gap-6">
+            <div className="flex flex-col items-center w-full max-w-md mx-auto min-h-full px-4 pt-6 pb-36 gap-5">
                 {showReviewModal && (
                     <ReviewModeModal
                         onClose={() => setShowReviewModal(false)}
@@ -573,7 +640,7 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong, getStats }) => 
                 {/* 헤더 */}
                 <div className="w-full flex items-center gap-4">
                     <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">←</button>
-                    <h1 className="text-3xl font-black text-slate-700 dark:text-white">학습 다이어리</h1>
+                    <h1 className="text-2xl font-black text-slate-700 dark:text-white">학습 다이어리</h1>
                 </div>
 
                 {/* 달력 */}
@@ -582,8 +649,31 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong, getStats }) => 
                 {/* 학습 진행도 */}
                 <ProgressSection mastery={mastery} />
 
-                {/* 오답 노트 */}
-                <WrongSection wrongHanjas={wrongHanjas} onStartReview={() => setShowReviewModal(true)} />
+                {/* 오답 섹션 */}
+                <WrongSection wrongHanjas={wrongHanjas} />
+
+                {/* 하단 고정 복습하기 버튼 */}
+                <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-6 pt-3"
+                    style={{ background: 'linear-gradient(to top, rgba(248,250,252,0.98) 70%, transparent)' }}>
+                    <button
+                        onClick={() => setShowReviewModal(true)}
+                        disabled={wrongHanjas.length === 0}
+                        className="w-full max-w-md py-4 rounded-[1.5rem] font-black text-lg text-white disabled:opacity-40 active:scale-[0.98] transition-all"
+                        style={{
+                            background: wrongHanjas.length > 0
+                                ? 'linear-gradient(135deg, #f59e0b, #f97316)'
+                                : '#e2e8f0',
+                            boxShadow: wrongHanjas.length > 0
+                                ? '0 6px 0 #b45309, 0 8px 20px rgba(245,158,11,0.4)'
+                                : 'none',
+                        }}
+                    >
+                        ⚡ 지금 바로 복습하기
+                        {wrongHanjas.length > 0 && (
+                            <span className="ml-2 text-sm font-bold opacity-80">{wrongHanjas.length}개</span>
+                        )}
+                    </button>
+                </div>
             </div>
         );
     }
