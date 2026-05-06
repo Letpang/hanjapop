@@ -9,13 +9,13 @@ const NAVIGATE_MAP = {
     matchGame: 'matchGame',
 };
 
-// 미션 타입별 3D 클레이 아이콘
+// 미션 타입별 글래스 하이브리드 아이콘
 const MISSION_ICON = {
-    sentenceQuiz: '/assets/images/icons/icon_mission_sentence.webp',
-    wordQuiz: '/assets/images/icons/icon_mission_word.webp',
-    flashcard: '/assets/images/icons/icon_mission_flashcard.webp',
-    writing: '/assets/images/icons/icon_mission_writing.webp',
-    matchGame: '/assets/images/icons/icon_mission_match.webp',
+    sentenceQuiz: '/assets/images/icons/icon_mission_quiz_glossy.png',
+    wordQuiz: '/assets/images/icons/icon_mission_word_glossy.png',
+    flashcard: '/assets/images/icons/icon_mission_flashcard_glossy.png',
+    writing: '/assets/images/icons/icon_mission_review_glossy.png',
+    matchGame: '/assets/images/icons/icon_mission_review_glossy.png',
 };
 
 const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) => {
@@ -70,7 +70,7 @@ const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) 
                                             <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">
                                                 {quest.done
                                         ? <span className="text-base">✅</span>
-                                        : <img src={icon} alt="" className="w-5 h-5 object-contain shrink-0" />
+                                        : <img src={icon} alt="" className="w-5 h-5 object-contain shrink-0 inline-block" />
                                     } {quest.label}
                                             </span>
                                             <span className="text-xs font-black text-indigo-500">+{quest.xp} XP</span>
@@ -113,7 +113,7 @@ const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) 
                 </div>
             )}
 
-            {/* ── 홈 카드 ── */}
+            {/* ── 홈 카드 (요약형) ── */}
             <div
                 onClick={() => setShowModal(true)}
                 className="w-full clay-panel p-4 md:p-5 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform rounded-[2rem]"
@@ -145,49 +145,31 @@ const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) 
                     </div>
                 </div>
 
-                {/* 3D 클레이 바 게이지 목록 */}
-                <div className="flex flex-col gap-2.5">
-                    {missions.map(quest => {
-                        const pct = Math.min(100, (quest.progress / quest.target) * 100);
-                        const icon = MISSION_ICON[quest.type] || '⭐';
-                        return (
-                            <div key={quest.id} className="flex items-center gap-2.5">
-                                {/* 아이콘 */}
-                                <span className="shrink-0 w-6 h-6 flex items-center justify-center">
-                                {quest.done
-                                    ? <span className="text-base">✅</span>
-                                    : <img src={icon} alt="" className="w-6 h-6 object-contain" />
-                                }
-                            </span>
-                                {/* 바 */}
-                                <div className="flex-1 flex flex-col gap-0.5">
-                                    <div className="w-full h-3.5 md:h-4 rounded-full overflow-hidden"
-                                        style={{
-                                            background: '#e2e8f0',
-                                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)',
-                                        }}>
-                                        <div
-                                            className="h-full rounded-full transition-all duration-700"
-                                            style={{
-                                                width: `${pct}%`,
-                                                background: quest.done
-                                                    ? 'linear-gradient(90deg, #6ee7b7, #34d399)'
-                                                    : 'linear-gradient(90deg, #818cf8, #6366f1)',
-                                                boxShadow: quest.done
-                                                    ? 'inset 0 1px 2px rgba(255,255,255,0.6)'
-                                                    : 'inset 0 1px 2px rgba(255,255,255,0.4)',
-                                                minWidth: pct > 0 ? '0.75rem' : '0',
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                                {/* 수치 */}
-                                <span className="text-[9px] md:text-[10px] font-black text-slate-400 shrink-0 w-10 text-right">
-                                    {quest.progress}/{quest.target}
-                                </span>
-                            </div>
-                        );
-                    })}
+                {/* 미션 요약 바 (압축형) */}
+                <div className="flex items-center gap-2.5">
+                    {/* 요약 바 */}
+                    <div className="flex-1 h-4 md:h-5 rounded-full overflow-hidden"
+                        style={{
+                            background: '#e2e8f0',
+                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)',
+                        }}>
+                        <div
+                            className="h-full rounded-full transition-all duration-700 relative"
+                            style={{
+                                width: `${Math.min(100, (doneCount / missions.length) * 100)}%`,
+                                background: allDone
+                                    ? 'linear-gradient(90deg, #6ee7b7, #34d399)'
+                                    : 'linear-gradient(90deg, #818cf8, #6366f1)',
+                                boxShadow: allDone
+                                    ? 'inset 0 1px 2px rgba(255,255,255,0.6), 0 2px 6px rgba(52,211,153,0.3)'
+                                    : 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 6px rgba(99,102,241,0.3)',
+                            }}
+                        />
+                    </div>
+                    {/* 수치 */}
+                    <span className="text-xs md:text-sm font-black text-slate-600 dark:text-slate-300 shrink-0 w-12 text-right">
+                        {doneCount}/{missions.length}
+                    </span>
                 </div>
             </div>
         </>

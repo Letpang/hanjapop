@@ -221,55 +221,39 @@ const MainMenu = ({
             )}
             
 
-            <div className="w-full flex justify-between items-center z-50 safe-top">
-                <div className="flex gap-2 md:gap-3">
-                    {/* 다크모드 토글 - 글래스 버튼 */}
-                    <button
-                        onClick={() => setIsDarkMode(!isDarkMode)}
-                        className="clay-button flex items-center justify-center p-2.5 md:p-3 rounded-2xl active:scale-90 transition-all w-11 h-11 md:w-14 md:h-14 shrink-0"
-                    >
-                        <span className="text-xl md:text-2xl">{isDarkMode ? '☀️' : '🌙'}</span>
-                    </button>
-                    {/* 랭킹 버튼 */}
-                    <button
-                        onClick={() => onNavigate('rankings')}
-                        className="clay-button flex items-center justify-center px-4 py-2 md:px-6 md:py-3 rounded-2xl active:scale-95 transition-all font-black text-sm md:text-base gap-1.5"
-                        style={{ boxShadow: '0 4px 16px rgba(251,191,36,0.25), inset 0 1px 0 rgba(255,255,255,0.9)' }}
-                    >
-                        <span>🏆</span>
-                        <span className="text-amber-600 dark:text-amber-400">랭킹</span>
-                    </button>
-                    {/* 보관함 버튼 */}
-                    <button
-                        onClick={() => onNavigate('stickerBook')}
-                        className="clay-button flex items-center justify-center px-4 py-2 md:px-6 md:py-3 rounded-2xl active:scale-95 transition-all font-black text-sm md:text-base gap-1.5"
-                        style={{ boxShadow: '0 4px 16px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.9)' }}
-                    >
-                        <span className="text-indigo-500 dark:text-indigo-400">보관함</span>
-                        <span>📖</span>
-                    </button>
-                </div>
+            {/* 상단 우측 다크모드 토글 */}
+            <div className="w-full flex justify-end z-50 safe-top">
+                <button
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    className="clay-button flex items-center justify-center p-2.5 md:p-3 rounded-2xl active:scale-90 transition-all w-11 h-11 md:w-14 md:h-14 shrink-0"
+                >
+                    <span className="text-xl md:text-2xl">{isDarkMode ? '☀️' : '🌙'}</span>
+                </button>
             </div>
 
-            <div className="flex flex-col items-center w-full gap-2 sm:gap-4 mt-6 mb-4">
+            {/* 로고 - 축소 및 중앙 배치 */}
+            <div className="flex flex-col items-center w-full gap-2 mt-2 mb-2">
                 <img 
                     src="/assets/images/logo.webp"
                     alt={t('appTitle')} 
-                    className="h-28 md:h-40 lg:h-48 object-contain animate-float drop-shadow-2xl"
+                    className="h-16 md:h-20 lg:h-24 object-contain animate-float drop-shadow-lg"
                 />
             </div>
 
-            {/* Character Bar */}
+            {/* 프로필 카드 - 통합 헤더 */}
             <button
                 onClick={() => onNavigate('profile')}
                 className="w-full clay-panel px-5 py-4 md:py-5 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] flex items-center gap-4 active:scale-[0.98] transition-all relative z-10"
             >
+                {/* 왼쪽: 아바타 */}
                 <div className="relative shrink-0">
                     <img src={rank.avatar} alt="Avatar" className="w-16 h-16 md:w-20 md:h-20 object-contain filter drop-shadow-lg animate-float" />
                     <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white font-black text-[10px] md:text-xs px-2 py-0.5 rounded-full border-2 border-white shadow-sm whitespace-nowrap">
                         LV.{rank.level}
                     </div>
                 </div>
+                
+                {/* 중앙: 프로필 정보 */}
                 <div className="flex flex-col flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
                         <span className="font-black text-slate-700 dark:text-white text-lg md:text-xl tracking-tight truncate">{userNickname || rank.name}</span>
@@ -297,18 +281,36 @@ const MainMenu = ({
                             </div>
                         </div>
                         <span className="text-[10px] md:text-xs font-bold text-slate-400 shrink-0">XP {myXp}</span>
-                        {(streak?.count || 0) >= 3 && (
-                            <span className="text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200">
-                                {(streak?.count || 0) >= 7 ? '🔥×1.5' : '🔥×1.2'}
-                            </span>
-                        )}
-                        {isBuffActive && (
-                            <span className="text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300 border border-rose-200 animate-pulse">
-                                ⚡×2.0
-                            </span>
-                        )}
                     </div>
                 </div>
+                
+                {/* 우측: 기능 버튼들 */}
+                <div className="flex flex-col gap-1.5 shrink-0">
+                    {/* 랭킹 아이콘 버튼 */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate('rankings');
+                        }}
+                        className="clay-button flex items-center justify-center p-2 md:p-2.5 rounded-xl active:scale-90 transition-all w-8 h-8 md:w-10 md:h-10 shrink-0"
+                        title="랭킹"
+                    >
+                        <span className="text-lg md:text-xl">🏆</span>
+                    </button>
+                    {/* 보관함 아이콘 버튼 */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate('stickerBook');
+                        }}
+                        className="clay-button flex items-center justify-center p-2 md:p-2.5 rounded-xl active:scale-90 transition-all w-8 h-8 md:w-10 md:h-10 shrink-0"
+                        title="보관함"
+                    >
+                        <span className="text-lg md:text-xl">📖</span>
+                    </button>
+                </div>
+                
+                {/* 우측 끝: 화살표 */}
                 <span className="text-slate-300 dark:text-slate-500 text-2xl shrink-0">›</span>
             </button>
 
