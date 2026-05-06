@@ -21,6 +21,8 @@ import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
 import { useMastery } from './hooks/useMastery.js';
 import { useTotalStats } from './hooks/useTotalStats.js';
+import { useSRS } from './hooks/useSRS.js';
+import { useCloudSync } from './hooks/useCloudSync.js';
 
 const App = () => {
     // 온보딩 완료 여부
@@ -102,6 +104,11 @@ const App = () => {
     }, []);
     const { mastery, markSeen, markCorrect, markWrong, getStats, getMasteryLevel } = useMastery();
     const { totalStats, increment } = useTotalStats();
+    const { srsData, markCorrect: srsMarkCorrect, markWrong: srsMarkWrong, getDueItems, getWeightedPool, getStats: getSrsStats } = useSRS();
+    const { syncStatus, leaderboard, myRank, syncToCloud } = useCloudSync({
+        userXp, userNickname, selectedCharacter, streak,
+        mastery, srsData, totalStats, unlockedStickers,
+    });
 
     // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
     const addBonusXp = useCallback((xp) => {
@@ -147,6 +154,8 @@ const App = () => {
                         mastery={mastery}
                         todayStats={todayStats}
                         totalStats={totalStats}
+                        srsData={srsData}
+                        getDueItems={getDueItems}
                     />
                 );
             case 'flashcard':
@@ -192,7 +201,8 @@ const App = () => {
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
                     onWaveClear={() => { updateMissionProgress('shootGame_wave', 1, addBonusXp); increment('shootGame'); }}
-                    onMarkWrong={markWrong}
+                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
+                    srsWeightedPool={getWeightedPool}
                 />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
@@ -200,9 +210,11 @@ const App = () => {
                 return <ReviewScreen
                     onBack={() => setCurrentScreen('main')}
                     mastery={mastery}
-                    markCorrect={markCorrect}
-                    markWrong={markWrong}
+                    markCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                    markWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
                     getStats={getStats}
+                    srsData={srsData}
+                    getDueItems={getDueItems}
                 />;
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
@@ -241,7 +253,14 @@ const App = () => {
                     streak={streak}
                 />;
             case 'rankings':
-                return <RankingsScreen onBack={() => setCurrentScreen('main')} userXp={userXp} selectedCharacter={selectedCharacter} />;
+                return <RankingsScreen
+                    onBack={() => setCurrentScreen('main')}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
+                    userNickname={userNickname}
+                    cloudLeaderboard={leaderboard}
+                    cloudMyRank={myRank}
+                />;
             default:
                 return <MainMenu onNavigate={setCurrentScreen} />;
         }

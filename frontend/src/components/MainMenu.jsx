@@ -12,30 +12,43 @@ const MenuButton = ({ label, icon, activeColor, onClick, locked, badge }) => {
     return (
         <button
             onClick={locked ? null : onClick}
-            className={'clay-button group relative flex flex-col items-center justify-center p-6 gap-3 transition-all duration-300 ' + (locked ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 hover:-translate-y-2')}
-            style={{ borderColor: 'white' }}
+            className={'crystal-card group relative flex flex-col items-center justify-center p-4 md:p-6 gap-2 md:gap-3 transition-all duration-300 ' + (locked ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:-translate-y-3 hover:shadow-2xl')}
+            style={!locked ? {
+                boxShadow: `0 8px 32px ${activeColor}33, 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)`,
+            } : {}}
         >
             {badge > 0 && (
-                <div className="absolute top-3 right-3 bg-red-500 text-white text-xs font-black min-w-[1.5rem] h-6 px-1.5 rounded-full flex items-center justify-center z-20 shadow-md border-2 border-white">
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-black min-w-[1.4rem] h-5 px-1 rounded-full flex items-center justify-center z-20 shadow-md border-2 border-white">
                     {badge > 99 ? '99+' : badge}
                 </div>
             )}
-            <div className={'w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 mb-1 md:mb-3 transition-transform duration-300 relative ' + (locked ? '' : 'group-hover:scale-110 drop-shadow-md')}>
+            {/* 아이콘 컨테이너 - 글로시 3D */}
+            <div className={'w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 mb-1 md:mb-2 transition-all duration-300 relative ' + (locked ? '' : 'group-hover:scale-110 group-hover:-translate-y-1')}>
                 {!locked && (
-                    <div className="absolute inset-0 bg-white dark:bg-slate-800 rounded-[2rem] md:rounded-[3rem] shadow-inner opacity-80 border-2 border-slate-50 dark:border-slate-700"></div>
+                    <div className="absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] overflow-hidden"
+                        style={{
+                            background: `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, ${activeColor}22 50%, rgba(255,255,255,0.8) 100%)`,
+                            border: '2px solid rgba(255,255,255,0.95)',
+                            boxShadow: `0 4px 16px ${activeColor}44, inset 0 1px 0 rgba(255,255,255,1), inset 0 -2px 4px rgba(0,0,0,0.04)`,
+                        }}>
+                        {/* 상단 글로시 하이라이트 */}
+                        <div className="absolute top-0 left-0 right-0 h-1/2 rounded-t-[1.5rem]"
+                            style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)' }} />
+                    </div>
                 )}
-                <div className="relative w-full h-full flex items-center justify-center p-3 md:p-6">
+                <div className="relative w-full h-full flex items-center justify-center p-3 md:p-5">
                     {locked
-                        ? <div className="w-full h-full flex items-center justify-center text-5xl">🔒</div>
+                        ? <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">🔒</div>
                         : <img src={icon} alt={label} className="w-full h-full object-contain relative z-10 filter drop-shadow-lg" />
                     }
                 </div>
             </div>
-            <span className="font-black text-[clamp(1.1rem,4vw,1.25rem)] md:text-2xl lg:text-3xl text-center text-slate-700 dark:text-white px-2 leading-tight whitespace-nowrap premium-text-shadow">
+            <span className="font-black text-[clamp(0.9rem,3.5vw,1.1rem)] md:text-xl lg:text-2xl text-center text-slate-700 dark:text-white px-1 leading-tight whitespace-nowrap">
                 {label}
             </span>
             {!locked && (
-                <div className="absolute bottom-3 w-1/3 h-1.5 rounded-full opacity-50 blur-[2px]" style={{ backgroundColor: activeColor }}></div>
+                <div className="absolute bottom-2 w-1/3 h-1 rounded-full"
+                    style={{ background: `linear-gradient(90deg, transparent, ${activeColor}, transparent)`, opacity: 0.6 }} />
             )}
         </button>
     );
@@ -113,27 +126,33 @@ const MainMenu = ({
             
 
             <div className="w-full flex justify-between items-center z-50 safe-top">
-                <div className="flex gap-3">
+                <div className="flex gap-2 md:gap-3">
+                    {/* 다크모드 토글 - 글래스 버튼 */}
                     <button
                         onClick={() => setIsDarkMode(!isDarkMode)}
-                        className="flex items-center justify-center bg-white dark:bg-slate-800 hover:bg-slate-50 p-2.5 md:p-3 rounded-full border-[3px] border-white shadow-xl active:scale-90 transition-all w-12 h-12 md:w-16 md:h-16 shrink-0 overflow-hidden"
+                        className="clay-button flex items-center justify-center p-2.5 md:p-3 rounded-2xl active:scale-90 transition-all w-11 h-11 md:w-14 md:h-14 shrink-0"
                     >
-                        <span className="text-2xl md:text-3xl">{isDarkMode ? '☀️' : '🌙'}</span>
+                        <span className="text-xl md:text-2xl">{isDarkMode ? '☀️' : '🌙'}</span>
                     </button>
+                    {/* 랭킹 버튼 */}
                     <button
                         onClick={() => onNavigate('rankings')}
-                        className="flex items-center justify-center bg-amber-400 hover:bg-amber-500 text-white px-5 py-2 md:px-8 md:py-3 rounded-full border-[3px] border-white shadow-xl active:scale-95 transition-all font-black text-sm md:text-xl gap-1"
+                        className="clay-button flex items-center justify-center px-4 py-2 md:px-6 md:py-3 rounded-2xl active:scale-95 transition-all font-black text-sm md:text-base gap-1.5"
+                        style={{ boxShadow: '0 4px 16px rgba(251,191,36,0.25), inset 0 1px 0 rgba(255,255,255,0.9)' }}
                     >
-                        <span>🏆</span><span className="hidden md:block">랭킹</span>
+                        <span>🏆</span>
+                        <span className="text-amber-600 dark:text-amber-400">랭킹</span>
                     </button>
+                    {/* 보관함 버튼 */}
                     <button
                         onClick={() => onNavigate('stickerBook')}
-                        className="flex items-center justify-center bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 md:px-10 md:py-3 rounded-full border-[3px] border-white shadow-xl active:scale-95 transition-all font-black text-sm md:text-xl"
+                        className="clay-button flex items-center justify-center px-4 py-2 md:px-6 md:py-3 rounded-2xl active:scale-95 transition-all font-black text-sm md:text-base gap-1.5"
+                        style={{ boxShadow: '0 4px 16px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.9)' }}
                     >
-                        <span className="hidden md:block mr-2">보관함</span> 📖
+                        <span className="text-indigo-500 dark:text-indigo-400">보관함</span>
+                        <span>📖</span>
                     </button>
                 </div>
-
             </div>
 
             <div className="flex flex-col items-center w-full gap-2 sm:gap-4 mt-6 mb-4">
