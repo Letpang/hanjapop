@@ -16,7 +16,7 @@ const BADGES = (ts, masteredCount, streak) => [
     { emoji: '📝', label: '문장퀴즈', count: ts.sentenceQuiz || 0, unit: '회' },
 ];
 
-const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter, mastery, totalStats, streak }) => {
+const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter, userNickname, mastery, totalStats, streak }) => {
     const myXp = userXp || 0;
     const position = useMemo(() => getLeaderboardPosition(myXp), [myXp]);
     const rank = useMemo(() => getRankDetails(myXp, selectedCharacter, position), [myXp, selectedCharacter, position]);
@@ -63,7 +63,14 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                             LV.{rank.level}
                         </div>
                     </div>
-                    <span className="font-black text-slate-700 dark:text-white text-2xl md:text-3xl mt-3">{rank.name}</span>
+                    {userNickname ? (
+                        <div className="flex flex-col items-center gap-1 mt-3">
+                            <span className="font-black text-slate-700 dark:text-white text-2xl md:text-3xl">{userNickname}</span>
+                            <span className="text-sm font-semibold text-slate-400 dark:text-slate-500">{rank.name}</span>
+                        </div>
+                    ) : (
+                        <span className="font-black text-slate-700 dark:text-white text-2xl md:text-3xl mt-3">{rank.name}</span>
+                    )}
                     <div className="w-full max-w-xs">
                         <div className="flex justify-between text-xs font-bold text-slate-400 mb-1">
                             <span>XP {myXp}</span>

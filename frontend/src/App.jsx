@@ -48,12 +48,16 @@ const App = () => {
             return VALID.includes(saved) ? saved : null;
         } catch(e) { return null; }
     });
+    const [userNickname, setUserNickname] = useState(() => {
+        try { return localStorage.getItem('user_nickname') || ''; } catch(e) { return ''; }
+    });
 
     // Persistence
     useEffect(() => { localStorage.setItem('user_xp', userXp); }, [userXp]);
     useEffect(() => { localStorage.setItem('unlocked_stickers', JSON.stringify(unlockedStickers)); }, [unlockedStickers]);
     useEffect(() => { localStorage.setItem('dark_mode', isDarkMode); }, [isDarkMode]);
     useEffect(() => { if (selectedCharacter) localStorage.setItem('selected_character', selectedCharacter); }, [selectedCharacter]);
+    useEffect(() => { if (userNickname) localStorage.setItem('user_nickname', userNickname); }, [userNickname]);
 
     // Wake Lock for learning sessions
     useEffect(() => {
@@ -126,6 +130,7 @@ const App = () => {
                         isDarkMode={isDarkMode}
                         setIsDarkMode={setIsDarkMode}
                         selectedCharacter={selectedCharacter}
+                        userNickname={userNickname}
                         missions={missions}
                         streak={streak}
                         allDone={allDone}
@@ -134,7 +139,6 @@ const App = () => {
                         mastery={mastery}
                         todayStats={todayStats}
                         totalStats={totalStats}
-                        streak={streak}
                     />
                 );
             case 'flashcard':
@@ -223,6 +227,7 @@ const App = () => {
                     onNavigate={setCurrentScreen}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
+                    userNickname={userNickname}
                     mastery={mastery}
                     totalStats={totalStats}
                     streak={streak}
@@ -260,7 +265,7 @@ const App = () => {
                           }}
                           />
                         : !selectedCharacter
-                            ? <CharacterSelectionScreen onSelect={(id) => setSelectedCharacter(id)} />
+                            ? <CharacterSelectionScreen onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }} />
                             : renderScreen()
                     }
                 </div>

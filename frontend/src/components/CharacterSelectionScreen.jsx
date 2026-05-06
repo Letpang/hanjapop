@@ -38,8 +38,10 @@ const CHARACTERS = [
 
 const CharacterSelectionScreen = ({ onSelect }) => {
     const [selected, setSelected] = useState(null);
+    const [nickname, setNickname] = useState('');
 
     const selectedChar = CHARACTERS.find(c => c.id === selected);
+    const canConfirm = selected && nickname.trim().length > 0;
 
     return (
         <div className="fixed inset-0 w-full h-full z-[100] flex flex-col items-center justify-center aesthetic-space-bg bg-[#f6edff] overflow-hidden">
@@ -49,6 +51,18 @@ const CharacterSelectionScreen = ({ onSelect }) => {
                 <h2 className="text-2xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-200 premium-text-shadow text-center leading-tight shrink-0 tracking-tight mb-2">
                     함께할 파트너를 선택하세요! ✨
                 </h2>
+
+                {/* 닉네임 입력 */}
+                <div className="w-full max-w-xs md:max-w-sm shrink-0">
+                    <input
+                        type="text"
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value.slice(0, 10))}
+                        placeholder="나의 이름을 입력하세요 (최대 10자)"
+                        maxLength={10}
+                        className="w-full rounded-2xl border-4 border-white bg-white/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-center text-base md:text-lg px-4 py-3 shadow-md focus:outline-none focus:border-indigo-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                    />
+                </div>
 
                 {/* Cards row */}
                 <div className="grid grid-cols-3 gap-3 md:gap-8 w-full items-center py-2 md:py-8">
@@ -137,23 +151,23 @@ const CharacterSelectionScreen = ({ onSelect }) => {
 
                 {/* Confirm button */}
                 <button
-                    onClick={() => selected && onSelect(selected)}
-                    disabled={!selected}
+                    onClick={() => canConfirm && onSelect(selected, nickname.trim())}
+                    disabled={!canConfirm}
                     className="shrink-0 w-full max-w-xs md:max-w-md font-black text-lg md:text-2xl rounded-[2rem] border-4 border-white shadow-2xl transition-all duration-300"
                     style={{
                         padding: 'clamp(16px, 3.5vw, 28px) 24px',
-                        backgroundColor: selected ? selectedChar.color : '#e2e8f0',
-                        color: selected ? '#1e293b' : '#94a3b8',
-                        boxShadow: selected
+                        backgroundColor: canConfirm ? selectedChar.color : '#e2e8f0',
+                        color: canConfirm ? '#1e293b' : '#94a3b8',
+                        boxShadow: canConfirm
                             ? `0 8px 0 rgba(0,0,0,0.18), 0 16px 40px ${selectedChar.glow}`
                             : 'none',
-                        transform: selected ? 'translateY(0)' : 'none',
-                        cursor: selected ? 'pointer' : 'not-allowed',
+                        transform: canConfirm ? 'translateY(0)' : 'none',
+                        cursor: canConfirm ? 'pointer' : 'not-allowed',
                     }}
                 >
-                    {selected
-                        ? `✨ ${selectedChar.name}와(과) 시작하기!`
-                        : '파트너를 선택해주세요'}
+                    {canConfirm
+                        ? `✨ ${nickname.trim()}의 파트너, ${selectedChar.name}!`
+                        : selected ? '이름을 입력해주세요' : '파트너를 선택해주세요'}
                 </button>
             </div>
         </div>

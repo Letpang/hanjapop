@@ -47,7 +47,7 @@ const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
 
 const MainMenu = ({
     onNavigate, activePlanet, onSelectPlanet, unlockedStickers, userXp,
-    isDarkMode, setIsDarkMode, selectedCharacter,
+    isDarkMode, setIsDarkMode, selectedCharacter, userNickname,
     missions, streak, allDone, doneCount, getStats, mastery, todayStats, totalStats
 }) => {
     const { t } = useLang();
@@ -136,7 +136,10 @@ const MainMenu = ({
                     </div>
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-black text-slate-700 dark:text-white text-lg md:text-xl tracking-tight">{rank.name}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-black text-slate-700 dark:text-white text-lg md:text-xl tracking-tight truncate">{userNickname || rank.name}</span>
+                        {userNickname && <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 shrink-0">({rank.name})</span>}
+                    </div>
                     <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 bg-slate-100/80 dark:bg-slate-700/50 rounded-full h-2 overflow-hidden">
                             <div className="h-full rounded-full transition-all duration-700" style={{ width: progress + '%', background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B)' }} />
