@@ -9,13 +9,13 @@ const NAVIGATE_MAP = {
     matchGame: 'matchGame',
 };
 
-// 미션 타입별 이모지
+// 미션 타입별 3D 클레이 아이콘
 const MISSION_ICON = {
-    sentenceQuiz: '💬',
-    wordQuiz: '📝',
-    flashcard: '📚',
-    writing: '✍️',
-    matchGame: '🧩',
+    sentenceQuiz: '/assets/images/icons/icon_mission_sentence.webp',
+    wordQuiz: '/assets/images/icons/icon_mission_word.webp',
+    flashcard: '/assets/images/icons/icon_mission_flashcard.webp',
+    writing: '/assets/images/icons/icon_mission_writing.webp',
+    matchGame: '/assets/images/icons/icon_mission_match.webp',
 };
 
 const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) => {
@@ -68,7 +68,10 @@ const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) 
                                     >
                                         <div className="flex justify-between items-center">
                                             <span className="font-bold text-slate-700 dark:text-slate-200 text-sm">
-                                                {quest.done ? '✅' : icon} {quest.label}
+                                                {quest.done
+                                        ? <span className="text-base">✅</span>
+                                        : <img src={icon} alt="" className="w-5 h-5 object-contain shrink-0" />
+                                    } {quest.label}
                                             </span>
                                             <span className="text-xs font-black text-indigo-500">+{quest.xp} XP</span>
                                         </div>
@@ -150,7 +153,12 @@ const DailyMissionCard = ({ missions, streak, allDone, doneCount, onNavigate }) 
                         return (
                             <div key={quest.id} className="flex items-center gap-2.5">
                                 {/* 아이콘 */}
-                                <span className="text-base shrink-0 w-5 text-center">{quest.done ? '✅' : icon}</span>
+                                <span className="shrink-0 w-6 h-6 flex items-center justify-center">
+                                {quest.done
+                                    ? <span className="text-base">✅</span>
+                                    : <img src={icon} alt="" className="w-6 h-6 object-contain" />
+                                }
+                            </span>
                                 {/* 바 */}
                                 <div className="flex-1 flex flex-col gap-0.5">
                                     <div className="w-full h-3.5 md:h-4 rounded-full overflow-hidden"
