@@ -186,43 +186,57 @@ const MainMenu = ({
                 />
             )}
 
-            {/* 오늘의 복습 카드 */}
-            {todayReviewItems.length > 0 && (
-                <div className="w-full clay-panel px-5 py-4 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative z-10">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="font-black text-slate-600 dark:text-slate-300 text-sm">📚 오늘의 복습</span>
-                        <button
-                            onClick={() => onNavigate('review')}
-                            className="text-xs font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-200 active:scale-95 transition-all"
-                        >
-                            전체보기 →
-                        </button>
+            {/* 오늘의 복습 — 컴팩트 3D 카드 */}
+            <div
+                onClick={() => onNavigate('review')}
+                className="w-full clay-panel px-5 py-4 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative z-10 cursor-pointer active:scale-[0.98] transition-transform"
+            >
+                <div className="flex items-center gap-4">
+                    {/* 왼쪽: 캐릭터 아바타 */}
+                    <div className="shrink-0 w-14 h-14 flex items-center justify-center">
+                        <img
+                            src={rank.avatar}
+                            alt="캐릭터"
+                            className="w-full h-full object-contain drop-shadow-md animate-float"
+                        />
                     </div>
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                        {todayReviewItems.map(h => {
-                            const m = mastery[String(h.id)];
-                            const isWrong = m && m.wrongCount > 0;
-                            return (
-                                <button
-                                    key={h.id}
-                                    onClick={() => onNavigate('review')}
-                                    className={`flex flex-col items-center gap-1 p-3 rounded-2xl shrink-0 w-16 border-2 transition-all active:scale-95 ${
-                                        isWrong
-                                            ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-700'
-                                            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'
-                                    }`}
-                                >
-                                    <span className="text-2xl font-black text-slate-700 dark:text-white">{h.hanja}</span>
-                                    <span className="text-[9px] font-bold text-slate-400 truncate w-full text-center">{h.meaning}</span>
-                                    {isWrong && (
-                                        <span className="text-[8px] font-black text-rose-400">오답 {m.wrongCount}회</span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                    {/* 오른쪽: 텍스트 */}
+                    <div className="flex-1 flex flex-col gap-1 min-w-0">
+                        <span className="font-black text-slate-700 dark:text-white text-sm">
+                            🔥 오늘의 복습
+                        </span>
+                        {todayReviewItems.length > 0 ? (
+                            <>
+                                <span className="text-slate-500 dark:text-slate-400 text-xs font-bold leading-snug">
+                                    취약한 한자가 <span className="text-rose-500 font-black">{todayReviewItems.length}개</span> 쌓였어요!
+                                </span>
+                                <span className="text-slate-400 dark:text-slate-500 text-[10px] font-bold">
+                                    요주의: <span className="text-slate-600 dark:text-slate-300 font-black">{todayReviewItems[0].hanja}</span>
+                                    {todayReviewItems.length > 1 && ` 외 ${todayReviewItems.length - 1}개`}
+                                </span>
+                            </>
+                        ) : (
+                            <span className="text-emerald-500 text-xs font-black">🎉 오늘 복습 완료!</span>
+                        )}
+                    </div>
+                    {/* 오른쪽 끝: 버튼 */}
+                    <div className="shrink-0">
+                        <div
+                            className="px-3 py-2 rounded-xl font-black text-xs text-white"
+                            style={{
+                                background: todayReviewItems.length > 0
+                                    ? 'linear-gradient(135deg, #f59e0b, #f97316)'
+                                    : 'linear-gradient(135deg, #34d399, #10b981)',
+                                boxShadow: todayReviewItems.length > 0
+                                    ? '0 3px 0 #b45309'
+                                    : '0 3px 0 #059669',
+                            }}
+                        >
+                            {todayReviewItems.length > 0 ? '⚡ 복습' : '✅ 완료'}
+                        </div>
                     </div>
                 </div>
-            )}
+            </div>
             {/* 1라인: 퀴즈/게임 */}
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10">
                 <MenuButton
