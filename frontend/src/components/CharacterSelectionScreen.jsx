@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const CHARACTERS = [
     {
@@ -39,9 +39,18 @@ const CHARACTERS = [
 const CharacterSelectionScreen = ({ onSelect }) => {
     const [selected, setSelected] = useState(null);
     const [nickname, setNickname] = useState('');
+    const nicknameRef = useRef(null);
 
     const selectedChar = CHARACTERS.find(c => c.id === selected);
+    // DOM ref로도 확인하여 React 상태 동기화 문제 방지
     const canConfirm = selected && nickname.trim().length > 0;
+
+    const handleConfirm = () => {
+        const actualNick = nicknameRef.current ? nicknameRef.current.value.trim() : nickname.trim();
+        if (selected && actualNick.length > 0) {
+            onSelect(selected, actualNick);
+        }
+    };
 
     return (
         <div className="fixed inset-0 w-full h-full z-[100] flex flex-col items-center justify-center aesthetic-space-bg bg-[#f6edff] overflow-hidden">
@@ -55,6 +64,7 @@ const CharacterSelectionScreen = ({ onSelect }) => {
                 {/* 닉네임 입력 */}
                 <div className="w-full max-w-xs md:max-w-sm shrink-0">
                     <input
+                        ref={nicknameRef}
                         type="text"
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value.slice(0, 10))}
@@ -151,8 +161,8 @@ const CharacterSelectionScreen = ({ onSelect }) => {
 
                 {/* Confirm button */}
                 <button
-                    onClick={() => canConfirm && onSelect(selected, nickname.trim())}
-                    disabled={!canConfirm}
+                    onClick={handleConfirm}
+                    disabled={!selected}
                     className="shrink-0 w-full max-w-xs md:max-w-md font-black text-lg md:text-2xl rounded-[2rem] border-4 border-white shadow-2xl transition-all duration-300"
                     style={{
                         padding: 'clamp(16px, 3.5vw, 28px) 24px',
