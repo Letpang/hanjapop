@@ -259,6 +259,32 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                     </div>
                 </div>
 
+                {/* 캐릭터/이름 재설정 버튼 */}
+                <button
+                    onClick={() => {
+                        if (window.confirm('캐릭터와 이름을 다시 설정하시겠습니까? (학습 데이터는 유지됩니다)')) {
+                            localStorage.removeItem('selected_character');
+                            localStorage.removeItem('user_nickname');
+                            window.location.reload();
+                        }
+                    }}
+                    className="w-full clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md flex items-center gap-4 active:scale-[0.98] transition-all group"
+                    style={{ boxShadow: '0 6px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)' }}
+                >
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 group-hover:scale-110 transition-transform"
+                        style={{
+                            background: 'linear-gradient(135deg,#fef3c7,#fde68a)',
+                            boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
+                        }}>
+                        🔄
+                    </div>
+                    <div className="flex flex-col items-start gap-1.5">
+                        <span className="font-black text-slate-700 dark:text-white text-lg">캐릭터/이름 다시 설정</span>
+                        <span className="text-xs font-bold text-slate-400">언제든 파트너를 바꿀 수 있어요!</span>
+                    </div>
+                    <span className="ml-auto text-slate-300 text-2xl">›</span>
+                </button>
+
                 {/* 나의 학습 캘린더 바로가기 */}
                 <button
                     onClick={() => onNavigate('review')}

@@ -36,7 +36,7 @@ const CHARACTERS = [
     },
 ];
 
-const CharacterSelectionScreen = ({ onSelect }) => {
+const CharacterSelectionScreen = ({ onSelect, onBack }) => {
     const [selected, setSelected] = useState(null);
     const [nickname, setNickname] = useState('');
     const nicknameRef = useRef(null);
@@ -55,6 +55,16 @@ const CharacterSelectionScreen = ({ onSelect }) => {
     return (
         <div className="fixed inset-0 w-full h-full z-[100] flex flex-col items-center justify-center aesthetic-space-bg bg-[#f6edff] overflow-hidden">
             <div className="w-full h-full flex flex-col items-center justify-center gap-4 md:gap-12 relative z-50 px-4 pt-10 pb-8 md:pt-14 md:pb-10 md:px-10 max-w-4xl mx-auto">
+                {/* Back Button */}
+                {onBack && (
+                    <button
+                        onClick={onBack}
+                        className="absolute top-4 left-4 md:top-8 md:left-8 clay-button px-4 py-2.5 rounded-2xl flex items-center gap-2 text-slate-600 dark:text-slate-300 font-black active:scale-95 z-[60]"
+                    >
+                        <span className="text-lg">←</span>
+                        <span className="text-sm">뒤로</span>
+                    </button>
+                )}
 
                 {/* Title */}
                 <h2 className="text-2xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-200 premium-text-shadow text-center leading-tight shrink-0 tracking-tight mb-2">

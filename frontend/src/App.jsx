@@ -285,7 +285,13 @@ const App = () => {
                           }}
                           />
                         : !selectedCharacter
-                            ? <CharacterSelectionScreen onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }} />
+                            ? <CharacterSelectionScreen 
+                                onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }} 
+                                onBack={() => {
+                                    localStorage.removeItem('onboarding_done');
+                                    setOnboardingDone(false);
+                                }}
+                              />
                             : renderScreen()
                     }
                 </div>
