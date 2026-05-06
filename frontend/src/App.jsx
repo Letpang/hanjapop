@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import MainMenu from './components/MainMenu.jsx';
+import MainMenuRenewal from './components/MainMenuRenewal.jsx';
 import OnboardingScreen from './components/OnboardingScreen.jsx';
 import FlashcardScreen from './components/FlashcardScreen.jsx';
 import WritingScreen from './components/WritingScreen.jsx';
@@ -183,7 +183,7 @@ const App = () => {
         switch (currentScreen) {
             case 'main':
                 return (
-                    <MainMenu 
+                    <MainMenuRenewal 
                         onNavigate={setCurrentScreen} 
                         unlockedStickers={unlockedStickers}
                         userXp={userXp}
@@ -324,7 +324,30 @@ const App = () => {
                     cloudMyRank={myRank}
                 />;
             default:
-                return <MainMenu onNavigate={setCurrentScreen} />;
+                return (
+                    <MainMenuRenewal 
+                        onNavigate={setCurrentScreen} 
+                        unlockedStickers={unlockedStickers}
+                        userXp={userXp}
+                        isDarkMode={isDarkMode}
+                        setIsDarkMode={setIsDarkMode}
+                        selectedCharacter={selectedCharacter}
+                        userNickname={userNickname}
+                        missions={missions}
+                        streak={streak}
+                        allDone={allDone}
+                        doneCount={doneCount}
+                        getStats={getStats}
+                        mastery={mastery}
+                        todayStats={todayStats}
+                        totalStats={totalStats}
+                        srsData={srsData}
+                        getDueItems={getDueItems}
+                        isTodayStudyDone={isTodayStudyDone}
+                        isDailyQuizDone={isDailyQuizDone}
+                        xpBuffExpiresAt={xpBuffExpiresAt}
+                    />
+                );
         }
     };
 
