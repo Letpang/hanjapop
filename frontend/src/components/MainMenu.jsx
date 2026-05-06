@@ -63,50 +63,77 @@ const MenuButton = ({ label, icon, activeColor, onClick, locked, badge, highligh
     return (
         <button
             onClick={locked ? null : onClick}
-            className={'crystal-card group relative flex flex-col items-center justify-center p-4 md:p-6 gap-2 md:gap-3 transition-all duration-300 ' + (locked ? 'opacity-40 cursor-not-allowed' : 'active:scale-95 hover:-translate-y-3 hover:shadow-2xl') + (highlighted ? ' animate-journey-glow' : '')}
-            style={!locked ? {
-                boxShadow: highlighted
-                    ? `0 0 0 3px rgba(251,191,36,0.5), 0 8px 32px rgba(251,191,36,0.3), 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)`
-                    : `0 8px 32px ${activeColor}33, 0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.95)`,
-            } : {}}
+            className={`menu-button-glass group relative flex flex-col items-center justify-center p-4 md:p-6 gap-2 md:gap-3 transition-all duration-300 ${
+                locked ? 'locked' : 'active:scale-95'
+            } ${
+                highlighted ? 'highlighted' : ''
+            }`}
+            disabled={locked}
         >
+            {/* 미션 연동 "지금 GO!" 배지 */}
             {highlighted && (
                 <div className="absolute -top-2 -right-2 bg-amber-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border-2 border-white shadow-lg z-20 whitespace-nowrap animate-bounce">
                     지금 GO!
                 </div>
             )}
+            
+            {/* 미션 카운트 배지 */}
             {badge > 0 && (
                 <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-black min-w-[1.4rem] h-5 px-1 rounded-full flex items-center justify-center z-20 shadow-md border-2 border-white">
                     {badge > 99 ? '99+' : badge}
                 </div>
             )}
-            {/* 아이콘 컨테이너 - 글로시 3D */}
-            <div className={'w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 mb-1 md:mb-2 transition-all duration-300 relative ' + (locked ? '' : 'group-hover:scale-110 group-hover:-translate-y-1')}>
+            
+            {/* 글로시 3D 아이콘 컨테이너 */}
+            <div className={`w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 mb-1 md:mb-2 transition-all duration-300 relative glossy-icon-container ${
+                locked ? '' : 'group-hover:scale-110 group-hover:-translate-y-1'
+            }`}>
+                {/* 글로시 배경 (잠금 상태 제외) */}
                 {!locked && (
-                    <div className="absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] overflow-hidden"
+                    <div 
+                        className="absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] overflow-hidden"
                         style={{
                             background: `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, ${activeColor}22 50%, rgba(255,255,255,0.8) 100%)`,
-                            border: '2px solid rgba(255,255,255,0.95)',
+                            border: '1px solid rgba(255,255,255,0.95)',
                             boxShadow: `0 4px 16px ${activeColor}44, inset 0 1px 0 rgba(255,255,255,1), inset 0 -2px 4px rgba(0,0,0,0.04)`,
-                        }}>
+                        }}
+                    >
                         {/* 상단 글로시 하이라이트 */}
-                        <div className="absolute top-0 left-0 right-0 h-1/2 rounded-t-[1.5rem]"
-                            style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)' }} />
+                        <div 
+                            className="absolute top-0 left-0 right-0 h-1/2 rounded-t-[1.5rem]"
+                            style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)' }} 
+                        />
                     </div>
                 )}
+                
+                {/* 아이콘 또는 자물쇠 */}
                 <div className="relative w-full h-full flex items-center justify-center p-3 md:p-5">
-                    {locked
-                        ? <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">🔒</div>
-                        : <img src={icon} alt={label} className="w-full h-full object-contain relative z-10 filter drop-shadow-lg" />
-                    }
+                    {locked ? (
+                        <div className="lock-icon">🔒</div>
+                    ) : (
+                        <img 
+                            src={icon} 
+                            alt={label} 
+                            className="glossy-icon w-full h-full object-contain relative z-10" 
+                        />
+                    )}
                 </div>
             </div>
+            
+            {/* 메뉴 라벨 */}
             <span className="font-black text-[clamp(0.9rem,3.5vw,1.1rem)] md:text-xl lg:text-2xl text-center text-slate-700 dark:text-white px-1 leading-tight whitespace-nowrap">
                 {label}
             </span>
+            
+            {/* 하단 액센트 바 (잠금 상태 제외) */}
             {!locked && (
-                <div className="absolute bottom-2 w-1/3 h-1 rounded-full"
-                    style={{ background: `linear-gradient(90deg, transparent, ${activeColor}, transparent)`, opacity: 0.6 }} />
+                <div 
+                    className="absolute bottom-2 w-1/3 h-1 rounded-full transition-all duration-300"
+                    style={{ 
+                        background: `linear-gradient(90deg, transparent, ${activeColor}, transparent)`, 
+                        opacity: 0.6 
+                    }} 
+                />
             )}
         </button>
     );
@@ -360,20 +387,20 @@ const MainMenu = ({
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10">
                 <MenuButton
                     label={t('menuCombinedQuiz')}
-                    icon="/assets/images/icons/icon_quiz.webp"
+                    icon="/assets/images/icons/icon_quiz_glossy.png"
                     activeColor="#FFD700"
                     onClick={() => onNavigate('combinedQuiz')}
                     highlighted={!!isTodayStudyDone && !isDailyQuizDone}
                 />
                 <MenuButton
                     label={t('menuMonster')}
-                    icon="/assets/images/icons/icon_monster.webp"
+                    icon="/assets/images/icons/icon_monster_glossy.png"
                     activeColor="#FFADAD"
                     onClick={() => onNavigate('shootGame')}
                 />
                 <MenuButton
                     label={t('menuMatch')}
-                    icon="/assets/images/icons/icon_match.webp"
+                    icon="/assets/images/icons/icon_match_glossy.png"
                     activeColor="#BDB2FF"
                     onClick={() => onNavigate('matchGame')}
                 />
@@ -383,19 +410,19 @@ const MainMenu = ({
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10 mb-4">
                 <MenuButton
                     label={t('menuFlashcard')}
-                    icon="/assets/images/icons/icon_flashcard.webp"
+                    icon="/assets/images/icons/icon_flashcard_glossy.png"
                     activeColor="#A8E6CF"
                     onClick={() => onNavigate('flashcard')}
                 />
                 <MenuButton
                     label={t('menuLevelTest')}
-                    icon="/assets/images/icons/icon_sentencequiz.webp"
+                    icon="/assets/images/icons/icon_sentencequiz_glossy.png"
                     activeColor="#C9B8FF"
                     onClick={() => onNavigate('levelTest')}
                 />
                 <MenuButton
                     label={t('menuWriting')}
-                    icon="/assets/images/icons/icon_writing.webp"
+                    icon="/assets/images/icons/icon_writing_glossy.png"
                     activeColor="#FFD3B6"
                     onClick={() => onNavigate('writing')}
                 />
