@@ -112,7 +112,7 @@ const GradeBadges = ({ userXp }) => {
             >
                 <div className="flex items-center gap-3 md:gap-5">
                     <div className="w-12 h-12 md:w-16 md:h-16 bg-white dark:bg-slate-200 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center shadow-md border border-white/80 dark:border-slate-500 overflow-hidden p-2">
-                        <img src="/assets/images/dashboard/medal.png" alt="Medal" className="w-full h-full object-contain filter drop-shadow-sm" />
+                        <img src="/assets/images/dashboard/medal.webp" alt="Medal" className="w-full h-full object-contain filter drop-shadow-sm" />
                     </div>
                     <div className="text-left">
                         <div className="font-bold text-slate-700 dark:text-slate-100 text-lg md:text-2xl leading-none mb-1">

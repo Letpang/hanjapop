@@ -138,7 +138,7 @@ const MainMenu = ({
 
             <div className="flex flex-col items-center w-full gap-2 sm:gap-4 mt-6 mb-4">
                 <img 
-                    src="/assets/images/한자팝 로고.png" 
+                    src="/assets/images/한자팝 로고.webp" 
                     alt={t('appTitle')} 
                     className="h-28 md:h-40 lg:h-48 object-contain animate-float drop-shadow-2xl"
                 />
@@ -227,19 +227,19 @@ const MainMenu = ({
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10">
                 <MenuButton
                     label={t('menuCombinedQuiz')}
-                    icon="/assets/images/icons/icon_quiz.png"
+                    icon="/assets/images/icons/icon_quiz.webp"
                     activeColor="#FFD700"
                     onClick={() => onNavigate('combinedQuiz')}
                 />
                 <MenuButton
                     label={t('menuMonster')}
-                    icon="/assets/images/icons/icon_monster.png"
+                    icon="/assets/images/icons/icon_monster.webp"
                     activeColor="#FFADAD"
                     onClick={() => onNavigate('shootGame')}
                 />
                 <MenuButton
                     label={t('menuMatch')}
-                    icon="/assets/images/icons/icon_match.png"
+                    icon="/assets/images/icons/icon_match.webp"
                     activeColor="#BDB2FF"
                     onClick={() => onNavigate('matchGame')}
                 />
@@ -249,19 +249,19 @@ const MainMenu = ({
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10 mb-4">
                 <MenuButton
                     label={t('menuFlashcard')}
-                    icon="/assets/images/icons/icon_flashcard.png"
+                    icon="/assets/images/icons/icon_flashcard.webp"
                     activeColor="#A8E6CF"
                     onClick={() => onNavigate('flashcard')}
                 />
                 <MenuButton
                     label={t('menuLevelTest')}
-                    icon="/assets/images/icons/icon_sentencequiz.png"
+                    icon="/assets/images/icons/icon_sentencequiz.webp"
                     activeColor="#C9B8FF"
                     onClick={() => onNavigate('levelTest')}
                 />
                 <MenuButton
                     label={t('menuWriting')}
-                    icon="/assets/images/icons/icon_writing.png"
+                    icon="/assets/images/icons/icon_writing.webp"
                     activeColor="#FFD3B6"
                     onClick={() => onNavigate('writing')}
                 />

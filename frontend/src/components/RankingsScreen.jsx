@@ -44,7 +44,7 @@ const RankingsScreen = ({ onBack, userXp, selectedCharacter }) => {
                     </div>
                     <div className="ml-auto">
                         <img
-                            src={`/assets/images/characters/${selectedCharacter === 'uju' ? 'uju' : 'eunha'}.png`}
+                            src={`/assets/images/characters/${selectedCharacter === 'uju' ? 'uju' : 'eunha'}.webp`}
                             alt="me"
                             className="w-12 h-12 object-contain"
                         />

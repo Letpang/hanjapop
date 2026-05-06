@@ -4,8 +4,8 @@ const CHARACTERS = [
     {
         id: 'garae',
         name: '가래뭉치',
-        image: '/assets/images/characters/mungchi/garae/rank_1.png',
-        finalImage: '/assets/images/characters/mungchi/garae/rank_5.png',
+        image: '/assets/images/characters/mungchi/garae/rank_1.webp',
+        finalImage: '/assets/images/characters/mungchi/garae/rank_5.webp',
         color: '#FF9EBB',
         glow: 'rgba(255,107,157,0.55)',
         desc: '용감하고 명랑해요 — 언제나 제일 먼저 손을 들어요! 🍡',
@@ -15,8 +15,8 @@ const CHARACTERS = [
     {
         id: 'jeolmi',
         name: '절미뭉치',
-        image: '/assets/images/characters/mungchi/jeolmi/rank_1.png',
-        finalImage: '/assets/images/characters/mungchi/jeolmi/rank_5.png',
+        image: '/assets/images/characters/mungchi/jeolmi/rank_1.webp',
+        finalImage: '/assets/images/characters/mungchi/jeolmi/rank_5.webp',
         color: '#FFDAC1',
         glow: 'rgba(255,160,80,0.55)',
         desc: '다정하고 호기심이 많아요 — 반짝이는 스티커를 좋아해요! 🌸',
@@ -26,8 +26,8 @@ const CHARACTERS = [
     {
         id: 'chapssal',
         name: '찹쌀뭉치',
-        image: '/assets/images/characters/mungchi/chapssal/rank_1.png',
-        finalImage: '/assets/images/characters/mungchi/chapssal/rank_5.png',
+        image: '/assets/images/characters/mungchi/chapssal/rank_1.webp',
+        finalImage: '/assets/images/characters/mungchi/chapssal/rank_5.webp',
         color: '#CAFFBF',
         glow: 'rgba(100,200,80,0.55)',
         desc: '목표를 세우면 멈추지 않아요! 🌿',

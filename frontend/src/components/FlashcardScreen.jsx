@@ -178,7 +178,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja }) => {
                                 src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
                                 onError={e => {
                                     if (e.target.src.endsWith('.webp')) e.target.src = `/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.svg`;
-                                    else e.target.src = '/assets/images/hanja_placeholder.png';
+                                    else e.target.src = '/assets/images/hanja_placeholder.webp';
                                 }}
                                 className="w-full aspect-square object-contain mix-blend-multiply dark:mix-blend-normal"
                                 alt={item.hanja}
@@ -301,7 +301,7 @@ const HanjaCard = ({ item, isLocked, onClick }) => {
                     src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
                     onError={e => {
                         if (e.target.src.endsWith('.webp')) e.target.src = `/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.svg`;
-                        else e.target.src = '/assets/images/hanja_placeholder.png';
+                        else e.target.src = '/assets/images/hanja_placeholder.webp';
                     }}
                     className="w-full h-full max-h-[80px] sm:max-h-[110px] object-contain drop-shadow-md mix-blend-multiply dark:mix-blend-normal"
                     alt={item.hanja}

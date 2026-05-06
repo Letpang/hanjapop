@@ -27,23 +27,23 @@ const SubMenuScreen = ({ category, onBack, onNavigate }) => {
                 return {
                     title: t('menuStudy'),
                     items: [
-                        { id: 'flashcard', label: t('studyCard'), icon: '/assets/images/icons/icon_flashcard.png', color: '#A8E6CF' },
-                        { id: 'writing', label: t('studyWrite'), icon: '/assets/images/icons/icon_writing.png', color: '#FFD3B6' }
+                        { id: 'flashcard', label: t('studyCard'), icon: '/assets/images/icons/icon_flashcard.webp', color: '#A8E6CF' },
+                        { id: 'writing', label: t('studyWrite'), icon: '/assets/images/icons/icon_writing.webp', color: '#FFD3B6' }
                     ]
                 };
             case 'game':
                 return {
                     title: t('menuGame'),
                     items: [
-                        { id: 'matchGame', label: t('gameMatch'), icon: '/assets/images/icons/icon_match.png', color: '#BDB2FF' },
-                        { id: 'shootGame', label: t('gameShoot'), icon: '/assets/images/icons/icon_monster.png', color: '#FFADAD' }
+                        { id: 'matchGame', label: t('gameMatch'), icon: '/assets/images/icons/icon_match.webp', color: '#BDB2FF' },
+                        { id: 'shootGame', label: t('gameShoot'), icon: '/assets/images/icons/icon_monster.webp', color: '#FFADAD' }
                     ]
                 };
             case 'quiz':
                 return {
                     title: t('menuQuiz'),
                     items: [
-                        { id: 'quiz', label: t('menuQuiz'), icon: '/assets/images/icons/icon_flashcard.png', color: '#FDFFB6', locked: true }
+                        { id: 'quiz', label: t('menuQuiz'), icon: '/assets/images/icons/icon_flashcard.webp', color: '#FDFFB6', locked: true }
                     ],
                     desc: t('quizComingSoon')
                 };
@@ -51,7 +51,7 @@ const SubMenuScreen = ({ category, onBack, onNavigate }) => {
                 return {
                     title: t('menuLevel'),
                     items: [
-                        { id: 'ranking', label: t('levelRanking'), icon: '/assets/images/icons/icon_flashcard.png', color: '#9BF6FF', locked: true }
+                        { id: 'ranking', label: t('levelRanking'), icon: '/assets/images/icons/icon_flashcard.webp', color: '#9BF6FF', locked: true }
                     ],
                     desc: '전체 사용자 중 나의 위치를 비교해볼 수 있습니다! (준비 중)'
                 };

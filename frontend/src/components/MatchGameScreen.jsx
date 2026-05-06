@@ -471,7 +471,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         {t('matchTitle')}
                     </h1>
                     <div className="w-[100px] sm:w-[140px] hidden sm:flex justify-end items-center">
-                        <img src="/assets/images/characters/uju.png" alt="우주" className="w-20 h-20 object-contain animate-float" />
+                        <img src="/assets/images/characters/uju.webp" alt="우주" className="w-20 h-20 object-contain animate-float" />
                     </div>
                 </div>
             </div>

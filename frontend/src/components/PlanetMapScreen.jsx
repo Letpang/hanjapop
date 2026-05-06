@@ -92,7 +92,7 @@ const PlanetMapScreen = ({ onBack, onSelectPlanet, activePlanet, unlockedStages 
             {/* 배경 이미지 */}
             <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: 'url(/assets/images/backgrounds/planet_map_bg.png)' }}
+                style={{ backgroundImage: 'url(/assets/images/backgrounds/planet_map_bg.webp)' }}
             />
             <div className="absolute inset-0 bg-purple-900/10" />
 

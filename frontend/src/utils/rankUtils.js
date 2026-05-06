@@ -80,7 +80,7 @@ export const getRankDetails = (xp, charType, position = 9999) => {
 
     return {
         name: fullName[type] || '뭉치',
-        avatar: `/assets/images/characters/mungchi/${type}/rank_${imageRank}.png`,
+        avatar: `/assets/images/characters/mungchi/${type}/rank_${imageRank}.webp`,
         level,
         imageRank,
         nextXp: getNextLevelXp(level),

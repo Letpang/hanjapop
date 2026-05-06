@@ -16,7 +16,7 @@ const StickerItem = ({ item, count }) => {
                 {isUnlocked && <div className="absolute inset-2 bg-slate-50 dark:bg-slate-900/30 rounded-3xl shadow-inner opacity-50"></div>}
                 
                 <img
-                    src={item.icon || '/assets/images/hanja_placeholder.png'}
+                    src={item.icon || '/assets/images/hanja_placeholder.webp'}
                     className={"w-full h-full object-contain relative z-10 " + (isUnlocked ? "drop-shadow-2xl scale-110" : "grayscale opacity-20 scale-75")}
                     alt={item.hanja}
                 />
