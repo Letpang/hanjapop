@@ -1,22 +1,85 @@
 import React, { useMemo } from 'react';
 import { getRankDetails, getLeaderboardPosition } from '../utils/rankUtils.js';
-import { getBadgeStatus } from '../utils/badgeUtils.js';
 
 // LV.10 시스템 임계값
 const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000];
 const getNextXp = (level) => level >= 10 ? null : LEVEL_THRESHOLDS[level];
 
-const BADGES = (ts, masteredCount, streak) => [
-    { emoji: '🔥', label: '연속출석', count: streak?.count || 0, unit: '일' },
-    { emoji: '📅', label: '출석왕', count: ts.totalDays || 0, unit: '일' },
-    { emoji: '🏆', label: '한자 마스터', count: masteredCount, unit: '개' },
-    { emoji: '📖', label: '단어 마스터', count: ts.wordCorrect || 0, unit: '개' },
-    { emoji: '👾', label: '몬스터버스터즈', count: ts.shootGame || 0, unit: '회' },
-    { emoji: '🧩', label: '암기 천재', count: ts.matchGame || 0, unit: '회' },
-    { emoji: '✍️', label: '획순 마스터', count: ts.writing || 0, unit: '개' },
-    { emoji: '🎯', label: '단어퀴즈', count: ts.wordQuiz || 0, unit: '회' },
-    { emoji: '📝', label: '문장퀴즈', count: ts.sentenceQuiz || 0, unit: '회' },
+// 6개 카테고리 뱃지 정의
+// 각 카테고리별 5단계 달성 기준
+const BADGE_CATEGORIES = [
+    {
+        id: 'attendance',
+        label: '개근상',
+        imageBase: '/assets/images/badges/attendance_',
+        getCount: (ts, masteredCount, streak) => streak?.count || 0,
+        unit: '일',
+        thresholds: [3, 7, 30, 60, 100],
+    },
+    {
+        id: 'hanja',
+        label: '한자박사',
+        imageBase: '/assets/images/badges/hanja_',
+        getCount: (ts, masteredCount) => masteredCount,
+        unit: '개',
+        thresholds: [10, 50, 150, 250, 376],
+    },
+    {
+        id: 'brush',
+        label: '서예가',
+        imageBase: '/assets/images/badges/brush_',
+        imageNames: ['1_beginner', '2_explorer', '3_master', '4_teacher', '5_legend'],
+        getCount: (ts) => ts.writing || 0,
+        unit: '개',
+        thresholds: [10, 50, 150, 250, 376],
+    },
+    {
+        id: 'game',
+        label: '게임왕',
+        imageBase: '/assets/images/badges/game_',
+        getCount: (ts) => (ts.shootGame || 0) + (ts.matchGame || 0),
+        unit: '판',
+        thresholds: [20, 100, 300, 500, 600],
+    },
+    {
+        id: 'quiz',
+        label: '퀴즈왕',
+        imageBase: '/assets/images/badges/quiz_',
+        getCount: (ts) => (ts.wordQuiz || 0) + (ts.sentenceQuiz || 0),
+        unit: '문제',
+        thresholds: [20, 100, 300, 700, 1000],
+    },
+    {
+        id: 'mission',
+        label: '미션마스터',
+        imageBase: '/assets/images/badges/mission_',
+        getCount: (ts) => ts.missionComplete || 0,
+        unit: '회',
+        thresholds: [3, 10, 30, 60, 100],
+    },
 ];
+
+// 현재 단계 계산 (0 = 미획득, 1~5 = 단계)
+const getCurrentStage = (count, thresholds) => {
+    let stage = 0;
+    for (let i = 0; i < thresholds.length; i++) {
+        if (count >= thresholds[i]) stage = i + 1;
+    }
+    return stage;
+};
+
+// 이미지 경로 반환
+const getBadgeImage = (cat, stage) => {
+    if (stage === 0) {
+        // 미획득: 1단계 이미지를 흑백으로 표시
+        if (cat.imageNames) return `${cat.imageBase}${cat.imageNames[0]}.webp`;
+        return `${cat.imageBase}1.webp`;
+    }
+    if (cat.imageNames) return `${cat.imageBase}${cat.imageNames[stage - 1]}.webp`;
+    return `${cat.imageBase}${stage}.webp`;
+};
+
+const STAGE_LABELS = ['', '입문', '탐험가', '고수', '사범', '전설'];
 
 const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter, userNickname, mastery, totalStats, streak }) => {
     const myXp = userXp || 0;
@@ -30,13 +93,20 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
         [mastery]
     );
     const ts = totalStats || {};
-    const badges = BADGES(ts, masteredCount, streak);
-    // 붓 뱃지 상태 계산
-    const brushBadges = useMemo(() => getBadgeStatus({
-        xp: myXp,
-        totalDays: ts.totalDays || 0,
-        masteredCount,
-    }), [myXp, ts.totalDays, masteredCount]);
+
+    // 6개 카테고리 뱃지 상태 계산
+    const badgeStates = useMemo(() => BADGE_CATEGORIES.map(cat => {
+        const count = cat.getCount(ts, masteredCount, streak);
+        const stage = getCurrentStage(count, cat.thresholds);
+        const nextThreshold = stage < 5 ? cat.thresholds[stage] : null;
+        return {
+            ...cat,
+            count,
+            stage,
+            nextThreshold,
+            image: getBadgeImage(cat, stage),
+        };
+    }), [ts, masteredCount, streak]);
 
     return (
         <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
@@ -93,55 +163,52 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                     </div>
                 </div>
 
-                {/* 붓 뱃지 카드 */}
+                {/* 뱃지 컬렉션 */}
                 <div className="clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
-                    <div className="font-black text-slate-600 dark:text-slate-300 text-sm mb-4">🖌️ 붓 뱃지</div>
-                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                        {brushBadges.map((b) => (
-                            <div key={b.id} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl shrink-0 w-20 transition-all ${
-                                b.unlocked
-                                    ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700'
-                                    : 'bg-slate-50 dark:bg-slate-700/30 border-2 border-dashed border-slate-200 dark:border-slate-600 opacity-50'
-                            }`}>
-                                <img
-                                    src={b.image}
-                                    alt={b.label}
-                                    className={`w-12 h-12 object-contain ${b.unlocked ? 'drop-shadow-md' : 'grayscale opacity-40'}`}
-                                />
-                                <span className={`text-[10px] font-black text-center leading-tight ${
-                                    b.unlocked ? 'text-amber-600 dark:text-amber-300' : 'text-slate-300 dark:text-slate-600'
-                                }`}>{b.label}</span>
-                                <span className="text-[8px] text-slate-400 text-center leading-tight">{b.subLabel}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* 뱃지 획득 카드 */}
-                <div className="clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
-                    <div className="font-black text-slate-600 dark:text-slate-300 text-sm mb-4">🏅 뱃지 획득 카드</div>
+                    <div className="font-black text-slate-600 dark:text-slate-300 text-sm mb-4">🏅 뱃지 컬렉션</div>
                     <div className="grid grid-cols-3 gap-3">
-                        {badges.map((b) => {
-                            const hasAny = b.count > 0;
+                        {badgeStates.map((b) => {
+                            const unlocked = b.stage > 0;
                             return (
-                                <div key={b.label} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${hasAny ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-slate-50 dark:bg-slate-700/30'}`}>
-                                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex flex-col items-center justify-center ${
-                                        hasAny
-                                            ? 'bg-white dark:bg-slate-800 shadow-md border-2 border-white'
-                                            : 'border-2 border-dashed border-slate-200 dark:border-slate-600'
-                                    }`}>
-                                        {hasAny ? (
-                                            <>
-                                                <span className="text-xl leading-none">{b.emoji}</span>
-                                                <span className="text-[10px] font-black text-indigo-500 leading-none">{b.count}{b.unit}</span>
-                                            </>
-                                        ) : (
-                                            <span className="text-slate-300 dark:text-slate-600 text-lg">○</span>
+                                <div
+                                    key={b.id}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl transition-all ${
+                                        unlocked
+                                            ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700'
+                                            : 'bg-slate-50 dark:bg-slate-700/30 border-2 border-dashed border-slate-200 dark:border-slate-600'
+                                    }`}
+                                >
+                                    <div className="relative">
+                                        <img
+                                            src={b.image}
+                                            alt={b.label}
+                                            className={`w-14 h-14 object-contain transition-all ${
+                                                unlocked ? 'drop-shadow-md' : 'grayscale opacity-30'
+                                            }`}
+                                        />
+                                        {unlocked && (
+                                            <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full border border-white shadow-sm leading-none">
+                                                {b.stage}단계
+                                            </div>
                                         )}
                                     </div>
-                                    <span className={`text-[10px] md:text-[11px] font-bold text-center leading-tight ${hasAny ? 'text-slate-600 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'}`}>
+                                    <span className={`text-[11px] font-black text-center leading-tight ${
+                                        unlocked ? 'text-slate-700 dark:text-slate-200' : 'text-slate-300 dark:text-slate-600'
+                                    }`}>
                                         {b.label}
                                     </span>
+                                    <span className={`text-[9px] text-center leading-tight ${
+                                        unlocked ? 'text-amber-500 font-bold' : 'text-slate-300 dark:text-slate-600'
+                                    }`}>
+                                        {unlocked
+                                            ? STAGE_LABELS[b.stage]
+                                            : `${b.thresholds[0]}${b.unit}부터`}
+                                    </span>
+                                    {unlocked && b.nextThreshold && (
+                                        <span className="text-[8px] text-slate-400 text-center leading-tight">
+                                            다음: {b.nextThreshold}{b.unit}
+                                        </span>
+                                    )}
                                 </div>
                             );
                         })}
