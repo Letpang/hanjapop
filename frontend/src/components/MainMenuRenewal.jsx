@@ -176,17 +176,16 @@ const MainMenuRenewal = ({
         completedStages={completedStages}
       />
 
-      {/* 기존 일일 미션 카드 (옵션: 유지 또는 제거) */}
+      {/* 일일 미션 카드 (요약형) */}
       {missions && missions.length > 0 && (
         <div className="w-full">
-          <div className="text-xs md:text-sm font-black text-slate-600 dark:text-slate-300 mb-3">
-            📋 일일 미션
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            {missions.slice(0, 4).map((mission, idx) => (
-              <DailyMissionCard key={idx} mission={mission} />
-            ))}
-          </div>
+          <DailyMissionCard 
+            missions={missions} 
+            streak={streak} 
+            allDone={allDone} 
+            doneCount={doneCount}
+            onNavigate={onNavigate}
+          />
         </div>
       )}
 

@@ -72,7 +72,7 @@ const JourneyProgressBar = ({
     {
       id: 1,
       label: '리뷰 테스트',
-      icon: '/assets/images/icons/node_review.png',
+      icon: '/assets/images/icons/icon_mission_review_glossy.png',
       current: missionData?.review || 0,
       total: 1,
       reward: 50,
@@ -81,7 +81,7 @@ const JourneyProgressBar = ({
     {
       id: 2,
       label: '학습지',
-      icon: '/assets/images/icons/node_flashcard.png',
+      icon: '/assets/images/icons/icon_flashcard_glossy.png',
       current: missionData?.flashcard || 0,
       total: 5,
       reward: 50,
@@ -90,7 +90,7 @@ const JourneyProgressBar = ({
     {
       id: 3,
       label: '단어 퀴즈',
-      icon: '/assets/images/icons/node_word_quiz.png',
+      icon: '/assets/images/icons/icon_mission_word_glossy.png',
       current: missionData?.wordQuiz || 0,
       total: 5,
       reward: 50,
@@ -99,7 +99,7 @@ const JourneyProgressBar = ({
     {
       id: 4,
       label: '문장 퀴즈',
-      icon: '/assets/images/icons/node_sentence_quiz.png',
+      icon: '/assets/images/icons/icon_sentencequiz_glossy.png',
       current: missionData?.sentenceQuiz || 0,
       total: 5,
       reward: 50,
@@ -108,7 +108,7 @@ const JourneyProgressBar = ({
     {
       id: 5,
       label: '몬스터 슈팅',
-      icon: '/assets/images/icons/node_monster_shooting.png',
+      icon: '/assets/images/icons/icon_monster_glossy.png',
       current: missionData?.shooting || 0,
       total: 5,
       reward: 50,
@@ -117,7 +117,7 @@ const JourneyProgressBar = ({
     {
       id: 6,
       label: '메모리 게임',
-      icon: '/assets/images/icons/node_memory_game.png',
+      icon: '/assets/images/icons/icon_match_glossy.png',
       current: missionData?.memory || 0,
       total: 5,
       reward: 50,
@@ -126,7 +126,7 @@ const JourneyProgressBar = ({
     {
       id: 7,
       label: '획순 테스트',
-      icon: '/assets/images/icons/node_stroke_test.png',
+      icon: '/assets/images/icons/icon_writing_glossy.png',
       current: missionData?.stroke || 0,
       total: 5,
       reward: 50,
