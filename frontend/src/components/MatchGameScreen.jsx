@@ -14,6 +14,15 @@ const HANJA_DATA = Object.values(
 // ── 급수 정의 ────────────────────────────────────────────────────────────────
 const GRADE_LIST = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급', 'NON'];
 const GRADE_LABELS = { '8급': '8급', '7급Ⅱ': '7급Ⅱ', '7급': '7급', '6급Ⅱ': '6급Ⅱ', '6급': '6급', 'NON': '기타' };
+// ── 급수별 XP 테이블 ─────────────────────────────────────────────────────────
+const GRADE_XP = {
+    '8급':  { base: 20, combo3: 20, combo5: 50 },
+    '7급Ⅱ': { base: 25, combo3: 25, combo5: 60 },
+    '7급':  { base: 30, combo3: 30, combo5: 70 },
+    '6급Ⅱ': { base: 35, combo3: 35, combo5: 80 },
+    '6급':  { base: 40, combo3: 40, combo5: 90 },
+    'NON':  { base: 30, combo3: 30, combo5: 70 },
+};
 const GRADE_COLORS = {
     '8급':  { bg: 'bg-rose-400',    text: 'text-rose-400',    light: 'bg-rose-50',    border: 'border-rose-200' },
     '7급Ⅱ': { bg: 'bg-orange-400',  text: 'text-orange-400',  light: 'bg-orange-50',  border: 'border-orange-200' },
@@ -157,6 +166,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const [targetMatches, setTargetMatches] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
     const [gameState, setGameState] = useState('idle'); // 'idle'|'playing'|'clear'|'over'|'allClear'
+    const [clearCombo, setClearCombo] = useState(0); // 연속 클리어 콤보 카운터
 
     // 현재 라운드 풀 인덱스를 ref로도 보관 (launchRound 클로저 문제 방지)
     const poolIndexRef = useRef(0);
@@ -272,8 +282,16 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         if (targetMatches > 0 && matches === targetMatches && gameState === 'playing') {
             setTimeout(() => {
                 setGameState('clear');
+                // 급수별 기본 XP + 콤보 보너스 계산
+                const gradeKey = viewMode === 'grade' ? selectedGrade : 'NON';
+                const xpTable = GRADE_XP[gradeKey] || GRADE_XP['8급'];
+                const newCombo = clearCombo + 1;
+                setClearCombo(newCombo);
+                let xpEarned = xpTable.base;
+                if (newCombo >= 5) xpEarned += xpTable.combo5;
+                else if (newCombo >= 3) xpEarned += xpTable.combo3;
                 if (onStageClear) onStageClear(currentRound + 1);
-                if (onHanjaAcquired) onHanjaAcquired(null, 30);
+                if (onHanjaAcquired) onHanjaAcquired(null, xpEarned);
             }, 300);
         }
     }, [matches, targetMatches, gameState]);
@@ -289,6 +307,12 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         launchRound(pairPool, nextRound, nextIdx);
     }, [currentRound, poolIndex, pairPool, launchRound]);
 
+    // ── 타임오버 콤보 초기화 ──────────────────────────────────────────────────
+    useEffect(() => {
+        if (gameState === 'over') {
+            setClearCombo(0);
+        }
+    }, [gameState]);
     // ── 재도전 ──────────────────────────────────────────────────────────────
     const retryRound = useCallback(() => {
         launchRound(pairPool, currentRound, poolIndex);
@@ -369,9 +393,16 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                 {gameState === 'clear' ? 'CLEAR!' : 'TIME OVER'}
                             </h1>
                             {gameState === 'clear' && (
-                                <p className="text-slate-500 dark:text-slate-300 font-bold text-base md:text-xl bg-white/80 dark:bg-slate-800/80 px-8 py-4 rounded-full border-2 border-white dark:border-slate-700 shadow-xl">
-                                    Round {currentRound + 1} 완료! 다음은 {getPairsForRound(currentRound + 1) * 2}장
-                                </p>
+                                <div className="flex flex-col items-center gap-2">
+                                    <p className="text-slate-500 dark:text-slate-300 font-bold text-base md:text-xl bg-white/80 dark:bg-slate-800/80 px-8 py-4 rounded-full border-2 border-white dark:border-slate-700 shadow-xl">
+                                        Round {currentRound + 1} 완료! 다음은 {getPairsForRound(currentRound + 1) * 2}장
+                                    </p>
+                                    {clearCombo >= 2 && (
+                                        <p className="text-amber-500 font-black text-sm md:text-base bg-amber-50 dark:bg-amber-900/30 px-6 py-2 rounded-full border-2 border-amber-200 shadow">
+                                            🔥 {clearCombo}연속 클리어{clearCombo >= 5 ? ' +콤보 보너스 XP!' : clearCombo >= 3 ? ' +보너스 XP!' : '!'}
+                                        </p>
+                                    )}
+                                </div>
                             )}
                             <div className="flex gap-4 w-full max-w-sm">
                                 {gameState === 'clear' ? (

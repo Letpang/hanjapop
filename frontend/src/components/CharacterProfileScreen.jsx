@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { getRankDetails, getLeaderboardPosition } from '../utils/rankUtils.js';
+import { getBadgeStatus } from '../utils/badgeUtils.js';
 
-const XP_THRESHOLDS = [500, 1500, 3000, 6000];
-const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
+// LV.10 시스템 임계값
+const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000];
+const getNextXp = (level) => level >= 10 ? null : LEVEL_THRESHOLDS[level];
 
 const BADGES = (ts, masteredCount, streak) => [
     { emoji: '🔥', label: '연속출석', count: streak?.count || 0, unit: '일' },
@@ -21,7 +23,7 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
     const position = useMemo(() => getLeaderboardPosition(myXp), [myXp]);
     const rank = useMemo(() => getRankDetails(myXp, selectedCharacter, position), [myXp, selectedCharacter, position]);
     const nextXp = getNextXp(rank.level);
-    const progress = rank.level >= 5 ? 100 : Math.min(100, (myXp / nextXp) * 100);
+    const progress = rank.level >= 10 ? 100 : rank.progress ?? Math.min(100, (myXp / (nextXp || 10000)) * 100);
 
     const masteredCount = useMemo(
         () => Object.values(mastery || {}).filter(m => m.level >= 2).length,
@@ -29,6 +31,12 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
     );
     const ts = totalStats || {};
     const badges = BADGES(ts, masteredCount, streak);
+    // 붓 뱃지 상태 계산
+    const brushBadges = useMemo(() => getBadgeStatus({
+        xp: myXp,
+        totalDays: ts.totalDays || 0,
+        masteredCount,
+    }), [myXp, ts.totalDays, masteredCount]);
 
     return (
         <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
@@ -74,7 +82,7 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                     <div className="w-full max-w-xs">
                         <div className="flex justify-between text-xs font-bold text-slate-400 mb-1">
                             <span>XP {myXp}</span>
-                            <span>{rank.level < 5 ? `다음 레벨까지 ${nextXp - myXp} XP` : 'MAX'}</span>
+                            <span>{rank.level < 10 ? `다음 레벨까지 ${nextXp - myXp} XP` : 'MAX'}</span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
                             <div
@@ -82,6 +90,30 @@ const CharacterProfileScreen = ({ onBack, onNavigate, userXp, selectedCharacter,
                                 style={{ width: progress + '%', background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B)' }}
                             />
                         </div>
+                    </div>
+                </div>
+
+                {/* 붓 뱃지 카드 */}
+                <div className="clay-panel rounded-[2rem] p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
+                    <div className="font-black text-slate-600 dark:text-slate-300 text-sm mb-4">🖌️ 붓 뱃지</div>
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+                        {brushBadges.map((b) => (
+                            <div key={b.id} className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl shrink-0 w-20 transition-all ${
+                                b.unlocked
+                                    ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-700'
+                                    : 'bg-slate-50 dark:bg-slate-700/30 border-2 border-dashed border-slate-200 dark:border-slate-600 opacity-50'
+                            }`}>
+                                <img
+                                    src={b.image}
+                                    alt={b.label}
+                                    className={`w-12 h-12 object-contain ${b.unlocked ? 'drop-shadow-md' : 'grayscale opacity-40'}`}
+                                />
+                                <span className={`text-[10px] font-black text-center leading-tight ${
+                                    b.unlocked ? 'text-amber-600 dark:text-amber-300' : 'text-slate-300 dark:text-slate-600'
+                                }`}>{b.label}</span>
+                                <span className="text-[8px] text-slate-400 text-center leading-tight">{b.subLabel}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
 

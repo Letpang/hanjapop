@@ -59,6 +59,14 @@ const DIFFICULTY_CONFIG = {
 };
 
 // ─────────────────────────────────────────────
+// 난이도별 XP 테이블
+// ─────────────────────────────────────────────
+const DIFFICULTY_XP = {
+    easy:   { waveClear: 10, combo3: 20, combo5: 40 },
+    normal: { waveClear: 15, combo3: 30, combo5: 60 },
+    hard:   { waveClear: 20, combo3: 50, combo5: 100 },
+};
+// ─────────────────────────────────────────────
 // 사운드
 // ─────────────────────────────────────────────
 const playSound = (type) => {
@@ -126,7 +134,7 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong }) => {
+const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong, onWaveClear }) => {
     const { lang, t } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -154,6 +162,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
     const [wave, setWave] = useState(1);
     const [waveKills, setWaveKills] = useState(0);
     const [waveTransition, setWaveTransition] = useState(false);
+    const [clearCombo, setClearCombo] = useState(0); // 연속 웨이브 클리어 콤보
     const [score, setScore] = useState(0);
     const [hp, setHp] = useState(5);
     const [words, setWords] = useState([]);
@@ -202,6 +211,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
         setWords([]);
         setTargetId(null);
         setShake(false);
+        setClearCombo(0);
         setStatus('playing');
     };
 
@@ -225,6 +235,15 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
     useEffect(() => {
         if (status !== 'playing' || waveTransition) return;
         if (waveKills >= diffConfig.killsPerWave) {
+            // 웨이브 클리어 XP + 콤보 보너스
+            const xpTable = DIFFICULTY_XP[selectedDifficulty] || DIFFICULTY_XP['normal'];
+            const newCombo = clearCombo + 1;
+            setClearCombo(newCombo);
+            let xpEarned = xpTable.waveClear;
+            if (newCombo >= 5) xpEarned += xpTable.combo5;
+            else if (newCombo >= 3) xpEarned += xpTable.combo3;
+            if (onHanjaAcquired) onHanjaAcquired(null, xpEarned);
+            if (onWaveClear) onWaveClear();
             if (wave >= diffConfig.wavesTotal) {
                 setStatus('clear');
             } else {
@@ -526,6 +545,11 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                             <div className="text-7xl mb-4">⚡</div>
                             <div className="text-5xl font-black text-white premium-text-shadow">WAVE {wave + 1}</div>
                             <div className="text-2xl text-indigo-200 font-bold mt-2">GET READY!</div>
+                            {clearCombo >= 2 && (
+                                <div className="mt-3 text-amber-300 font-black text-xl">
+                                    🔥 {clearCombo}연속 클리어{clearCombo >= 5 ? ' +콤보 보너스!' : clearCombo >= 3 ? ' +보너스!' : '!'}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

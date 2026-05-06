@@ -105,8 +105,12 @@ const App = () => {
     // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
     const addBonusXp = useCallback((xp) => {
         if (!xp || xp <= 0) return;
-        setUserXp(prev => prev + xp);
-    }, []);
+        // 스트릭 XP 배율 적용: 3~6일 1.2배, 7일+ 1.5배
+        const streakCount = streak?.count || 0;
+        const multiplier = streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
+        const finalXp = Math.round(xp * multiplier);
+        setUserXp(prev => prev + finalXp);
+    }, [streak]);
 
     const handleHanjaAcquired = (id, xpAmount = 10) => {
         setUserXp(prev => prev + xpAmount);
@@ -239,13 +243,6 @@ const App = () => {
         }
     };
 
-    const getLevel = (xp) => {
-        if (xp < 500) return 1;
-        if (xp < 1500) return 2;
-        if (xp < 3000) return 3;
-        if (xp < 6000) return 4;
-        return 5;
-    };
     const currentLevel = getLevel(userXp);
 
     return (

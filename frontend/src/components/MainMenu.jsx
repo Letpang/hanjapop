@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import HANJA_DATA from '../hanja_unified.json';
 import { useLang } from '../LangContext.jsx';
 import { getLeaderboardPosition, getRankDetails } from '../utils/rankUtils.js';
 import DailyMissionCard from './DailyMissionCard.jsx';
@@ -42,8 +43,9 @@ const MenuButton = ({ label, icon, activeColor, onClick, locked, badge }) => {
 
 
 
-const XP_THRESHOLDS = [100, 300, 600, 1000];
-const getNextXp = (level) => XP_THRESHOLDS[level - 1] ?? 1000;
+// LV.10 시스템 임계값
+const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000];
+const getNextXp = (level) => level >= 10 ? null : LEVEL_THRESHOLDS[level];
 
 const MainMenu = ({
     onNavigate, activePlanet, onSelectPlanet, unlockedStickers, userXp,
@@ -65,11 +67,29 @@ const MainMenu = ({
         ).length;
     }, [mastery]);
 
+    // 오늘의 복습 카드: 오답 있거나 복습 권장 한자 최대 5개
+    const todayReviewItems = useMemo(() => {
+        if (!mastery) return [];
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        return HANJA_DATA
+            .filter(h => {
+                const m = mastery[String(h.id)];
+                if (!m) return false;
+                // 오답 있거나, 1일 이상 지난 복습 권장
+                return (m.wrongCount > 0) || (m.lastSeen && Date.now() - new Date(m.lastSeen).getTime() >= DAY_MS && m.level < 2);
+            })
+            .sort((a, b) => {
+                const ma = mastery[String(a.id)];
+                const mb = mastery[String(b.id)];
+                return (mb.wrongCount || 0) - (ma.wrongCount || 0);
+            })
+            .slice(0, 5);
+    }, [mastery]);
     const myXp = userXp || 0;
     const position = useMemo(() => getLeaderboardPosition(myXp), [myXp]);
     const rank = useMemo(() => getRankDetails(myXp, selectedCharacter, position), [myXp, selectedCharacter, position]);
     const nextXp = getNextXp(rank.level);
-    const progress = rank.level >= 5 ? 100 : Math.min(100, (myXp / nextXp) * 100);
+    const progress = rank.level >= 10 ? 100 : rank.progress ?? Math.min(100, (myXp / (nextXp || 10000)) * 100);
 
     return (
         <div className="flex flex-col items-center w-full max-w-md md:max-w-2xl lg:max-w-5xl mx-auto min-h-full px-6 pt-10 pb-32 gap-6 md:gap-10 relative">
@@ -145,6 +165,11 @@ const MainMenu = ({
                             <div className="h-full rounded-full transition-all duration-700" style={{ width: progress + '%', background: 'linear-gradient(90deg,#FFB7B2,#FF9B9B)' }} />
                         </div>
                         <span className="text-[10px] md:text-xs font-bold text-slate-400 shrink-0">XP {myXp}</span>
+                        {(streak?.count || 0) >= 3 && (
+                            <span className="text-[9px] md:text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200">
+                                {(streak?.count || 0) >= 7 ? '🔥×1.5' : '🔥×1.2'}
+                            </span>
+                        )}
                     </div>
                 </div>
                 <span className="text-slate-300 dark:text-slate-500 text-2xl shrink-0">›</span>
@@ -161,6 +186,43 @@ const MainMenu = ({
                 />
             )}
 
+            {/* 오늘의 복습 카드 */}
+            {todayReviewItems.length > 0 && (
+                <div className="w-full clay-panel px-5 py-4 bg-white/70 dark:bg-slate-900/50 border-[3px] border-white/80 backdrop-blur-md shadow-lg rounded-[2rem] relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="font-black text-slate-600 dark:text-slate-300 text-sm">📚 오늘의 복습</span>
+                        <button
+                            onClick={() => onNavigate('review')}
+                            className="text-xs font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full border border-indigo-200 active:scale-95 transition-all"
+                        >
+                            전체보기 →
+                        </button>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                        {todayReviewItems.map(h => {
+                            const m = mastery[String(h.id)];
+                            const isWrong = m && m.wrongCount > 0;
+                            return (
+                                <button
+                                    key={h.id}
+                                    onClick={() => onNavigate('review')}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-2xl shrink-0 w-16 border-2 transition-all active:scale-95 ${
+                                        isWrong
+                                            ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-700'
+                                            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'
+                                    }`}
+                                >
+                                    <span className="text-2xl font-black text-slate-700 dark:text-white">{h.hanja}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 truncate w-full text-center">{h.meaning}</span>
+                                    {isWrong && (
+                                        <span className="text-[8px] font-black text-rose-400">오답 {m.wrongCount}회</span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
             {/* 1라인: 퀴즈/게임 */}
             <div className="grid grid-cols-3 gap-4 md:gap-8 w-full relative z-10">
                 <MenuButton
