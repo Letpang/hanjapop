@@ -138,7 +138,7 @@ const MainMenu = ({
 
             <div className="flex flex-col items-center w-full gap-2 sm:gap-4 mt-6 mb-4">
                 <img 
-                    src="/assets/images/한자팝 로고.webp" 
+                    src="/assets/images/logo.webp"
                     alt={t('appTitle')} 
                     className="h-28 md:h-40 lg:h-48 object-contain animate-float drop-shadow-2xl"
                 />

@@ -307,7 +307,10 @@ const ProgressSection = ({ mastery }) => {
 
     return (
         <div className="clay-panel rounded-[2rem] w-full p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
-            <div className="text-slate-600 dark:text-slate-300 font-black text-sm mb-4">🔥 나의 열공 지수</div>
+            <div className="flex items-center gap-2 mb-4">
+                <img src="/assets/images/icons/icon_study_gauge.webp" alt="열공지수" className="w-8 h-8 object-contain" />
+                <span className="text-slate-600 dark:text-slate-300 font-black text-sm">나의 열공 지수</span>
+            </div>
             <div className="flex flex-col gap-5">
                 <StackBar label="한자 학습" s={stats.hanja} />
                 <StackBar label="단어 학습" s={stats.words} />
@@ -327,7 +330,10 @@ const WrongSection = ({ wrongHanjas }) => {
 
     return (
         <div className="clay-panel rounded-[2rem] w-full p-5 bg-white dark:bg-slate-800 border-4 border-white shadow-md">
-            <div className="text-slate-600 dark:text-slate-300 font-black text-sm mb-4">📊 요주의 한자 TOP {Math.min(5, top5.length)}</div>
+            <div className="flex items-center gap-2 mb-4">
+                <img src="/assets/images/icons/icon_warning_hanja.webp" alt="요주의한자" className="w-8 h-8 object-contain" />
+                <span className="text-slate-600 dark:text-slate-300 font-black text-sm">요주의 한자 TOP {Math.min(5, top5.length)}</span>
+            </div>
 
             {/* 상태 칩 */}
             <div className="flex gap-2 mb-4 flex-wrap">
@@ -640,7 +646,10 @@ const ReviewScreen = ({ onBack, mastery, markCorrect, markWrong, getStats }) => 
                 {/* 헤더 */}
                 <div className="w-full flex items-center gap-4">
                     <button onClick={onBack} className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 flex items-center justify-center font-black text-xl active:scale-90 transition-all shadow-md">←</button>
-                    <h1 className="text-2xl font-black text-slate-700 dark:text-white">학습 다이어리</h1>
+                    <div className="flex items-center gap-2">
+                        <img src="/assets/images/icons/icon_calendar_section.webp" alt="학습캘린더" className="w-8 h-8 object-contain" />
+                        <h1 className="text-2xl font-black text-slate-700 dark:text-white">나의 학습 캘린더</h1>
+                    </div>
                 </div>
 
                 {/* 달력 */}

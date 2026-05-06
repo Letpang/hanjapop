@@ -470,9 +470,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                     <h1 className="text-2xl sm:text-5xl font-black text-slate-700 dark:text-white m-0 tracking-tight premium-text-shadow text-center flex-1 px-4">
                         {t('matchTitle')}
                     </h1>
-                    <div className="w-[100px] sm:w-[140px] hidden sm:flex justify-end items-center">
-                        <img src="/assets/images/characters/uju.webp" alt="우주" className="w-20 h-20 object-contain animate-float" />
-                    </div>
+                    <div className="w-[100px] sm:w-[140px]" />
                 </div>
             </div>
 
