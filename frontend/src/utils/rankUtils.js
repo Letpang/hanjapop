@@ -4,7 +4,7 @@ const CHAR_TYPES = ['garae', 'jeolmi', 'chapssal'];
 export const MOCK_USERS = Array.from({ length: 1000 }, (_, i) => ({
     id: `m${i}`,
     name: `탐험가 ${i + 1}`,
-    xp: Math.floor(8000 * Math.pow(0.995, i)), // Curve from 8000 down
+    xp: Math.floor(30000 * Math.pow(0.995, i)), // Curve from 30000 down
     charType: CHAR_TYPES[Math.floor(Math.random() * 3)]
 }));
 
@@ -22,17 +22,17 @@ export const getLeaderboardPosition = (xp, mockUsers = MOCK_USERS) => {
  * 레벨 | 필요 XP | 캐릭터 이미지
  * ─────────────────────────────────────────
  *  1   |     0   | rank_1.png  (새싹 뭉치)
- *  2   |   200   | rank_1.png
- *  3   |   500   | rank_2.png  (성장 뭉치)
- *  4   |  1000   | rank_2.png
- *  5   |  1800   | rank_3.png  (중급 뭉치)
- *  6   |  2800   | rank_3.png
- *  7   |  4000   | rank_4.png  (고급 뭉치)
- *  8   |  5500   | rank_4.png
- *  9   |  7500   | rank_5.png  (마스터 뭉치)
- * 10   | 10000   | rank_5.png  (전설 뭉치)
+ *  2   |   500   | rank_1.png
+ *  3   |  1500   | rank_2.png  (성장 뭉치)
+ *  4   |  3500   | rank_2.png
+ *  5   |  7000   | rank_3.png  (중급 뭉치)
+ *  6   | 12000   | rank_3.png
+ *  7   | 19000   | rank_4.png  (고급 뭉치)
+ *  8   | 28000   | rank_4.png
+ *  9   | 40000   | rank_5.png  (마스터 뭉치)
+ * 10   | 55000   | rank_5.png  (전설 뭉치)
  */
-const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000];
+const LEVEL_THRESHOLDS = [0, 500, 1500, 3500, 7000, 12000, 19000, 28000, 40000, 55000];
 
 export const getLevel = (xp) => {
     let level = 1;
@@ -67,7 +67,7 @@ const levelToImageRank = (level) => {
 };
 
 export const getRankDetails = (xp, charType, position = 9999) => {
-    const VALID = ['garae', 'jeolmi', 'chapssal'];
+    const VALID = ['garae', 'jeolmi', 'chapssal', 'muzi'];
     const type = VALID.includes(charType) ? charType : 'garae';
     const level = getLevel(xp);
     const imageRank = levelToImageRank(level);
@@ -75,14 +75,19 @@ export const getRankDetails = (xp, charType, position = 9999) => {
     const fullName = {
         garae: '가래뭉치',
         jeolmi: '절미뭉치',
-        chapssal: '찹쌀뭉치'
+        chapssal: '찹쌀뭉치',
+        muzi: '무지뭉치'
     };
+
+    const rankNames = ['새싹', '새싹', '성장', '성장', '중급', '중급', '고급', '고급', '마스터', '전설'];
+    const rankName = rankNames[level - 1] || '새싹';
 
     return {
         name: fullName[type] || '뭉치',
-        avatar: `/assets/images/characters/mungchi/${type}/rank_${imageRank}.webp`,
+        avatar: `/assets/images/characters/${type}/rank_${imageRank}.webp`,
         level,
         imageRank,
+        rankName,
         nextXp: getNextLevelXp(level),
         progress: getLevelProgress(xp, level),
     };

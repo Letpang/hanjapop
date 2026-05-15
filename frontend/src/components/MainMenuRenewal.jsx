@@ -2,17 +2,17 @@ import React from 'react';
 import ProfileBox from './ProfileBox.jsx';
 import logo3d from '../assets/images/logo_3d.png';
 
-const MenuButton = ({ label, icon, activeColor, onClick }) => {
+const MenuButton = ({ label, icon, activeColor, onClick, isDarkMode }) => {
   return (
     <button
       onClick={onClick}
-      className="clay-panel !rounded-[1.5rem] group relative flex flex-row items-center justify-start gap-3 px-4 py-3 md:px-5 md:py-4 transition-all duration-300 overflow-hidden bg-white/95 border-4 border-white active:scale-95"
+      className={`clay-panel !rounded-[1.5rem] group relative flex flex-row items-center justify-start gap-3 px-4 py-3 md:px-5 md:py-4 transition-all duration-300 overflow-hidden border-4 active:scale-95 ${isDarkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-white/95 border-white'}`}
       style={{ boxShadow: `0 6px 16px ${activeColor}88, 0 2px 6px rgba(0,0,0,0.05)` }}
     >
       <div className="w-12 h-12 md:w-14 md:h-14 shrink-0 drop-shadow-lg z-10">
         <img src={icon} alt={label} className="w-full h-full object-contain" />
       </div>
-      <span className="flex-1 font-black text-lg md:text-xl text-center text-[#334155] leading-tight tracking-tighter relative z-10 break-keep pr-8 md:pr-10">
+      <span className={`flex-1 font-extrabold text-lg md:text-xl text-center leading-tight tracking-tighter relative z-10 break-keep pr-8 md:pr-10 ${isDarkMode ? 'text-slate-100' : 'text-[#334155]'}`}>
         {label}
       </span>
     </button>
@@ -31,6 +31,7 @@ const MainMenuRenewal = ({
   mastery = {},
   currentDay,
   onStartNextStage,
+  isDarkMode,
 }) => {
   const myXp = userXp || 0;
   const wrongCount = Object.values(mastery).filter(m => (m.wrongCount || 0) > 0).length;
@@ -45,12 +46,12 @@ const MainMenuRenewal = ({
   ];
 
   return (
-    <div className="bg-[#FDFBF7] flex flex-col items-center w-full max-w-[1600px] mx-auto h-[100dvh] relative overflow-x-hidden">
+    <div className={`${isDarkMode ? 'bg-slate-900' : 'bg-[#FDFBF7]'} flex flex-col items-center w-full max-w-[1600px] mx-auto h-[100dvh] relative overflow-x-hidden`}>
 
       {/* Tall Full Orange Glow Header - 80% Padding */}
       <div 
-        className="sticky top-0 z-30 w-full flex items-center justify-between gap-3 shadow-[0_12px_40px_rgba(255,140,0,0.5)] border-b border-white/20 overflow-hidden py-4 md:py-6"
-        style={{ background: 'linear-gradient(to right, #FF8C00, #FFA500)' }}
+        className="sticky top-0 z-30 w-full flex items-center justify-between gap-3 shadow-[0_12px_40px_rgba(255,140,0,0.5)] border-b border-white/20 overflow-hidden py-2 md:py-3"
+        style={{ background: 'linear-gradient(to right, #FF8C00, #FFA500)', paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
       >
         {/* Logo - Pushed Left */}
         <div className="flex items-center shrink-0 cursor-pointer pl-6 md:pl-10" onClick={() => onNavigate('main')}>
@@ -61,38 +62,19 @@ const MainMenuRenewal = ({
           />
         </div>
 
-        {/* Integrated Review Action - Two Lines - Pushed to Far Right */}
-        <div 
-          className="flex-1 flex items-center justify-end gap-2 cursor-pointer group active:scale-95 transition-transform pr-6 md:pr-14"
-          onClick={() => onNavigate('review')}
-        >
-          <div className="flex items-center gap-2 md:gap-4">
-            <div className="flex flex-col items-center justify-center mr-2 md:mr-6">
-              <span className="text-base md:text-3xl font-black text-white/90 tracking-tighter leading-none mb-1">
-                오답 한자 몬스터
-              </span>
-              <span className="text-xl md:text-5xl font-black text-white tracking-tighter leading-none whitespace-nowrap drop-shadow-md">
-                격파하러 가기!
-              </span>
-            </div>
-            
-            {/* Monster with Glowing Ray Effect */}
-            <div className="flex items-center gap-1 md:gap-3">
-              <div className="relative flex items-center justify-center group-hover:scale-110 transition-transform">
-                {/* Ray/Glow background */}
-                <div className="absolute w-20 h-20 md:w-40 md:h-40 bg-white/40 rounded-full blur-3xl scale-150 animate-pulse"></div>
-                <img src="/assets/images/icons/icon_monster_glossy.png" alt="monster" className="relative w-10 h-10 md:w-24 md:h-24 object-contain drop-shadow-2xl z-10" />
-              </div>
-              <span className="text-2xl md:text-8xl font-black tracking-tighter leading-none drop-shadow-xl" style={{ color: '#CCFF00' }}>
-                +XP
-              </span>
-            </div>
-
-            {/* Explicit Balanced Gap for Arrow Button */}
-            <div className="w-8 h-8 md:w-16 md:h-16 rounded-full bg-white/30 flex items-center justify-center text-white text-lg md:text-3xl font-black shadow-lg shrink-0 ml-6 md:ml-12">
-              →
-            </div>
-          </div>
+        {/* Settings Button */}
+        <div className="pr-6 md:pr-10 shrink-0">
+          <button
+            onClick={(e) => { e.stopPropagation(); onNavigate('settings'); }}
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/25 flex items-center justify-center active:scale-90 transition-all shadow-lg"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              className="w-5 h-5 md:w-6 md:h-6">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -115,7 +97,7 @@ const MainMenuRenewal = ({
           ].map(({ sub, titleColor, items, color }) => (
             <div key={sub}>
               <div className="flex items-center gap-2 mb-[6px] ml-1">
-                <p className="text-base font-black tracking-tighter" style={{ color: titleColor }}>{sub}</p>
+                <p className="text-base font-extrabold tracking-tighter" style={{ color: titleColor }}>{sub}</p>
               </div>
               <div className="grid grid-cols-2 gap-4 md:gap-6">
                 {items.map(id => {
@@ -127,6 +109,7 @@ const MainMenuRenewal = ({
                       icon={item.icon}
                       activeColor={item.color}
                       onClick={() => onNavigate(item.id)}
+                      isDarkMode={isDarkMode}
                     />
                   );
                 })}
@@ -146,8 +129,8 @@ const MainMenuRenewal = ({
             }}
           >
             <div className="flex flex-col items-start text-left">
-              <span className="text-white/90 font-black text-[10px] md:text-xs uppercase tracking-[0.25em] mb-1 drop-shadow-sm">Next Challenge</span>
-              <span className="text-white font-black text-2xl md:text-4xl tracking-tighter drop-shadow-md">
+              <span className="text-white/90 font-extrabold text-[10px] md:text-xs uppercase tracking-[0.25em] mb-1 drop-shadow-sm">Next Challenge</span>
+              <span className="text-white font-extrabold text-2xl md:text-4xl tracking-tighter drop-shadow-md">
                 스테이지 {currentDay || 1} 시작하기
               </span>
             </div>
