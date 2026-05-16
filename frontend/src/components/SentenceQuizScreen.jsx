@@ -2,19 +2,10 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
 import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
-const GRADES = ['전체', '8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
+import { getRankDetails } from '../utils/rankUtils.js';
 import { buildSessionPlan } from '../utils/learningPool.js';
-
-// 단어 → reading 역조회 맵 (보기에 한글 독음 병기용)
-const CATEGORY_IMAGES = {
-    '숫자와 기초 개념': '1_一.webp',
-    '자연과 시간': '31_日.webp',
-    '나와 가족 신체': '71_父.webp',
-    '공간과 위치': '111_東.webp',
-    '학교와 일상생활': '151_學.webp',
-    '행동과 상태': '201_來.webp',
-    '사회와 문화': '251_國.webp',
-};
+import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
+import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 const wordReadingMap = {};
 HANJA_DATA.forEach(h => {
     (h.words || []).forEach(w => {
@@ -46,7 +37,7 @@ const playSound = (type) => {
     }
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onStageClear, onGoToReview, srsData, masteryData, userLevel, hanjaFilter, unlockedHanjaIds }) => {
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onStageClear, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, hanjaFilter, unlockedHanjaIds }) => {
     const { t } = useLang();
 
     // ── 선택 상태 ──────────────────────────────────────────────────────────
@@ -56,13 +47,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
 
-    // 해금된 급수 계산 로직
-    const unlockedIds = useMemo(() => new Set(unlockedHanjaIds || []), [unlockedHanjaIds]);
-    const unlockedGrades = useMemo(() => {
-        const s = new Set(['전체']);
-        for (const h of HANJA_DATA) { if (unlockedIds.has(h.id)) s.add(h.grade); }
-        return s;
-    }, [unlockedIds]);
+    const characterAvatar = useMemo(() => getRankDetails(userXp, selectedCharacter).avatar, [userXp, selectedCharacter]);
+
+    const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
     // ── 퀴즈 진행 상태 ────────────────────────────────────────────────────
     const [started, setStarted] = useState(false);
@@ -85,12 +72,12 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const activeHanjaSet = useMemo(() => {
         if (hanjaFilter && hanjaFilter.length > 0) return HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
         if (viewMode === 'grade') {
-            if (selectedGrade === '전체') return HANJA_DATA;
-            if (selectedGrade === '기타') return HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
-            return HANJA_DATA.filter(h => h.grade === selectedGrade);
+            if (selectedGrade === '전체') return HANJA_DATA.filter(h => unlockedIds.has(h.id));
+            if (selectedGrade === '기타') return HANJA_DATA.filter(h => (!h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON') && unlockedIds.has(h.id));
+            return HANJA_DATA.filter(h => h.grade === selectedGrade && unlockedIds.has(h.id));
         }
-        return HANJA_DATA.filter(h => h.category === selectedCategory);
-    }, [viewMode, selectedGrade, selectedCategory, hanjaFilter]);
+        return HANJA_DATA.filter(h => h.category === selectedCategory && unlockedIds.has(h.id));
+    }, [viewMode, selectedGrade, selectedCategory, hanjaFilter, unlockedIds]);
 
     const reviewQueueRef = useRef([]);
     const normalQueueRef = useRef([]);
@@ -287,23 +274,23 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <div className="w-full flex flex-col gap-3 relative z-10">
                             <button
                                 onClick={() => { setCurrentQuiz(null); setScore(0); setTotalAnswered(0); setCombo(0); setGameState('playing'); }}
-                                className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
+                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px] shadow-lg"
                                 style={{ 
-                                    background: isClear ? 'linear-gradient(135deg, #34D399, #10B981)' : 'linear-gradient(135deg, #FF8E8E, #FF6B6B)',
-                                    borderBottomColor: isClear ? '#059669' : '#E05555' 
+                                    backgroundColor: '#FF6B6B', 
+                                    borderBottomColor: '#E05555'
                                 }}
                             >
                                 다시 풀기
                             </button>
                             <button
                                 onClick={() => setStarted(false)}
-                                className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
+                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg text-slate-500 active:scale-95 transition-all border-2 border-slate-200 border-b-4 active:border-b-2 active:translate-y-[2px] shadow-sm"
                                 style={{ 
-                                    background: 'linear-gradient(135deg, #6EE7B7, #34D399)',
-                                    borderBottomColor: '#059669'
+                                    backgroundColor: '#FFFFFF',
+                                    borderBottomColor: '#E2E8F0'
                                 }}
                             >
-                                급수 / 주제 바꾸기
+                                돌아가기
                             </button>
                         </div>
                     </div>
@@ -347,35 +334,41 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     🔥 {popupCombo}x 콤보!
                                 </div>
                             )}
-                            <div
-                                className="px-7 py-3 rounded-full font-extrabold text-xl"
-                                style={{ backgroundColor: '#FFF7D4', color: '#B8860B', border: '2px solid #FFD700', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
-                            >
-                                ⭐ +10 XP
-                            </div>
-                        </div>
-                    </div>
-                )}
+                             <div
+                                 className="px-7 py-3 rounded-full font-extrabold text-xl"
+                                 style={{ backgroundColor: '#FFF7D4', color: '#B8860B', border: '2px solid #FFD700', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
+                             >
+                                 ⭐ +10 XP
+                             </div>
+                         </div>
+                     </div>
+                 )}
 
-                {/* 헤더 */}
-                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                        <button onClick={hanjaFilter ? onBack : () => setStarted(false)}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-slate-600 gap-1">
-                            <span>←</span><span className="ml-1">뒤로</span>
-                        </button>
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <h2 className="text-lg font-black text-slate-700 m-0">문장 퀴즈</h2>
-                            <span className="text-indigo-500 opacity-60 text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, 10)}/10</span>
-                        </div>
-                    </div>
-                    <div className="w-full h-[3px] bg-slate-100 rounded-full overflow-hidden mt-3 px-2 mx-auto max-w-[90%]">
-                        <div
-                            className="h-full transition-all duration-500 rounded-full bg-indigo-500"
-                            style={{ width: `${(Math.min(totalAnswered + 1, 10) / 10) * 100}%` }}
-                        />
-                    </div>
-                </div>
+                 {/* 헤더 */}
+                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
+                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                         <button onClick={hanjaFilter ? onBack : () => setStarted(false)}
+                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-slate-400">
+                             <span>←</span>
+                         </button>
+                         <div className="flex flex-col items-center">
+                             <h2 className="text-lg font-black text-slate-500 m-0">문장 퀴즈</h2>
+                         </div>
+                         <div className="flex items-center justify-end w-11">
+                             <span className="text-indigo-500 opacity-60 text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, 10)}/10</span>
+                         </div>
+                     </div>
+                     <div className="w-full h-[10px] bg-slate-100 rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
+                         <div
+                             className="h-full transition-all duration-700 rounded-full bg-indigo-500 relative"
+                             style={{ width: `${(Math.min(totalAnswered + 1, 10) / 10) * 100}%` }}
+                         >
+                             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-indigo-400 flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
+                                 <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
+                             </div>
+                         </div>
+                     </div>
+                 </div>
 
                 {/* 본문 */}
                 <div className="flex-1 overflow-y-auto pb-6">
@@ -405,23 +398,26 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-center px-8 overflow-hidden shadow-xl"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isWordCardFlipped ? 0 : 1 }}
                                 >
-                                    <p className="text-2xl sm:text-3xl font-extrabold leading-relaxed text-center text-slate-800 break-keep">
+                                    <p className="text-3xl sm:text-[2.6rem] font-bold leading-[1.8] text-center text-slate-500/90 break-keep">
                                         {currentQuiz?.type === 'sentence' && currentQuiz?.sentence?.includes('(') ? (
                                             <>
                                                 {currentQuiz.sentence.split('(')[0]}
                                                 <span
-                                                    className="inline-block min-w-[72px] text-center font-extrabold transition-all duration-300 mx-1"
-                                                    style={feedback ? {
-                                                        color: feedback.isCorrect ? '#6366F1' : '#E05C5C',
-                                                        borderBottom: feedback.isCorrect ? '3px solid #6366F1' : '3px solid #E05C5C',
-                                                        padding: '0 2px 2px',
-                                                    } : {
-                                                        color: 'transparent',
-                                                        borderBottom: '2px solid #1e293b',
-                                                        padding: '0 2px 2px',
-                                                    }}
+                                                    className={`inline-flex items-center justify-center min-w-[120px] h-[46px] rounded-2xl transition-all duration-300 mx-2 align-middle ${
+                                                        feedback 
+                                                        ? (feedback.isCorrect ? 'bg-indigo-50 border-2 border-indigo-400 shadow-sm' : 'bg-rose-50 border-2 border-rose-400 shadow-sm')
+                                                        : 'bg-slate-50 border-2 border-dashed border-indigo-200 shadow-inner'
+                                                    }`}
                                                 >
-                                                    {feedback ? currentQuiz.target.word : '?'}
+                                                    <span 
+                                                        className="font-bold text-h2-res"
+                                                        style={{ 
+                                                            color: feedback ? (feedback.isCorrect ? '#6366F1' : '#E05C5C') : '#C7D2FE',
+                                                            fontFamily: "'Nanum Myeongjo', 'Batang', serif"
+                                                        }}
+                                                    >
+                                                        {feedback ? currentQuiz.target.word : '?'}
+                                                    </span>
                                                 </span>
                                                 {currentQuiz.sentence.split(')')[1]}
                                             </>
@@ -438,7 +434,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                                 {/* 뒷면: 단어 정보 */}
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between p-8 shadow-xl"
+                                    className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between p-3 shadow-xl"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', zIndex: isWordCardFlipped ? 1 : 0 }}
                                 >
                                     <div className="flex flex-row items-baseline gap-3 mt-1">
@@ -479,15 +475,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         key={i}
                                         disabled={isCorrectSelected}
                                         onClick={() => handleAnswer(opt)}
-                                        className={`py-3.5 px-8 rounded-[2rem] font-black text-body-lg-res border transition-all flex justify-between items-center break-keep ${
+                                        className={`py-4 px-6 rounded-[2rem] font-bold text-h3-res border-2 transition-all flex justify-between items-center break-keep relative active:translate-y-[4px] active:border-b-0 ${
                                             isCorrect
-                                            ? 'bg-indigo-50 border-indigo-400 text-indigo-700 border-4 shadow-lg'
+                                            ? 'bg-indigo-50 border-indigo-400 border-b-8 border-b-indigo-500 text-indigo-700 -translate-y-[4px]'
                                             : isWrong
-                                            ? 'bg-white border-[#FED2D2] text-[#3D3530] border-4 opacity-70'
+                                            ? 'bg-white border-rose-200 border-b-8 border-b-rose-300 text-rose-400 opacity-70 -translate-y-[4px]'
                                             : isCorrectSelected
                                             ? 'bg-white border-slate-100 text-slate-300 opacity-60'
-                                            : 'bg-white border-slate-100 text-[#5D544F] shadow-sm'
-                                        } ${!isCorrectSelected ? 'active:scale-[0.98]' : ''}`}
+                                            : 'bg-white border-slate-100 border-b-8 border-b-slate-200 text-[#5D544F] shadow-sm -translate-y-[4px]'
+                                        }`}
+                                        style={{ fontFamily: "'Nanum Myeongjo', 'Batang', serif" }}
                                     >
                                         <span className="text-left w-full">{opt}</span>
                                         {isCorrect && <span className="text-indigo-400 shrink-0 ml-2">✓</span>}
@@ -528,12 +525,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                     <button onClick={onBack}
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-slate-600 gap-1">
-                        <span>←</span><span className="ml-1">뒤로</span>
+                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-slate-400">
+                        <span>←</span>
                     </button>
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <h2 className="text-lg font-black text-slate-700 m-0">문장 퀴즈</h2>
+                    <div className="flex flex-col items-center">
+                        <h2 className="text-lg font-black text-slate-500 m-0">문장 퀴즈</h2>
                     </div>
+                    <div className="w-11" />
                 </div>
             </div>
 
@@ -561,7 +559,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                     {viewMode === 'grade' && (
                         <GradeGrid
                             selected={selectedGrade}
-                            onSelect={g => { setSelectedGrade(g); const raw = g === '전체' ? HANJA_DATA.filter(h => h.words && h.words.length > 0) : HANJA_DATA.filter(h => h.grade === g && h.words && h.words.length > 0); startQuiz(buildSessionPlan(raw, srsData, masteryData)); }}
+                            onSelect={g => setSelectedGrade(g)}
                             lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))}
                         />
                     )}
@@ -576,12 +574,40 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
                                     count={`${HANJA_DATA.filter(h => h.category === cat).length}개`}
                                     isSelected={selectedCategory === cat}
-                                    onClick={() => { setSelectedCategory(cat); const base = HANJA_DATA.filter(h => h.category === cat && h.words && h.words.length > 0); startQuiz(buildSessionPlan(base, srsData, masteryData)); }}
+                                    onClick={() => setSelectedCategory(cat)}
                                     locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))}
                                 />
                             ))}
                         </div>
                     )}
+
+                    {/* 캐릭터 영역 */}
+                    <div className="flex flex-col items-center mt-4 mb-5 relative">
+                        <div className="absolute top-4 left-[60%] z-20 animate-bounce">
+                            <div className="bg-white px-4 py-1.5 rounded-2xl shadow-xl border-2 border-slate-50 relative">
+                                <span className="text-lg-res font-black text-slate-900 whitespace-nowrap">준비됐어!</span>
+                                <div className="absolute -bottom-1.5 left-3 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-50 rotate-45" />
+                            </div>
+                        </div>
+                        <div className="relative z-10 w-52 h-52 flex items-center justify-center animate-float">
+                            <img src={characterAvatar} className="w-full h-full object-contain drop-shadow-2xl" alt="avatar" />
+                        </div>
+                        <div className="w-40 h-4 bg-slate-400/20 blur-lg rounded-[100%] scale-x-125 -mt-6" />
+                    </div>
+
+                    {/* 게임 시작 버튼 */}
+                    <div className="w-full max-w-sm px-4 pb-4 -mt-2.5">
+                        <button
+                            onClick={() => startQuiz()}
+                            className="w-full py-5 rounded-[2rem] font-black text-xl text-white transition-all active:scale-95 shadow-xl shadow-emerald-200/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
+                            style={{ 
+                                backgroundColor: '#2DD4BF',
+                                borderBottom: '6px solid #14B8A6'
+                            }}
+                        >
+                            <span>퀴즈 시작!</span>
+                        </button>
+                    </div>
 
                 </div>
             </div>
