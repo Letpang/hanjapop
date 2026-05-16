@@ -1,134 +1,128 @@
 
 body {
-    font-family: 'Nunito', 'SUIT', sans-serif;
+    font-family: 'GmarketSans', 'Outfit', 'SUIT', 'Nunito', sans-serif;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: #475569;
-    background-color: #f0f4ff;
+    word-spacing: 0.3em;
+    color: #5D544F; /* Deeper warm tone for readability */
+    background-color: #FDFBF7; /* Warm light cream */
     overflow-x: hidden;
     transition: background-color 0.5s ease;
 }
 
 /* =============================================
-   GLASS-GLOSSY BACKGROUND SYSTEM
+   WARM CREAM THEME SYSTEM
    ============================================= */
 
 /* 배경 레이어 */
+.warm-cream-bg {
+    background-color: #FDFBF7;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='paperTexture'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.03'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperTexture)'/%3E%3C/svg%3E");
+    background-attachment: fixed;
+}
+
+
+/* (Removed neon auroras for warm cream aesthetic) */
 .space-bg {
     position: fixed;
     inset: 0;
     z-index: -2;
-    transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: #FDFBF7;
 }
 
-/* Light Mode: 파스텔 오로라 그라데이션 */
-.app-container[data-level="1"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(199, 210, 254, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(251, 207, 232, 0.7) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, rgba(224, 242, 254, 0.6) 0%, transparent 60%),
-        linear-gradient(135deg, #e8f0ff 0%, #f5f0ff 50%, #fff0f8 100%);
-}
-.app-container[data-level="2"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(167, 243, 208, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(199, 210, 254, 0.7) 0%, transparent 50%),
-        linear-gradient(135deg, #ecfdf5 0%, #eff6ff 50%, #f5f3ff 100%);
-}
-.app-container[data-level="3"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(254, 215, 170, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(251, 207, 232, 0.7) 0%, transparent 50%),
-        linear-gradient(135deg, #fff7ed 0%, #fff1f2 50%, #fdf4ff 100%);
-}
-.app-container[data-level="4"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(251, 207, 232, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(196, 181, 253, 0.7) 0%, transparent 50%),
-        linear-gradient(135deg, #fdf2f8 0%, #f5f3ff 50%, #eff6ff 100%);
-}
-.app-container[data-level="5"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(253, 230, 138, 0.8) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(196, 181, 253, 0.7) 0%, transparent 50%),
-        linear-gradient(135deg, #fffbeb 0%, #fdf4ff 50%, #eff6ff 100%);
-}
-
-/* Dark Mode: 딥 스페이스 그라데이션 */
-.dark-mode.app-container[data-level="1"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.25) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
-        linear-gradient(135deg, #0f0c29 0%, #1a1040 50%, #0d1b2a 100%);
-}
-.dark-mode.app-container[data-level="2"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(16, 185, 129, 0.25) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
-        linear-gradient(135deg, #042f2e 0%, #0f172a 50%, #1e1b4b 100%);
-}
-.dark-mode.app-container[data-level="3"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(245, 158, 11, 0.25) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(239, 68, 68, 0.2) 0%, transparent 50%),
-        linear-gradient(135deg, #2d1b00 0%, #1c0a00 50%, #0f172a 100%);
-}
-.dark-mode.app-container[data-level="4"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(236, 72, 153, 0.25) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
-        linear-gradient(135deg, #2d0a1e 0%, #1e1b4b 50%, #0f172a 100%);
-}
-.dark-mode.app-container[data-level="5"] .space-bg {
-    background:
-        radial-gradient(ellipse at 20% 20%, rgba(251, 191, 36, 0.25) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
-        linear-gradient(135deg, #1c1400 0%, #2e1065 50%, #0f172a 100%);
-}
-
-/* 글로시 오버레이 레이어 */
 .stars-overlay {
-    background:
-        radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.6) 0%, transparent 8%),
-        radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.4) 0%, transparent 10%),
-        radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.3) 0%, transparent 15%),
-        radial-gradient(circle at 70% 40%, rgba(199, 210, 254, 0.3) 0%, transparent 20%);
-    filter: blur(30px);
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    opacity: 0.7;
-    pointer-events: none;
-    transition: opacity 0.5s ease;
-    animation: auroraShift 15s ease-in-out infinite alternate;
+    display: none; /* Removed neon stars */
 }
 
-.dark-mode .stars-overlay {
-    opacity: 0.5;
-    background:
-        radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.3) 0%, transparent 20%),
-        radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.25) 0%, transparent 25%),
-        radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.15) 0%, transparent 30%);
-    animation: auroraShift 15s ease-in-out infinite alternate;
-}
 
-@keyframes auroraShift {
-    0% { transform: translate(0%, 0%) scale(1); }
-    33% { transform: translate(2%, -2%) scale(1.02); }
-    66% { transform: translate(-1%, 1%) scale(0.99); }
-    100% { transform: translate(1%, 2%) scale(1.01); }
-}
-
-.dark-mode body {
+body.dark-mode {
     color: #e2e8f0;
     background-color: #0a0a1a;
+}
+
+.dark-mode .space-bg {
+    background-color: #0a0a1a;
+}
+
+/* =============================================
+   GLASS CALENDAR CARD (학습 다이어리 전용)
+   ============================================= */
+
+.glass-calendar-card {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border-radius: 32px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 
+        0 12px 40px rgba(99, 102, 241, 0.08),
+        0 4px 12px rgba(0, 0, 0, 0.03),
+        inset 0 0 24px rgba(255, 255, 255, 0.6),
+        0 0 20px rgba(255, 255, 255, 0.4);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.glass-calendar-card::before {
+    content: '';
+    position: absolute;
+    top: -15%;
+    left: -15%;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(circle, rgba(147, 197, 253, 0.35) 0%, transparent 75%); /* soft pastel blue */
+    filter: blur(50px);
+    z-index: -1;
+    pointer-events: none;
+    animation: pulseHighlight 8s ease-in-out infinite alternate;
+}
+
+.glass-calendar-card::after {
+    content: '';
+    position: absolute;
+    bottom: -15%;
+    right: -15%;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(circle, rgba(249, 168, 212, 0.3) 0%, transparent 75%); /* soft pastel pink */
+    filter: blur(50px);
+    z-index: -1;
+    pointer-events: none;
+    animation: pulseHighlight 8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes pulseHighlight {
+    0% { transform: scale(1) translate(0, 0); opacity: 0.6; }
+    50% { transform: scale(1.1) translate(5%, 5%); opacity: 0.8; }
+    100% { transform: scale(1.2) translate(-5%, -5%); opacity: 0.6; }
+}
+
+.dark-mode .glass-calendar-card {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.4),
+        inset 0 0 24px rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .glass-calendar-card::before {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 75%);
+}
+
+.dark-mode .glass-calendar-card::after {
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.12) 0%, transparent 75%);
 }
 
 /* =============================================
    GLASSMORPHISM PANEL (메인 카드/컨테이너)
    ============================================= */
 
-.clay-panel {
+/* =============================================
+   GOOGLE MINIMAL PANEL (메인 카드/컨테이너)
+   ============================================= */
+
+.clay-panel, .minimal-card {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -144,8 +138,7 @@ body {
     overflow: hidden;
 }
 
-/* 내부 상단 하이라이트 */
-.clay-panel::before {
+.clay-panel::before, .minimal-card::before {
     content: '';
     position: absolute;
     top: 0;
@@ -172,7 +165,7 @@ body {
     background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%);
 }
 
-.clay-panel:hover {
+.clay-panel:hover, .minimal-card:hover {
     transform: translateY(-4px);
     box-shadow:
         0 20px 60px rgba(99, 102, 241, 0.15),
@@ -180,60 +173,136 @@ body {
         inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+.premium-card-base {
+    background: #FFFFFF;
+    border-radius: 1rem;
+    border: 1.5px solid #F1F5F9;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+}
+
+.minimal-card-premium {
+    background: #FFFFFF;
+    border-radius: 40px;
+    border: 1.5px solid #F1F5F9;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.04);
+}
+
+
+/* =============================================
+   LAVENDER 3D TILE (오답용 조각)
+   ============================================= */
+
+.lavender-3d-tile {
+    background: linear-gradient(145deg, 
+        rgba(238, 232, 255, 0.8) 0%, 
+        rgba(216, 180, 254, 0.6) 100%);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border-radius: 28px;
+    border: 3px solid #FFFFFF;
+    box-shadow: 
+        0 10px 30px rgba(168, 85, 247, 0.18),
+        inset 0 6px 12px rgba(255, 255, 255, 0.9),
+        inset 0 -6px 15px rgba(139, 92, 246, 0.25),
+        0 4px 12px rgba(0, 0, 0, 0.04);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lavender-3d-tile::before {
+    content: '';
+    position: absolute;
+    top: 8%;
+    left: 12%;
+    width: 40%;
+    height: 25%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
+    border-radius: 50%;
+    filter: blur(3px);
+    pointer-events: none;
+}
+
+.lavender-3d-tile .hanja-text {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #5b21b6;
+    text-shadow: 
+        0 2px 0 rgba(255, 255, 255, 0.8),
+        0 0 12px rgba(167, 139, 250, 0.5);
+}
+
+.dark-mode .lavender-3d-tile {
+    background: linear-gradient(145deg, 
+        rgba(46, 16, 101, 0.7) 0%, 
+        rgba(30, 41, 59, 0.6) 100%);
+    border-color: rgba(167, 139, 250, 0.3);
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.05);
+}
+
+.dark-mode .lavender-3d-tile .hanja-text {
+    color: #ddd6fe;
+    text-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+}
+
+.lavender-3d-tile:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 
+        0 15px 30px rgba(168, 85, 247, 0.25),
+        inset 0 4px 8px rgba(255, 255, 255, 0.9);
+}
+
 /* =============================================
    GLOSSY 3D BUTTON
    ============================================= */
 
-.clay-button {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(16px) saturate(160%);
-    -webkit-backdrop-filter: blur(16px) saturate(160%);
-    border-radius: 24px;
-    border: 1.5px solid rgba(255, 255, 255, 0.9);
-    box-shadow:
-        0 6px 20px rgba(99, 102, 241, 0.1),
-        0 2px 6px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95),
-        inset 0 -2px 4px rgba(148, 163, 184, 0.1);
-    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
+/* =============================================
+   MINIMAL PILL BUTTONS
+   ============================================= */
+
+.clay-button, .minimal-button {
+    background: #FFFFFF;
+    border-radius: 999px;
+    border: 1.5px solid #EAE2D9;
+    padding: 10px 24px;
+    font-weight: 800;
+    color: #5D544F;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
-/* 버튼 상단 글로시 하이라이트 */
-.clay-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 5%;
-    right: 5%;
-    height: 45%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%);
-    border-radius: 24px 24px 50% 50%;
-    pointer-events: none;
-    z-index: 1;
+.clay-button:hover, .minimal-button:hover {
+    background: #FDFBF7;
+    border-color: #D1C4B9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-.dark-mode .clay-button {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(99, 102, 241, 0.25);
-    box-shadow:
-        0 6px 20px rgba(0, 0, 0, 0.3),
-        0 2px 6px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+.clay-button:active, .minimal-button:active {
+    transform: scale(0.96);
+    opacity: 0.9;
 }
 
-.dark-mode .clay-button::before {
-    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+.pill-button-primary {
+    background: #FFAB91;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(255, 171, 145, 0.3);
 }
 
-.clay-button:active {
-    transform: scale(0.94) translateY(2px);
-    box-shadow:
-        0 2px 8px rgba(99, 102, 241, 0.1),
-        inset 0 2px 6px rgba(148, 163, 184, 0.15);
+.pill-button-primary:hover {
+    background: #FF8A65;
+    box-shadow: 0 6px 20px rgba(255, 171, 145, 0.4);
 }
+
 
 /* =============================================
    GLASS PANEL (보조 카드)
@@ -318,30 +387,11 @@ body {
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* =============================================
-   PREMIUM TEXT EFFECTS
-   ============================================= */
-
+/* (Removed neon text effects for warm cream aesthetic) */
 .premium-text-shadow {
-    text-shadow:
-        0 1px 3px rgba(99, 102, 241, 0.15),
-        0 2px 6px rgba(0, 0, 0, 0.08);
+    text-shadow: 0 1px 2px rgba(93, 84, 79, 0.1);
 }
 
-.glossy-text {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.3));
-}
-
-.dark-mode .neon-text-white {
-    color: #f1f5f9;
-    text-shadow:
-        0 0 20px rgba(99, 102, 241, 0.5),
-        0 0 40px rgba(168, 85, 247, 0.3);
-}
 
 /* =============================================
    ANIMATIONS
@@ -398,12 +448,8 @@ body {
 }
 
 /* =============================================
-   CARD FLIP SYSTEM
+   CARD FLIP SYSTEM (GENERIC - for Match Game etc.)
    ============================================= */
-
-.perspective-1000 { perspective: 1000px; }
-.preserve-3d { transform-style: preserve-3d; }
-.backface-hidden { backface-visibility: hidden; }
 
 .card-face-front,
 .card-face-back {
@@ -430,6 +476,84 @@ body {
     opacity: 1;
     transform: scaleX(1);
     pointer-events: auto;
+}
+
+/* =============================================
+   FLASHCARD SYSTEM (SCOPED - for Single Card Mode)
+   ============================================= */
+
+.flashcard-perspective { perspective: 1200px; }
+.flashcard-preserve-3d { transform-style: preserve-3d; }
+.flashcard-backface-hidden { backface-visibility: hidden; }
+
+.flashcard-face-front,
+.flashcard-face-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 3rem !important;
+    backface-visibility: hidden;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flashcard-face-back {
+    transform: rotateY(180deg);
+}
+
+/* =============================================
+   BACKUP UI REPLICATION (HANJA CARD)
+   ============================================= */
+
+@property --pill-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes pillRedSpin {
+    from { --pill-angle: 0deg; }
+    to   { --pill-angle: 360deg; }
+}
+
+.pill-red-ring {
+    --pill-angle: 0deg;
+    animation: pillRedSpin 1s linear infinite !important;
+}
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
+
+.perspective-1200 {
+    perspective: 1200px;
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    70% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pop-in {
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes blinkRed {
+    0%, 100% { border-color: transparent; box-shadow: none; }
+    50% { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+}
+
+.animate-blink-red {
+    animation: blinkRed 0.7s ease-in-out infinite;
 }
 
 /* =============================================
@@ -952,20 +1076,41 @@ body.dark .clay-button {
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* 스트릭 뱃지 애니메이션 */
-@keyframes streakPulse {
+/* 스트릭 (Sparkle) 애니메이션 - AI Studio 스타일 */
+@keyframes sparkleFloat {
     0%, 100% {
-        transform: scale(1);
-        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+        filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.2));
     }
     50% {
-        transform: scale(1.1);
-        opacity: 0.8;
+        transform: translateY(-3px) rotate(5deg);
+        filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.5));
     }
 }
 
 .streak-badge {
-    animation: streakPulse 2s ease-in-out infinite;
+    animation: sparkleFloat 3s ease-in-out infinite;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pastel-star-pink { color: #FFB3D9; }
+.pastel-star-indigo { color: #A5B4FC; }
+.pastel-star-amber { color: #FCD34D; }
+
+/* AI Studio 스타일 유틸리티 */
+.minimal-icon-box {
+    @apply rounded-xl flex items-center justify-center transition-all duration-300;
+    aspect-ratio: 1 / 1;
+}
+
+.minimal-card-studio {
+    @apply bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl;
+}
+
+.text-google-gray {
+    color: #5F6368;
 }
 
 /* 완료 상태 축하 애니메이션 */
@@ -985,6 +1130,92 @@ body.dark .clay-button {
     animation: celebrateFloat 0.6s ease-in-out;
 }
 
+/* =============================================
+   ORANGE JELLY BUTTON (복습하기 전용)
+   ============================================= */
+
+.orange-jelly-button {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #ea580c 100%);
+    border-radius: 28px;
+    border: none;
+    color: white;
+    font-weight: 900;
+    font-size: 1.15rem;
+    padding: 1rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 
+        0 8px 0 #b45309, 
+        0 12px 25px rgba(245, 158, 11, 0.4),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* 젤리 광택 효과 (Top Gloss) */
+.orange-jelly-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 5%;
+    right: 5%;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 28px 28px 60% 60%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 내부 은은한 글로우 */
+.orange-jelly-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(251, 191, 36, 0.4) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.orange-jelly-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 10px 0 #b45309, 
+        0 15px 30px rgba(245, 158, 11, 0.5),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.orange-jelly-button:hover:not(:disabled)::after {
+    opacity: 1;
+}
+
+.orange-jelly-button:active:not(:disabled) {
+    transform: translateY(6px) scale(0.98);
+    box-shadow: 
+        0 2px 0 #b45309, 
+        0 4px 10px rgba(245, 158, 11, 0.3),
+        inset 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.1s;
+}
+
+.orange-jelly-button:disabled {
+    background: #e2e8f0;
+    box-shadow: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.orange-jelly-button .count-badge {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
 /* 부드러운 페이드 인 */
 @keyframes fadeInUp {
     from {
@@ -999,4 +1230,227 @@ body.dark .clay-button {
 
 .fade-in-up {
     animation: fadeInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* =============================================
+   PREMIUM RENEWAL BOXES (Profile & Daily Quest)
+   ============================================= */
+
+.premium-card-base {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 48px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    /* Claymorphism Effect */
+    box-shadow: 
+        0 20px 40px rgba(93, 84, 79, 0.06),
+        inset 0 -8px 12px rgba(0, 0, 0, 0.02),
+        inset 0 8px 12px rgba(255, 255, 255, 0.9);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100%;
+}
+
+.premium-card-base:hover {
+    transform: translateY(-8px) scale(1.02);
+    background: #FFFFFF;
+    box-shadow: 
+        0 30px 60px rgba(93, 84, 79, 0.12),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.01),
+        inset 0 4px 8px rgba(255, 255, 255, 1);
+}
+
+/* Floating Animation */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
+
+/* Profile ID/Level Badge */
+.profile-badge-tag {
+    background: #ff9a69;
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 3px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Soft Diffuse Shadow */
+    box-shadow: 0 6px 12px rgba(255, 154, 105, 0.25);
+    display: inline-block;
+    letter-spacing: 0.05em;
+}
+
+/* Pill Buttons (Calendar, Badge Storage) */
+.pill-button-premium {
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    color: white;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+        0 4px 10px rgba(0, 0, 0, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.pill-button-blue { background: #6366F1; }
+.pill-button-purple { background: #818CF8; }
+
+.pill-button-premium:active {
+    transform: scale(0.95);
+}
+
+/* XP Bar */
+.xp-bar-premium {
+    height: 14px;
+    background: #F1F5F9;
+    border-radius: 999px;
+    overflow: hidden;
+    width: 100%;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    border: 1px solid #EAE2D9;
+}
+
+.xp-bar-fill-premium {
+    height: 100%;
+    background: linear-gradient(90deg, #ff9a69, #ffb08a);
+    border-radius: 999px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+/* Glassy Shine for XP Bar */
+.xp-bar-fill-premium::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shine 3s infinite;
+}
+
+@keyframes shine {
+    0% { left: -100%; }
+    20% { left: 100%; }
+    100% { left: 100%; }
+}
+
+/* Quest Progress Bar */
+.quest-bar-container {
+    height: 8px;
+    background: #F1F5F9;
+    border-radius: 999px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.quest-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Quest Action Buttons */
+.quest-start-btn {
+    padding: 4px 14px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 900;
+    color: white;
+    transition: all 0.2s;
+}
+
+.quest-start-btn-blue { background: #60A5FA; }
+.quest-start-btn-green { background: #34D399; }
+.quest-start-btn-red { background: #F87171; }
+
+.quest-start-btn:active { transform: scale(0.9); }
+
+/* [PREMIUM UPGRADE 1] Aurora & Diamond Pattern Base */
+@keyframes auroraShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.premium-aurora-bg {
+    background: 
+        radial-gradient(circle at 0% 0%, rgba(255, 240, 245, 0.8) 0%, transparent 40%),
+        radial-gradient(circle at 100% 0%, rgba(240, 244, 255, 0.8) 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, rgba(240, 255, 244, 0.8) 0%, transparent 40%),
+        radial-gradient(circle at 0% 100%, rgba(253, 252, 240, 0.8) 0%, transparent 40%),
+        #FDFBF7;
+    background-size: 200% 200%;
+    animation: auroraShift 15s ease-in-out infinite alternate;
+}
+
+.diamond-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 L22 12 L12 22 L2 12 Z' fill='none' stroke='rgba(93,84,79,0.03)' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 24px 24px;
+}
+
+/* [PREMIUM UPGRADE 2] Claymorphism 2.0 */
+.premium-card-base {
+    background: linear-gradient(145deg, #ffffff, #FDFBF7);
+    border-radius: 40px;
+    border: 4px solid #ffffff;
+    box-shadow: 
+        10px 10px 20px rgba(93, 84, 79, 0.05),
+        -5px -5px 15px rgba(255, 255, 255, 0.8),
+        inset 4px 4px 8px rgba(255, 255, 255, 0.6);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.premium-card-base:active {
+    transform: scale(0.96) translateY(2px);
+    box-shadow: 4px 4px 10px rgba(93, 84, 79, 0.05), inset 2px 2px 4px rgba(0,0,0,0.02);
+}
+
+/* [PREMIUM UPGRADE 3] Jelly Animation */
+@keyframes popJelly {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.15) rotate(2deg); }
+    100% { transform: scale(1); }
+}
+.animate-jelly:active {
+    animation: popJelly 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* [PREMIUM UPGRADE 4] Dark Mode Upgrade */
+.dark-mode {
+    --bg-primary: #0f172a;
+    --text-primary: #f1f5f9;
+}
+
+.dark-mode .premium-aurora-bg {
+    background: 
+        radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 40%),
+        radial-gradient(circle at 100% 0%, #312e81 0%, transparent 40%),
+        radial-gradient(circle at 100% 100%, #1e1b4b 0%, transparent 40%),
+        radial-gradient(circle at 0% 100%, #4c1d95 0%, transparent 40%),
+        #020617;
+}
+
+.dark-mode .premium-card-base {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.05);
 }
