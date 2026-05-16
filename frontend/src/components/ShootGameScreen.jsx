@@ -5,6 +5,9 @@ import {
 } from './Icons.jsx';
 import { useLang } from '../LangContext.jsx';
 import { getRankDetails } from '../utils/rankUtils.js';
+import { buildSessionPlan } from '../utils/learningPool.js';
+import GradeGrid, { TopicCard } from './GradeGrid.jsx';
+const GRADES = ['전체', '8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
 
 const getStoredXp = () => {
     try { return Number(localStorage.getItem('user_xp') || '0'); } catch { return 0; }
@@ -13,18 +16,27 @@ const getStoredXp = () => {
 // ─────────────────────────────────────────────
 // 난이도 설정
 // ─────────────────────────────────────────────
+const CATEGORY_IMAGES = {
+    '숫자와 기초 개념': '1_一.webp',
+    '자연과 시간': '31_日.webp',
+    '나와 가족 신체': '71_父.webp',
+    '공간과 위치': '111_東.webp',
+    '학교와 일상생활': '151_學.webp',
+    '행동과 상태': '201_來.webp',
+    '사회와 문화': '251_國.webp',
+};
 const DIFFICULTY_CONFIG = {
     easy: {
         label: '쉬움',
         labelEn: 'Easy',
         emoji: '🌱',
-        dropSpeedBase: 0.12,       // 낙하 속도 (% per tick, 50ms)
+        dropSpeedBase: 0.18,       // 낙하 속도 (% per tick, 50ms) — ~18초 바닥 도달
         dropSpeedPerWave: 0.015,   // 웨이브당 속도 증가
-        maxOnScreen: 2,            // 동시 등장 최대 수
-        spawnIntervalBase: 3200,   // 스폰 간격 (ms)
+        maxOnScreen: 2,
+        spawnIntervalBase: 3000,
         spawnIntervalPerWave: -150,
-        wrongAnswerMode: 'other_theme', // 오답 유사도: 다른 테마
-        wavesTotal: 5,
+        wrongAnswerMode: 'other_theme',
+        wavesTotal: 1,
         killsPerWave: 10,
         hp: 5,
     },
@@ -32,27 +44,27 @@ const DIFFICULTY_CONFIG = {
         label: '보통',
         labelEn: 'Normal',
         emoji: '⚡',
-        dropSpeedBase: 0.20,
-        dropSpeedPerWave: 0.025,
+        dropSpeedBase: 0.28,       // ~11초 바닥 도달
+        dropSpeedPerWave: 0.03,
         maxOnScreen: 3,
-        spawnIntervalBase: 2500,
+        spawnIntervalBase: 2400,
         spawnIntervalPerWave: -200,
-        wrongAnswerMode: 'same_theme', // 오답 유사도: 같은 테마
-        wavesTotal: 5,
+        wrongAnswerMode: 'same_theme',
+        wavesTotal: 1,
         killsPerWave: 12,
         hp: 5,
     },
     hard: {
         label: '어려움',
         labelEn: 'Hard',
-        emoji: '🔥',
-        dropSpeedBase: 0.30,
-        dropSpeedPerWave: 0.04,
+        emoji: '✦',
+        dropSpeedBase: 0.40,       // ~7.5초 바닥 도달
+        dropSpeedPerWave: 0.05,
         maxOnScreen: 4,
-        spawnIntervalBase: 1800,
-        spawnIntervalPerWave: -200,
-        wrongAnswerMode: 'same_reading_prefix', // 오답 유사도: reading 앞글자 같은 것
-        wavesTotal: 5,
+        spawnIntervalBase: 1600,
+        spawnIntervalPerWave: -180,
+        wrongAnswerMode: 'same_reading_prefix',
+        wavesTotal: 1,
         killsPerWave: 15,
         hp: 4,
     },
@@ -62,9 +74,9 @@ const DIFFICULTY_CONFIG = {
 // 난이도별 XP 테이블
 // ─────────────────────────────────────────────
 const DIFFICULTY_XP = {
-    easy:   { waveClear: 10, combo3: 20, combo5: 40 },
-    normal: { waveClear: 15, combo3: 30, combo5: 60 },
-    hard:   { waveClear: 20, combo3: 50, combo5: 100 },
+    easy:   { waveClear: 30, combo3: 0, combo5: 0 },
+    normal: { waveClear: 30, combo3: 0, combo5: 0 },
+    hard:   { waveClear: 30, combo3: 0, combo5: 0 },
 };
 // ─────────────────────────────────────────────
 // 사운드
@@ -134,7 +146,7 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWrong, onMarkCorrect, onWaveClear, masteryData }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, onMarkWrong, onMarkCorrect, onWaveClear, masteryData, srsData, userLevel, hanjaFilter, unlockedHanjaIds }) => {
     const { lang, t } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -149,7 +161,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
     }, []);
     
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
-    const [selectedGrade, setSelectedGrade] = useState('8급');
+    const [selectedGrade, setSelectedGrade] = useState(null);
     const [selectedDifficulty, setSelectedDifficulty] = useState('normal');
 
     useEffect(() => {
@@ -157,67 +169,74 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
             setSelectedCategory(categories[0]);
         }
     }, [categories, selectedCategory]);
-
     const [status, setStatus] = useState('idle');
     const [wave, setWave] = useState(1);
     const [waveKills, setWaveKills] = useState(0);
     const [waveTransition, setWaveTransition] = useState(false);
     const [clearCombo, setClearCombo] = useState(0); // 연속 웨이브 클리어 콤보
+    const [combo, setCombo] = useState(0);
     const [score, setScore] = useState(0);
+    const [sessionXp, setSessionXp] = useState(0);
+
+    // 해금된 급수 계산 로직
+    const unlockedIds = useMemo(() => new Set(unlockedHanjaIds || []), [unlockedHanjaIds]);
+    const unlockedGrades = useMemo(() => {
+        const s = new Set(['전체']);
+        for (const h of HANJA_DATA) { if (unlockedIds.has(h.id)) s.add(h.grade); }
+        return s;
+    }, [unlockedIds]);
+
     const [hp, setHp] = useState(5);
     const [words, setWords] = useState([]);
     const [options, setOptions] = useState([]);
+    const [isWordTarget, setIsWordTarget] = useState(false);
     const [targetId, setTargetId] = useState(null);
     const [lasers, setLasers] = useState([]);
     const [shake, setShake] = useState(false);
     const [turretAngle, setTurretAngle] = useState(-90);
     const [acquisitions, setAcquisitions] = useState([]);
+    const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [isInputLocked, setIsInputLocked] = useState(false);
+    const inputLockedRef = useRef(false);
 
     const shipRef = useRef(null);
     const gameAreaRef = useRef(null);
     const hpRef = useRef(hp);
     useEffect(() => { hpRef.current = hp; }, [hp]);
 
-    const diffConfig = useMemo(() => DIFFICULTY_CONFIG[selectedDifficulty] || DIFFICULTY_CONFIG.normal, [selectedDifficulty]);
+    const diffConfig = useMemo(() => {
+        const base = DIFFICULTY_CONFIG[selectedDifficulty] || DIFFICULTY_CONFIG.normal;
+        return hanjaFilter ? { ...base, wavesTotal: 1 } : base;
+    }, [selectedDifficulty, hanjaFilter]);
 
     const gamePoolData = useMemo(() => {
         let pool = [];
-        if (viewMode === 'grade') {
-            if (selectedGrade === '기타') pool = HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
+        if (hanjaFilter && hanjaFilter.length > 0) {
+            pool = HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
+        } else if (viewMode === 'grade') {
+            if (selectedGrade === '전체') pool = HANJA_DATA;
             else pool = HANJA_DATA.filter(h => h.grade === selectedGrade);
         } else {
             pool = HANJA_DATA.filter(h => h.category === selectedCategory);
         }
         const relevantWords = pool.filter(h => h.words && h.words.length > 0);
         return { chars: pool, words: relevantWords };
-    }, [viewMode, selectedGrade, selectedCategory]);
+    }, [viewMode, selectedGrade, selectedCategory, hanjaFilter]);
 
-    // 1순위: wrongCount 상위 3개, 2순위: 오늘 학습한 5개, 3순위: 나머지
-    const priorityPool = useMemo(() => {
-        if (!masteryData || gamePoolData.chars.length === 0) return gamePoolData.chars;
-        const today = new Date().toDateString();
-        const wrongChars = gamePoolData.chars
-            .filter(c => (masteryData[String(c.id)]?.wrongCount || 0) >= 1)
-            .sort((a, b) => (masteryData[String(b.id)]?.wrongCount || 0) - (masteryData[String(a.id)]?.wrongCount || 0))
-            .slice(0, 3);
-        const wrongIds = new Set(wrongChars.map(c => String(c.id)));
-        const todayChars = gamePoolData.chars
-            .filter(c => {
-                if (wrongIds.has(String(c.id))) return false;
-                const lastSeen = masteryData[String(c.id)]?.lastSeen;
-                return lastSeen && new Date(lastSeen).toDateString() === today;
-            })
-            .slice(0, 5);
-        const priorityIds = new Set([...wrongChars, ...todayChars].map(c => String(c.id)));
-        const pool = [];
-        wrongChars.forEach(c => { for (let i = 0; i < 5; i++) pool.push(c); });
-        todayChars.forEach(c => { for (let i = 0; i < 3; i++) pool.push(c); });
-        gamePoolData.chars.filter(c => !priorityIds.has(String(c.id))).forEach(c => pool.push(c));
-        return pool.length > 0 ? pool : gamePoolData.chars;
-    }, [gamePoolData, masteryData]);
+    const sessionPlan = useMemo(() =>
+        buildSessionPlan(gamePoolData.chars, srsData, masteryData),
+    [gamePoolData, srsData, masteryData]);
 
-    const startGame = () => {
+    const reviewQueueRef = useRef([]);
+    useEffect(() => {
+        reviewQueueRef.current = [...sessionPlan.reviewQueue];
+    }, [sessionPlan]);
+
+    useEffect(() => {
+        if (hanjaFilter && hanjaFilter.length > 0 && status === 'idle') startGame();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const startGame = (overrideDiff) => {
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (AudioCtx) {
@@ -226,12 +245,15 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
             }
         } catch (e) {}
 
+        const effectiveDiff = overrideDiff ? (DIFFICULTY_CONFIG[overrideDiff] || diffConfig) : diffConfig;
+        reviewQueueRef.current = [...sessionPlan.reviewQueue];
         setWave(1);
         setWaveKills(0);
         setWaveTransition(false);
         setScore(0);
-        setHp(diffConfig.hp);
-        hpRef.current = diffConfig.hp;
+        setSessionXp(0);
+        setHp(effectiveDiff.hp);
+        hpRef.current = effectiveDiff.hp;
         setWords([]);
         setTargetId(null);
         setShake(false);
@@ -267,6 +289,9 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
             if (newCombo >= 5) xpEarned += xpTable.combo5;
             else if (newCombo >= 3) xpEarned += xpTable.combo3;
             if (onHanjaAcquired) onHanjaAcquired(null, xpEarned);
+            setSessionXp(prev => prev + xpEarned);
+            setXpPopup({ show: true, key: Date.now(), amount: xpEarned });
+            setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
             if (onWaveClear) onWaveClear();
             if (wave >= diffConfig.wavesTotal) {
                 setStatus('clear');
@@ -314,8 +339,10 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
 
         const spawnInterval = setInterval(() => {
             setWords(prev => {
-                if (prev.filter(w => w.state === 'falling').length >= diffConfig.maxOnScreen) return prev;
-                
+                const falling = prev.filter(w => w.state === 'falling');
+                if (falling.length >= diffConfig.maxOnScreen) return prev;
+                const fallingHanjas = new Set(falling.map(w => w.hanja));
+
                 let nextItem;
                 let isWord = false;
                 const wordChance = 0.4;
@@ -338,12 +365,19 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                     }
                 }
 
-                if (!nextItem && priorityPool.length > 0) {
-                    const ch = priorityPool[Math.floor(Math.random() * priorityPool.length)];
+                if (!nextItem && sessionPlan.normalPool.length > 0) {
+                    let ch;
+                    if (reviewQueueRef.current.length > 0) {
+                        ch = reviewQueueRef.current.shift();
+                    } else {
+                        const pool = sessionPlan.normalPool;
+                        ch = pool[Math.floor(Math.random() * pool.length)];
+                    }
                     nextItem = { ...ch, isWrongItem: (masteryData?.[String(ch.id)]?.wrongCount || 0) >= 1 };
                 }
 
                 if (!nextItem) return prev;
+                if (fallingHanjas.has(nextItem.hanja)) return prev;
 
                 return [...prev, {
                     id: Date.now() + Math.random(),
@@ -363,7 +397,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
         }, getSpawnInterval(wave));
 
         return () => { clearInterval(dropInterval); clearInterval(spawnInterval); };
-    }, [status, wave, waveTransition, gamePoolData, priorityPool, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig]);
+    }, [status, wave, waveTransition, gamePoolData, sessionPlan, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig]);
 
     // 타겟 & 보기 갱신
     useEffect(() => {
@@ -373,6 +407,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
         const lowestWord = fallingWords.reduce((prev, curr) => (prev.y > curr.y ? prev : curr), fallingWords[0]);
         if (lowestWord.id !== targetId) {
             setTargetId(lowestWord.id);
+            setIsWordTarget(lowestWord.isWord || false);
             const allChars = gamePoolData.chars.length > 10 ? gamePoolData.chars : HANJA_DATA;
             const wrongOpts = getWrongOptions(lowestWord, allChars, diffConfig.wrongAnswerMode, lowestWord.category);
             setOptions([...wrongOpts, lowestWord.answer].sort(() => 0.5 - Math.random()));
@@ -380,10 +415,11 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
     }, [words, status, targetId, gamePoolData, diffConfig, getMeaning]);
 
     const handleOptionClick = (selectedAnswer) => {
-        if (status !== 'playing' || !targetId || isInputLocked) return;
+        if (status !== 'playing' || !targetId || inputLockedRef.current) return;
         const target = words.find(w => w.id === targetId);
         if (!target) return;
         if (selectedAnswer === target.answer) {
+            inputLockedRef.current = true;
             const dx = target.x - 50; const dy = target.y - 85;
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
             setTurretAngle(angle);
@@ -394,18 +430,19 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
             setWords(prev => prev.map(w => w.id === targetId ? { ...w, state: 'exploding', timer: 6 } : w));
             setScore(prev => prev + 1);
             setWaveKills(prev => prev + 1);
-            if (onHanjaAcquired) onHanjaAcquired(target.pairId);
             if (onMarkCorrect) onMarkCorrect(target.pairId);
+            if (onHanjaAcquired) onHanjaAcquired(target.pairId, 10);
             const acqId = Date.now();
             setAcquisitions(prev => [...prev, { id: acqId, x: target.x, y: target.y, hanja: target.hanja }]);
-            setTimeout(() => setAcquisitions(prev => prev.filter(a => a.id !== acqId)), 1000);
+            setTimeout(() => { setAcquisitions(prev => prev.filter(a => a.id !== acqId)); inputLockedRef.current = false; }, 1000);
         } else {
+            inputLockedRef.current = true;
             playSound('damage');
             setShake(true);
             setIsInputLocked(true);
             setHp(prev => Math.max(0, prev - 1));
             if (onMarkWrong) onMarkWrong(target.pairId);
-            setTimeout(() => { setShake(false); setIsInputLocked(false); }, 800);
+            setTimeout(() => { setShake(false); setIsInputLocked(false); inputLockedRef.current = false; }, 800);
         }
     };
 
@@ -414,172 +451,143 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
     // ─────────────────────────────────────────
     if (status === 'idle') {
         return (
-            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center justify-center p-5 aesthetic-space-bg">
-                <div className="w-full h-full overflow-y-auto flex flex-col items-center justify-center z-10 absolute inset-0 py-10">
-                    <div className="w-full max-w-sm md:max-w-2xl mx-auto flex flex-col items-center justify-center relative z-10 p-6 md:p-10 clay-panel !rounded-[3rem] border-4 border-white dark:border-slate-700 !bg-white/40 dark:!bg-slate-900/40 backdrop-blur-xl">
-                        <h2 className="text-4xl md:text-7xl font-black text-slate-700 dark:text-white mb-8 premium-text-shadow text-center">{t('shootTitle')}</h2>
-                        
-                        {/* 급수/주제 탭 */}
-                        <div className="flex bg-white/60 dark:bg-slate-800/60 p-1.5 rounded-2xl border-2 border-white dark:border-slate-700 shadow-inner mb-6">
-                            <button onClick={() => setViewMode('grade')} className={"px-8 py-2.5 rounded-xl font-black text-lg transition-all " + (viewMode === 'grade' ? "bg-white dark:bg-slate-700 text-indigo-500 shadow-md" : "text-slate-400")}>급수별</button>
-                            <button onClick={() => setViewMode('topic')} className={"px-8 py-2.5 rounded-xl font-black text-lg transition-all " + (viewMode === 'topic' ? "bg-white dark:bg-slate-700 text-indigo-500 shadow-md" : "text-slate-400")}>주제별</button>
+            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAFF' }}>
+                {/* 헤더 */}
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
+                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                        <button onClick={onBack}
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-slate-600 gap-1">
+                            <span>←</span><span className="ml-1">뒤로</span>
+                        </button>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <h2 className="text-lg font-black text-slate-700 m-0">몬스터 슈팅</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto pb-6">
+                    <div className="w-full max-w-xl mx-auto px-4 flex flex-col items-center gap-6 pt-5">
+
+                        {/* 탭 */}
+                        <div className="flex bg-slate-100/40 p-1.5 rounded-full border border-slate-200 w-full mb-4 shadow-inner">
+                            <button
+                                onClick={() => setViewMode('grade')}
+                                className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
+                            >
+                                급수별
+                            </button>
+                            <button
+                                onClick={() => setViewMode('topic')}
+                                className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
+                            >
+                                주제별
+                            </button>
                         </div>
 
+                        {/* 급수별 */}
                         {viewMode === 'grade' && (
-                            <div className="flex gap-3 mb-6 flex-wrap justify-center">
-                                {['8급', '7급', '6급', '기타'].map(g => (
-                                    <button key={g} onClick={() => setSelectedGrade(g)} className={"px-8 py-3 rounded-2xl font-black transition-all border-4 text-xl " + (selectedGrade === g ? "bg-indigo-500 text-white border-white shadow-xl scale-110" : "bg-white/60 dark:bg-slate-800/60 text-slate-400 border-white/40")}>{g}</button>
-                                ))}
-                            </div>
+                            <GradeGrid
+                                selected={selectedGrade}
+                                onSelect={setSelectedGrade}
+                                lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))}
+                            />
                         )}
-                        
+
+                        {/* 주제별 */}
                         {viewMode === 'topic' && (
-                            <div className="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 px-4 w-full justify-start sm:justify-center">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                                 {categories.map(cat => (
-                                    <button key={cat} onClick={() => setSelectedCategory(cat)} className={"px-6 py-2.5 rounded-xl font-black transition-all border-4 text-lg whitespace-nowrap " + (selectedCategory === cat ? "bg-indigo-500 text-white border-white shadow-xl scale-105" : "bg-white/60 dark:bg-slate-800/60 text-slate-400 border-white/40")}>{cat}</button>
+                                    <TopicCard
+                                        key={cat}
+                                        name={cat}
+                                        imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
+                                        count={`${HANJA_DATA.filter(h => h.category === cat).length}개`}
+                                        isSelected={selectedCategory === cat}
+                                        onClick={() => setSelectedCategory(cat)}
+                                        locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))}
+                                    />
                                 ))}
                             </div>
                         )}
 
                         {/* 난이도 선택 */}
-                        <div className="w-full mb-8">
-                            <p className="text-center text-slate-400 font-black text-sm mb-3 uppercase tracking-widest">난이도 선택</p>
+                        <div className="w-full">
+                            <p className="text-xs font-extrabold text-slate-400 mb-3 text-center">난이도</p>
                             <div className="grid grid-cols-3 gap-3">
                                 {Object.entries(DIFFICULTY_CONFIG).map(([key, cfg]) => (
                                     <button
                                         key={key}
-                                        onClick={() => setSelectedDifficulty(key)}
-                                        className={"py-4 rounded-2xl font-black text-lg border-4 transition-all flex flex-col items-center gap-1 " +
-                                            (selectedDifficulty === key
-                                                ? "bg-indigo-500 text-white border-white shadow-xl scale-105"
-                                                : "bg-white/60 dark:bg-slate-800/60 text-slate-500 border-white/40 dark:border-slate-700")}
+                                        onClick={() => { setSelectedDifficulty(key); startGame(key); }}
+                                        className="py-3 rounded-2xl font-extrabold transition-all flex flex-col items-center gap-1.5 border shadow-sm active:scale-95 bg-white"
+                                        style={selectedDifficulty === key
+                                            ? { color: '#DC2626', borderColor: '#FFADAD', boxShadow: '0 8px 24px #FFADAD60', outline: '4px solid #FFADAD30' }
+                                            : { color: '#CBD5E1', borderColor: '#F1F5F9' }}
                                     >
-                                        <span className="text-2xl">{cfg.emoji}</span>
-                                        <span>{cfg.label}</span>
-                                        <span className="text-xs opacity-70">{cfg.wavesTotal}웨이브</span>
+                                        <span className="text-xl">{cfg.emoji}</span>
+                                        <span className="text-xs font-extrabold">{cfg.label}</span>
+                                        <span className="text-xs opacity-60 font-extrabold">{cfg.wavesTotal}웨이브</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* 난이도 설명 */}
-                        <div className="w-full bg-white/50 dark:bg-slate-800/50 rounded-2xl p-4 mb-8 border-2 border-white dark:border-slate-700 text-sm text-slate-500 dark:text-slate-300 font-bold">
-                            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                <div>
-                                    <div className="text-slate-400 mb-1">낙하 속도</div>
-                                    <div className="font-black text-indigo-500">
-                                        {selectedDifficulty === 'easy' ? '느림' : selectedDifficulty === 'normal' ? '보통' : '빠름'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="text-slate-400 mb-1">동시 등장</div>
-                                    <div className="font-black text-indigo-500">{diffConfig.maxOnScreen}개</div>
-                                </div>
-                                <div>
-                                    <div className="text-slate-400 mb-1">오답 유형</div>
-                                    <div className="font-black text-indigo-500">
-                                        {selectedDifficulty === 'easy' ? '다른 주제' : selectedDifficulty === 'normal' ? '같은 주제' : '비슷한 음'}
-                                    </div>
-                                </div>
+                        {/* 아바타 프리뷰 */}
+                        <div className="flex flex-col items-center gap-6 mt-4">
+                            <div className="w-36 h-36 rounded-[3rem] bg-white flex items-center justify-center shadow-2xl border border-slate-100 p-6 animate-float">
+                                <img src={characterAvatar} className="w-full h-full object-contain" alt="avatar" />
                             </div>
+                            <span className="text-xs font-extrabold text-slate-300">출격 준비 완료!</span>
                         </div>
 
-                        <div className="flex flex-col items-center mb-8">
-                            <div className="w-28 h-28 md:w-40 md:h-40 rounded-[3rem] bg-white p-4 flex items-center justify-center shadow-2xl border-4 border-indigo-200">
-                                <img src={characterAvatar} className="w-full h-full object-contain filter drop-shadow-lg" />
-                            </div>
-                            <p className="mt-4 font-black text-slate-500 dark:text-slate-300">Ready to Battle!</p>
-                        </div>
-
-                        <button onClick={startGame} className="clay-button !bg-indigo-400 !text-white px-12 py-6 md:py-8 rounded-[3rem] font-black shadow-2xl active:scale-95 mb-6 w-full text-2xl md:text-5xl border-4 border-white">GAME START</button>
-                        <button onClick={onBack} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 font-bold text-xl">{t('backToMenu')}</button>
                     </div>
                 </div>
             </div>
         );
     }
 
-    // ─────────────────────────────────────────
-    // 결과 화면
-    // ─────────────────────────────────────────
-    if (status === 'over' || status === 'clear') {
-        return (
-            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center justify-center p-6 aesthetic-space-bg">
-                <div className="w-full max-sm:p-6 max-w-sm md:max-w-2xl mx-auto flex flex-col items-center justify-center relative z-10 p-10 clay-panel !rounded-[3rem] border-4 border-white dark:border-slate-700 !bg-white/40 dark:!bg-slate-900/40 backdrop-blur-xl">
-                    <div className="mb-6 text-8xl md:text-[10rem] animate-float">{status === 'clear' ? '🏆' : '💥'}</div>
-                    <h2 className={"text-5xl md:text-8xl font-black mb-6 premium-text-shadow " + (status === 'clear' ? 'text-emerald-400' : 'text-rose-400')}>
-                        {status === 'clear' ? 'SUCCESS!' : 'GAME OVER'}
-                    </h2>
-                    <div className="bg-white/80 dark:bg-slate-800/80 px-12 py-6 rounded-[3rem] shadow-xl border-4 border-white dark:border-slate-700 flex flex-col items-center mb-6 w-full">
-                        <span className="text-slate-400 font-black uppercase text-sm mb-2 tracking-widest">Score</span>
-                        <div className="text-6xl md:text-8xl font-black text-slate-700 dark:text-white">{score}</div>
-                        <div className="text-slate-400 font-bold mt-1">Wave {wave} / {diffConfig.wavesTotal} · {diffConfig.label}</div>
-                    </div>
-                    <div className="flex flex-col gap-4 w-full">
-                        <button onClick={startGame} className={"py-6 rounded-[2rem] font-black text-2xl md:text-4xl shadow-xl border-4 border-white " + (status === 'clear' ? "bg-emerald-400 text-white" : "bg-rose-400 text-white")}>
-                            {status === 'clear' ? 'PLAY AGAIN →' : 'TRY AGAIN'}
-                        </button>
-                        <button onClick={() => setStatus('idle')} className="bg-white/50 text-slate-500 py-4 rounded-2xl font-bold text-xl mt-2">{t('menuShort')}</button>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // 결과 화면 상수는 메인 렌더링 내에서 처리 (매칭 게임과 동일 구조)
+    const isClear = status === 'clear';
+    const isResult = status === 'over' || status === 'clear';
 
     // ─────────────────────────────────────────
     // 게임 화면
     // ─────────────────────────────────────────
     return (
-        <div className="fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden aesthetic-space-bg">
-            <div className={"w-full mx-auto h-full flex flex-col relative " + (shake ? "animate-shake" : "")}>
-                {/* 상단 HUD */}
-                <div className="absolute left-4 right-4 flex justify-between items-start z-40 safe-top pt-4">
-                    <div className="bg-white/90 dark:bg-slate-800/90 rounded-2xl p-2 px-4 shadow-xl border border-white dark:border-slate-700 flex flex-col">
-                        <span className="text-[10px] font-black text-rose-400 mb-1 tracking-widest uppercase">Energy</span>
-                        <div className="flex gap-1.5">
-                            {Array.from({ length: diffConfig.hp }).map((_, i) => (
-                                <div key={i} className={"w-4 h-4 rounded-full shadow-inner transition-all " + (i < hp ? "bg-rose-400 scale-110" : "bg-slate-200 dark:bg-slate-700 scale-90")}></div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        {/* 웨이브 표시 */}
-                        <div className="bg-white/90 dark:bg-slate-800/90 rounded-2xl p-2 px-4 flex flex-col items-center shadow-xl border border-white dark:border-slate-700">
-                            <span className="text-[10px] text-slate-400 font-black uppercase">Wave</span>
-                            <div className="font-black text-slate-700 dark:text-white text-xl leading-none">
-                                {wave}<span className="text-sm text-slate-400">/{diffConfig.wavesTotal}</span>
-                            </div>
-                            {/* 웨이브 진행 바 */}
-                            <div className="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden">
-                                <div
-                                    className="h-full bg-indigo-400 rounded-full transition-all duration-300"
-                                    style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%` }}
-                                />
-                            </div>
-                        </div>
-                        <div className="bg-indigo-600/90 rounded-2xl p-2 px-4 flex flex-col items-center shadow-xl border-2 border-indigo-300">
-                            <span className="text-[10px] text-indigo-100 font-black uppercase">Score</span>
-                            <div className="font-black text-white text-2xl leading-none">{score}</div>
-                        </div>
-                        <button onClick={() => setStatus('idle')} className="bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-200 px-4 rounded-2xl font-black hover:bg-white border border-white shadow-xl transition-all text-sm">EXIT</button>
+        <div className="fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden bg-[#FDFBF7]">
+            <style>{`@keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}`}</style>
+            {xpPopup.show && (
+                <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[200]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '80px' }}>
+                    <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: '#FFF7D4', color: '#B8860B', border: '2px solid #FFD700', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
+                        ⭐ +{xpPopup.amount} XP
                     </div>
                 </div>
-
-                {/* 웨이브 전환 오버레이 */}
-                {waveTransition && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                        <div className="text-center animate-float">
-                            <div className="text-7xl mb-4">⚡</div>
-                            <div className="text-5xl font-black text-white premium-text-shadow">WAVE {wave + 1}</div>
-                            <div className="text-2xl text-indigo-200 font-bold mt-2">GET READY!</div>
-                            {clearCombo >= 2 && (
-                                <div className="mt-3 text-amber-300 font-black text-xl">
-                                    🔥 {clearCombo}연속 클리어{clearCombo >= 5 ? ' +콤보 보너스!' : clearCombo >= 3 ? ' +보너스!' : '!'}
-                                </div>
-                            )}
-                        </div>
+            )}
+            <div className={`w-full mx-auto h-full flex flex-col relative ${shake ? "animate-shake" : ""}`}>
+                {/* 상단 HUD */}
+                <div className="absolute left-3 right-3 flex justify-between items-center z-40 safe-top pt-4">
+                    {/* HP */}
+                    <div className="bg-white/90 backdrop-blur-md rounded-2xl px-3 py-2 shadow-md border border-white/50 flex items-center gap-1.5">
+                        {Array.from({ length: diffConfig.hp }).map((_, i) => (
+                            <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i < hp ? "bg-rose-300" : "bg-slate-100"}`} />
+                        ))}
                     </div>
-                )}
+
+                    <div className="flex items-center gap-2">
+                        {/* 진행도 */}
+                        <div className="bg-white/90 backdrop-blur-md rounded-2xl px-3 py-1.5 shadow-md border border-white/50 flex items-center gap-2">
+                            <span className="text-xs text-slate-300 font-extrabold uppercase tracking-widest">Progress</span>
+                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-indigo-400 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%` }} />
+                            </div>
+                        </div>
+                        {/* 스코어 */}
+                        <div className="bg-indigo-500 rounded-2xl px-3 py-1.5 shadow-md border border-indigo-400 flex items-center gap-1.5">
+                            <span className="text-xs text-indigo-200 font-extrabold uppercase tracking-widest">Score</span>
+                            <span className="font-extrabold text-white text-sm leading-none">{score}</span>
+                        </div>
+                        <button onClick={hanjaFilter ? onBack : () => setStatus('idle')} className="bg-white/80 backdrop-blur-sm text-slate-300 px-3 py-1.5 rounded-2xl font-extrabold hover:text-rose-400 transition-all text-xs border border-white uppercase tracking-widest">Exit</button>
+                    </div>
+                </div>
 
                 {/* 게임 영역 */}
                 <div className="flex-1 relative overflow-hidden min-h-0" ref={gameAreaRef}>
@@ -594,7 +602,7 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
 
                     {/* 캐릭터 */}
                     <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-30" ref={shipRef}>
-                        <div className="w-24 h-24 md:w-44 md:h-44 transition-transform duration-100 drop-shadow-2xl" style={{ transform: 'rotate(' + (turretAngle + 90) + 'deg)' }}>
+                        <div className="w-14 h-14 md:w-24 md:h-24 transition-transform duration-100 drop-shadow-2xl" style={{ transform: 'rotate(' + (turretAngle + 90) + 'deg)' }}>
                             <img src={characterAvatar} className="w-full h-full object-contain" />
                         </div>
                     </div>
@@ -609,13 +617,15 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
                                 ) : (
                                     <div className="flex flex-col items-center">
                                         {w.isWrongItem && (
-                                            <div className="text-[10px] font-black text-rose-500 mb-0.5 bg-rose-50/90 px-1.5 py-0.5 rounded-full border border-rose-200">복습</div>
+                                            <div className="text-xs font-extrabold text-rose-400 mb-1 bg-white/90 px-2 py-0.5 rounded-full border border-rose-100 shadow-sm uppercase tracking-widest">Review</div>
                                         )}
-                                        <div className={"w-14 h-14 md:w-24 md:h-24 animate-bounce " + (w.isWrongItem ? "drop-shadow-[0_0_16px_rgba(239,68,68,0.85)]" : w.id === targetId ? "drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" : "drop-shadow-md")}><MonsterIcon /></div>
-                                        <div className={"font-black bg-white/90 dark:bg-slate-800/90 text-indigo-900 dark:text-white flex items-center justify-center rounded-full shadow-2xl border-4 " +
-                                            (w.isWrongItem ? "border-rose-400 " : w.id === targetId ? "border-amber-400 " : "border-white dark:border-slate-700 ") +
-                                            (w.isWord ? "w-28 h-18 md:w-44 md:h-28 text-lg md:text-2xl px-2" : "w-14 h-14 md:w-24 md:h-24 text-3xl md:text-5xl")}>
-                                            <span className="text-center break-all">{w.hanja}</span>
+                                        <div className={`w-14 h-14 md:w-20 md:h-20 animate-bounce ${w.isWrongItem ? "drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]" : "drop-shadow-md"}`}>
+                                            <MonsterIcon />
+                                        </div>
+                                        <div className={`font-extrabold bg-white/95 text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
+                                            w.isWrongItem ? "border-rose-200" : w.id === targetId ? "border-amber-200 scale-110 shadow-amber-100/50" : "border-slate-50"
+                                        }`}>
+                                            <span className="text-center break-keep leading-tight">{w.hanja}</span>
                                         </div>
                                     </div>
                                 )}
@@ -625,24 +635,85 @@ const ShootGameScreen = ({ onBack, onHanjaAcquired, selectedCharacter, onMarkWro
 
                     {/* 획득 애니메이션 */}
                     {acquisitions.map(a => (
-                        <div key={a.id} className="absolute pointer-events-none z-30 animate-float font-black text-amber-400 text-2xl drop-shadow-lg" style={{ left: a.x + '%', top: a.y + '%', transform: 'translate(-50%, -50%)' }}>
+                        <div key={a.id} className="absolute pointer-events-none z-30 animate-float font-extrabold text-amber-400 text-2xl drop-shadow-lg" style={{ left: a.x + '%', top: a.y + '%', transform: 'translate(-50%, -50%)' }}>
                             +1 ✨
                         </div>
                     ))}
                 </div>
 
                 {/* 보기 버튼 */}
-                <div className="shrink-0 px-4 grid grid-cols-2 gap-3 z-40" style={{ paddingTop: '8px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+                <div className="shrink-0 px-4 grid grid-cols-2 gap-2 z-40" style={{ paddingTop: '6px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}>
                     {options.map((opt, i) => {
                         const parts = opt.split(' '); const sound = parts.pop(); const meaning = parts.join(' ');
                         return (
-                            <button key={i} onClick={() => handleOptionClick(opt)} className="bg-white/95 dark:bg-slate-800/95 py-3 rounded-2xl font-black border-2 border-white dark:border-slate-700 shadow-2xl active:scale-95 transition-all text-center flex flex-col items-center justify-center overflow-hidden">
-                                <span className="text-slate-700 dark:text-white text-lg md:text-2xl leading-tight">{meaning}</span>
-                                <span className="text-indigo-400 dark:text-indigo-300 text-sm md:text-lg">{sound}</span>
+                            <button
+                                key={i}
+                                onClick={() => handleOptionClick(opt)}
+                                className={`bg-white/95 px-4 py-3 rounded-[1.2rem] md:rounded-[1.8rem] font-extrabold border-4 border-white shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
+                            >
+                                {isWordTarget ? (
+                                    <span className="text-slate-700 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
+                                ) : (
+                                    <>
+                                        <span className="text-slate-700 text-lg sm:text-xl md:text-2xl">{meaning}</span>
+                                        <span className="text-indigo-500 text-lg sm:text-xl md:text-2xl">{sound}</span>
+                                    </>
+                                )}
                             </button>
                         );
                     })}
                 </div>
+
+                {/* 결과 모달 (매칭 게임과 동일한 팝업 방식) */}
+                {isResult && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
+                        style={{ background: isClear ? 'rgba(16,185,129,0.18)' : 'rgba(255,107,107,0.18)' }}
+                    >
+                        <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[48px] overflow-hidden">
+                            <div className="pt-4 pb-10 px-8 flex flex-col items-center gap-6 w-full relative">
+                                <img
+                                    src={isClear ? '/assets/images/icons/success_new.png' : '/assets/images/icons/timeout_new.png'}
+                                    alt={isClear ? 'clear' : 'over'}
+                                    className="w-[182px] h-[182px] object-contain drop-shadow-xl mt-2"
+                                />
+                                <div className="text-center flex flex-col gap-2">
+                                    <span className="text-sm font-extrabold text-slate-400">
+                                        {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
+                                    </span>
+                                    <h1 className="text-h2-res font-extrabold tracking-tighter leading-snug" style={{ color: isClear ? '#10B981' : '#FF6B6B' }}>
+                                        {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                    </h1>
+                                    <div className="flex items-center justify-center gap-3 mt-1">
+                                        <span className="text-3xl font-extrabold text-slate-700 tracking-tighter">{score}</span>
+                                        <span className="text-indigo-500 font-extrabold text-lg">+{sessionXp} XP</span>
+                                    </div>
+                                </div>
+                                <div className="w-full flex flex-col gap-3">
+                                    <button
+                                        onClick={startGame}
+                                        className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
+                                        style={isClear
+                                            ? { background: 'linear-gradient(135deg, #34D399, #10B981)', borderBottomColor: '#059669' }
+                                            : { background: 'linear-gradient(135deg, #FF8E8E, #FF6B6B)', borderBottomColor: '#E05555' }}
+                                    >
+                                        다시 하기
+                                    </button>
+                                    <button
+                                        onClick={hanjaFilter ? onBack : () => setStatus('idle')}
+                                        className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
+                                        style={{ 
+                                            background: 'linear-gradient(135deg, #6EE7B7, #34D399)',
+                                            borderBottomColor: '#059669'
+                                        }}
+                                    >
+                                        급수 / 주제 바꾸기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, memo, useMemo, useRef } from 'react';
 import HANJA_DATA_RAW from '../hanja_unified.json';
 import { getSRSWeightedPool } from '../utils/learningPool.js';
 import { useLang } from '../LangContext.jsx';
+import GradeGrid, { TopicCard } from './GradeGrid.jsx';
+const GRADES = ['전체', '8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
 
 // ── 중복 제거된 데이터 (hanja 문자 기준) ────────────────────────────────────
 const HANJA_DATA = Object.values(
@@ -126,19 +128,19 @@ const playSound = (type) => {
 // ── 카드 컴포넌트 ─────────────────────────────────────────────────────────────
 const getCardTextClass = (type, totalCards) => {
     if (type === 'hanja') {
-        if (totalCards <= 4)  return 'text-5xl sm:text-6xl font-extrabold text-slate-700';
-        if (totalCards <= 8)  return 'text-4xl sm:text-5xl font-extrabold text-slate-700';
-        return                       'text-3xl sm:text-4xl font-extrabold text-slate-700';
+        if (totalCards <= 4)  return 'text-h1-res font-extrabold text-slate-700';
+        if (totalCards <= 8)  return 'text-h2-res font-extrabold text-slate-700';
+        return                       'text-h3-res font-extrabold text-slate-700';
     }
     if (type === 'word') {
-        if (totalCards <= 4)  return 'text-2xl sm:text-3xl font-extrabold text-indigo-600';
-        if (totalCards <= 8)  return 'text-xl sm:text-2xl font-extrabold text-indigo-600';
-        return                       'text-base sm:text-lg font-extrabold text-indigo-600';
+        if (totalCards <= 4)  return 'text-h2-res font-extrabold text-indigo-600';
+        if (totalCards <= 8)  return 'text-h3-res font-extrabold text-indigo-600';
+        return                       'text-body-lg-res font-extrabold text-indigo-600';
     }
     // meaning
-    if (totalCards <= 4)  return 'text-lg sm:text-xl font-bold text-slate-500';
-    if (totalCards <= 8)  return 'text-base sm:text-lg font-bold text-slate-500';
-    return                       'text-sm sm:text-base font-bold text-slate-500';
+    if (totalCards <= 4)  return 'text-h3-res font-bold text-slate-500';
+    if (totalCards <= 8)  return 'text-body-lg-res font-bold text-slate-500';
+    return                       'text-body-res font-bold text-slate-500';
 };
 
 const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
@@ -164,7 +166,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
             <div className={`card-face-back absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center p-3 shadow-2xl ${card.isMatched ? 'bg-white border-2 border-emerald-400' : 'bg-white border-2 border-indigo-400'} ${isFlipped ? 'is-flipped' : ''}`}>
                 {card.isMatched && (
                     <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
-                        <span className="text-white text-xs font-extrabold leading-none">✓</span>
+                        <span className="text-white text-xs-res font-extrabold leading-none">✓</span>
                     </div>
                 )}
                 <span className={`${getCardTextClass(card.type, totalCards)} text-center leading-tight tracking-tight w-full break-keep px-1 ${card.isMatched ? '!text-emerald-500' : ''}`}>
@@ -176,7 +178,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 });
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, hanjaFilter }) => {
+const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, hanjaFilter, unlockedHanjaIds }) => {
     const { lang, t } = useLang();
 
     // 16단계 캐릭터 로테이션 이미지 생성
@@ -198,7 +200,15 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
 
-    // ── 게임 상태 ───────────────────────────────────────────────────────────
+    // 해금된 급수 계산 로직
+    const unlockedIds = useMemo(() => new Set(unlockedHanjaIds || []), [unlockedHanjaIds]);
+    const unlockedGrades = useMemo(() => {
+        const s = new Set(['전체']);
+        for (const h of HANJA_DATA) { if (unlockedIds.has(h.id)) s.add(h.grade); }
+        return s;
+    }, [unlockedIds]);
+
+    // ── 게임 로직 ──────────────────────────────────────────────────────────
     const [gameStarted, setGameStarted] = useState(false);
     const [pairPool, setPairPool] = useState([]);
     const [poolIndex, setPoolIndex] = useState(0);
@@ -397,10 +407,10 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         return (
             <div className="fixed inset-0 flex flex-col items-center justify-center p-6 z-[100] backdrop-blur-md" style={{ background: 'rgba(255,245,200,0.35)' }}>
                 <div className="premium-card-base p-12 flex flex-col items-center gap-8 max-w-md w-full bg-white border-slate-100 shadow-2xl !rounded-2xl animate-in zoom-in duration-500 relative overflow-hidden">
-                    <img src="/assets/images/icons/celebration.png" alt="great" className="w-28 h-28 object-contain animate-bounce drop-shadow-xl relative z-10" />
+                    <img src="/assets/images/icons/success_new.png" alt="great" className="w-28 h-28 object-contain animate-bounce drop-shadow-xl relative z-10" />
                     <div className="flex flex-col items-center gap-2 text-center relative z-10">
                         <span className="text-sm font-extrabold text-slate-400">정말 멋진 결과예요!</span>
-                        <h2 className="text-4xl font-extrabold tracking-tighter" style={{ color: '#10B981' }}>
+                        <h2 className="text-h2-res font-extrabold tracking-tighter" style={{ color: '#10B981' }}>
                             {viewMode === 'grade' ? GRADE_LABELS[selectedGrade] : viewMode === 'topic' ? selectedCategory : ''} 마스터!
                         </h2>
                         <p className="text-slate-400 font-extrabold text-xs mt-2">총 {totalRounds}라운드 전부 클리어!</p>
@@ -442,19 +452,18 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                             <span>←</span><span className="ml-1">뒤로</span>
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <h2 className="text-lg font-black text-slate-700 m-0">메모리 게임</h2>
-                            <span className="text-indigo-500 opacity-60 text-base font-bold whitespace-nowrap">{currentRound + 1}/{totalRounds}</span>
+                            <h2 className="text-lg font-black text-slate-700 m-0">카드 매칭</h2>
+                            <span className="text-indigo-500 opacity-60 text-sm font-bold whitespace-nowrap">{currentRound + 1}/{totalRounds}</span>
                         </div>
                     </div>
                 </div>
 
-                {/* 중앙 그룹: 제목 + 카드 + 타임바 */}
-                <div className="flex-1 flex flex-col items-center justify-center px-5 gap-5">
-
-
-                    {/* 카드 그리드 */}
+                {/* 중앙 그룹: 제목 + 카드 + 타임바 — 균형 잡힌 수직 배치 */}
+                <div className="flex-1 flex flex-col items-center justify-between px-5 pt-8 pb-12">
+                    
+                    {/* 카드 그리드 영역 (중앙 집중) */}
                     {gameState === 'playing' && (
-                        <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-center py-2 px-2">
+                        <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-center">
                             <div className={`grid gap-2 md:gap-4 w-full mx-auto px-2 ${
                                 cards.length <= 4 ? 'grid-cols-2 max-w-sm' : 
                                 'grid-cols-2 sm:grid-cols-4 md:grid-cols-5'
@@ -476,8 +485,8 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                     {gameState === 'playing' && (
                         <div className="w-full max-w-sm mx-auto flex flex-col gap-1.5">
                             <div className="flex justify-between px-1">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Time</span>
-                                <span className={`text-xs font-extrabold tabular-nums ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>{timeLeft}s</span>
+                                <span className="text-xs-res font-bold text-slate-400 uppercase tracking-widest">Time</span>
+                                <span className={`text-xs-res font-extrabold tabular-nums ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>{timeLeft}s</span>
                             </div>
                             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                                 <div
@@ -497,24 +506,24 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         style={{ background: gameState === 'clear' ? 'rgba(16,185,129,0.18)' : 'rgba(255,107,107,0.18)' }}
                     >
                             <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[48px] overflow-hidden">
-                                <div className="pt-10 pb-8 px-8 flex flex-col items-center gap-6 w-full relative">
+                                <div className="pt-4 pb-10 px-8 flex flex-col items-center gap-6 w-full relative">
 
                                     {/* 아이콘 */}
                                     <img
-                                        src={gameState === 'clear' ? '/assets/images/icons/celebration.png' : '/assets/images/icons/timeout_new.png'}
+                                        src={gameState === 'clear' ? '/assets/images/icons/success_new.png' : '/assets/images/icons/timeout_new.png'}
                                         alt={gameState === 'clear' ? 'great' : 'timeout'}
                                         className="w-[154px] h-[154px] object-contain drop-shadow-xl relative z-10 mt-4"
                                     />
 
                                     {/* 텍스트 */}
                                     <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                                        <span className="text-sm font-extrabold text-slate-400">
+                                        <span className="text-xs-res font-extrabold text-slate-400">
                                             {gameState === 'clear' ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
                                         </span>
-                                        <h1 className="text-4xl font-extrabold tracking-tighter" style={{ color: gameState === 'clear' ? '#10B981' : '#FF6B6B' }}>
+                                        <h1 className="text-h2-res font-extrabold tracking-tighter leading-snug" style={{ color: gameState === 'clear' ? '#10B981' : '#FF6B6B' }}>
                                             {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
                                         </h1>
-                                        <p className="text-sm font-bold text-slate-400 leading-relaxed break-keep mt-1">
+                                        <p className="text-xs-res font-bold text-slate-400 leading-relaxed break-keep mt-1">
                                             {gameState === 'clear'
                                                 ? `콤보 ${clearCombo}회 연속 성공! 계속 달려봐요 🔥`
                                                 : '조금만 더 빨리 하면 성공할 수 있어요!'}
@@ -525,19 +534,22 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                     <div className="w-full flex flex-col gap-3 relative z-10">
                                         <button
                                             onClick={gameState === 'clear' ? goNextRound : retryRound}
-                                            className="w-full py-4 rounded-2xl font-extrabold text-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
+                                            className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
                                             style={gameState === 'clear'
                                                 ? { background: 'linear-gradient(135deg, #34D399, #10B981)', borderBottomColor: '#059669' }
                                                 : { background: 'linear-gradient(135deg, #FF8E8E, #FF6B6B)', borderBottomColor: '#E05555' }}
                                         >
-                                            {gameState === 'clear' ? '다음 라운드 →' : '다시 시도'}
+                                            다시 하기
                                         </button>
                                         <button
                                             onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
-                                            className="w-full py-4 rounded-2xl font-extrabold text-lg active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
-                                            style={{ background: '#F1F5F9', color: '#64748B', borderBottomColor: '#CBD5E1' }}
+                                            className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
+                                            style={{ 
+                                                background: 'linear-gradient(135deg, #6EE7B7, #34D399)',
+                                                borderBottomColor: '#059669'
+                                            }}
                                         >
-                                            게임 종료
+                                            급수 / 주제 바꾸기
                                         </button>
                                     </div>
                                 </div>
@@ -562,26 +574,24 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         <span>←</span><span className="ml-1">뒤로</span>
                     </button>
                     <div className="flex items-center gap-2 overflow-hidden">
-                        <h2 className="text-lg font-black text-slate-700 m-0">메모리 게임</h2>
+                        <h2 className="text-lg font-black text-slate-700 m-0">카드 매칭</h2>
                     </div>
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto pb-6">
-                <div className="w-full max-w-4xl mx-auto px-4 flex flex-col items-center gap-6 pt-5">
+                <div className="w-full max-w-xl mx-auto px-4 flex flex-col items-center gap-6 pt-5">
 
                     {/* 탭 */}
                     <div className="flex bg-slate-100/40 p-1.5 rounded-full border border-slate-200 w-full mb-4 shadow-inner">
                         <button
                             onClick={() => setViewMode('grade')}
-                            className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs transition-all ${viewMode === 'grade' ? 'bg-white shadow-md' : 'text-slate-400'}`}
-                            style={viewMode === 'grade' ? { color: '#6D28D9' } : {}}
+                            className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
                         >
                             급수별
                         </button>
                         <button
                             onClick={() => setViewMode('topic')}
-                            className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs transition-all ${viewMode === 'topic' ? 'bg-white shadow-md' : 'text-slate-400'}`}
-                            style={viewMode === 'topic' ? { color: '#6D28D9' } : {}}
+                            className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
                         >
                             주제별
                         </button>
@@ -589,47 +599,28 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
                     {/* 주제별 카테고리 카드 */}
                     {viewMode === 'topic' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
-                            {categories.map(cat => {
-                                const count = HANJA_DATA.filter(h => h.category === cat).length;
-                                const imgSrc = CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null;
-                                const isSelected = selectedCategory === cat;
-                                return (
-                                    <button
-                                        key={cat}
-                                        onClick={() => { setSelectedCategory(cat); startGame('topic', getSRSWeightedPool(HANJA_DATA.filter(h => h.category === cat), srsData, masteryData, userLevel)); }}
-                                        className="bg-white shadow-lg rounded-2xl flex flex-row items-center overflow-hidden active:scale-95 transition-all border-[4px]"
-                                        style={{ borderColor: isSelected ? '#BDB2FF' : 'white' }}
-                                    >
-                                        <div className="w-28 h-28 shrink-0 flex items-center justify-center p-3" style={{ backgroundColor: isSelected ? '#BDB2FF20' : '#F8FAFC' }}>
-                                            {imgSrc ? <img src={imgSrc} className="w-full h-full object-contain drop-shadow-sm" alt={cat} /> : <span className="text-2xl font-extrabold" style={{ color: '#BDB2FF' }}>?</span>}
-                                        </div>
-                                        <div className="px-3 flex flex-col items-start gap-0">
-                                            <span className="font-extrabold text-xs leading-tight" style={{ color: isSelected ? '#6D28D9' : '#334155' }}>{cat}</span>
-                                            <span className="text-xs font-bold text-slate-400">{count}개</span>
-                                        </div>
-                                    </button>
-                                );
-                            })}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                            {categories.map(cat => (
+                                <TopicCard
+                                    key={cat}
+                                    name={cat}
+                                    imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
+                                    count={`${HANJA_DATA.filter(h => h.category === cat).length}개`}
+                                    isSelected={selectedCategory === cat}
+                                    onClick={() => { setSelectedCategory(cat); startGame('topic', getSRSWeightedPool(HANJA_DATA.filter(h => h.category === cat), srsData, masteryData, userLevel)); }}
+                                    locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))}
+                                />
+                            ))}
                         </div>
                     )}
 
                     {/* 급수별 선택 */}
                     {viewMode === 'grade' && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 w-full">
-                            {['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급', '전체'].map(g => (
-                                <button
-                                    key={g}
-                                    onClick={() => { setSelectedGrade(g); const raw = g === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === g); startGame('grade', getSRSWeightedPool(raw, srsData, masteryData, userLevel)); }}
-                                    className="py-6 rounded-[2rem] font-extrabold text-lg transition-all border shadow-sm active:scale-95 bg-white"
-                                    style={selectedGrade === g
-                                        ? { color: '#6D28D9', borderColor: '#BDB2FF', boxShadow: '0 8px 24px #BDB2FF60', outline: '4px solid #BDB2FF30' }
-                                        : { color: '#1e293b', borderColor: '#E2E8F0' }}
-                                >
-                                    {g}
-                                </button>
-                            ))}
-                        </div>
+                        <GradeGrid
+                            selected={selectedGrade}
+                            onSelect={g => { setSelectedGrade(g); const raw = g === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === g); startGame('grade', getSRSWeightedPool(raw, srsData, masteryData, userLevel)); }}
+                            lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))}
+                        />
                     )}
                 </div>
             </div>

@@ -1,3 +1,29 @@
+:root {
+    /* --- Typography Tokens v2.0 (Premium & High-Readability) --- */
+    --text-display: clamp(4rem, 20vw, 7rem);      /* 초대형 한자 (64px ~ 112px) */
+    --text-h1:      clamp(2.25rem, 12vw, 4rem);   /* 메인 타이틀 (36px ~ 64px) */
+    --text-h2:      clamp(1.5rem, 8vw, 2.75rem);  /* 섹션 제목 (24px ~ 44px) - 2줄 넘침 방지 조정 */
+    --text-h3:      clamp(1.25rem, 6vw, 2rem);    /* 퀴즈 질문/소제목 (20px ~ 32px) */
+    --text-body-lg: clamp(1.25rem, 4.5vw, 1.5rem);/* 퀴즈 보기/강조 본문 (20px ~ 24px) */
+    --text-body:    clamp(1.125rem, 4vw, 1.375rem);/* 일반 본문/설명 (18px ~ 22px) */
+    --text-sm:      clamp(0.938rem, 3.5vw, 1.125rem);/* 버튼/상태라벨 (15px ~ 18px) */
+    --text-xs:      clamp(0.875rem, 3vw, 0.938rem); /* 최저 하한선 (14px ~ 15px) */
+
+    /* Colors & Theme */
+    --primary-warm: #5D544F;
+    --bg-warm: #FDFBF7;
+    --line-height-standard: 1.5;
+}
+
+/* Typography Utilities (Responsive & Standard Names) */
+.text-display-res, .text-display { font-size: var(--text-display); }
+.text-h1-res, .text-h1           { font-size: var(--text-h1); }
+.text-h2-res, .text-h2           { font-size: var(--text-h2); }
+.text-h3-res, .text-h3           { font-size: var(--text-h3); }
+.text-body-lg-res, .text-body-lg { font-size: var(--text-body-lg); line-height: 1.5; }
+.text-body-res, .text-body       { font-size: var(--text-body); line-height: 1.5; }
+.text-sm-res, .text-sm           { font-size: var(--text-sm); }
+.text-xs-res, .text-xs           { font-size: var(--text-xs); }
 
 body {
     font-family: 'GmarketSans', 'Outfit', 'SUIT', 'Nunito', sans-serif;
@@ -139,7 +165,7 @@ body.dark-mode {
 }
 
 .clay-panel::before, .minimal-card::before {
-    content: '';
+    content: none;
     position: absolute;
     top: 0;
     left: 0;
