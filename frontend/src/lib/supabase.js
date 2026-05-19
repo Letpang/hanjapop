@@ -58,6 +58,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { SK } from '../constants/storageKeys.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -78,10 +79,10 @@ export const supabase = isSupabaseEnabled
  */
 export const getDeviceId = () => {
     try {
-        let id = localStorage.getItem('device_id');
+        let id = localStorage.getItem(SK.DEVICE_ID);
         if (!id) {
             id = 'hj_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-            localStorage.setItem('device_id', id);
+            localStorage.setItem(SK.DEVICE_ID, id);
         }
         return id;
     } catch (e) {

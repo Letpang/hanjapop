@@ -13,8 +13,8 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
-    outDir: '../public',
-    emptyOutDir: false, // public/ 기존 assets/ 폴더 유지
-    assetsDir: 'js',
+    outDir: 'dist',
+    emptyOutDir: true,
+    assetsDir: 'assets',
   },
 })

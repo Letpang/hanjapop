@@ -17,11 +17,13 @@ import { useState, useEffect, useCallback } from 'react';
 // 미션 정의
 // ─────────────────────────────────────────────────────────────
 const MISSION_POOL = [
-    { id: 'quiz_5',       type: 'sentenceQuiz', target: 5,  label: '문장 퀴즈 5문제 풀기',       xp: 50 },
-    { id: 'wordquiz_5',    type: 'wordQuiz',     target: 5,  label: '단어 퀴즈 5문제 풀기',       xp: 50 },
-    { id: 'flashcard_1',   type: 'flashcard',    target: 1,  label: '뭉치 학습지 1개 완료',       xp: 30 },
-    { id: 'writing_1',     type: 'writing',      target: 1,  label: '학습지 1개 완료',           xp: 30 },
-    { id: 'match_1',       type: 'matchGame',    target: 1,  label: '메모리 게임 1판 완료',       xp: 40 },
+    { id: 'leveltest_1',  type: 'levelTest',    target: 1, label: '레벨 테스트 1회 완료',     xp: 30 },
+    { id: 'flashcard_1',  type: 'flashcard',    target: 1, label: '학습지 1개 완료',          xp: 30 },
+    { id: 'wordquiz_1',   type: 'wordQuiz',     target: 1, label: '단어 퀴즈 1세트 완료',     xp: 30 },
+    { id: 'quiz_1',       type: 'sentenceQuiz', target: 1, label: '문장 퀴즈 1세트 완료',     xp: 50 },
+    { id: 'shootgame_1',  type: 'shootGame',    target: 1, label: '몬스터 슈팅 1웨이브 완료', xp: 30 },
+    { id: 'match_1',      type: 'matchGame',    target: 1, label: '메모리 게임 1판 완료',     xp: 40 },
+    { id: 'writing_1',    type: 'writing',      target: 1, label: '획순 테스트 1개 완료',     xp: 20 },
 ];
 
 // 날짜 문자열 "YYYY-MM-DD"

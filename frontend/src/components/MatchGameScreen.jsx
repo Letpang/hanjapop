@@ -3,7 +3,10 @@ import HANJA_DATA_RAW from '../hanja_unified.json';
 import { getSRSWeightedPool } from '../utils/learningPool.js';
 import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
-const GRADES = ['전체', '8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
+import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
+import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
+import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
+import { playSound } from '../utils/playSound.js';
 
 // ── 중복 제거된 데이터 (hanja 문자 기준) ────────────────────────────────────
 const HANJA_DATA = Object.values(
@@ -13,15 +16,6 @@ const HANJA_DATA = Object.values(
 // ── 급수 정의 ────────────────────────────────────────────────────────────────
 const GRADE_LIST = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급', 'NON'];
 const GRADE_LABELS = { '8급': '8급', '7급Ⅱ': '7급Ⅱ', '7급': '7급', '6급Ⅱ': '6급Ⅱ', '6급': '6급', 'NON': '기타' };
-const CATEGORY_IMAGES = {
-    '숫자와 기초 개념': '1_一.webp',
-    '자연과 시간': '31_日.webp',
-    '나와 가족 신체': '71_父.webp',
-    '공간과 위치': '111_東.webp',
-    '학교와 일상생활': '151_學.webp',
-    '행동과 상태': '201_來.webp',
-    '사회와 문화': '251_國.webp',
-};
 // ── 급수별 XP 테이블 ─────────────────────────────────────────────────────────
 const GRADE_XP = {
     '8급':  { base: 3, combo3: 0, combo5: 0 },
@@ -33,32 +27,13 @@ const GRADE_XP = {
 };
 const GRADE_COLORS = {
     '8급':  { bg: 'bg-rose-400',    text: 'text-rose-400',    light: 'bg-rose-50',    border: 'border-rose-200' },
-    '7급Ⅱ': { bg: 'bg-orange-400',  text: 'text-orange-400',  light: 'bg-orange-50',  border: 'border-orange-200' },
-    '7급':  { bg: 'bg-amber-400',   text: 'text-amber-400',   light: 'bg-amber-50',   border: 'border-amber-200' },
-    '6급Ⅱ': { bg: 'bg-emerald-500', text: 'text-emerald-500', light: 'bg-emerald-50', border: 'border-emerald-200' },
+    '7급Ⅱ': { bg: 'bg-[#FFB433]',  text: 'text-[#FFB433]',  light: 'bg-[#FFB433]/10',  border: 'border-[#FFB433]/25' },
+    '7급':  { bg: 'bg-[#FFB433]',   text: 'text-[#FFB433]',   light: 'bg-[#FFB433]/10',   border: 'border-[#FFB433]/25' },
+    '6급Ⅱ': { bg: 'bg-[#FF9B73]', text: 'text-[#FF9B73]', light: 'bg-[#FF9B73]/10', border: 'border-[#FF9B73]/30' },
     '6급':  { bg: 'bg-blue-500',    text: 'text-blue-500',    light: 'bg-blue-50',    border: 'border-blue-200' },
     'NON':  { bg: 'bg-purple-500',  text: 'text-purple-500',  light: 'bg-purple-50',  border: 'border-purple-200' },
 };
 
-// ── 라운드 패턴: 4장(2쌍)×2판, 6장(3쌍)×4판, 8장(4쌍)×8판, 10장(5쌍)×16판, 이후 12장(6쌍) ──
-const ROUND_PATTERN = [
-    ...Array(2).fill(2),   // 4장
-    ...Array(4).fill(3),   // 6장
-    ...Array(8).fill(4),   // 8장
-    ...Array(16).fill(5),  // 10장
-];
-const getPairsForRound = (roundIdx) =>
-    roundIdx < ROUND_PATTERN.length ? ROUND_PATTERN[roundIdx] : 6; // max 12장
-
-const calcTotalRounds = (totalPairs) => {
-    let remaining = totalPairs;
-    let round = 0;
-    while (remaining > 0) {
-        remaining -= getPairsForRound(round);
-        round++;
-    }
-    return round;
-};
 
 // ── 급수별 전체 페어 풀 생성 (한자 + 단어 혼합) ──────────────────────────────
 const buildPairPool = (items) => {
@@ -83,47 +58,6 @@ const buildPairPool = (items) => {
 
 // ── 테마 (아이콘 + 색상) ─────────────────────────────────────────────────────
 // ── 사운드 ───────────────────────────────────────────────────────────────────
-const playSound = (type) => {
-    try {
-        if (!window.AudioContext && !window.webkitAudioContext) return;
-        if (!window.myAudioCtx) window.myAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const ctx = window.myAudioCtx;
-        if (ctx.state === 'suspended') { ctx.resume(); return; }
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.onended = () => gain.disconnect();
-
-        const now = ctx.currentTime;
-        // gain을 0에서 시작해 burst 방지
-        gain.gain.setValueAtTime(0, now);
-
-        if (type === 'flip') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, now);
-            gain.gain.linearRampToValueAtTime(0.04, now + 0.01);
-            gain.gain.linearRampToValueAtTime(0, now + 0.09);
-            osc.start(now); osc.stop(now + 0.09);
-        } else if (type === 'match') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, now);
-            osc.frequency.setValueAtTime(800, now + 0.12);
-            gain.gain.linearRampToValueAtTime(0.06, now + 0.01);
-            gain.gain.setValueAtTime(0.06, now + 0.1);
-            gain.gain.linearRampToValueAtTime(0, now + 0.32);
-            osc.start(now); osc.stop(now + 0.32);
-        } else if (type === 'wrong') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(280, now);
-            osc.frequency.linearRampToValueAtTime(200, now + 0.25);
-            gain.gain.linearRampToValueAtTime(0.05, now + 0.01);
-            gain.gain.linearRampToValueAtTime(0, now + 0.25);
-            osc.start(now); osc.stop(now + 0.25);
-        }
-    } catch (_) {}
-};
 
 // ── 카드 컴포넌트 ─────────────────────────────────────────────────────────────
 const getCardTextClass = (type, totalCards) => {
@@ -133,14 +67,14 @@ const getCardTextClass = (type, totalCards) => {
         return                       'text-h3-res font-extrabold text-slate-700';
     }
     if (type === 'word') {
-        if (totalCards <= 4)  return 'text-h2-res font-extrabold text-indigo-600';
-        if (totalCards <= 8)  return 'text-h3-res font-extrabold text-indigo-600';
-        return                       'text-body-lg-res font-extrabold text-indigo-600';
+        if (totalCards <= 4)  return 'text-h2-res font-extrabold text-[#4A51D4]';
+        if (totalCards <= 8)  return 'text-h3-res font-extrabold text-[#4A51D4]';
+        return                       'text-body-lg-res font-extrabold text-[#4A51D4]';
     }
     // meaning
-    if (totalCards <= 4)  return 'text-h3-res font-bold text-slate-500';
-    if (totalCards <= 8)  return 'text-body-lg-res font-bold text-slate-500';
-    return                       'text-body-res font-bold text-slate-500';
+    if (totalCards <= 4)  return 'text-h3-res font-bold text-[#5B677A]';
+    if (totalCards <= 8)  return 'text-body-lg-res font-bold text-[#5B677A]';
+    return                       'text-body-res font-bold text-[#5B677A]';
 };
 
 const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
@@ -153,7 +87,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
             onClick={() => onClick(card)}
         >
             {/* 앞면 — 캐릭터 이미지 */}
-            <div className={`card-face-front absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] bg-white border-2 border-slate-200 shadow-md flex items-center justify-center overflow-hidden ${isFlipped ? 'is-flipped' : ''}`}>
+            <div className={`card-face-front absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] bg-white border-2 border-[#E9EDF2] shadow-md flex items-center justify-center overflow-hidden ${isFlipped ? 'is-flipped' : ''}`}>
                 <img
                     src={cardBackImg || '/assets/images/characters/garae/rank_2.webp'}
                     alt="?"
@@ -163,13 +97,13 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
             </div>
 
             {/* 뒷면 — 텍스트 내용 */}
-            <div className={`card-face-back absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center p-3 shadow-2xl ${card.isMatched ? 'bg-white border-2 border-emerald-400' : 'bg-white border-2 border-indigo-400'} ${isFlipped ? 'is-flipped' : ''}`}>
+            <div className={`card-face-back absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center p-3 shadow-2xl ${card.isMatched ? 'bg-white border-2 border-[#FF9B73]' : 'bg-white border-2 border-[#7C83FF]'} ${isFlipped ? 'is-flipped' : ''}`}>
                 {card.isMatched && (
-                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#FF9B73] flex items-center justify-center shadow-lg">
                         <span className="text-white text-xs-res font-extrabold leading-none">✓</span>
                     </div>
                 )}
-                <span className={`${getCardTextClass(card.type, totalCards)} text-center leading-tight tracking-tight w-full break-keep px-1 ${card.isMatched ? '!text-emerald-500' : ''}`}>
+                <span className={`${getCardTextClass(card.type, totalCards)} text-center leading-tight tracking-tight w-full break-keep px-1 ${card.isMatched ? '!text-[#FF9B73]' : ''}`}>
                     {card.content}
                 </span>
             </div>
@@ -178,7 +112,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 });
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, hanjaFilter, unlockedHanjaIds }) => {
+const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, hanjaFilter, unlockedHanjaIds, currentDayHanjaIds }) => {
     const { lang, t } = useLang();
 
     // 16단계 캐릭터 로테이션 이미지 생성
@@ -200,13 +134,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
 
-    // 해금된 급수 계산 로직
-    const unlockedIds = useMemo(() => new Set(unlockedHanjaIds || []), [unlockedHanjaIds]);
-    const unlockedGrades = useMemo(() => {
-        const s = new Set(['전체']);
-        for (const h of HANJA_DATA) { if (unlockedIds.has(h.id)) s.add(h.grade); }
-        return s;
-    }, [unlockedIds]);
+    const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
     // ── 게임 로직 ──────────────────────────────────────────────────────────
     const [gameStarted, setGameStarted] = useState(false);
@@ -222,13 +150,26 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const [gameState, setGameState] = useState('idle'); // 'idle'|'playing'|'clear'|'over'|'allClear'
     const [clearCombo, setClearCombo] = useState(0); // 연속 클리어 콤보 카운터
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
+    const [showExitModal, setShowExitModal] = useState(false);
 
-    // 현재 라운드 풀 인덱스를 ref로도 보관 (launchRound 클로저 문제 방지)
+    const handleExitConfirm = () => {
+        setShowExitModal(false);
+        if (hanjaFilter) {
+            onBack();
+        } else {
+            setGameStarted(false);
+            setGameState('idle');
+        }
+    };
+
+    const [selectedCardCount, setSelectedCardCount] = useState(6); // 기본 6개
+    const characterAvatar = useMemo(() => getRankDetails(userXp, selectedCharacter).avatar, [userXp, selectedCharacter]);
+
     const poolIndexRef = useRef(0);
     const pairPoolRef = useRef([]);
     const isLockedRef = useRef(false);
+    const roundStartTimeRef = useRef(null);
 
-    // 콜백 props를 ref로 유지 — effect deps에 포함 않으면서 항상 최신 함수 참조 사용
     const onMarkCorrectRef = useRef(onMarkCorrect);
     const onHanjaAcquiredRef = useRef(onHanjaAcquired);
     onMarkCorrectRef.current = onMarkCorrect;
@@ -242,24 +183,44 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         } else if (viewMode === 'grade') {
             if (selectedGrade === '기타') base = HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
             else base = HANJA_DATA.filter(h => h.grade === selectedGrade);
+            base = base.filter(h => unlockedIds.has(h.id));
         } else {
-            base = HANJA_DATA.filter(h => h.category === selectedCategory);
+            base = HANJA_DATA.filter(h => h.category === selectedCategory && unlockedIds.has(h.id));
         }
-        return getSRSWeightedPool(base, srsData, masteryData, userLevel);
-    }, [viewMode, selectedGrade, selectedCategory, srsData, masteryData, userLevel, hanjaFilter]);
+        return getSRSWeightedPool(base, srsData, masteryData, userLevel, null, hanjaFilter ? null : currentDayHanjaIds);
+    }, [viewMode, selectedGrade, selectedCategory, srsData, masteryData, userLevel, hanjaFilter, unlockedIds, currentDayHanjaIds]);
 
-    // ── 라운드 실행 ─────────────────────────────────────────────────────────
-    const launchRound = useCallback((pool, roundIdx, startIdx) => {
-        const pairsCount = (hanjaFilter && hanjaFilter.length > 0) ? 5 : getPairsForRound(roundIdx);
-        const slice = pool.slice(startIdx, startIdx + pairsCount);
-        if (slice.length === 0) { setGameState('allClear'); return; }
+    // ── 게임 시작 ───────────────────────────────────────────────────────────
+    const startGame = useCallback((overrideSet) => {
+        const targetSet = overrideSet || activeHanjaSet;
+        if (!targetSet || targetSet.length === 0) return;
 
+        let pool = buildPairPool(targetSet);
+        const isStageMode = hanjaFilter && hanjaFilter.length > 0;
+        
+        // 스테이지 모드면 5쌍 고정, 아니면 선택된 개수에 따라 라운드당 페어 수 결정
+        const pairsPerRound = isStageMode ? 5 : selectedCardCount / 2;
+        
+        if (isStageMode) {
+            pool = pool.slice(0, 5);
+        }
+
+        const total = isStageMode ? 1 : Math.ceil(pool.length / pairsPerRound);
+        
+        pairPoolRef.current = pool;
+        poolIndexRef.current = 0;
+        setPairPool(pool);
+        setPoolIndex(0);
+        setCurrentRound(0);
+        setTotalRounds(total);
+        setGameStarted(true);
+
+        const slice = pool.slice(0, pairsPerRound);
         const newCards = [];
         slice.forEach((pair, i) => {
             newCards.push({ uniqueId: `a-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.a, type: pair.typeA, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
             newCards.push({ uniqueId: `b-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.b, type: pair.typeB, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
         });
-        // 셔플
         for (let i = newCards.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [newCards[i], newCards[j]] = [newCards[j], newCards[i]];
@@ -269,34 +230,17 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setMatches(0);
         setFlippedCards([]);
         isLockedRef.current = false;
-        setTimeLeft(pairsCount * 10);
+        setTimeLeft(slice.length * 10);
+        roundStartTimeRef.current = Date.now();
         setGameState('playing');
-    }, []);
+    }, [activeHanjaSet, selectedCardCount, hanjaFilter]);
 
+    // 스테이지 모드 진입 시 자동 시작
     useEffect(() => {
-        if (hanjaFilter && hanjaFilter.length > 0 && !gameStarted) startGame();
-    }, [activeHanjaSet]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // ── 게임 시작 ───────────────────────────────────────────────────────────
-    const startGame = useCallback((mode, overrideSet) => {
-        const isStageMode = hanjaFilter && hanjaFilter.length > 0;
-        let pool = buildPairPool(overrideSet || activeHanjaSet);
-        
-        // 스테이지 모드(오늘의 여정)일 경우 딱 5쌍(10장)만 추출하여 1판만 진행
-        if (isStageMode) {
-            pool = pool.slice(0, 5);
+        if (hanjaFilter && hanjaFilter.length > 0 && !gameStarted && activeHanjaSet.length > 0) {
+            startGame();
         }
-
-        const total = isStageMode ? 1 : calcTotalRounds(pool.length);
-        pairPoolRef.current = pool;
-        poolIndexRef.current = 0;
-        setPairPool(pool);
-        setPoolIndex(0);
-        setCurrentRound(0);
-        setTotalRounds(total);
-        setGameStarted(true);
-        launchRound(pool, 0, 0);
-    }, [activeHanjaSet, launchRound, hanjaFilter]);
+    }, [hanjaFilter, gameStarted, activeHanjaSet, startGame]);
 
     // ── 타이머 ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -312,7 +256,6 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
     // ── 카드 클릭 ───────────────────────────────────────────────────────────
     const handleCardClick = useCallback((clickedCard) => {
-        // ref로 즉시 확인 — state 비동기 업데이트보다 빠르게 연타 차단
         if (isLockedRef.current || clickedCard.isFlipped || clickedCard.isMatched || gameState !== 'playing') return;
         playSound('flip');
         setCards(prev => prev.map(c => c.uniqueId === clickedCard.uniqueId ? { ...c, isFlipped: true } : c));
@@ -350,10 +293,8 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 });
             }, 500);
         } else {
-            // 오답
-            setTimeout(() => playSound('wrong'), 150);
+            setTimeout(() => playSound('mismatch'), 150);
             setTimeout(() => {
-
                 setCards(prev => prev.map(c =>
                     (c.uniqueId === a.uniqueId || c.uniqueId === b.uniqueId)
                         ? { ...c, isFlipped: false }
@@ -363,40 +304,72 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 isLockedRef.current = false;
             }, 900);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [flippedCards, targetMatches]); // 콜백 props 제외 — 포함 시 App 리렌더 → 무한 재실행
+    }, [flippedCards, targetMatches]);
 
     // ── 라운드 클리어 감지 ──────────────────────────────────────────────────
     useEffect(() => {
         if (targetMatches > 0 && matches === targetMatches && gameState === 'playing') {
+            const elapsedSec = roundStartTimeRef.current
+                ? Math.round((Date.now() - roundStartTimeRef.current) / 1000)
+                : null;
             setTimeout(() => {
                 setGameState('clear');
-                if (onStageClear) onStageClear(currentRound + 1);
+                if (onStageClear) onStageClear(currentRound + 1, elapsedSec);
             }, 380);
         }
     }, [matches, targetMatches, gameState]);
 
     // ── 다음 라운드 ─────────────────────────────────────────────────────────
     const goNextRound = useCallback(() => {
+        const pairsPerRound = (hanjaFilter && hanjaFilter.length > 0) ? 5 : selectedCardCount / 2;
         const nextRound = currentRound + 1;
-        const nextIdx = poolIndex + getPairsForRound(currentRound);
+        const nextIdx = poolIndex + pairsPerRound;
         if (nextIdx >= pairPool.length) { setGameState('allClear'); return; }
         setCurrentRound(nextRound);
         setPoolIndex(nextIdx);
         poolIndexRef.current = nextIdx;
-        launchRound(pairPool, nextRound, nextIdx);
-    }, [currentRound, poolIndex, pairPool, launchRound]);
-
-    // ── 타임오버 콤보 초기화 ──────────────────────────────────────────────────
-    useEffect(() => {
-        if (gameState === 'over') {
-            setClearCombo(0);
+        const slice = pairPool.slice(nextIdx, nextIdx + pairsPerRound);
+        const newCards = [];
+        slice.forEach((pair, i) => {
+            newCards.push({ uniqueId: `a-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.a, type: pair.typeA, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
+            newCards.push({ uniqueId: `b-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.b, type: pair.typeB, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
+        });
+        for (let i = newCards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newCards[i], newCards[j]] = [newCards[j], newCards[i]];
         }
-    }, [gameState]);
+        setCards(newCards);
+        setTargetMatches(slice.length);
+        setMatches(0);
+        setFlippedCards([]);
+        isLockedRef.current = false;
+        setTimeLeft(slice.length * 10);
+        roundStartTimeRef.current = Date.now();
+        setGameState('playing');
+    }, [currentRound, poolIndex, pairPool, hanjaFilter, selectedCardCount]);
+
     // ── 재도전 ──────────────────────────────────────────────────────────────
     const retryRound = useCallback(() => {
-        launchRound(pairPool, currentRound, poolIndex);
-    }, [pairPool, currentRound, poolIndex, launchRound]);
+        const pairsPerRound = (hanjaFilter && hanjaFilter.length > 0) ? 5 : selectedCardCount / 2;
+        const slice = pairPool.slice(poolIndex, poolIndex + pairsPerRound);
+        const newCards = [];
+        slice.forEach((pair, i) => {
+            newCards.push({ uniqueId: `a-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.a, type: pair.typeA, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
+            newCards.push({ uniqueId: `b-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.b, type: pair.typeB, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
+        });
+        for (let i = newCards.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newCards[i], newCards[j]] = [newCards[j], newCards[i]];
+        }
+        setCards(newCards);
+        setTargetMatches(slice.length);
+        setMatches(0);
+        setFlippedCards([]);
+        isLockedRef.current = false;
+        setTimeLeft(slice.length * 10);
+        roundStartTimeRef.current = Date.now();
+        setGameState('playing');
+    }, [pairPool, poolIndex, selectedCardCount, hanjaFilter]);
 
     const gradeColor = selectedGrade ? GRADE_COLORS[selectedGrade] : GRADE_COLORS['8급'];
 
@@ -406,18 +379,18 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     if (gameStarted && gameState === 'allClear') {
         return (
             <div className="fixed inset-0 flex flex-col items-center justify-center p-6 z-[100] backdrop-blur-md" style={{ background: 'rgba(255,245,200,0.35)' }}>
-                <div className="premium-card-base p-12 flex flex-col items-center gap-8 max-w-md w-full bg-white border-slate-100 shadow-2xl !rounded-2xl animate-in zoom-in duration-500 relative overflow-hidden">
-                    <img src="/assets/images/icons/success_new.png" alt="great" className="w-28 h-28 object-contain animate-bounce drop-shadow-xl relative z-10" />
+                <div className="premium-card-base p-12 flex flex-col items-center gap-8 max-w-md w-full bg-white border-[#E9EDF2] shadow-2xl !rounded-2xl animate-in zoom-in duration-500 relative overflow-hidden">
+                    <img src={getCharacterImage(selectedCharacter, 'success')} alt="great" className="w-28 h-28 object-contain animate-bounce drop-shadow-xl relative z-10" />
                     <div className="flex flex-col items-center gap-2 text-center relative z-10">
-                        <span className="text-sm font-extrabold text-slate-400">정말 멋진 결과예요!</span>
-                        <h2 className="text-h2-res font-extrabold tracking-tighter" style={{ color: '#10B981' }}>
+                        <span className="text-sm font-extrabold text-[#AEB7C5]">정말 멋진 결과예요!</span>
+                        <h2 className="text-h2-res font-extrabold tracking-tighter" style={{ color: '#FF9B73' }}>
                             {viewMode === 'grade' ? GRADE_LABELS[selectedGrade] : viewMode === 'topic' ? selectedCategory : ''} 마스터!
                         </h2>
-                        <p className="text-slate-400 font-extrabold text-xs mt-2">총 {totalRounds}라운드 전부 클리어!</p>
+                        <p className="text-[#AEB7C5] font-extrabold text-xs mt-2">총 {totalRounds}라운드 전부 클리어!</p>
                     </div>
                     <button
                         onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
-                        className="pill-button-primary w-full py-5 text-xl shadow-xl shadow-indigo-100 relative z-10"
+                        className="pill-button-primary w-full py-5 text-xl shadow-xl shadow-[#C3C6FF] relative z-10"
                     >
                         다른 모드 해보기
                     </button>
@@ -434,11 +407,11 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         const timeFraction = timeLeft / maxTime;
 
         return (
-            <div className="w-full h-[100dvh] flex flex-col bg-[#F8FAFF] select-none">
+            <div className="w-full h-[100dvh] flex flex-col bg-[#F7FAF9] select-none">
                 <style>{`@keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}`}</style>
                 {xpPopup.show && (
                     <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[200]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '80px' }}>
-                        <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: '#FFF7D4', color: '#B8860B', border: '2px solid #FFD700', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
+                        <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
                             ⭐ +{xpPopup.amount} XP
                         </div>
                     </div>
@@ -447,13 +420,16 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 {/* 헤더 */}
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                        <button onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-slate-600 gap-1">
-                            <span>←</span><span className="ml-1">뒤로</span>
+                        <button onClick={() => setShowExitModal(true)}
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                            <span>✕</span>
                         </button>
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <h2 className="text-lg font-black text-slate-700 m-0">카드 매칭</h2>
-                            <span className="text-indigo-500 opacity-60 text-sm font-bold whitespace-nowrap">{currentRound + 1}/{totalRounds}</span>
+                        <div className="flex flex-col items-center min-w-0 flex-1 px-2">
+                            <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">카드 매칭</h2>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>같은 한자 카드 쌍을 찾아 매칭하세요</p>
+                        </div>
+                        <div className="flex items-center justify-end w-11">
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{currentRound + 1}/{totalRounds}</span>
                         </div>
                     </div>
                 </div>
@@ -485,12 +461,12 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                     {gameState === 'playing' && (
                         <div className="w-full max-w-sm mx-auto flex flex-col gap-1.5">
                             <div className="flex justify-between px-1">
-                                <span className="text-xs-res font-bold text-slate-400 uppercase tracking-widest">Time</span>
-                                <span className={`text-xs-res font-extrabold tabular-nums ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`}>{timeLeft}s</span>
+                                <span className="text-xs-res font-bold text-[#AEB7C5] uppercase tracking-widest">Time</span>
+                                <span className={`text-xs-res font-extrabold tabular-nums ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-[#AEB7C5]'}`}>{timeLeft}s</span>
                             </div>
                             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 10 ? 'bg-rose-400' : timeLeft <= 20 ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                                    className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 10 ? 'bg-rose-400' : timeLeft <= 20 ? 'bg-[#FFB433]' : 'bg-[#FF9B73]'}`}
                                     style={{ width: `${Math.max(0, Math.min(100, timeFraction * 100))}%` }}
                                 />
                             </div>
@@ -503,103 +479,146 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 {(gameState === 'clear' || gameState === 'over') && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
-                        style={{ background: gameState === 'clear' ? 'rgba(16,185,129,0.18)' : 'rgba(255,107,107,0.18)' }}
+                        style={{ background: gameState === 'clear' ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
-                            <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[48px] overflow-hidden">
-                                <div className="pt-4 pb-10 px-8 flex flex-col items-center gap-6 w-full relative">
+                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
+                            <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+                                {/* 캐릭터 아래 백그라운드 글로우 추가 */}
+                                <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
 
-                                    {/* 아이콘 */}
-                                    <img
-                                        src={gameState === 'clear' ? '/assets/images/icons/success_new.png' : '/assets/images/icons/timeout_new.png'}
-                                        alt={gameState === 'clear' ? 'great' : 'timeout'}
-                                        className="w-[154px] h-[154px] object-contain drop-shadow-xl relative z-10 mt-4"
-                                    />
+                                {/* 아이콘 */}
+                                <img
+                                    src={gameState === 'clear' ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
+                                    alt={gameState === 'clear' ? 'great' : 'timeout'}
+                                    className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
+                                    style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
+                                />
 
-                                    {/* 텍스트 */}
-                                    <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                                        <span className="text-xs-res font-extrabold text-slate-400">
-                                            {gameState === 'clear' ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
-                                        </span>
-                                        <h1 className="text-h2-res font-extrabold tracking-tighter leading-snug" style={{ color: gameState === 'clear' ? '#10B981' : '#FF6B6B' }}>
-                                            {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
-                                        </h1>
-                                        <p className="text-xs-res font-bold text-slate-400 leading-relaxed break-keep mt-1">
-                                            {gameState === 'clear'
-                                                ? `콤보 ${clearCombo}회 연속 성공! 계속 달려봐요 🔥`
-                                                : '조금만 더 빨리 하면 성공할 수 있어요!'}
-                                        </p>
-                                    </div>
+                                {/* 텍스트 */}
+                                <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
+                                    <span className="text-xs-res font-extrabold text-[#AEB7C5]">
+                                        {gameState === 'clear' ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
+                                    </span>
+                                    <h1 className="text-h2-res font-black leading-snug" style={{ 
+                                        color: gameState === 'clear' ? '#FF9B73' : '#FF6B6B',
+                                        letterSpacing: '-0.5px',
+                                        textShadow: gameState === 'clear' ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
+                                    }}>
+                                        {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
+                                    </h1>
+                                    <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                        {gameState === 'clear'
+                                            ? <>콤보 {clearCombo}회 연속 성공! 계속 달려봐요<span className="text-[0.85em] inline-block ml-1">🔥</span></>
+                                            : '조금만 더 빨리 하면 성공할 수 있어요!'}
+                                    </p>
+                                </div>
 
-                                    {/* 버튼 2단 */}
-                                    <div className="w-full flex flex-col gap-3 relative z-10">
-                                        <button
-                                            onClick={gameState === 'clear' ? goNextRound : retryRound}
-                                            className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
-                                            style={gameState === 'clear'
-                                                ? { background: 'linear-gradient(135deg, #34D399, #10B981)', borderBottomColor: '#059669' }
-                                                : { background: 'linear-gradient(135deg, #FF8E8E, #FF6B6B)', borderBottomColor: '#E05555' }}
-                                        >
-                                            다시 하기
-                                        </button>
-                                        <button
-                                            onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
-                                            className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
-                                            style={{ 
-                                                background: 'linear-gradient(135deg, #6EE7B7, #34D399)',
-                                                borderBottomColor: '#059669'
-                                            }}
-                                        >
-                                            급수 / 주제 바꾸기
-                                        </button>
-                                    </div>
+                                {/* 버튼 2단 */}
+                                <div className="w-full flex flex-col gap-3 relative z-10">
+                                    <button
+                                        onClick={gameState === 'clear' ? goNextRound : retryRound}
+                                        className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                                    >
+                                        {gameState === 'clear' ? '다음 라운드' : '다시 하기'}
+                                    </button>
+                                    <button
+                                        onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
+                                        className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                    >
+                                        돌아가기
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
+                )}
 
             </div>
         );
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // 선택 화면
-    // ════════════════════════════════════════════════════════════════════════
+    // ── 선택 화면 UI ────────────────────────────────────────────────────────
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAFF' }}>
+        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                     <button onClick={onBack}
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-slate-600 gap-1">
-                        <span>←</span><span className="ml-1">뒤로</span>
+                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-bold text-[#AEB7C5]">
+                        <span>←</span>
                     </button>
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <h2 className="text-lg font-black text-slate-700 m-0">카드 매칭</h2>
+                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
+                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">카드 매칭</h2>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>같은 한자 카드 쌍을 찾아 매칭하세요</p>
                     </div>
+                    <div className="w-11" />
                 </div>
             </div>
+
             <div className="flex-1 overflow-y-auto pb-6">
                 <div className="w-full max-w-xl mx-auto px-4 flex flex-col items-center gap-6 pt-5">
 
                     {/* 탭 */}
-                    <div className="flex bg-slate-100/40 p-1.5 rounded-full border border-slate-200 w-full mb-4 shadow-inner">
+                    <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-2 shadow-inner">
                         <button
                             onClick={() => setViewMode('grade')}
-                            className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
+                            className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                         >
                             급수별
                         </button>
                         <button
                             onClick={() => setViewMode('topic')}
-                            className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
+                            className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                         >
                             주제별
                         </button>
                     </div>
 
-                    {/* 주제별 카테고리 카드 */}
+                    {/* 급수별 커스텀 */}
+                    {viewMode === 'grade' && (
+                        <div className="grid grid-cols-3 gap-3 w-full animate-in fade-in duration-500">
+                            {GRADES.map(g => {
+                                const isLocked = g !== '전체' && !unlockedGrades.has(g);
+                                const isSelected = selectedGrade === g;
+                                const is8th = g === '8급';
+                                
+                                return (
+                                    <button
+                                        key={g}
+                                        onClick={isLocked ? undefined : () => setSelectedGrade(g)}
+                                        className={`relative py-4 rounded-3xl font-bold text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
+                                            isLocked 
+                                            ? 'bg-[#F8FAF9] border-[#E9EDF2] text-slate-200 cursor-not-allowed' 
+                                            : isSelected
+                                                ? 'bg-white border-[#FF9B73] text-[#5B677A] shadow-lg'
+                                                : 'bg-white border-[#E9EDF2] text-[#5B677A] hover:border-[#E9EDF2]'
+                                        }`}
+                                    >
+                                        {isLocked ? (
+                                            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-slate-200">
+                                                <path d="M12 1a5 5 0 00-5 5v3H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2h-1V6a5 5 0 00-5-5zm-3 5a3 3 0 016 0v3H9V6zm3 10a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+                                            </svg>
+                                        ) : (
+                                            <>
+                                                <span>{g}</span>
+                                                {isSelected && (
+                                                    <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white rounded-full p-1 shadow-md">
+                                                        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-white stroke-[4]" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="20 6 9 17 4 12" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* 주제별 */}
                     {viewMode === 'topic' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                        <div className="grid grid-cols-2 gap-4 w-full animate-in fade-in duration-500">
                             {categories.map(cat => (
                                 <TopicCard
                                     key={cat}
@@ -607,23 +626,99 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                     imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
                                     count={`${HANJA_DATA.filter(h => h.category === cat).length}개`}
                                     isSelected={selectedCategory === cat}
-                                    onClick={() => { setSelectedCategory(cat); startGame('topic', getSRSWeightedPool(HANJA_DATA.filter(h => h.category === cat), srsData, masteryData, userLevel)); }}
+                                    onClick={() => setSelectedCategory(cat)}
                                     locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))}
                                 />
                             ))}
                         </div>
                     )}
 
-                    {/* 급수별 선택 */}
-                    {viewMode === 'grade' && (
-                        <GradeGrid
-                            selected={selectedGrade}
-                            onSelect={g => { setSelectedGrade(g); const raw = g === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === g); startGame('grade', getSRSWeightedPool(raw, srsData, masteryData, userLevel)); }}
-                            lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))}
-                        />
-                    )}
+                    {/* 카드 개수 선택 */}
+                    <div className="w-full mt-2">
+                        <p className="text-h3 font-bold text-[#5B677A] mb-3 text-center uppercase tracking-widest">카드 개수</p>
+                        <div className="grid grid-cols-5 gap-2">
+                            {[4, 6, 8, 10, 12].map(count => {
+                                const isSelected = selectedCardCount === count;
+                                return (
+                                    <button
+                                        key={count}
+                                        onClick={() => setSelectedCardCount(count)}
+                                        className={`py-2.5 rounded-3xl font-bold transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border-2 ${
+                                            isSelected 
+                                            ? 'bg-white border-[#FF9B73] text-[#5B677A] shadow-lg' 
+                                            : 'bg-white border-[#E9EDF2] text-[#5B677A]'
+                                        }`}
+                                    >
+                                        <span className="text-h3 font-bold text-[#5B677A]">{count}개</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* 캐릭터 영역 */}
+                    <div className="flex flex-col items-center mt-4 mb-5 relative">
+                        <div className="absolute top-4 left-[60%] z-20">
+                            <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
+                                <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
+                                <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
+                            </div>
+                        </div>
+                        <div className="relative z-10 w-36 h-36 flex items-center justify-center mt-10">
+                            <img src={characterAvatar} className="w-full h-full object-contain drop-shadow-2xl" alt="avatar" />
+                        </div>
+                        <div className="w-40 h-4 bg-slate-400/20 blur-lg rounded-[100%] scale-x-125 -mt-6" />
+                    </div>
+
+                    {/* 게임 시작 버튼 */}
+                    <div className="w-full max-w-sm px-4 pb-4 -mt-2.5">
+                        <button
+                            onClick={() => startGame()}
+                            className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
+                            style={{ 
+                                backgroundColor: '#FF9B73',
+                                borderBottom: '6px solid #E0735A'
+                            }}
+                        >
+                            <span>게임 시작!</span>
+                        </button>
+                    </div>
                 </div>
             </div>
+            {showExitModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'rgba(120, 130, 160, 0.22)' }}>
+                    <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                        <img
+                            src={getCharacterImage(selectedCharacter, 'keep_going')}
+                            alt="exit confirm"
+                            className="w-[120px] h-[120px] object-contain mb-4"
+                            style={{ filter: 'drop-shadow(0 8px 16px rgba(120,130,160,0.16))' }}
+                        />
+                        <div className="text-center flex flex-col gap-2 mb-6">
+                            <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                                정말 매칭을 중단할까요? 🥺
+                            </h2>
+                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?
+                            </p>
+                        </div>
+                        <div className="w-full flex flex-col gap-3">
+                            <button
+                                onClick={() => setShowExitModal(false)}
+                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                            >
+                                계속 플레이하기
+                            </button>
+                            <button
+                                onClick={handleExitConfirm}
+                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                            >
+                                그만하고 나가기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

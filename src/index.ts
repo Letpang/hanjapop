@@ -5,16 +5,23 @@ export default {
     async fetch(request: Request, env: any, ctx: any): Promise<Response> {
         const url = new URL(request.url);
 
-        // 정적 에셋 (이미지, 오디오, JS, CSS) 처리
-        if (
-            url.pathname.startsWith('/assets/') ||
-            url.pathname.startsWith('/js/')
-        ) {
-            return env.ASSETS.fetch(request);
+        // 1. 먼저 ASSETS에서 해당 파일을 찾아 응답 시도
+        const response = await env.ASSETS.fetch(request);
+
+        // 2. 파일이 존재하거나 (200대) 오류가 아닌 경우 그대로 반환
+        // (404인 경우에만 SPA 폴백 로직 수행)
+        if (response.status !== 404) {
+            return response;
         }
 
-        // SPA 라우팅: 모든 요청을 index.html로 폴백
-        const indexRequest = new Request(new URL('/index.html', request.url).toString(), request);
-        return env.ASSETS.fetch(indexRequest);
+        // 3. 404이면서 파일 확장자가 없는 요청(페이지 라우팅)인 경우 index.html 반환
+        const isFileRequest = url.pathname.includes('.');
+        if (!isFileRequest) {
+            const indexRequest = new Request(new URL('/index.html', request.url).toString(), request);
+            return env.ASSETS.fetch(indexRequest);
+        }
+
+        // 4. 확장자가 있는 파일 요청인데 404라면 그대로 404 반환
+        return response;
     },
 };

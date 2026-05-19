@@ -1,9 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
 import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
-const GRADES = ['전체', '8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
+import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { getWordSRSWeightedPool } from '../utils/learningPool.js';
+import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
+import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 
 // Flatten all words from all hanja into a single pool
 const buildWordPool = () => {
@@ -31,15 +33,6 @@ const buildWordPool = () => {
 const WORD_POOL = buildWordPool();
 const ALL_MEANINGS = [...new Set(WORD_POOL.map(w => w.meaning))];
 const CATEGORIES = [...new Set((HANJA_DATA || []).map(h => h.category).filter(Boolean))];
-const CATEGORY_IMAGES = {
-    '숫자와 기초 개념': '1_一.webp',
-    '자연과 시간': '31_日.webp',
-    '나와 가족 신체': '71_父.webp',
-    '공간과 위치': '111_東.webp',
-    '학교와 일상생활': '151_學.webp',
-    '행동과 상태': '201_來.webp',
-    '사회와 문화': '251_國.webp',
-};
 
 const QUIZ_COUNT = 10;
 
@@ -57,16 +50,35 @@ const pickDistractors = (correctMeaning, count = 3) => {
     return shuffle(others).slice(0, count);
 };
 
-const buildQuiz = (filter, filterType, srsData, masteryData, userLevel) => {
+const REVIEW_SLOTS = 3; // 복습 단어 고정 슬롯
+
+// wordQuizTodayWords: App에서 미리 셔플·분배된 오늘의 단어 (최대 7개)
+const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedIds = null, wordQuizTodayWords = null) => {
     let pool;
     if (filterType === 'topic') {
         pool = WORD_POOL.filter(w => w.category === filter);
     } else {
         pool = filter === '전체' ? WORD_POOL : WORD_POOL.filter(w => w.grade === filter);
     }
-    if (pool.length < 4) pool = WORD_POOL;
+    if (allowedIds) pool = pool.filter(w => allowedIds.has(w.hanja_id));
+    if (pool.length < 4) pool = allowedIds ? WORD_POOL.filter(w => allowedIds.has(w.hanja_id)) : WORD_POOL;
 
-    const picked = getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, QUIZ_COUNT);
+    let picked;
+    if (wordQuizTodayWords && wordQuizTodayWords.length > 0) {
+        // 오늘 배정 단어(최대 7) + 복습 3개 + 빈 자리 채우기 = 10문제
+        const todayWordSet = new Set(wordQuizTodayWords.map(w => w.word));
+        const otherPool = pool.filter(w => !todayWordSet.has(w.word));
+        const reviewPicked = getWordSRSWeightedPool(otherPool, srsData, masteryData, userLevel, REVIEW_SLOTS);
+        const usedSet = new Set([...todayWordSet, ...reviewPicked.map(w => w.word)]);
+        const fillCount = Math.max(0, QUIZ_COUNT - wordQuizTodayWords.length - reviewPicked.length);
+        const fillPicked = fillCount > 0
+            ? getWordSRSWeightedPool(otherPool.filter(w => !usedSet.has(w.word)), srsData, masteryData, userLevel, fillCount)
+            : [];
+        picked = shuffle([...wordQuizTodayWords, ...reviewPicked, ...fillPicked]);
+    } else {
+        picked = getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, QUIZ_COUNT);
+    }
+
     return picked.map(item => {
         const distractors = pickDistractors(item.meaning);
         const choices = shuffle([item.meaning, ...distractors]);
@@ -83,29 +95,37 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview }) => {
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
-            style={{ background: isClear ? 'rgba(16,185,129,0.18)' : 'rgba(255,107,107,0.18)' }}
+            style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
         >
-            <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[48px] overflow-hidden">
-                <div className="pt-4 pb-10 px-8 flex flex-col items-center gap-6 w-full relative">
+            <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
+                <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
                     
+                    {/* 캐릭터 아래 백그라운드 글로우 추가 */}
+                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+
                     {/* 아이콘 */}
                     <img
-                        src={isClear ? "/assets/images/icons/success_new.png" : "/assets/images/icons/timeout_new.png"}
+                        src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
                         alt={isClear ? "clear" : "fail"}
-                        className="w-[154px] h-[154px] object-contain drop-shadow-xl relative z-10 mt-4"
+                        className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
+                        style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
                     />
 
                     {/* 텍스트 */}
                     <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                        <span className="text-xs-res font-extrabold text-slate-400">
+                        <span className="text-xs-res font-extrabold text-[#AEB7C5]">
                             {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
                         </span>
-                        <h1 className="text-h2-res font-extrabold tracking-tighter leading-snug" style={{ color: isClear ? '#10B981' : '#FF6B6B' }}>
+                        <h1 className="text-h2-res font-black leading-snug" style={{ 
+                            color: isClear ? '#FF9B73' : '#FF6B6B',
+                            letterSpacing: '-0.5px',
+                            textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
+                        }}>
                             {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
-                        <p className="text-xs-res font-bold text-slate-400 leading-relaxed break-keep mt-1">
+                        <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
                             {isClear 
-                                ? `총 ${total}문제 중 ${correct}문제를 맞혔어요! 🔥` 
+                                ? <>총 {total}문제 중 {correct}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></> 
                                 : '조금만 더 노력하면 성공할 수 있어요!'}
                         </p>
                     </div>
@@ -114,23 +134,15 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview }) => {
                     <div className="w-full flex flex-col gap-3 relative z-10">
                         <button
                             onClick={onRetry}
-                            className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
-                            style={{ 
-                                background: isClear ? 'linear-gradient(135deg, #34D399, #10B981)' : 'linear-gradient(135deg, #FF8E8E, #FF6B6B)',
-                                borderBottomColor: isClear ? '#059669' : '#E05555' 
-                            }}
+                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
                         >
                             다시 풀기
                         </button>
                         <button
                             onClick={onBack}
-                            className="w-full py-4 rounded-2xl font-extrabold text-body-lg text-white active:scale-95 transition-all border-b-4 active:border-b-0 active:translate-y-[2px]"
-                            style={{ 
-                                background: 'linear-gradient(135deg, #6EE7B7, #34D399)',
-                                borderBottomColor: '#059669'
-                            }}
+                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                         >
-                            급수 / 주제 바꾸기
+                            돌아가기
                         </button>
                     </div>
                 </div>
@@ -140,13 +152,34 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview }) => {
 };
 
 // ─── Quiz Card ──────────────────────────────────────────────────────────────
-const speakKorean = (text) => {
-    if (!window.speechSynthesis || !text) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ko-KR';
-    utter.rate = 0.85;
-    window.speechSynthesis.speak(utter);
+const speakKorean = (text, onEnd) => {
+    if (!text) return;
+    const audioUrl = `/assets/audio/words/word_${encodeURIComponent(text.trim())}.mp3`;
+    const audio = new Audio(audioUrl);
+    if (onEnd) audio.onended = onEnd;
+    audio.play().catch(() => {
+        if (!window.speechSynthesis) {
+            if (onEnd) onEnd();
+            return;
+        }
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ko-KR';
+        utter.rate = 0.8;
+        utter.pitch = 0.95;
+        if (onEnd) utter.onend = onEnd;
+        
+        const voices = window.speechSynthesis.getVoices();
+        const koVoices = voices.filter(v => v.lang.startsWith('ko') || v.lang.includes('ko-KR'));
+        if (koVoices.length > 0) {
+            const preferred = koVoices.find(v => {
+                const name = v.name.toLowerCase();
+                return name.includes('yuna') || name.includes('siri') || name.includes('sora') || name.includes('hyerim') || name.includes('hyejin') || name.includes('heami');
+            }) || koVoices[0];
+            utter.voice = preferred;
+        }
+        window.speechSynthesis.speak(utter);
+    });
 };
 
 const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
@@ -178,12 +211,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
     const handleSpeak = () => {
         if (!q.reading) return;
         setIsSpeaking(true);
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(q.reading);
-        utter.lang = 'ko-KR';
-        utter.rate = 0.85;
-        utter.onend = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utter);
+        speakKorean(q.reading, () => setIsSpeaking(false));
     };
 
     // 가로형 레이아웃에 맞춘 다이나믹 폰트
@@ -215,14 +243,14 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                         {(combo + 1) > 1 && (
                             <div
                                 className="px-4 py-1.5 rounded-full font-extrabold text-white text-sm"
-                                style={{ backgroundColor: '#0EA5E9', boxShadow: '0 4px 12px rgba(14,165,233,0.45)' }}
+                                style={{ backgroundColor: '#4A51D4', boxShadow: '0 4px 12px rgba(74,81,212,0.45)' }}
                             >
                                 🔥 {combo + 1}x 콤보!
                             </div>
                         )}
                         <div
                             className="px-7 py-3 rounded-full font-extrabold text-xl"
-                            style={{ backgroundColor: '#FFF7D4', color: '#B8860B', border: '2px solid #FFD700', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
+                            style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
                         >
                             ⭐ +5 XP
                         </div>
@@ -252,7 +280,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                     >
                         {/* 카드 앞면: 문제 단어 */}
                         <div 
-                            className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-center p-5 overflow-hidden shadow-xl"
+                            className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-center p-3 overflow-hidden shadow-xl"
                             style={{ 
                                 backfaceVisibility: 'hidden', 
                                 WebkitBackfaceVisibility: 'hidden',
@@ -264,7 +292,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                                 {q.word}
                             </span>
                             {isCorrectSelected && !isFlipped && (
-                                <div className="mt-8 px-10 py-3 rounded-full font-black text-sm bg-slate-50 text-slate-300 uppercase tracking-[0.4em] border-2 border-slate-100/50 animate-bounce">
+                                <div className="mt-8 px-10 py-3 rounded-full font-black text-sm bg-[#F8FAF9] text-[#AEB7C5] uppercase tracking-[0.4em] border-2 border-[#E9EDF2]/50 animate-bounce">
                                     더 알아보기
                                 </div>
                             )}
@@ -272,7 +300,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
 
                         {/* 카드 뒷면: 정답 및 예문 */}
                         <div 
-                            className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between p-8 shadow-xl"
+                            className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between px-3 py-8 shadow-xl"
                             style={{ 
                                 backfaceVisibility: 'hidden', 
                                 WebkitBackfaceVisibility: 'hidden',
@@ -281,34 +309,32 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                             }}
                         >
                             {/* 상단: 한자음 및 한자어 그룹 (가로 배치) */}
-                            <div className="flex flex-row items-baseline gap-3 mt-1">
-                                {/* 1. 한자 단어의 음 (주인공) */}
-                                <span className="text-5xl sm:text-[4.5rem] font-black text-indigo-600 tracking-tighter leading-none drop-shadow-md">
+                            <div className="flex flex-row items-baseline gap-3">
+                                <span className="text-5xl sm:text-[4.5rem] font-black text-[#4F56D9] tracking-tighter leading-none" style={{ textShadow: '0 0 10px rgba(79,86,217,0.10)' }}>
                                     {q.reading}
                                 </span>
-                                {/* 2. 원래 문제인 한자 */}
-                                <span className="text-xl sm:text-2xl font-bold text-slate-300 tracking-widest">
+                                <span className="text-xl sm:text-2xl font-bold text-[#AEB7C5] tracking-widest">
                                     ({q.word})
                                 </span>
                             </div>
 
-                            {/* 중간: 스피커 아이콘 (독립 배치로 밸런스 유지) */}
-                            <button 
+                            {/* 중간: 스피커 아이콘 */}
+                            <button
                                 onClick={(e) => { e.stopPropagation(); handleSpeak(); }}
-                                className={`w-14 h-14 mt-6 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-xl border-4 border-white ${isSpeaking ? 'bg-indigo-500 text-white' : 'bg-slate-50 text-slate-200'}`}
+                                className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-xl border-4 border-white ${isSpeaking ? 'bg-[#7C83FF] text-white' : 'bg-[#F8FAF9] text-slate-200'}`}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                 </svg>
                             </button>
-                            
-                            {/* 하단: 예문 영역 - 한글 배지 인라인 스타일 (20px 다운) */}
-                            <div className="w-full flex flex-col items-start text-left mb-4 mt-5">
-                                <p className="text-body-lg-res font-medium text-slate-600 leading-relaxed break-keep tracking-normal">
-                                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-indigo-50 text-indigo-500 text-sm font-black mr-3 shadow-sm border border-indigo-100/50 transform -translate-y-0.5">
+
+                            {/* 하단: 예문 영역 */}
+                            <div className="w-full flex flex-col items-start text-left">
+                                <p className="text-body-lg-res font-medium text-[#5B677A] leading-relaxed break-keep tracking-normal">
+                                    <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#7C83FF]/10 text-[#7C83FF] text-sm font-black mr-3 shadow-sm border border-[#7C83FF]/20 transform -translate-y-0.5">
                                         예문
                                     </span>
-                                    <span className="text-slate-500">
+                                    <span className="text-[#5B677A]">
                                         {q.example ? q.example.replace(/\(\s*\)/g, q.word).trim().replace(/\s+/g, ' ') : ''}
                                     </span>
                                 </p>
@@ -327,17 +353,20 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                                 key={idx}
                                 onClick={() => handleSelect(choice)}
                                 disabled={isCorrectSelected}
-                                className={`py-3.5 px-8 rounded-[2rem] font-black text-body-lg-res border transition-all flex justify-between items-center break-keep ${
-                                    isCorrect 
-                                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700 border-4 shadow-lg' 
-                                    : isWrong 
-                                    ? 'bg-white border-[#FED2D2] text-[#3D3530] border-4 opacity-70' 
-                                    : 'bg-white border-slate-100 text-[#5D544F] shadow-sm hover:border-slate-200'
-                                } ${!isCorrectSelected ? 'active:scale-[0.98]' : ''}`}
+                                className={`py-4 px-6 rounded-[2rem] font-bold text-h3-res border-2 transition-all flex justify-between items-center break-keep relative active:translate-y-[4px] active:border-b-0 ${
+                                    isCorrect
+                                    ? 'bg-[#F2F3FF] border-[#7C83FF] border-b-8 border-b-[#7C83FF] text-[#4F56D9] -translate-y-[4px]'
+                                    : isWrong
+                                    ? 'bg-white border-[#FFA88D] border-b-8 border-b-[#FFA88D] text-[#FF8D72] -translate-y-[4px]'
+                                    : isCorrectSelected
+                                    ? 'bg-white border-[#E9EDF2] text-[#AEB7C5] opacity-60'
+                                    : 'bg-white border-[#E9EDF2] border-b-8 border-b-slate-200 text-[#5D544F] -translate-y-[4px] hover:border-[#7C83FF]'
+                                }`}
+                                style={{ boxShadow: '0 10px 16px rgba(120,130,160,0.10)' }}
                             >
                                 <span className="text-left w-full">{choice}</span>
-                                {isCorrect && <span className="text-indigo-400 shrink-0 ml-2">✓</span>}
-                                {isWrong && <span className="text-rose-300 shrink-0 ml-2">✕</span>}
+                                {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
+                                {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
                             </button>
                         );
                     })}
@@ -348,15 +377,15 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                     <div className="w-full flex gap-5 animate-in fade-in slide-in-from-top-4 duration-500">
                         <button
                             onClick={onPrev}
-                            className="flex-1 py-5 rounded-[2.5rem] bg-white font-black text-xl text-slate-600 border-2 border-slate-100 shadow-sm active:scale-95 transition-all"
+                            className="flex-1 py-5 rounded-[2.5rem] bg-white font-bold text-h3-res text-[#5B677A] border-2 border-[#E9EDF2] shadow-sm active:scale-95 transition-all"
                         >
-                            ‹ PREV
+                            ‹ 이전
                         </button>
                         <button 
                             onClick={handleNext}
-                            className="flex-[2] py-5 rounded-[2.5rem] bg-indigo-500 font-black text-xl text-white shadow-2xl shadow-indigo-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className="flex-[2] py-5 rounded-[2.5rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
-                            NEXT ›
+                            다음 ›
                         </button>
                     </div>
                 )}
@@ -366,24 +395,31 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
 };
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
-const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onWordCorrect, onStageClear, onGoToReview, srsData, masteryData, userLevel, hanjaFilter, unlockedHanjaIds }) => {
+const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, hanjaFilter, unlockedHanjaIds, wordQuizTodayWords }) => {
     const { t } = useLang();
     const [viewMode, setViewMode] = useState('grade');
-    const [gradeFilter, setGradeFilter] = useState(null);
+    const [gradeFilter, setGradeFilter] = useState('8급');
     const [categoryFilter, setCategoryFilter] = useState(CATEGORIES[0] || '');
     const [phase, setPhase] = useState('select');
+    const [showExitModal, setShowExitModal] = useState(false);
+    const handleExitConfirm = () => {
+        setShowExitModal(false);
+        if (hanjaFilter && hanjaFilter.length > 0) {
+            onBack();
+        } else {
+            setPhase('select');
+        }
+    };
     const [questions, setQuestions] = useState([]);
     const [currentIdx, setCurrentIdx] = useState(0);
     const [correctCount, setCorrectCount] = useState(0);
     const [combo, setCombo] = useState(0);
+    const [maxCombo, setMaxCombo] = useState(0);
+    const comboRef = useRef(0);
 
-    // 해금된 급수 계산 로직
-    const unlockedIds = useMemo(() => new Set(unlockedHanjaIds || []), [unlockedHanjaIds]);
-    const unlockedGrades = useMemo(() => {
-        const s = new Set(['전체']);
-        for (const h of HANJA_DATA) { if (unlockedIds.has(h.id)) s.add(h.grade); }
-        return s;
-    }, [unlockedIds]);
+    const characterAvatar = useMemo(() => getRankDetails(userXp, selectedCharacter).avatar, [userXp, selectedCharacter]);
+
+    const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
     const startQuiz = useCallback((overrideFilter, overrideViewMode) => {
         if (hanjaFilter && hanjaFilter.length > 0) {
@@ -398,30 +434,39 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
         } else {
             const effectiveViewMode = overrideViewMode || viewMode;
             const filter = overrideFilter != null ? overrideFilter : (effectiveViewMode === 'topic' ? categoryFilter : gradeFilter);
-            setQuestions(buildQuiz(filter, effectiveViewMode, srsData, masteryData, userLevel));
+            setQuestions(buildQuiz(filter, effectiveViewMode, srsData, masteryData, userLevel, unlockedIds, wordQuizTodayWords));
         }
         setCurrentIdx(0);
         setCorrectCount(0);
+        comboRef.current = 0;
+        setCombo(0);
+        setMaxCombo(0);
         setPhase('quiz');
-    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, hanjaFilter]);
+    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, hanjaFilter, unlockedIds]);
 
+    const startQuizRef = useRef(null);
+    useEffect(() => { startQuizRef.current = startQuiz; });
     useEffect(() => {
-        if (hanjaFilter && hanjaFilter.length > 0) startQuiz();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        if (hanjaFilter && hanjaFilter.length > 0) startQuizRef.current?.();
+    }, [hanjaFilter]);
 
     const handleAnswer = useCallback((isCorrect) => {
         const q = questions[currentIdx];
         if (isCorrect) {
             setCorrectCount(c => c + 1);
-            setCombo(c => c + 1);
+            comboRef.current += 1;
+            setCombo(comboRef.current);
+            setMaxCombo(m => Math.max(m, comboRef.current));
             if (onHanjaAcquired && q?.hanja_id) onHanjaAcquired(q.hanja_id, 5);
             if (onMarkCorrect && q?.hanja_id) onMarkCorrect(q.hanja_id);
             if (onWordCorrect) onWordCorrect();
         } else {
+            comboRef.current = 0;
             setCombo(0);
-            if (onMarkWrong && q?.hanja_id) onMarkWrong(q.hanja_id);
+            if (onMarkWordWrong && q?.word) onMarkWordWrong(q.word, q.hanja_id, q.reading, q.meaning);
+            else if (onMarkWrong && q?.hanja_id) onMarkWrong(q.hanja_id);
         }
-    }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onMarkWrong, onWordCorrect]);
+    }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect]);
 
     const handleNext = useCallback(() => {
         const next = currentIdx + 1;
@@ -429,9 +474,9 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
             setCurrentIdx(next);
         } else {
             setPhase('result');
-            if (onStageClear) onStageClear(correctCount, questions.length);
+            if (onStageClear) onStageClear(correctCount, questions.length, maxCombo);
         }
-    }, [questions, currentIdx, correctCount, onStageClear]);
+    }, [questions, currentIdx, correctCount, maxCombo, onStageClear]);
 
     const handlePrev = useCallback(() => {
         if (currentIdx > 0) {
@@ -440,29 +485,36 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
     }, [currentIdx]);
 
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAFF' }}>
+        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: phase === 'select' ? '#F7FAF9' : '#F8FAFC' }}>
 
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                    <button onClick={phase === 'quiz' ? () => setPhase('select') : onBack}
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-slate-600 gap-1">
-                        <span>←</span><span className="ml-1">뒤로</span>
+                    <button onClick={(phase === 'quiz') ? () => setShowExitModal(true) : onBack}
+                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                        <span>{(phase === 'quiz') ? '✕' : '←'}</span>
                     </button>
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <h2 className="text-lg font-black text-slate-700 m-0">단어 퀴즈</h2>
+                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
+                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">단어 퀴즈</h2>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>한자의 뜻과 음을 골라보세요</p>
+                    </div>
+                    <div className="flex items-center justify-end w-11">
                         {phase === 'quiz' && (
-                            <span className="text-indigo-500 opacity-60 text-sm font-bold whitespace-nowrap">{currentIdx + 1}/{questions.length}</span>
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{currentIdx + 1}/{questions.length}</span>
                         )}
                     </div>
                 </div>
-                {/* 진행 바 — 얇고 연한 하늘색 */}
+                {/* 진행 바 — 10px 강화 버전 + 캐릭터 아바타 */}
                 {phase === 'quiz' && (
-                    <div className="w-full h-[3px] bg-slate-100 rounded-full overflow-hidden mt-3 px-2 mx-auto max-w-[90%]">
+                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
                         <div
-                            className="h-full transition-all duration-500 rounded-full bg-indigo-500"
+                            className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
                             style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
-                        />
+                        >
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
+                                <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -472,19 +524,19 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                 <div className="w-full max-w-2xl mx-auto px-4 flex flex-col items-center gap-6 pt-5">
 
                     {phase === 'select' && (
-                        <div className="flex flex-col items-center gap-10 w-full animate-in fade-in duration-500">
+                        <div className="flex flex-col items-center w-full animate-in fade-in duration-500">
 
                             {/* 탭 */}
-                            <div className="flex bg-slate-100/40 p-1.5 rounded-full border border-slate-200 w-full mb-4 shadow-inner">
+                            <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-4 shadow-inner">
                                 <button
                                     onClick={() => setViewMode('grade')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
+                                    className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                                 >
                                     급수별
                                 </button>
                                 <button
                                     onClick={() => setViewMode('topic')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-extrabold text-xs-res transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-slate-700' : 'text-slate-400'}`}
+                                    className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                                 >
                                     주제별
                                 </button>
@@ -494,14 +546,14 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                             {viewMode === 'grade' && (
                                 <GradeGrid
                                     selected={gradeFilter}
-                                    onSelect={g => { setGradeFilter(g); startQuiz(g, 'grade'); }}
+                                    onSelect={g => setGradeFilter(g)}
                                     lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))}
                                 />
                             )}
 
                             {/* 주제별 */}
                             {viewMode === 'topic' && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                                <div className="grid grid-cols-2 gap-4 w-full">
                                     {CATEGORIES.map(cat => (
                                         <TopicCard
                                             key={cat}
@@ -509,12 +561,40 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                                             imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
                                             count={`${HANJA_DATA.filter(h => h.category === cat).length}개`}
                                             isSelected={categoryFilter === cat}
-                                            onClick={() => { setCategoryFilter(cat); startQuiz(cat, 'topic'); }}
+                                            onClick={() => setCategoryFilter(cat)}
                                             locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))}
                                         />
                                     ))}
                                 </div>
                             )}
+
+                            {/* 캐릭터 영역 */}
+                            <div className="flex flex-col items-center mt-4 mb-5 relative">
+                                <div className="absolute top-4 left-[60%] z-20">
+                                    <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
+                                        <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
+                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
+                                    </div>
+                                </div>
+                                <div className="relative z-10 w-36 h-36 flex items-center justify-center mt-10">
+                                    <img src={characterAvatar} className="w-full h-full object-contain drop-shadow-2xl" alt="avatar" />
+                                </div>
+                                <div className="w-40 h-4 bg-slate-400/20 blur-lg rounded-[100%] scale-x-125 -mt-6" />
+                            </div>
+
+                            {/* 게임 시작 버튼 */}
+                            <div className="w-full max-w-sm px-4 pb-4 -mt-2.5">
+                                <button
+                                    onClick={() => startQuiz()}
+                                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-[0_8px_24px_rgba(255,168,141,0.35)] flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
+                                    style={{ 
+                                        background: 'linear-gradient(135deg, #FFA88D 0%, #FF8D72 100%)',
+                                        borderBottom: '6px solid #E0735A'
+                                    }}
+                                >
+                                    <span>퀴즈 시작!</span>
+                                </button>
+                            </div>
 
                         </div>
                     )}
@@ -541,6 +621,40 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                     )}
                 </div>
             </div>
+            {showExitModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'rgba(120, 130, 160, 0.22)' }}>
+                    <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                        <img
+                            src={getCharacterImage(selectedCharacter, 'keep_going')}
+                            alt="exit confirm"
+                            className="w-[120px] h-[120px] object-contain mb-4"
+                            style={{ filter: 'drop-shadow(0 8px 16px rgba(120,130,160,0.16))' }}
+                        />
+                        <div className="text-center flex flex-col gap-2 mb-6">
+                            <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                                정말 퀴즈를 중단할까요? 🥺
+                            </h2>
+                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?
+                            </p>
+                        </div>
+                        <div className="w-full flex flex-col gap-3">
+                            <button
+                                onClick={() => setShowExitModal(false)}
+                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                            >
+                                계속 공부하기
+                            </button>
+                            <button
+                                onClick={handleExitConfirm}
+                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                            >
+                                그만하고 나가기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

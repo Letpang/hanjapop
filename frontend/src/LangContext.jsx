@@ -1,11 +1,12 @@
 import React, { createContext, useState, useContext, useMemo } from 'react';
 import { strings } from './i18n/strings.js';
+import { SK } from './constants/storageKeys.js';
 
 const LangContext = createContext();
 
 export const LangProvider = ({ children }) => {
     const [lang, setLang] = useState(() => {
-        const saved = localStorage.getItem('hanja_lang');
+        const saved = localStorage.getItem(SK.HANJA_LANG);
         return saved || (navigator.language.startsWith('ko') ? 'ko' : 'en');
     });
 
@@ -17,7 +18,7 @@ export const LangProvider = ({ children }) => {
         lang,
         setLang: (l) => {
             setLang(l);
-            localStorage.setItem('hanja_lang', l);
+            localStorage.setItem(SK.HANJA_LANG, l);
         },
         t
     };

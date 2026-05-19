@@ -1,17 +1,40 @@
 import { useState, useMemo } from 'react';
+import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
+import { getCharacterImage } from '../utils/rankUtils.js';
 
 const SORTED_HANJA = [...HANJA_DATA].sort((a, b) => a.id - b.id);
 
 const getTotalDays = () => {
     try {
-        const saved = JSON.parse(localStorage.getItem('total_activity_stats') || '{}');
+        const saved = JSON.parse(localStorage.getItem(SK.TOTAL_ACTIVITY_STATS) || '{}');
         return saved.totalDays || 1;
     } catch { return 1; }
 };
 
 const getLevelTestBonus = () => {
-    try { return Number(localStorage.getItem('level_test_bonus') || '0'); } catch { return 0; }
+    try { return Number(localStorage.getItem(SK.LEVEL_TEST_BONUS) || '0'); } catch { return 0; }
+};
+
+const isPremium = () => {
+    try { return localStorage.getItem(SK.PREMIUM) === 'true'; } catch { return false; }
+};
+
+const getTodayPassCount = () => {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        const data = JSON.parse(localStorage.getItem(SK.LEVEL_TEST_DAILY) || '{}');
+        return data.date === today ? (data.count || 0) : 0;
+    } catch { return 0; }
+};
+
+const incrementTodayPassCount = () => {
+    try {
+        const today = new Date().toISOString().slice(0, 10);
+        const data = JSON.parse(localStorage.getItem(SK.LEVEL_TEST_DAILY) || '{}');
+        const count = data.date === today ? (data.count || 0) + 1 : 1;
+        localStorage.setItem(SK.LEVEL_TEST_DAILY, JSON.stringify({ date: today, count }));
+    } catch {}
 };
 
 const shuffle = (arr) => {
@@ -54,7 +77,7 @@ const buildLevelTestQuestions = (unlockedHanja) => {
             questions.push({
                 id: `q_${idx}_sound`,
                 qType: 'sound',
-                prompt: `다음 한자의 음(읽는 법)은?`,
+                prompt: `다음 한자의 음은?`,
                 hanja: item.hanja,
                 choices: shuffle([item.sound, ...distractors]),
                 answer: item.sound,
@@ -93,13 +116,14 @@ const buildLevelTestQuestions = (unlockedHanja) => {
     });
 
     // Ensure exactly 10 questions by padding with extra questions if needed
-    const extraPool = shuffle(unlockedHanja);
+    const usedHanja = new Set(questions.map(q => q.hanja));
+    const extraPool = shuffle(unlockedHanja.filter(h => !usedHanja.has(h.hanja)));
     let ei = 0;
-    while (questions.length < 10 && ei < extraPool.length * 3) {
-        const item = extraPool[ei % extraPool.length];
+    while (questions.length < 10 && ei < extraPool.length) {
+        const item = extraPool[ei];
         ei++;
         const distractors = pickDistractors(item.meaning, 'meaning', SORTED_HANJA);
-        const q = {
+        questions.push({
             id: `q_extra_${ei}`,
             qType: 'meaning',
             prompt: `다음 한자의 뜻은?`,
@@ -107,30 +131,31 @@ const buildLevelTestQuestions = (unlockedHanja) => {
             choices: shuffle([item.meaning, ...distractors]),
             answer: item.meaning,
             item,
-        };
-        if (!questions.find(x => x.hanja === q.hanja && x.qType === q.qType)) {
-            questions.push(q);
-        }
+        });
     }
 
     return questions.slice(0, 10);
 };
 
-const PASS_THRESHOLD = 7;
-
-const LevelTestScreen = ({ onBack }) => {
+const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacter }) => {
     const currentBonus = getLevelTestBonus();
     const totalDays = getTotalDays();
-    const unlockedCount = totalDays * 2 + currentBonus;
+    const unlockedCount = totalDays * 3 + currentBonus;
+    const todayPassCount = getTodayPassCount();
+    const canTest = isPremium() || todayPassCount < 2;
 
     const unlockedHanja = useMemo(() => SORTED_HANJA.slice(0, unlockedCount), [unlockedCount]);
     const questions = useMemo(() => buildLevelTestQuestions(unlockedHanja), [unlockedHanja]);
+
+    // 통과 기준: 문제 수의 70% (최소 1문제)
+    const PASS_THRESHOLD = Math.max(1, Math.ceil(questions.length * 0.7));
 
     const [phase, setPhase] = useState('intro'); // intro | quiz | result
     const [qIndex, setQIndex] = useState(0);
     const [answers, setAnswers] = useState({}); // {qId: isCorrect}
     const [selected, setSelected] = useState(null); // selected choice
     const [revealed, setRevealed] = useState(false);
+    const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
 
     const handleStart = () => {
         if (unlockedHanja.length < 3) return; // too few hanja to test
@@ -148,11 +173,18 @@ const LevelTestScreen = ({ onBack }) => {
         setSelected(choice);
         setRevealed(true);
         setAnswers(prev => ({ ...prev, [q.id]: isCorrect }));
+
+        if (isCorrect && onHanjaAcquired) {
+            onHanjaAcquired(q.item?.id || null, 10);
+            setXpPopup({ show: true, key: Date.now(), amount: 10 });
+            setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
+        }
     };
 
     const handleNext = () => {
         if (qIndex + 1 >= questions.length) {
             setPhase('result');
+            if (onComplete) onComplete({ correct: Object.values({ ...answers }).filter(Boolean).length + (isCorrect ? 1 : 0), total: questions.length });
         } else {
             setQIndex(prev => prev + 1);
             setSelected(null);
@@ -166,7 +198,8 @@ const LevelTestScreen = ({ onBack }) => {
     const handleFinish = () => {
         if (passed) {
             const newBonus = currentBonus + 2;
-            localStorage.setItem('level_test_bonus', String(newBonus));
+            localStorage.setItem(SK.LEVEL_TEST_BONUS, String(newBonus));
+            incrementTodayPassCount();
         }
         onBack();
     };
@@ -174,51 +207,80 @@ const LevelTestScreen = ({ onBack }) => {
     if (phase === 'intro') {
         return (
             <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
-                <div className="w-full px-4 shrink-0 safe-top">
-                    <div className="w-full flex justify-between items-center clay-panel p-4 sm:p-6 px-6 rounded-[2.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
-                        <button
-                            onClick={onBack}
-                            className="text-slate-600 dark:text-slate-200 font-black bg-white/60 dark:bg-slate-800/60 px-5 py-2.5 rounded-2xl border-2 border-white/50 shadow-md active:scale-95 transition-all"
-                        >
-                            <span className="text-xl">←</span>
+                {/* 헤더 */}
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
+                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                        <button onClick={onBack}
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
+                            <span>←</span><span className="ml-1">뒤로</span>
                         </button>
-                        <h1 className="text-2xl sm:text-4xl font-black text-slate-700 dark:text-white tracking-tight premium-text-shadow text-center flex-1 px-4">
-                            레벨 테스트
-                        </h1>
-                        <div className="w-[60px]" />
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <h2 className="text-lg font-black text-slate-700 m-0">레벨 테스트</h2>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
-                    <div className="text-6xl">🏆</div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 overflow-y-auto pt-8">
+                    <div className="clay-panel rounded-[3.5rem] p-6 sm:p-8 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-6 text-center max-w-md w-full shadow-2xl">
+                        
+                        {/* 헤더: 트로피 축소 및 타이틀 결합 */}
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="w-20 h-20 bg-[#FFB433]/10 dark:bg-[#FFB433]/20 rounded-full flex items-center justify-center border-4 border-[#FFB433]/15 dark:border-[#8B5E00] mb-2">
+                                <span className="text-h1-res">🏆</span>
+                            </div>
+                            <h2 className="text-h2-res font-extrabold text-slate-700 dark:text-white premium-text-shadow">레벨 테스트</h2>
+                            <p className="text-sm font-bold text-[#AEB7C5]">학습한 내용을 확인하고 다음 단계로!</p>
+                        </div>
 
-                    <div className="clay-panel rounded-[3rem] p-8 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-5 text-center max-w-sm w-full">
-                        <h2 className="text-2xl font-black text-slate-700 dark:text-white">레벨 테스트</h2>
-                        <div className="flex flex-col gap-3 text-left w-full">
-                            <div className="flex items-center gap-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl px-4 py-3">
-                                <span className="text-2xl">📋</span>
-                                <span className="text-slate-600 dark:text-slate-300 font-bold text-sm">총 {questions.length}문제</span>
+                        {/* 핵심 정보: 그리드 레이아웃으로 가독성 향상 */}
+                        <div className="grid grid-cols-2 gap-4 w-full">
+                            <div className="bg-[#7C83FF]/10/50 dark:bg-[#4A51D4]/30 rounded-3xl p-5 flex flex-col items-center justify-center border-2 border-[#C3C6FF]/50 dark:border-[#4A51D4]">
+                                <span className="text-h2-res mb-2">📋</span>
+                                <span className="text-xs text-[#7C83FF] font-extrabold uppercase tracking-widest mb-1">문제 수</span>
+                                <span className="text-body-lg-res font-extrabold text-[#4A51D4] dark:text-[#7C83FF]">{questions.length}문항</span>
                             </div>
-                            <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/30 rounded-2xl px-4 py-3">
-                                <span className="text-2xl">🎯</span>
-                                <span className="text-slate-600 dark:text-slate-300 font-bold text-sm">{PASS_THRESHOLD}문제 이상 맞혀야 통과</span>
-                            </div>
-                            <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl px-4 py-3">
-                                <span className="text-2xl">🔓</span>
-                                <span className="text-slate-600 dark:text-slate-300 font-bold text-sm">통과하면 뭉치 학습지 2개 추가 해금!</span>
+                            <div className="bg-[#FFB433]/10/50 dark:bg-[#FFB433]/30 rounded-3xl p-5 flex flex-col items-center justify-center border-2 border-[#FFB433]/15/50 dark:border-[#8B5E00]">
+                                <span className="text-h2-res mb-2">🎯</span>
+                                <span className="text-xs text-[#FFB433] font-extrabold uppercase tracking-widest mb-1">통과 기준</span>
+                                <span className="text-body-lg-res font-extrabold text-[#FFB433] dark:text-[#FFB433]">{PASS_THRESHOLD}점 이상</span>
                             </div>
                         </div>
+
+                        {/* 혜택 및 상태 정보 */}
+                        <div className="flex flex-col gap-3 text-left w-full">
+                            <div className="flex items-center gap-4 bg-[#FF9B73]/10/50 dark:bg-[#FF9B73]/20/30 rounded-2xl px-5 py-4 border-2 border-[#FF9B73]/20/50 dark:border-[#FF9B73]/30">
+                                <span className="text-h3-res">🔓</span>
+                                <p className="text-[#5B677A] dark:text-[#AEB7C5] font-bold text-sm leading-tight">
+                                    통과 시 <span className="text-[#FF9B73] dark:text-[#FF9B73] font-extrabold">학습지 2개 추가 해금</span>
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-4 bg-[#F8FAF9] dark:bg-slate-700/50 rounded-2xl px-5 py-4 border-2 border-[#E9EDF2] dark:border-slate-600">
+                                <span className="text-h3-res">📅</span>
+                                <div className="flex flex-col">
+                                    <span className="text-[#5B677A] dark:text-[#AEB7C5] font-bold text-sm">
+                                        오늘 통과 횟수: {todayPassCount} / 2
+                                    </span>
+                                    {isPremium() && <span className="text-xs text-[#FFB433] font-extrabold">PREMIUM UNLIMITED</span>}
+                                </div>
+                            </div>
+                        </div>
+
                         {unlockedHanja.length < 3 && (
-                            <p className="text-red-400 font-bold text-sm">
-                                뭉치 학습지를 먼저 3개 이상 열어야 테스트할 수 있어요!
+                            <p className="text-red-500 font-extrabold text-sm bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-xl border border-red-100 dark:border-red-800 w-full">
+                                ⚠️ 학습지를 3개 이상 완료해야 합니다.
+                            </p>
+                        )}
+                        {!canTest && (
+                            <p className="text-[#FFB433] font-extrabold text-xs bg-[#FFB433]/10 dark:bg-[#FFB433]/20 px-4 py-3 rounded-xl border border-[#FFB433]/15 dark:border-[#8B5E00] w-full">
+                                오늘 2회 통과 완료! 내일 다시 도전하세요.
                             </p>
                         )}
                     </div>
 
                     <button
                         onClick={handleStart}
-                        disabled={unlockedHanja.length < 3}
-                        className="px-12 py-4 rounded-[2rem] bg-indigo-500 disabled:bg-slate-300 text-white font-black text-lg shadow-xl active:scale-95 transition-all"
+                        disabled={unlockedHanja.length < 3 || !canTest}
+                        className="px-12 py-4 rounded-[2rem] bg-[#7C83FF] disabled:bg-slate-300 text-white font-extrabold text-lg shadow-xl active:scale-95 transition-all"
                     >
                         시작하기
                     </button>
@@ -233,32 +295,40 @@ const LevelTestScreen = ({ onBack }) => {
         const isHanjaDisplay = q.qType === 'meaning' || q.qType === 'sound';
 
         return (
-            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
-                <div className="w-full px-4 shrink-0 safe-top">
-                    <div className="w-full flex justify-between items-center clay-panel p-4 px-6 rounded-[2.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
-                        <button
-                            onClick={() => setPhase('intro')}
-                            className="text-slate-600 dark:text-slate-200 font-black bg-white/60 dark:bg-slate-800/60 px-5 py-2.5 rounded-2xl border-2 border-white/50 shadow-md active:scale-95 transition-all"
-                        >
-                            <span className="text-xl">←</span>
-                        </button>
-                        <div className="flex flex-col items-center gap-1 flex-1 px-4">
-                            <span className="text-slate-500 dark:text-slate-400 font-bold text-sm">{qIndex + 1} / {questions.length}</span>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                <div
-                                    className="h-2 rounded-full bg-indigo-500 transition-all duration-500"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
+            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden relative">
+                <style>{`@keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}`}</style>
+
+                {xpPopup.show && (
+                    <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[999]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '120px' }}>
+                        <div className="px-7 py-3 rounded-full font-extrabold text-h3 shadow-2xl" style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433' }}>
+                            ⭐ +{xpPopup.amount} XP
                         </div>
-                        <div className="w-[60px]" />
+                    </div>
+                )}
+                {/* 헤더 */}
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
+                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                        <button onClick={() => setPhase('intro')}
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
+                            <span>←</span><span className="ml-1">뒤로</span>
+                        </button>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <h2 className="text-lg font-black text-slate-700 m-0">레벨 테스트</h2>
+                            <span className="text-[#7C83FF] opacity-60 text-sm font-bold whitespace-nowrap">{qIndex + 1}/{questions.length}</span>
+                        </div>
+                    </div>
+                    <div className="w-full h-[3px] bg-[#F4F7F8] rounded-full overflow-hidden mt-3 px-2 mx-auto max-w-[90%]">
+                        <div
+                            className="h-full transition-all duration-500 rounded-full bg-[#7C83FF]"
+                            style={{ width: `${progress}%` }}
+                        />
                     </div>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 overflow-y-auto">
                     <div className="clay-panel rounded-[3rem] p-8 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-4 text-center max-w-sm w-full">
-                        <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">{q.prompt}</p>
-                        <div className={`flex items-center justify-center ${isHanjaDisplay ? 'text-7xl font-black text-slate-800 dark:text-white' : 'text-2xl font-black text-indigo-600 dark:text-indigo-300'}`}>
+                        <p className="text-[#5B677A] dark:text-[#AEB7C5] font-bold text-sm">{q.prompt}</p>
+                        <div className={`flex items-center justify-center ${isHanjaDisplay ? 'text-display-res font-extrabold text-[#3C3C3C] dark:text-white' : 'text-h3-res font-extrabold text-[#4A51D4] dark:text-[#7C83FF]'}`}>
                             {q.hanja}
                         </div>
                     </div>
@@ -267,7 +337,7 @@ const LevelTestScreen = ({ onBack }) => {
                         {q.choices.map((choice, ci) => {
                             let bgClass = 'bg-white dark:bg-slate-800 border-white';
                             if (revealed) {
-                                if (choice === q.answer) bgClass = 'bg-emerald-100 dark:bg-emerald-900/50 border-emerald-400';
+                                if (choice === q.answer) bgClass = 'bg-[#FF9B73]/15 dark:bg-[#FF9B73]/20/50 border-[#FF9B73]';
                                 else if (choice === selected) bgClass = 'bg-red-100 dark:bg-red-900/50 border-red-400';
                             }
                             return (
@@ -285,7 +355,7 @@ const LevelTestScreen = ({ onBack }) => {
                     {revealed && (
                         <button
                             onClick={handleNext}
-                            className="px-12 py-4 rounded-[2rem] bg-indigo-500 text-white font-black text-lg shadow-xl active:scale-95 transition-all"
+                            className="px-12 py-4 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-lg shadow-xl active:scale-95 transition-all"
                         >
                             {qIndex + 1 >= questions.length ? '결과 보기' : '다음 →'}
                         </button>
@@ -297,44 +367,66 @@ const LevelTestScreen = ({ onBack }) => {
 
     // Result phase
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
-            <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6">
-                <div className="text-7xl">{passed ? '🎉' : '💪'}</div>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={handleFinish} />
+            
+            <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
+                <div className="pt-1 pb-1 px-8 flex flex-col items-center gap-2 w-full relative">
+                    
+                    {/* 상단 장식 아이콘 제거됨 */}
 
-                <div className="clay-panel rounded-[3rem] p-8 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-5 text-center max-w-sm w-full">
-                    <h2 className="text-3xl font-black text-slate-700 dark:text-white">
-                        {passed ? '통과!' : '아쉬워요'}
-                    </h2>
-                    <div className="flex items-center gap-3">
-                        <span className="text-5xl font-black text-indigo-600 dark:text-indigo-300">{correctCount}</span>
-                        <span className="text-slate-400 font-bold text-2xl">/ {questions.length}</span>
+                    {/* 메인 비주얼 */}
+                    <img 
+                        src={getCharacterImage(selectedCharacter, passed ? 'success' : 'failure')} 
+                        alt="result" 
+                        className="w-52 h-52 object-contain drop-shadow-xl mt-4" 
+                    />
+
+                    {/* 텍스트 정보 */}
+                    <div className="text-center flex flex-col gap-2">
+                        <span className="text-xs-res font-extrabold text-[#AEB7C5] uppercase tracking-widest">
+                            {passed ? '정말 대단해요! 레벨 테스트 통과!' : '아쉽지만 다시 도전해볼까요?'}
+                        </span>
+                        <h1 className="text-h1 font-black tracking-tighter" style={{ color: passed ? '#FF9B73' : '#64748B' }}>
+                            {correctCount} / {questions.length} 맞춤!
+                        </h1>
+                        
+                        {/* 획득 경험치 표시 */}
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                            <div className="px-6 py-2 rounded-full bg-[#FFB433]/10 border-2 border-[#FFB433]/15 flex items-center gap-2 shadow-sm">
+                                <span className="text-xl">⭐</span>
+                                <span className="text-body-lg font-black text-[#FFB433]">+{correctCount * 10} XP 획득</span>
+                            </div>
+                        </div>
+
+                        <p className="text-xs-res font-bold text-[#AEB7C5] leading-relaxed break-keep mt-3">
+                            {passed
+                                ? `축하해요! 뭉치 학습지 2개가 추가로 해금됩니다 🔓`
+                                : `${PASS_THRESHOLD}문제 이상 맞혀야 통과예요. 더 공부하고 다시 도전해 보세요!`
+                            }
+                        </p>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm leading-relaxed">
-                        {passed
-                            ? `축하해요! 뭉치 학습지 2개가 추가로 해금됩니다 🔓`
-                            : `${PASS_THRESHOLD}문제 이상 맞혀야 통과예요. 뭉치 학습지를 더 공부하고 다시 도전해 보세요!`
-                        }
-                    </p>
 
-                    {/* Per-question result summary */}
-                    <div className="flex gap-1 flex-wrap justify-center">
+                    {/* 문항별 결과 점 찍기 */}
+                    <div className="flex gap-1.5 flex-wrap justify-center py-2">
                         {questions.map((q, i) => (
-                            <span
+                            <div
                                 key={q.id}
-                                className={`text-lg ${answers[q.id] ? 'text-emerald-500' : 'text-red-400'}`}
-                            >
-                                {answers[q.id] ? '○' : '✕'}
-                            </span>
+                                className={`w-3 h-3 rounded-full ${answers[q.id] ? 'bg-[#FF9B73] shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-slate-200'}`}
+                            />
                         ))}
                     </div>
-                </div>
 
-                <button
-                    onClick={handleFinish}
-                    className="px-12 py-4 rounded-[2rem] bg-indigo-500 text-white font-black text-lg shadow-xl active:scale-95 transition-all"
-                >
-                    {passed ? '해금하고 돌아가기 🎉' : '돌아가기'}
-                </button>
+                    {/* 하단 버튼 */}
+                    <div className="w-full flex flex-col gap-3 mt-4">
+                        <button
+                            onClick={handleFinish}
+                            className="w-full py-5 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-body-lg shadow-xl shadow-[#C3C6FF] active:scale-95 transition-all border-b-4 border-[#4A51D4]"
+                        >
+                            {passed ? '해금하고 돌아가기 🎉' : '돌아가기'}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

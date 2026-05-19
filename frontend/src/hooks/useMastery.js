@@ -60,12 +60,17 @@ export const useMastery = () => {
     const markCorrect = useCallback((hanjaId) => {
         const id = String(hanjaId);
         setMastery(prev => {
-            const current = prev[id] || { level: 0, streak: 0 };
+            const current = prev[id] || { level: 0, streak: 0, wrongCount: 0 };
             const newStreak = current.streak + 1;
             const newLevel = newStreak >= 3 ? 2 : Math.max(current.level, 1);
             return {
                 ...prev,
-                [id]: { level: newLevel, streak: newStreak, lastSeen: new Date().toISOString() }
+                [id]: {
+                    level: newLevel,
+                    streak: newStreak,
+                    lastSeen: new Date().toISOString(),
+                    wrongCount: newStreak >= 2 ? 0 : (current.wrongCount || 0),
+                }
             };
         });
     }, []);
@@ -84,7 +89,7 @@ export const useMastery = () => {
                     level: Math.max(0, current.level - 1), // 레벨 하락
                     streak: 0, // 연속 초기화
                     lastSeen: new Date().toISOString(),
-                    wrongCount: (current.wrongCount || 0) + 1,
+                    wrongCount: Math.min((current.wrongCount || 0) + 1, 10),
                     lastWrong: new Date().toISOString()
                 }
             };
@@ -119,11 +124,21 @@ export const useMastery = () => {
         return m ? m.level : null;
     }, [mastery]);
 
+    const clearWrong = useCallback((hanjaId) => {
+        const id = String(hanjaId);
+        setMastery(prev => {
+            const current = prev[id];
+            if (!current || !current.wrongCount) return prev;
+            return { ...prev, [id]: { ...current, wrongCount: 0 } };
+        });
+    }, []);
+
     return {
         mastery,
         markSeen,
         markCorrect,
         markWrong,
+        clearWrong,
         getStats,
         getMasteryLevel,
     };

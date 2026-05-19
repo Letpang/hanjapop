@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>한자 탐험기</title>
 
-    <!-- SUIT 폰트 (ExtraBold 800) -->
+    <!-- GmarketSans (한국어 메인 폰트) -->
+    <link href="https://webfontworld.github.io/gmarket/GmarketSans.css" rel="stylesheet">
+    <!-- Outfit (영문 메인 폰트) -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- SUIT (한국어 fallback) -->
     <link href="https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/static/woff2/SUIT.css" rel="stylesheet">
-    <!-- Nunito (영문 둥근 폰트) -->
+    <!-- Ma Shan Zheng (서예체 한자) -->
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <!-- Nunito (영문 fallback) -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
     <!-- 나눔명조 (쓰기 가이드용) -->
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet">
@@ -15,6 +21,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontSize: {
+              'display': 'var(--text-display)',
+              'h1':      'var(--text-h1)',
+              'h2':      'var(--text-h2)',
+              'h3':      'var(--text-h3)',
+              'body-lg': 'var(--text-body-lg)',
+              'body':    'var(--text-body)',
+              'sm-res':  'var(--text-sm)',
+              'xs-res':  'var(--text-xs)',
+            },
+            lineHeight: {
+              'standard': 'var(--line-height-standard)',
+            }
+          }
+        }
+      }
+    </script>
     <!-- Hanzi Writer (획순 가이드용) -->
     <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
   </head>

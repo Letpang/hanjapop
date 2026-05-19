@@ -4,7 +4,7 @@
 
 export const IconMiniBadge = () => (
     <svg width="26" height="26" viewBox="0 0 100 100" className="inline-block mr-2 drop-shadow-sm transition-transform duration-300 hover:scale-110">
-        <polygon points="50,10 61,35 88,35 68,52 75,78 50,62 25,78 32,52 12,35 39,35" fill="#FFD700" stroke="#FFB300" strokeWidth="4" strokeLinejoin="round"/>
+        <polygon points="50,10 61,35 88,35 68,52 75,78 50,62 25,78 32,52 12,35 39,35" fill="#FFB433" stroke="#E09B2A" strokeWidth="4" strokeLinejoin="round"/>
     </svg>
 );
 
@@ -153,16 +153,16 @@ export const IconRocketNeon = () => (
         <path d="M50 10 C 60 30, 70 50, 70 70 L 30 70 C 30 50, 40 30, 50 10 Z" fill="none" stroke="#C7D2FE" strokeWidth="5" strokeLinejoin="round"/>
         <path d="M30 70 L 20 90 L 40 80 M 70 70 L 80 90 L 60 80" fill="none" stroke="#A5B4FC" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
         <circle cx="50" cy="45" r="10" fill="none" stroke="#818CF8" strokeWidth="5"/>
-        <path d="M40 80 L 50 95 L 60 80" fill="none" stroke="#FCD34D" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M40 80 L 50 95 L 60 80" fill="none" stroke="#FFB433" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
 );
 export const IconTrophyBig = () => (
     <svg width="120" height="120" viewBox="0 0 100 100" className="drop-shadow-[0_0_20px_rgba(250,204,21,0.6)]">
         <path d="M20 25 L80 25 Q90 25, 85 40 L70 70 Q60 85, 50 85 Q40 85, 30 70 L15 40 Q10 25, 20 25 Z" fill="none" stroke="#FDE047" strokeWidth="4" strokeLinejoin="round"/>
-        <path d="M25 35 C 5 35, 5 55, 20 55 C 25 55, 25 45, 25 45" stroke="#FBBF24" strokeWidth="4" fill="none" strokeLinecap="round"/>
-        <path d="M75 35 C 95 35, 95 55, 80 55 C 75 55, 75 45, 75 45" stroke="#FBBF24" strokeWidth="4" fill="none" strokeLinecap="round"/>
-        <line x1="50" y1="85" x2="50" y2="100" stroke="#F59E0B" strokeWidth="4"/>
-        <line x1="30" y1="100" x2="70" y2="100" stroke="#D97706" strokeWidth="6" strokeLinecap="round"/>
+        <path d="M25 35 C 5 35, 5 55, 20 55 C 25 55, 25 45, 25 45" stroke="#FFB433" strokeWidth="4" fill="none" strokeLinecap="round"/>
+        <path d="M75 35 C 95 35, 95 55, 80 55 C 75 55, 75 45, 75 45" stroke="#FFB433" strokeWidth="4" fill="none" strokeLinecap="round"/>
+        <line x1="50" y1="85" x2="50" y2="100" stroke="#FFB433" strokeWidth="4"/>
+        <line x1="30" y1="100" x2="70" y2="100" stroke="#CC8B00" strokeWidth="6" strokeLinecap="round"/>
     </svg>
 );
 export const IconExplosionBig = () => (
@@ -176,7 +176,7 @@ export const IconExplosionBig = () => (
 export const IconStrokeOrder = ({ className = "" }) => (
     <svg viewBox="0 0 100 100" className={className}>
         {/* 연필 본체 */}
-        <path d="M 20 80 L 15 85 L 30 75 L 75 30 Q 85 20 70 10 L 25 55 Z" fill="#6366F1" stroke="#ffffff" strokeWidth="4" />
+        <path d="M 20 80 L 15 85 L 30 75 L 75 30 Q 85 20 70 10 L 25 55 Z" fill="#7C83FF" stroke="#ffffff" strokeWidth="4" />
         {/* 연필 심 */}
         <path d="M 15 85 L 20 80 L 25 82 Z" fill="#334155" />
         {/* 장식 선 */}

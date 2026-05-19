@@ -4,8 +4,8 @@ const CHARACTERS = [
     {
         id: 'garae',
         name: '가래뭉치',
-        image: '/assets/images/characters/mungchi/garae/rank_1.webp',
-        finalImage: '/assets/images/characters/mungchi/garae/rank_5.webp',
+        image: '/assets/images/characters/garae/rank_1.webp',
+        finalImage: '/assets/images/characters/garae/rank_5.webp',
         color: '#FF9EBB',
         glow: 'rgba(255,107,157,0.55)',
         desc: '용감하고 명랑해요 — 언제나 제일 먼저 손을 들어요! 🍡',
@@ -15,8 +15,8 @@ const CHARACTERS = [
     {
         id: 'jeolmi',
         name: '절미뭉치',
-        image: '/assets/images/characters/mungchi/jeolmi/rank_1.webp',
-        finalImage: '/assets/images/characters/mungchi/jeolmi/rank_5.webp',
+        image: '/assets/images/characters/jeolmi/rank_1.webp',
+        finalImage: '/assets/images/characters/jeolmi/rank_5.webp',
         color: '#FFDAC1',
         glow: 'rgba(255,160,80,0.55)',
         desc: '다정하고 호기심이 많아요 — 반짝이는 스티커를 좋아해요! 🌸',
@@ -26,13 +26,24 @@ const CHARACTERS = [
     {
         id: 'chapssal',
         name: '찹쌀뭉치',
-        image: '/assets/images/characters/mungchi/chapssal/rank_1.webp',
-        finalImage: '/assets/images/characters/mungchi/chapssal/rank_5.webp',
+        image: '/assets/images/characters/chapssal/rank_1.webp',
+        finalImage: '/assets/images/characters/chapssal/rank_5.webp',
         color: '#CAFFBF',
         glow: 'rgba(100,200,80,0.55)',
         desc: '목표를 세우면 멈추지 않아요! 🌿',
         imageScale: 1.45,
         translateY: '10px'
+    },
+    {
+        id: 'muzi',
+        name: '무지뭉치',
+        image: '/assets/images/characters/muzi/rank_1.webp',
+        finalImage: '/assets/images/characters/muzi/rank_5.webp',
+        color: '#E0BBE4',
+        glow: 'rgba(180,120,200,0.55)',
+        desc: '무지개처럼 다양한 매력을 가졌어요! 🌈',
+        imageScale: 1.1,
+        translateY: '15px'
     },
 ];
 
@@ -47,9 +58,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
 
     const handleConfirm = () => {
         const actualNick = nicknameRef.current ? nicknameRef.current.value.trim() : nickname.trim();
-        console.log('[CharacterSelection] handleConfirm:', { selected, actualNick });
         if (selected && actualNick.length > 0) {
-            console.log('[CharacterSelection] calling onSelect');
             onSelect(selected, actualNick);
         }
     };
@@ -60,23 +69,24 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
     };
 
     return (
-        <div className="fixed inset-0 w-full z-[100] aesthetic-space-bg bg-[#f6edff] overflow-y-auto">
-            <div className="w-full min-h-full flex flex-col items-center justify-center gap-4 md:gap-12 relative z-50 px-4 pt-10 pb-8 md:pt-14 md:pb-10 md:px-10 max-w-4xl mx-auto">
-                {/* Back Button */}
-                {onBack && (
-                    <button
-                        onClick={onBack}
-                        className="absolute top-4 left-4 md:top-8 md:left-8 clay-button px-4 py-2.5 rounded-2xl flex items-center gap-2 text-slate-600 dark:text-slate-300 font-black active:scale-95 z-[60]"
-                    >
-                        <span className="text-lg">←</span>
-                        <span className="text-sm">뒤로</span>
-                    </button>
-                )}
+        <div className="fixed inset-0 w-full z-[100] bg-[#F7FAF9] overflow-y-auto">
+            <div className="w-full min-h-full flex flex-col items-center justify-center gap-6 md:gap-10 relative z-50 px-4 pt-10 pb-8 md:px-10 max-w-5xl mx-auto">
+                {/* 헤더 */}
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
+                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                        {onBack && (
+                            <button onClick={onBack}
+                                className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
+                                <span>←</span><span className="ml-1">뒤로</span>
+                            </button>
+                        )}
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <h2 className="text-lg font-black text-slate-700 m-0">캐릭터 선택</h2>
+                        </div>
+                        <div className="w-[60px]" />
+                    </div>
+                </div>
 
-                {/* Title */}
-                <h2 className="text-2xl md:text-5xl font-extrabold text-slate-800 dark:text-slate-200 premium-text-shadow text-center leading-tight shrink-0 tracking-tight mb-2">
-                    함께할 파트너를 선택하세요! ✨
-                </h2>
 
                 {/* 닉네임 입력 */}
                 <div className="w-full max-w-xs md:max-w-sm shrink-0">
@@ -86,78 +96,65 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value.slice(0, 10))}
                         onKeyDown={handleNicknameKeyDown}
-                        placeholder="나의 이름을 입력하세요 (최대 10자)"
+                        placeholder="NAME YOUR CHARACTER"
                         maxLength={10}
-                        className="w-full rounded-2xl border-4 border-white bg-white/90 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-center text-base md:text-lg px-4 py-3 shadow-md focus:outline-none focus:border-indigo-400 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                        className="w-full rounded-full border border-[#E9EDF2] bg-white text-[#5D544F] font-medium text-center text-lg px-6 py-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#C3C6FF] transition-all placeholder:text-[#AEB7C5]"
                     />
                 </div>
 
                 {/* Cards row */}
-                <div className="grid grid-cols-3 gap-3 md:gap-8 w-full items-center py-2 md:py-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 w-full items-center">
+
                     {CHARACTERS.map((char) => {
                         const isSelected = selected === char.id;
                         return (
                             <button
                                 key={char.id}
                                 onClick={() => { setSelected(char.id); setTimeout(() => nicknameRef.current?.focus(), 50); }}
-                                className="group relative flex flex-col items-center justify-center rounded-[2rem] md:rounded-[3rem] transition-all duration-300 active:scale-95 focus:outline-none h-fit"
-                                style={{
-                                    padding: 'clamp(20px, 5vw, 40px) clamp(8px, 2vw, 24px)',
-                                    backgroundColor: isSelected ? char.color + '28' : 'rgba(255,255,255,0.85)',
-                                    border: isSelected ? `4px solid ${char.color}` : '4px solid rgba(255,255,255,0.9)',
-                                    boxShadow: isSelected
-                                        ? `0 0 0 4px ${char.glow}, 0 20px 50px ${char.glow}, 0 8px 20px rgba(0,0,0,0.15)`
-                                        : '0 8px 24px rgba(0,0,0,0.10)',
-                                    transform: isSelected ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
-                                    minHeight: 'clamp(280px, 60vh, 500px)'
-                                }}
+                                className={`group relative flex flex-col items-center justify-center rounded-[3rem] transition-all duration-500 active:scale-95 focus:outline-none h-[380px] md:h-[450px] p-8 border ${
+                                    isSelected 
+                                        ? "bg-white border-[#7C83FF] shadow-2xl shadow-[#C3C6FF]/50 scale-[1.02]" 
+                                        : "bg-white/50 border-[#E9EDF2] hover:bg-white hover:border-[#E9EDF2] shadow-sm"
+                                }`}
                             >
                                 {/* Selected badge */}
                                 {isSelected && (
                                     <div
-                                        className="absolute -top-3 -right-3 md:-top-4 md:-right-4 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center font-black text-slate-700 text-sm md:text-lg z-20 border-[3px] border-white shadow-xl"
-                                        style={{ backgroundColor: char.color }}
+                                        className="absolute -top-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-white text-lg z-20 border-4 border-white shadow-xl bg-[#7C83FF] animate-in zoom-in duration-300"
                                     >✓</div>
                                 )}
 
                                 {/* 쌀알(아기형) 원형 프레임 */}
-                                <div className="flex items-center justify-center z-20 mb-2 md:mb-4">
-                                    <div
-                                        className="rounded-full border-[3px] md:border-4 border-white dark:border-slate-700 bg-white/90 dark:bg-slate-800 shadow-md overflow-hidden"
-                                        style={{
-                                            width: 'clamp(36px, 9vw, 64px)',
-                                            height: 'clamp(36px, 9vw, 64px)',
-                                        }}
-                                    >
+                                <div className="flex items-center justify-center z-20 mb-4">
+                                    <div className="w-14 h-14 rounded-full border border-[#E9EDF2] bg-[#F8FAF9] flex items-center justify-center overflow-hidden">
                                         <img
                                             src={char.image}
                                             alt="starter"
-                                            className="w-full h-full object-contain p-1"
+                                            className="w-full h-full object-contain p-1.5"
                                             style={{ transform: `scale(${char.imageScale})` }}
                                         />
                                     </div>
                                 </div>
 
                                 {/* 완성체 메인 이미지 */}
-                                <div className="relative w-full flex items-center justify-center" style={{ height: 'clamp(140px, 28vw, 280px)' }}>
+                                <div className="relative w-full flex-1 flex items-center justify-center">
                                     <img
                                         src={char.finalImage}
                                         alt={char.name}
-                                        className={`object-contain drop-shadow-xl transition-transform duration-300 group-hover:scale-105`}
-                                        style={{ width: '100%', height: '100%', transform: `translateY(${char.translateY})` }}
+                                        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 drop-shadow-sm"
+                                        style={{ transform: `translateY(${char.translateY})` }}
                                     />
                                 </div>
 
                                 {/* Name */}
-                                <div className="mt-2 md:mt-4 flex flex-col items-center gap-2 w-full">
-                                    <span
-                                        className="font-black text-slate-800 dark:text-slate-200 text-center leading-tight tracking-tight break-keep"
-                                        style={{ fontSize: 'clamp(10px, 3vw, 20px)' }}
-                                    >
+                                <div className="mt-4 flex flex-col items-center gap-2 w-full">
+                                    <span className="font-extrabold text-[#5D544F] text-lg tracking-tight uppercase text-center break-keep">
                                         {char.name}
                                     </span>
                                     {/* Color bar */}
-                                    <div className="w-12 md:w-16 h-1.5 md:h-2 rounded-full" style={{ backgroundColor: char.color }} />
+                                    <div className="w-10 h-1 rounded-full bg-[#F4F7F8] overflow-hidden">
+                                        <div className="h-full w-full" style={{ backgroundColor: char.color }} />
+                                    </div>
                                 </div>
                             </button>
                         );
@@ -165,14 +162,14 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                 </div>
 
                 {/* Mobile desc */}
-                <div className="h-16 flex items-center justify-center shrink-0">
+                <div className="h-12 flex items-center justify-center shrink-0">
                     {selectedChar ? (
-                        <p className="text-sm md:text-lg font-bold text-slate-600 dark:text-slate-300 text-center px-4 animate-in fade-in slide-in-from-bottom-2 duration-300 break-keep">
+                        <p className="text-sm md:text-base font-bold text-[#AEB7C5] text-center px-4 animate-in fade-in slide-in-from-bottom-2 duration-300 break-keep">
                             {selectedChar.desc}
                         </p>
                     ) : (
-                        <p className="text-sm md:text-lg font-bold text-slate-400 dark:text-slate-500 text-center px-4">
-                            가장 마음에 드는 뭉치를 골라보세요!
+                        <p className="text-sm md:text-base font-bold text-[#AEB7C5] text-center px-4 tracking-tight uppercase">
+                            Pick Your Partner to Begin
                         </p>
                     )}
                 </div>
@@ -181,21 +178,11 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                 <button
                     onClick={handleConfirm}
                     disabled={!canConfirm}
-                    className="shrink-0 w-full max-w-xs md:max-w-md font-black text-lg md:text-2xl rounded-[2rem] border-4 border-white shadow-2xl transition-all duration-300"
-                    style={{
-                        padding: 'clamp(16px, 3.5vw, 28px) 24px',
-                        backgroundColor: canConfirm ? selectedChar.color : '#e2e8f0',
-                        color: canConfirm ? '#1e293b' : '#94a3b8',
-                        boxShadow: canConfirm
-                            ? `0 8px 0 rgba(0,0,0,0.18), 0 16px 40px ${selectedChar.glow}`
-                            : 'none',
-                        transform: canConfirm ? 'translateY(0)' : 'none',
-                        cursor: canConfirm ? 'pointer' : 'not-allowed',
-                    }}
+                    className={`pill-button-primary w-full max-w-sm py-5 text-xl transition-all duration-500 ${!canConfirm ? "!bg-[#F4F7F8] !text-[#AEB7C5] !cursor-not-allowed shadow-none border-none" : ""}`}
                 >
                     {canConfirm
-                        ? `✨ ${nickname.trim()}의 파트너, ${selectedChar.name}!`
-                        : selected ? '이름을 입력해주세요' : '파트너를 선택해주세요'}
+                        ? `START WITH ${nickname.trim()} & ${selectedChar.name}! ✨`
+                        : selected ? 'PLEASE ENTER YOUR NAME' : 'PLEASE SELECT A PARTNER'}
                 </button>
             </div>
         </div>

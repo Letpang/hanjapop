@@ -1,21 +1,32 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import MainMenuRenewal from './components/MainMenuRenewal.jsx';
+import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
+import HANJA_DATA from './hanja_unified.json';
+import { allocateTodayWords, expandWrongToTen } from './utils/learningPool.js';
+import MainMenu from './components/MainMenuRenewal.jsx';
 import OnboardingScreen from './components/OnboardingScreen.jsx';
-import FlashcardScreen from './components/FlashcardScreen.jsx';
-import WritingScreen from './components/WritingScreen.jsx';
-import MatchGameScreen from './components/MatchGameScreen.jsx';
-import ShootGameScreen from './components/ShootGameScreen.jsx';
-import StickerBookScreen from './components/StickerBookScreen.jsx';
-import ReviewScreen from './components/ReviewScreen.jsx';
-import SentenceQuizScreen from './components/SentenceQuizScreen.jsx';
-import WordQuizScreen from './components/WordQuizScreen.jsx';
-import CombinedQuizScreen from './components/CombinedQuizScreen.jsx';
-import LevelTestScreen from './components/LevelTestScreen.jsx';
-import RankingsScreen from './components/RankingsScreen.jsx';
-import CharacterSelectionScreen from './components/CharacterSelectionScreen.jsx';
-import CharacterProfileScreen from './components/CharacterProfileScreen.jsx';
 import CharacterToast from './components/CharacterToast.jsx';
+import DailySessionScreen from './components/DailySessionScreen.jsx';
+import { isSessionDoneToday } from './utils/sessionUtils.js';
 import { LangProvider } from './LangContext.jsx';
+import { SK } from './constants/storageKeys.js';
+import { updateRecord } from './utils/recordUtils.js';
+
+const FlashcardScreen        = lazy(() => import('./components/FlashcardScreen.jsx'));
+const WritingScreen          = lazy(() => import('./components/WritingScreen.jsx'));
+const MatchGameScreen        = lazy(() => import('./components/MatchGameScreen.jsx'));
+const ShootGameScreen        = lazy(() => import('./components/ShootGameScreen.jsx'));
+const StickerBookScreen      = lazy(() => import('./components/StickerBookScreen.jsx'));
+const ReviewScreen           = lazy(() => import('./components/ReviewScreen.jsx'));
+const SentenceQuizScreen     = lazy(() => import('./components/SentenceQuizScreen.jsx'));
+const WordQuizScreen         = lazy(() => import('./components/WordQuizScreen.jsx'));
+const LevelTestScreen        = lazy(() => import('./components/LevelTestScreen.jsx'));
+const RankingsScreen         = lazy(() => import('./components/RankingsScreen.jsx'));
+const MyPageScreen           = lazy(() => import('./components/MyPageScreen.jsx'));
+const SettingsScreen         = lazy(() => import('./components/SettingsScreen.jsx'));
+const CharacterSelectionScreen = lazy(() => import('./components/CharacterSelectionScreen.jsx'));
+const GradeTestScreen          = lazy(() => import('./components/GradeTestScreen.jsx'));
+const GradeTest72Screen        = lazy(() => import('./components/GradeTest72Screen.jsx'));
+const GradeTest7Screen         = lazy(() => import('./components/GradeTest7Screen.jsx'));
+const GradeTest62Screen        = lazy(() => import('./components/GradeTest62Screen.jsx'));
 import { getLevel } from './utils/rankUtils.js';
 import { useAdMob } from './hooks/useAdMob.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
@@ -24,44 +35,47 @@ import { useMastery } from './hooks/useMastery.js';
 import { useTotalStats } from './hooks/useTotalStats.js';
 import { useSRS } from './hooks/useSRS.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
+import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
+import { useWordMastery } from './hooks/useWordMastery.js';
 
 const App = () => {
     // 온보딩 완료 여부
     const [onboardingDone, setOnboardingDone] = useState(() => {
-        try { return localStorage.getItem('onboarding_done') === 'true'; } catch(e) { return false; }
+        try { return localStorage.getItem(SK.ONBOARDING_DONE) === 'true'; } catch(e) { return false; }
     });
     const [currentScreen, setCurrentScreen] = useState('main');
     // 한자 카드에서 쓰기로 직접 진입할 때 사용
     const [writeTargetHanja, setWriteTargetHanja] = useState(null);
     const [userXp, setUserXp] = useState(() => {
-        try { return Number(localStorage.getItem('user_xp')) || 0; } catch(e) { return 0; }
+        try { return Number(localStorage.getItem(SK.USER_XP)) || 0; } catch(e) { return 0; }
     });
     const [unlockedStickers, setUnlockedStickers] = useState(() => {
         try {
-            const saved = localStorage.getItem('unlocked_stickers');
+            const saved = localStorage.getItem(SK.UNLOCKED_STICKERS);
             return saved ? JSON.parse(saved) : {};
         } catch(e) { return {}; }
     });
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        try { return localStorage.getItem('dark_mode') === 'true'; } catch(e) { return false; }
+        try { return localStorage.getItem(SK.DARK_MODE) === 'true'; } catch(e) { return false; }
     });
     const [selectedCharacter, setSelectedCharacter] = useState(() => {
         try {
-            const saved = localStorage.getItem('selected_character');
-            const VALID = ['garae', 'jeolmi', 'chapssal'];
+            const saved = localStorage.getItem(SK.SELECTED_CHARACTER);
+            const VALID = ['garae', 'jeolmi', 'chapssal', 'muzi'];
             return VALID.includes(saved) ? saved : null;
         } catch(e) { return null; }
     });
     const [userNickname, setUserNickname] = useState(() => {
-        try { return localStorage.getItem('user_nickname') || ''; } catch(e) { return ''; }
+        try { return localStorage.getItem(SK.USER_NICKNAME) || ''; } catch(e) { return ''; }
     });
+    const [sessionDoneToday, setSessionDoneToday] = useState(() => isSessionDoneToday());
 
     // Persistence
-    useEffect(() => { localStorage.setItem('user_xp', userXp); }, [userXp]);
-    useEffect(() => { localStorage.setItem('unlocked_stickers', JSON.stringify(unlockedStickers)); }, [unlockedStickers]);
-    useEffect(() => { localStorage.setItem('dark_mode', isDarkMode); }, [isDarkMode]);
-    useEffect(() => { if (selectedCharacter) localStorage.setItem('selected_character', selectedCharacter); }, [selectedCharacter]);
-    useEffect(() => { if (userNickname) localStorage.setItem('user_nickname', userNickname); }, [userNickname]);
+    useEffect(() => { localStorage.setItem(SK.USER_XP, userXp); }, [userXp]);
+    useEffect(() => { localStorage.setItem(SK.UNLOCKED_STICKERS, JSON.stringify(unlockedStickers)); }, [unlockedStickers]);
+    useEffect(() => { localStorage.setItem(SK.DARK_MODE, isDarkMode); }, [isDarkMode]);
+    useEffect(() => { if (selectedCharacter) localStorage.setItem(SK.SELECTED_CHARACTER, selectedCharacter); }, [selectedCharacter]);
+    useEffect(() => { if (userNickname) localStorage.setItem(SK.USER_NICKNAME, userNickname); }, [userNickname]);
 
     // Wake Lock for learning sessions
     useEffect(() => {
@@ -89,7 +103,7 @@ const App = () => {
     // 오늘 활동 통계 (CoachCard용)
     const [todayStats, setTodayStats] = useState(() => {
         try {
-            const saved = localStorage.getItem('today_stats');
+            const saved = localStorage.getItem(SK.TODAY_STATS);
             const today = new Date().toDateString();
             const parsed = saved ? JSON.parse(saved) : null;
             if (parsed && parsed.date === today) return parsed;
@@ -99,13 +113,31 @@ const App = () => {
     const addTodayStat = useCallback((type) => {
         setTodayStats(prev => {
             const updated = { ...prev, [type]: (prev[type] || 0) + 1 };
-            localStorage.setItem('today_stats', JSON.stringify(updated));
+            localStorage.setItem(SK.TODAY_STATS, JSON.stringify(updated));
             return updated;
         });
     }, []);
-    const { mastery, markSeen, markCorrect, markWrong, getStats, getMasteryLevel } = useMastery();
+    const { mastery, markSeen, markCorrect, markWrong, clearWrong, getStats, getMasteryLevel } = useMastery();
+    const { wordWrong, markWordWrong, clearWordWrongByHanjaId, getWrongWordHanjaIds } = useWordMastery();
     const { totalStats, increment } = useTotalStats();
     const { srsData, markCorrect: srsMarkCorrect, markWrong: srsMarkWrong, getDueItems, getWeightedPool, getStats: getSrsStats } = useSRS();
+    const { currentDay, currentDayData, clearedHanjaIds, advanceDay } = useCurriculumProgress();
+    const currentDayHanjaIds = useMemo(
+        () => (currentDayData?.hanja || []).map(h => h.id).filter(Boolean),
+        [currentDayData]
+    );
+
+    // 오늘 단어를 단어퀴즈(7개)·문장퀴즈(나머지)로 하루 1회 분배
+    const [todayWordAllocation, setTodayWordAllocation] = useState(() =>
+        allocateTodayWords(HANJA_DATA, [])
+    );
+    const allocatedDayRef = useRef(-1);
+    useEffect(() => {
+        if (allocatedDayRef.current === currentDay || currentDayHanjaIds.length === 0) return;
+        allocatedDayRef.current = currentDay;
+        setTodayWordAllocation(allocateTodayWords(HANJA_DATA, currentDayHanjaIds));
+    }, [currentDay, currentDayHanjaIds]);
+
     const { syncStatus, leaderboard, myRank, syncToCloud } = useCloudSync({
         userXp, userNickname, selectedCharacter, streak,
         mastery, srsData, totalStats, unlockedStickers,
@@ -124,50 +156,62 @@ const App = () => {
     // ── 여정 시스템 ──────────────────────────────────────────────────────────
     const [isTodayStudyDone, setIsTodayStudyDone] = useState(() => {
         try {
-            const s = JSON.parse(localStorage.getItem('journey_state') || '{}');
+            const s = JSON.parse(localStorage.getItem(SK.JOURNEY_STATE) || '{}');
             return s.date === new Date().toDateString() && !!s.studyDone;
         } catch { return false; }
     });
     const [isDailyQuizDone, setIsDailyQuizDone] = useState(() => {
         try {
-            const s = JSON.parse(localStorage.getItem('journey_state') || '{}');
+            const s = JSON.parse(localStorage.getItem(SK.JOURNEY_STATE) || '{}');
             return s.date === new Date().toDateString() && !!s.quizDone;
         } catch { return false; }
     });
     const [xpBuffExpiresAt, setXpBuffExpiresAt] = useState(() => {
-        try { return Number(localStorage.getItem('xp_buff_expires') || '0'); } catch { return 0; }
+        try { return Number(localStorage.getItem(SK.XP_BUFF_EXPIRES) || '0'); } catch { return 0; }
     });
     const saveJourneyState = (studyDone, quizDone) => {
-        localStorage.setItem('journey_state', JSON.stringify({ date: new Date().toDateString(), studyDone, quizDone }));
+        localStorage.setItem(SK.JOURNEY_STATE, JSON.stringify({ date: new Date().toDateString(), studyDone, quizDone }));
     };
 
     // 캐릭터 토스트 메시지
     const [charToast, setCharToast] = useState(null);
-    const reviewToastShownRef = useRef(false);
     const missionToastShownRef = useRef(false);
+    const reviewEntryXpRef = useRef(false);
 
-    // 앱 오픈 시: 틀린 한자 10개 이상이면 복습 토스트
+    // 메인화면 진입할 때마다 오답 5개 이상이면 복습 토스트
     useEffect(() => {
-        if (!selectedCharacter || reviewToastShownRef.current) return;
-        const totalWrong = Object.values(mastery).reduce((sum, m) => sum + (m.wrongCount || 0), 0);
-        if (totalWrong >= 10) {
-            reviewToastShownRef.current = true;
-            setTimeout(() => setCharToast('review_reminder'), 1500);
+        if (currentScreen !== 'main' || !selectedCharacter) return;
+        const hanjaWrongCount = Object.values(mastery).filter(m => (m.wrongCount || 0) > 0).length;
+        const wordWrongCount = Object.keys(wordWrong).length;
+        if (hanjaWrongCount + wordWrongCount >= 5) {
+            setTimeout(() => setCharToast('review_reminder'), 800);
         }
-    }, [selectedCharacter]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [currentScreen]);
+
+    // 오답 복습 화면 입장 시 1회 50 XP
+    useEffect(() => {
+        if (currentScreen === 'review') {
+            if (!reviewEntryXpRef.current) {
+                reviewEntryXpRef.current = true;
+                handleHanjaAcquired(null, 50);
+            }
+        } else {
+            reviewEntryXpRef.current = false;
+        }
+    }, [currentScreen]);
 
     // 미션 전체 완료 시: 팡파레 토스트 + 보너스 XP
     useEffect(() => {
         if (!allDone || missionToastShownRef.current) return;
         missionToastShownRef.current = true;
         setCharToast('mission_complete');
-        addBonusXp(50);
-    }, [allDone]); // eslint-disable-line react-hooks/exhaustive-deps
+        addBonusXp(200);
+    }, [allDone, addBonusXp]);
 
     const handleHanjaAcquired = (id, xpAmount = 10) => {
-        // 스트릭 XP 배율 적용: 3~6일 1.2배, 7일+ 1.5배
+        // 스트릭 XP 배율 적용: 3~6일 1.2배, 7~14일 1.5배, 15일+ 2.0배
         const streakCount = streak?.count || 0;
-        const multiplier = streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
+        const multiplier = streakCount >= 15 ? 2.0 : streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
         const buffMult = Date.now() < xpBuffExpiresAt ? 2.0 : 1.0;
         const finalXp = Math.round(xpAmount * multiplier * buffMult);
         setUserXp(prev => prev + finalXp);
@@ -183,42 +227,45 @@ const App = () => {
         switch (currentScreen) {
             case 'main':
                 return (
-                    <MainMenuRenewal 
-                        onNavigate={setCurrentScreen} 
-                        unlockedStickers={unlockedStickers}
+                    <MainMenu
+                        onNavigate={setCurrentScreen}
                         userXp={userXp}
-                        isDarkMode={isDarkMode}
-                        setIsDarkMode={setIsDarkMode}
                         selectedCharacter={selectedCharacter}
                         userNickname={userNickname}
                         missions={missions}
-                        streak={streak}
-                        allDone={allDone}
                         doneCount={doneCount}
-                        getStats={getStats}
                         mastery={mastery}
-                        todayStats={todayStats}
-                        totalStats={totalStats}
-                        srsData={srsData}
-                        getDueItems={getDueItems}
-                        isTodayStudyDone={isTodayStudyDone}
-                        isDailyQuizDone={isDailyQuizDone}
-                        xpBuffExpiresAt={xpBuffExpiresAt}
+                        currentDay={currentDay}
+                        onStartNextStage={() => setSessionDoneToday(false)}
+                        isDarkMode={isDarkMode}
+                        setIsDarkMode={setIsDarkMode}
                     />
                 );
             case 'flashcard':
                 return <FlashcardScreen
                     onBack={() => setCurrentScreen('main')}
+                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    onHanjaAcquired={handleHanjaAcquired}
                     onStageClear={() => {
-                        handleHanjaAcquired(null, 50);
+                        handleHanjaAcquired(null, 50); // Increased to 50 XP for completing all study sheets
                         updateMissionProgress('flashcard', 5, addBonusXp);
                         if (!isTodayStudyDone) { setIsTodayStudyDone(true); saveJourneyState(true, isDailyQuizDone); }
                     }}
-                    onCardFlip={(id) => { updateMissionProgress('flashcard', 1, addBonusXp); addTodayStat('flashcard'); if (id) markSeen(id); }}
+                    onCardFlip={(id) => { 
+                        // Now mostly handled by StudySheet quiz correct answers, 
+                        // but keeping for legacy flip if needed (will give 0 if already awarded)
+                        addTodayStat('flashcard'); 
+                        if (id) markSeen(id); 
+                    }}
                     onWriteHanja={(hanja) => {
                         setWriteTargetHanja(hanja);
                         setCurrentScreen('writing');
                     }}
+                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
+                    onMarkWordWrong={(word, hanjaId, reading, meaning) => { markWordWrong(word, hanjaId, reading, meaning); srsMarkWrong(hanjaId); }}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
                 />;
             case 'writing':
                 return <WritingScreen
@@ -231,87 +278,220 @@ const App = () => {
                             setCurrentScreen('main');
                         }
                     }}
-                    onWritingComplete={(id) => {
+                    onWritingComplete={(id, score) => {
+                        const writingXp = score >= 90 ? 150 : 50;
+                        handleHanjaAcquired(id || null, writingXp);
                         updateMissionProgress('writing', 1, addBonusXp);
                         addTodayStat('writing');
                         increment('writing');
                         if (id) markSeen(id);
+                        if (id) {
+                            if (score >= 70) { markCorrect(id); srsMarkCorrect(id); }
+                            else { markWrong(id); srsMarkWrong(id); }
+                        }
                     }}
                     initialHanja={writeTargetHanja}
+                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
                 />;
             case 'matchGame':
                 return <MatchGameScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onStageClear={() => { handleHanjaAcquired(null, 100); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); increment('matchGame'); }}
-                    onMarkCorrect={markCorrect}
-                    onMarkWrong={markWrong}
+                    onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 50); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); increment('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
+                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                    onMarkWrong={() => {}}
+                    srsData={srsData}
+                    masteryData={mastery}
+                    userLevel={currentLevel}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
+                    hanjaFilter={null}
+                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    currentDayHanjaIds={currentDayHanjaIds}
                 />;
             case 'shootGame':
                 return <ShootGameScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
-                    onWaveClear={() => { updateMissionProgress('shootGame_wave', 1, addBonusXp); increment('shootGame'); }}
+                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); increment('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
                     onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
                     onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
                     masteryData={mastery}
+                    srsData={srsData}
+                    userLevel={currentLevel}
+                    hanjaFilter={null}
+                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    currentDayHanjaIds={currentDayHanjaIds}
                 />;
             case 'stickerBook':
                 return <StickerBookScreen onBack={() => setCurrentScreen('main')} unlockedStickers={unlockedStickers} />;
-            case 'review':
+            case 'calendar':
                 return <ReviewScreen
                     onBack={() => setCurrentScreen('main')}
+                    onNavigate={setCurrentScreen}
                     mastery={mastery}
                     markCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
                     markWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
                     getStats={getStats}
                     srsData={srsData}
                     getDueItems={getDueItems}
+                    currentDay={currentDay}
+                    initialSection="calendar"
                 />;
+            case 'review': {
+                const wrongHanjaIds = Object.entries(mastery)
+                    .filter(([, m]) => (m.wrongCount || 0) > 0)
+                    .map(([id]) => Number(id));
+                const reviewWords = Object.entries(wordWrong).map(([word, v]) => ({
+                    id: v.hanja_id,
+                    hanja: word,
+                    meaning: v.meaning,
+                    sound: v.reading,
+                    category: '',
+                }));
+                if (wrongHanjaIds.length === 0 && reviewWords.length === 0) {
+                    return (
+                        <div className="min-h-screen bg-[#F7FAF9] flex flex-col items-center justify-center gap-6 px-8">
+                            <div className="text-6xl">🎉</div>
+                            <h2 className="font-extrabold text-2xl text-slate-800 tracking-tighter text-center">오답 한자가 없어요!</h2>
+                            <p className="text-[#AEB7C5] font-bold text-center text-sm break-keep">퀴즈를 틀린 한자나 단어가 생기면<br/>여기서 몬스터로 나타납니다</p>
+                            <button
+                                onClick={() => setCurrentScreen('main')}
+                                className="px-8 py-3 bg-emerald-500 text-white font-extrabold rounded-2xl border-b-4 border-emerald-700 active:translate-y-1 active:border-b-0 transition-all"
+                            >
+                                메인으로
+                            </button>
+                        </div>
+                    );
+                }
+                // 한자 쪽은 (10 - 단어 오답 수)개까지 패딩
+                // 틀린 한자 없으면 틀린 단어의 부모 한자를 seed 로 관련 한자 채움
+                const hanjaTarget = Math.max(wrongHanjaIds.length, 10 - reviewWords.length);
+                const seedIds = wrongHanjaIds.length > 0
+                    ? wrongHanjaIds
+                    : [...new Set(reviewWords.map(w => w.id).filter(Boolean))];
+                const reviewFilter = seedIds.length > 0
+                    ? expandWrongToTen(seedIds, HANJA_DATA, hanjaTarget)
+                    : [];
+                return <ShootGameScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onGameFinish={() => setCurrentScreen('main')}
+                    onHanjaAcquired={handleHanjaAcquired}
+                    selectedCharacter={selectedCharacter}
+                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); increment('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
+                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
+                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); clearWrong(id); clearWordWrongByHanjaId(id); }}
+                    masteryData={mastery}
+                    srsData={srsData}
+                    userLevel={currentLevel}
+                    hanjaFilter={reviewFilter.length > 0 ? reviewFilter : null}
+                    reviewWordPool={reviewWords}
+                />;
+            }
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
                     onBack={() => setCurrentScreen('main')}
-                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('sentenceQuiz'); increment('sentenceQuiz'); }}
-                    onMarkCorrect={markCorrect}
-                    onMarkWrong={markWrong}
+                    onStageClear={(correct, total) => {
+                        const bonus = 100 + (correct === total ? 100 : 0);
+                        handleHanjaAcquired(null, bonus);
+                        updateMissionProgress('sentenceQuiz', 1, addBonusXp);
+                        addTodayStat('sentenceQuiz');
+                        increment('sentenceQuiz');
+                    }}
+                    onHanjaAcquired={handleHanjaAcquired}
+                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
+                    onMarkWordWrong={(word, hanjaId, reading, meaning) => { markWordWrong(word, hanjaId, reading, meaning); srsMarkWrong(hanjaId); }}
+                    onGoToReview={() => setCurrentScreen('review')}
+                    srsData={srsData}
+                    masteryData={mastery}
+                    userLevel={currentLevel}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
+                    hanjaFilter={null}
+                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    currentDayHanjaIds={currentDayHanjaIds}
+                    sentenceQuizWords={todayWordAllocation.sentenceQuizWords}
                 />;
             case 'wordQuiz':
                 return <WordQuizScreen
                     onBack={() => setCurrentScreen('main')}
-                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); increment('wordQuiz'); }}
-                    onWordCorrect={() => increment('wordCorrect')}
-                    onMarkCorrect={markCorrect}
-                    onMarkWrong={markWrong}
-                />;
-            case 'combinedQuiz':
-                return <CombinedQuizScreen
-                    onBack={() => setCurrentScreen('main')}
-                    onHanjaAcquired={(id, xp) => { handleHanjaAcquired(id, xp); updateMissionProgress('wordQuiz', 1, addBonusXp); updateMissionProgress('sentenceQuiz', 1, addBonusXp); addTodayStat('wordQuiz'); increment('wordQuiz'); }}
-                    onWordCorrect={() => increment('wordCorrect')}
-                    onMarkCorrect={markCorrect}
-                    onMarkWrong={markWrong}
-                    onStageClear={() => {
-                        if (isTodayStudyDone && !isDailyQuizDone) {
-                            setIsDailyQuizDone(true);
-                            saveJourneyState(true, true);
-                            const buffEnd = Date.now() + 15 * 60 * 1000;
-                            setXpBuffExpiresAt(buffEnd);
-                            localStorage.setItem('xp_buff_expires', String(buffEnd));
-                        }
+                    onStageClear={(correct, total, maxCombo) => {
+                        const bonus = 50 + (correct === total ? 50 : 0);
+                        handleHanjaAcquired(null, bonus);
+                        updateMissionProgress('wordQuiz', 1, addBonusXp);
+                        addTodayStat('wordQuiz');
+                        updateRecord('wordBestScore', correct);
+                        if (maxCombo) updateRecord('wordMaxCombo', maxCombo);
+                        increment('wordQuiz');
                     }}
+                    onHanjaAcquired={handleHanjaAcquired}
+                    onWordCorrect={() => increment('wordCorrect')}
+                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                    onMarkWordWrong={(word, hanjaId, reading, meaning) => { markWordWrong(word, hanjaId, reading, meaning); srsMarkWrong(hanjaId); }}
+                    onGoToReview={() => setCurrentScreen('review')}
+                    srsData={srsData}
+                    masteryData={mastery}
+                    userLevel={currentLevel}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
+                    hanjaFilter={null}
+                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    wordQuizTodayWords={todayWordAllocation.wordQuizWords}
+                />;
+            case 'gradeTest':
+                return <GradeTestScreen
+                    onBack={() => setCurrentScreen('mypage')}
+                    onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 200); }}
+                />;
+            case 'gradeTest72':
+                return <GradeTest72Screen
+                    onBack={() => setCurrentScreen('mypage')}
+                    onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 300); }}
+                />;
+            case 'gradeTest7':
+                return <GradeTest7Screen
+                    onBack={() => setCurrentScreen('mypage')}
+                    onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 400); }}
+                />;
+            case 'gradeTest62':
+                return <GradeTest62Screen
+                    onBack={() => setCurrentScreen('mypage')}
+                    onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 500); }}
                 />;
             case 'levelTest':
-                return <LevelTestScreen onBack={() => setCurrentScreen('main')} />;
-            case 'profile':
-                return <CharacterProfileScreen
+                return <LevelTestScreen
+                    onBack={() => setCurrentScreen('main')}
+                    onHanjaAcquired={handleHanjaAcquired}
+                    selectedCharacter={selectedCharacter}
+                    onComplete={({ correct, total }) => {
+                        const isPerfect = correct === total;
+                        const isPassed = correct >= 7;
+                        const ltXp = 20 + (isPassed ? 50 : 0) + (isPerfect ? 100 : 0);
+                        handleHanjaAcquired(null, ltXp);
+                        updateMissionProgress('levelTest', 1, addBonusXp);
+                    }}
+                />;
+            case 'settings':
+                return <SettingsScreen
+                    onBack={() => setCurrentScreen('main')}
+                    isDarkMode={isDarkMode}
+                    setIsDarkMode={setIsDarkMode}
+                    userNickname={userNickname}
+                    setUserNickname={setUserNickname}
+                />;
+            case 'mypage':
+                return <MyPageScreen
                     onBack={() => setCurrentScreen('main')}
                     onNavigate={setCurrentScreen}
                     userXp={userXp}
-                    selectedCharacter={selectedCharacter}
                     userNickname={userNickname}
-                    mastery={mastery}
-                    totalStats={totalStats}
+                    selectedCharacter={selectedCharacter}
+                    isDarkMode={isDarkMode}
+                    setIsDarkMode={setIsDarkMode}
                     streak={streak}
                 />;
             case 'rankings':
@@ -325,27 +505,18 @@ const App = () => {
                 />;
             default:
                 return (
-                    <MainMenuRenewal 
-                        onNavigate={setCurrentScreen} 
-                        unlockedStickers={unlockedStickers}
+                    <MainMenuRenewal
+                        onNavigate={setCurrentScreen}
                         userXp={userXp}
-                        isDarkMode={isDarkMode}
-                        setIsDarkMode={setIsDarkMode}
                         selectedCharacter={selectedCharacter}
                         userNickname={userNickname}
                         missions={missions}
-                        streak={streak}
-                        allDone={allDone}
                         doneCount={doneCount}
-                        getStats={getStats}
                         mastery={mastery}
-                        todayStats={todayStats}
-                        totalStats={totalStats}
-                        srsData={srsData}
-                        getDueItems={getDueItems}
-                        isTodayStudyDone={isTodayStudyDone}
-                        isDailyQuizDone={isDailyQuizDone}
-                        xpBuffExpiresAt={xpBuffExpiresAt}
+                        currentDay={currentDay}
+                        onStartNextStage={() => setSessionDoneToday(false)}
+                        isDarkMode={isDarkMode}
+                        streak={streak}
                     />
                 );
         }
@@ -356,7 +527,7 @@ const App = () => {
     return (
         <LangProvider>
             <div 
-                className={`app-container ${isDarkMode ? 'dark-mode' : ''} transition-colors duration-500`}
+                className={`app-container premium-aurora-bg diamond-overlay ${isDarkMode ? 'dark-mode' : ''} transition-colors duration-500 min-h-screen`}
                 data-level={currentLevel}
             >
                 <div className="space-bg"></div>
@@ -368,24 +539,45 @@ const App = () => {
                             selectedCharacter={selectedCharacter}
                             userXp={userXp}
                             onDismiss={() => setCharToast(null)}
+                            onAction={charToast === 'review_reminder' ? () => setCurrentScreen('review') : undefined}
                         />
                     )}
                     {!onboardingDone
-                        ? <OnboardingScreen onComplete={(grade) => {
+                        ? <OnboardingScreen onComplete={(grade, xp) => {
                             setOnboardingDone(true);
-                            const onboardingXpMap = { '8급': 50, '7급': 100, '6급': 200 };
-                            handleHanjaAcquired(null, onboardingXpMap[grade] || 50);
+                            handleHanjaAcquired(null, xp);
                           }}
                           />
-                        : !selectedCharacter
-                            ? <CharacterSelectionScreen 
-                                onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }} 
-                                onBack={() => {
-                                    localStorage.removeItem('onboarding_done');
-                                    setOnboardingDone(false);
-                                }}
-                              />
-                            : renderScreen()
+                        : <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+                            {!selectedCharacter
+                                ? <CharacterSelectionScreen
+                                    onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }}
+                                    onBack={() => {
+                                        localStorage.removeItem(SK.ONBOARDING_DONE);
+                                        setOnboardingDone(false);
+                                    }}
+                                  />
+                                : !sessionDoneToday
+                                    ? <DailySessionScreen
+                                        onComplete={() => {
+                                            setSessionDoneToday(true);
+                                            addBonusXp(200);
+                                            setCurrentScreen('main');
+                                        }}
+                                        onNavigate={setCurrentScreen}
+                                        onAdvanceDay={advanceDay}
+                                        currentDay={currentDay}
+                                        srsData={srsData}
+                                        masteryData={mastery}
+                                        selectedCharacter={selectedCharacter}
+                                        onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
+                                        onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
+                                        onMarkWordWrong={(word, hanjaId, reading, meaning) => { markWordWrong(word, hanjaId, reading, meaning); srsMarkWrong(hanjaId); }}
+                                        onHanjaAcquired={handleHanjaAcquired}
+                                      />
+                                    : renderScreen()
+                            }
+                          </Suspense>
                     }
                 </div>
             </div>

@@ -93,4 +93,23 @@ export const getRankDetails = (xp, charType, position = 9999) => {
     };
 };
 
+export const getCharacterImage = (charType, status) => {
+    const VALID = ['garae', 'jeolmi', 'chapssal', 'muzi'];
+    const type = VALID.includes(charType) ? charType : 'garae';
+    
+    if (status === 'success') {
+        return `/assets/images/characters/${type}/sucess.png`;
+    }
+    if (status === 'failure') {
+        return `/assets/images/characters/${type}/failure.png`;
+    }
+    if (status === 'keep_going') {
+        return `/assets/images/characters/${type}/keep_going.png`;
+    }
+    
+    // Fallbacks
+    if (status === 'success') return '/assets/images/icons/success_new.webp';
+    return '/assets/images/icons/timeout_new.webp';
+};
+
 export { LEVEL_THRESHOLDS };
