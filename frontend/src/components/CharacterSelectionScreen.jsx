@@ -77,7 +77,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                         {onBack && (
                             <button onClick={onBack}
                                 className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
-                                <span>←</span><span className="ml-1">뒤로</span>
+                                ←
                             </button>
                         )}
                         <div className="flex items-center gap-2 overflow-hidden">

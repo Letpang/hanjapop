@@ -15,6 +15,7 @@ const buildWordPool = () => {
         for (const w of h.words) {
             if (w.word && w.meaning) {
                 pool.push({
+                    id: w.id,
                     hanja_char: h.hanja,
                     hanja_id: h.id,
                     grade: h.grade,
@@ -52,8 +53,47 @@ const pickDistractors = (correctMeaning, count = 3) => {
 
 const REVIEW_SLOTS = 3; // 복습 단어 고정 슬롯
 
-// wordQuizTodayWords: App에서 미리 셔플·분배된 오늘의 단어 (최대 7개)
-const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedIds = null, wordQuizTodayWords = null) => {
+// contentPool 기반 퀴즈: main(오늘) + review(SRS) 비율로 10문제 선택
+// seenWordIds: 오늘 이미 본 단어 ID 목록 → 안 본 것 먼저, 다 봤으면 전체 초기화
+const buildQuizFromPool = (contentPool, srsData, masteryData, userLevel, seenWordIds = []) => {
+    const mainIdSet = new Set(contentPool.main?.wordIds || []);
+    const reviewIdSet = new Set(contentPool.review?.wordIds || []);
+    const mainWords = WORD_POOL.filter(w => mainIdSet.has(w.id));
+    const reviewWords = WORD_POOL.filter(w => reviewIdSet.has(w.id));
+
+    // 전체 다 봤으면 리셋 (seen 무시)
+    const seenSet = new Set(seenWordIds);
+    const allSeen = [...mainWords, ...reviewWords].every(w => seenSet.has(w.id));
+    const effectiveSeenSet = allSeen ? new Set() : seenSet;
+
+    const unseen = (pool) => pool.filter(w => !effectiveSeenSet.has(w.id));
+    const seen   = (pool) => pool.filter(w =>  effectiveSeenSet.has(w.id));
+    const pickFrom = (pool, count) => {
+        const u = getWordSRSWeightedPool(unseen(pool), srsData, masteryData, userLevel, count);
+        const need = count - u.length;
+        const usedIds = new Set(u.map(w => w.id));
+        const s = need > 0 ? getWordSRSWeightedPool(seen(pool).filter(w => !usedIds.has(w.id)), srsData, masteryData, userLevel, need) : [];
+        return [...u, ...s];
+    };
+
+    const ratio = contentPool.ratio ?? 1.0;
+    const targetMain = Math.min(Math.round(QUIZ_COUNT * ratio), mainWords.length);
+    const targetReview = Math.min(QUIZ_COUNT - targetMain, reviewWords.length);
+    const mainPicked = pickFrom(mainWords, targetMain);
+    const reviewPicked = pickFrom(reviewWords, targetReview);
+    // 빈 자리: main 나머지로 채움
+    const usedIds = new Set([...mainPicked, ...reviewPicked].map(w => w.id));
+    const shortfall = QUIZ_COUNT - mainPicked.length - reviewPicked.length;
+    const fillPicked = shortfall > 0 ? pickFrom(mainWords.filter(w => !usedIds.has(w.id)), shortfall) : [];
+    const picked = shuffle([...mainPicked, ...reviewPicked, ...fillPicked]);
+    return picked.map(item => {
+        const distractors = pickDistractors(item.meaning);
+        const choices = shuffle([item.meaning, ...distractors]);
+        return { ...item, choices };
+    });
+};
+
+const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedIds = null) => {
     let pool;
     if (filterType === 'topic') {
         pool = WORD_POOL.filter(w => w.category === filter);
@@ -63,22 +103,7 @@ const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedI
     if (allowedIds) pool = pool.filter(w => allowedIds.has(w.hanja_id));
     if (pool.length < 4) pool = allowedIds ? WORD_POOL.filter(w => allowedIds.has(w.hanja_id)) : WORD_POOL;
 
-    let picked;
-    if (wordQuizTodayWords && wordQuizTodayWords.length > 0) {
-        // 오늘 배정 단어(최대 7) + 복습 3개 + 빈 자리 채우기 = 10문제
-        const todayWordSet = new Set(wordQuizTodayWords.map(w => w.word));
-        const otherPool = pool.filter(w => !todayWordSet.has(w.word));
-        const reviewPicked = getWordSRSWeightedPool(otherPool, srsData, masteryData, userLevel, REVIEW_SLOTS);
-        const usedSet = new Set([...todayWordSet, ...reviewPicked.map(w => w.word)]);
-        const fillCount = Math.max(0, QUIZ_COUNT - wordQuizTodayWords.length - reviewPicked.length);
-        const fillPicked = fillCount > 0
-            ? getWordSRSWeightedPool(otherPool.filter(w => !usedSet.has(w.word)), srsData, masteryData, userLevel, fillCount)
-            : [];
-        picked = shuffle([...wordQuizTodayWords, ...reviewPicked, ...fillPicked]);
-    } else {
-        picked = getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, QUIZ_COUNT);
-    }
-
+    const picked = getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, QUIZ_COUNT);
     return picked.map(item => {
         const distractors = pickDistractors(item.meaning);
         const choices = shuffle([item.meaning, ...distractors]);
@@ -87,15 +112,15 @@ const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedI
 };
 
 // ─── Result Screen ──────────────────────────────────────────────────────────
-const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview }) => {
+const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedCharacter }) => {
     const pct = Math.round((correct / total) * 100);
     const isClear = pct >= 70;
     const wrongCount = total - correct;
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
-            style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300"
+            style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'linear-gradient(180deg, #FDEAEA 0%, #FFF0F0 100%)' }}
         >
             <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
                 <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
@@ -182,7 +207,7 @@ const speakKorean = (text, onEnd) => {
     });
 };
 
-const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
+const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onWrongAttempt }) => {
     const [wrongChoices, setWrongChoices] = useState([]);
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
     const [showXPPopup, setShowXPPopup] = useState(false);
@@ -194,10 +219,13 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
         if (isCorrectSelected || wrongChoices.includes(choice)) return;
         if (choice === q.meaning) {
             setIsCorrectSelected(true);
-            setShowXPPopup(true);
-            setXpAnimKey(k => k + 1);
-            setTimeout(() => setShowXPPopup(false), 1500);
+            if (!suppressXp) {
+                setShowXPPopup(true);
+                setXpAnimKey(k => k + 1);
+                setTimeout(() => setShowXPPopup(false), 1500);
+            }
         } else {
+            if (wrongChoices.length === 0) onWrongAttempt?.(q);
             setWrongChoices(prev => [...prev, choice]);
         }
     };
@@ -375,12 +403,14 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
                 {/* ── 하단 네비게이션 (정답 후 나타남) ── */}
                 {isCorrectSelected && (
                     <div className="w-full flex gap-5 animate-in fade-in slide-in-from-top-4 duration-500">
-                        <button
-                            onClick={onPrev}
-                            className="flex-1 py-5 rounded-[2.5rem] bg-white font-bold text-h3-res text-[#5B677A] border-2 border-[#E9EDF2] shadow-sm active:scale-95 transition-all"
-                        >
-                            ‹ 이전
-                        </button>
+                        {!isFirst && (
+                            <button
+                                onClick={onPrev}
+                                className="flex-1 py-5 rounded-[2.5rem] bg-white font-bold text-h3-res text-[#5B677A] border-2 border-[#E9EDF2] shadow-sm active:scale-95 transition-all"
+                            >
+                                ‹ 이전
+                            </button>
+                        )}
                         <button 
                             onClick={handleNext}
                             className="flex-[2] py-5 rounded-[2.5rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
@@ -395,16 +425,16 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo }) => {
 };
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
-const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, hanjaFilter, unlockedHanjaIds, wordQuizTodayWords }) => {
+const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, contentPool, unlockedHanjaIds, seenWordIds }) => {
     const { t } = useLang();
     const [viewMode, setViewMode] = useState('grade');
-    const [gradeFilter, setGradeFilter] = useState('8급');
+    const [gradeFilter, setGradeFilter] = useState('전체');
     const [categoryFilter, setCategoryFilter] = useState(CATEGORIES[0] || '');
     const [phase, setPhase] = useState('select');
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (hanjaFilter && hanjaFilter.length > 0) {
+        if (contentPool) {
             onBack();
         } else {
             setPhase('select');
@@ -413,70 +443,75 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
     const [questions, setQuestions] = useState([]);
     const [currentIdx, setCurrentIdx] = useState(0);
     const [correctCount, setCorrectCount] = useState(0);
+    const correctCountRef = useRef(0); // stale 클로저 방지: handleNext에서 항상 최신값 사용
     const [combo, setCombo] = useState(0);
     const [maxCombo, setMaxCombo] = useState(0);
     const comboRef = useRef(0);
+    const maxComboRef = useRef(0); // stale 클로저 방지
+    const stageClearArgsRef = useRef(null); // 결과 화면 표시 후 onBack 시점에 전달할 데이터
 
     const characterAvatar = useMemo(() => getRankDetails(userXp, selectedCharacter).avatar, [userXp, selectedCharacter]);
 
     const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
     const startQuiz = useCallback((overrideFilter, overrideViewMode) => {
-        if (hanjaFilter && hanjaFilter.length > 0) {
-            const filtered = WORD_POOL.filter(w => hanjaFilter.includes(w.hanja_id));
-            const pool = filtered.length >= 4 ? filtered : WORD_POOL;
-            const picked = getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, QUIZ_COUNT);
-            setQuestions(picked.map(item => {
-                const distractors = pickDistractors(item.meaning);
-                const choices = shuffle([item.meaning, ...distractors]);
-                return { ...item, choices, correct: item.meaning };
-            }));
+        if (contentPool) {
+            setQuestions(buildQuizFromPool(contentPool, srsData, masteryData, userLevel, seenWordIds || []));
         } else {
             const effectiveViewMode = overrideViewMode || viewMode;
             const filter = overrideFilter != null ? overrideFilter : (effectiveViewMode === 'topic' ? categoryFilter : gradeFilter);
-            setQuestions(buildQuiz(filter, effectiveViewMode, srsData, masteryData, userLevel, unlockedIds, wordQuizTodayWords));
+            setQuestions(buildQuiz(filter, effectiveViewMode, srsData, masteryData, userLevel, unlockedIds));
         }
         setCurrentIdx(0);
         setCorrectCount(0);
+        correctCountRef.current = 0;
         comboRef.current = 0;
         setCombo(0);
         setMaxCombo(0);
+        maxComboRef.current = 0;
         setPhase('quiz');
-    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, hanjaFilter, unlockedIds]);
+    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, contentPool, unlockedIds]);
 
     const startQuizRef = useRef(null);
     useEffect(() => { startQuizRef.current = startQuiz; });
     useEffect(() => {
-        if (hanjaFilter && hanjaFilter.length > 0) startQuizRef.current?.();
-    }, [hanjaFilter]);
+        if (contentPool && phase === 'select') startQuizRef.current?.();
+    }, [contentPool]);
 
     const handleAnswer = useCallback((isCorrect) => {
         const q = questions[currentIdx];
+        if (q?.id != null) onWordSeen?.(q.id);
         if (isCorrect) {
-            setCorrectCount(c => c + 1);
+            correctCountRef.current += 1;
+            setCorrectCount(correctCountRef.current);
             comboRef.current += 1;
             setCombo(comboRef.current);
-            setMaxCombo(m => Math.max(m, comboRef.current));
+            const newMax = Math.max(maxComboRef.current, comboRef.current);
+            maxComboRef.current = newMax;
+            setMaxCombo(newMax);
             if (onHanjaAcquired && q?.hanja_id) onHanjaAcquired(q.hanja_id, 5);
             if (onMarkCorrect && q?.hanja_id) onMarkCorrect(q.hanja_id);
-            if (onWordCorrect) onWordCorrect();
+            if (onWordCorrect) onWordCorrect(q.id);
         } else {
             comboRef.current = 0;
             setCombo(0);
-            if (onMarkWordWrong && q?.word) onMarkWordWrong(q.word, q.hanja_id, q.reading, q.meaning);
-            else if (onMarkWrong && q?.hanja_id) onMarkWrong(q.hanja_id);
         }
-    }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect]);
+    }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onWordSeen]);
 
     const handleNext = useCallback(() => {
         const next = currentIdx + 1;
         if (next < questions.length) {
             setCurrentIdx(next);
         } else {
+            // onStageClear는 결과 화면에서 "돌아가기" 버튼을 눌렀을 때 호출
+            // (여기서 바로 호출하면 completeStep → setActivity(null) 로 컴포넌트가
+            //  언마운트되어 결과 화면이 표시되지 않고 흰 화면이 나타나는 버그 발생)
+            // ref 값을 사용해 stale 클로저 문제 방지
+            const seenWords = [...new Set(questions.map(q => q.id).filter(v => v != null))];
+            stageClearArgsRef.current = [correctCountRef.current, questions.length, maxComboRef.current, seenWords];
             setPhase('result');
-            if (onStageClear) onStageClear(correctCount, questions.length, maxCombo);
         }
-    }, [questions, currentIdx, correctCount, maxCombo, onStageClear]);
+    }, [questions, currentIdx]);
 
     const handlePrev = useCallback(() => {
         if (currentIdx > 0) {
@@ -607,6 +642,11 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                             onNext={handleNext}
                             onPrev={handlePrev}
                             combo={combo}
+                            suppressXp={!!contentPool}
+                            isFirst={currentIdx === 0}
+                            onWrongAttempt={(q) => {
+                                if (onMarkWordWrong && q?.id != null) onMarkWordWrong(q.id, q.hanja_id, q.reading, q.meaning, q.word);
+                            }}
                         />
                     )}
 
@@ -615,8 +655,15 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                             correct={correctCount}
                             total={questions.length}
                             onRetry={startQuiz}
-                            onBack={() => setPhase('select')}
+                            onBack={() => {
+                                if (stageClearArgsRef.current) {
+                                    onStageClear?.(...stageClearArgsRef.current);
+                                    stageClearArgsRef.current = null;
+                                }
+                                onBack();
+                            }}
                             onGoToReview={onGoToReview}
+                            selectedCharacter={selectedCharacter}
                         />
                     )}
                 </div>

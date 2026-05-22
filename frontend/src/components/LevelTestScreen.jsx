@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getCharacterImage } from '../utils/rankUtils.js';
+import { getTodayStr } from '../utils/sessionUtils.js';
 
 const SORTED_HANJA = [...HANJA_DATA].sort((a, b) => a.id - b.id);
 
@@ -22,7 +23,7 @@ const isPremium = () => {
 
 const getTodayPassCount = () => {
     try {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getTodayStr();
         const data = JSON.parse(localStorage.getItem(SK.LEVEL_TEST_DAILY) || '{}');
         return data.date === today ? (data.count || 0) : 0;
     } catch { return 0; }
@@ -30,7 +31,7 @@ const getTodayPassCount = () => {
 
 const incrementTodayPassCount = () => {
     try {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getTodayStr();
         const data = JSON.parse(localStorage.getItem(SK.LEVEL_TEST_DAILY) || '{}');
         const count = data.date === today ? (data.count || 0) + 1 : 1;
         localStorage.setItem(SK.LEVEL_TEST_DAILY, JSON.stringify({ date: today, count }));
@@ -212,7 +213,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                         <button onClick={onBack}
                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
-                            <span>←</span><span className="ml-1">뒤로</span>
+                            ←
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
                             <h2 className="text-lg font-black text-slate-700 m-0">레벨 테스트</h2>
@@ -251,7 +252,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                             <div className="flex items-center gap-4 bg-[#FF9B73]/10/50 dark:bg-[#FF9B73]/20/30 rounded-2xl px-5 py-4 border-2 border-[#FF9B73]/20/50 dark:border-[#FF9B73]/30">
                                 <span className="text-h3-res">🔓</span>
                                 <p className="text-[#5B677A] dark:text-[#AEB7C5] font-bold text-sm leading-tight">
-                                    통과 시 <span className="text-[#FF9B73] dark:text-[#FF9B73] font-extrabold">학습지 2개 추가 해금</span>
+                                    통과 시 <span className="text-[#FF9B73] dark:text-[#FF9B73] font-extrabold">학습지 2개 추가 오픈</span>
                                 </p>
                             </div>
                             <div className="flex items-center gap-4 bg-[#F8FAF9] dark:bg-slate-700/50 rounded-2xl px-5 py-4 border-2 border-[#E9EDF2] dark:border-slate-600">
@@ -310,7 +311,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                         <button onClick={() => setPhase('intro')}
                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
-                            <span>←</span><span className="ml-1">뒤로</span>
+                            ←
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
                             <h2 className="text-lg font-black text-slate-700 m-0">레벨 테스트</h2>
@@ -401,7 +402,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
 
                         <p className="text-xs-res font-bold text-[#AEB7C5] leading-relaxed break-keep mt-3">
                             {passed
-                                ? `축하해요! 뭉치 학습지 2개가 추가로 해금됩니다 🔓`
+                                ? `축하해요! 뭉치 학습지 2개가 추가로 열립니다 🔓`
                                 : `${PASS_THRESHOLD}문제 이상 맞혀야 통과예요. 더 공부하고 다시 도전해 보세요!`
                             }
                         </p>
@@ -423,7 +424,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                             onClick={handleFinish}
                             className="w-full py-5 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-body-lg shadow-xl shadow-[#C3C6FF] active:scale-95 transition-all border-b-4 border-[#4A51D4]"
                         >
-                            {passed ? '해금하고 돌아가기 🎉' : '돌아가기'}
+                            {passed ? '오픈하고 돌아가기 🎉' : '돌아가기'}
                         </button>
                     </div>
                 </div>

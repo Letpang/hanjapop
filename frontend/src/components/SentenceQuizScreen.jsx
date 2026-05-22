@@ -3,7 +3,7 @@ import HANJA_DATA from '../hanja_unified.json';
 import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
-import { buildSessionPlan } from '../utils/learningPool.js';
+import { buildSessionPlan, getSRSWeightedPool } from '../utils/learningPool.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import { playSound } from '../utils/playSound.js';
@@ -45,7 +45,7 @@ const speakKorean = (text, onEnd) => {
     });
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onStageClear, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, hanjaFilter, unlockedHanjaIds, currentDayHanjaIds, sentenceQuizWords }) => {
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds }) => {
     const { t } = useLang();
 
     // ── 선택 상태 ──────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (hanjaFilter) {
+        if (contentPool) {
             onBack();
         } else {
             setStarted(false);
@@ -74,7 +74,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [currentQuiz, setCurrentQuiz] = useState(null);
     const [options, setOptions] = useState([]);
     const [score, setScore] = useState(0);
+    const scoreRef = useRef(0); // stale 클로저 방지: handleNext에서 항상 최신값 사용
     const [totalAnswered, setTotalAnswered] = useState(0);
+    const totalAnsweredRef = useRef(0); // stale 클로저 방지
     const [wrongAttempts, setWrongAttempts] = useState([]);
     const wrongMarkedRef = useRef(false); // 문제당 오답 기록 최초 1회만
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
@@ -85,17 +87,22 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [xpAnimKey, setXpAnimKey] = useState(0);
     const [isWordCardFlipped, setIsWordCardFlipped] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const stageClearArgsRef = useRef(null); // 결과 화면 표시 후 "돌아가기" 시점에 onStageClear로 전달할 데이터
+    const shownWordsRef = useRef([]); // 이번 세션에서 출제된 단어 목록
 
     // ── 현재 선택된 한자 풀 ────────────────────────────────────────────────
     const activeHanjaSet = useMemo(() => {
-        if (hanjaFilter && hanjaFilter.length > 0) return HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
+        if (contentPool) {
+            const allIds = new Set([...(contentPool.main?.hanjaIds || []), ...(contentPool.review?.hanjaIds || [])]);
+            return HANJA_DATA.filter(h => allIds.has(h.id));
+        }
         if (viewMode === 'grade') {
             if (selectedGrade === '전체') return HANJA_DATA.filter(h => unlockedIds.has(h.id));
             if (selectedGrade === '기타') return HANJA_DATA.filter(h => (!h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON') && unlockedIds.has(h.id));
             return HANJA_DATA.filter(h => h.grade === selectedGrade && unlockedIds.has(h.id));
         }
         return HANJA_DATA.filter(h => h.category === selectedCategory && unlockedIds.has(h.id));
-    }, [viewMode, selectedGrade, selectedCategory, hanjaFilter, unlockedIds]);
+    }, [viewMode, selectedGrade, selectedCategory, contentPool, unlockedIds]);
 
     const reviewQueueRef = useRef([]);
     const normalQueueRef = useRef([]);
@@ -104,9 +111,28 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     const sessionPlan = useMemo(() => {
         const base = activeHanjaSet.filter(h => h.words && h.words.length > 0);
-        return buildSessionPlan(base, srsData, masteryData, hanjaFilter ? null : currentDayHanjaIds);
+        return buildSessionPlan(base, srsData, masteryData, contentPool ? null : currentDayHanjaIds, seenHanjaIds?.length > 0 ? seenHanjaIds : null);
         // 큐는 여기서 초기화하지 않음 — srsData/masteryData 변경마다 리셋되는 버그 방지
-    }, [activeHanjaSet, srsData, masteryData, userLevel, hanjaFilter, currentDayHanjaIds]);
+    }, [activeHanjaSet, srsData, masteryData, userLevel, contentPool, currentDayHanjaIds]);
+
+    // 메인화면 모드: 미출제 오늘 한자 7개 + SRS 복습 3개 = 10문제 고정 큐
+    const buildMainQueue10 = () => {
+        if (!currentDayHanjaIds?.length) return null;
+        const seenSet = new Set(mainSeenHanjaIds || []);
+        const todaySet = new Set(currentDayHanjaIds);
+        const srsSeenIds = new Set(Object.keys(srsData || {}).map(Number));
+        const withWords = activeHanjaSet.filter(h => h.words?.length > 0);
+
+        const todayHanja = withWords.filter(h => todaySet.has(h.id));
+        const unseenToday = todayHanja.filter(h => !seenSet.has(h.id)).sort(() => Math.random() - 0.5);
+        const seenToday   = todayHanja.filter(h =>  seenSet.has(h.id)).sort(() => Math.random() - 0.5);
+        const todayPicked = [...unseenToday, ...seenToday].slice(0, 7);
+
+        const srsHanja = withWords.filter(h => srsSeenIds.has(h.id) && !todaySet.has(h.id));
+        const srsPicked = getSRSWeightedPool(srsHanja, srsData, masteryData, userLevel, 3);
+
+        return [...todayPicked, ...srsPicked];
+    };
 
     const initQueues = useCallback((overridePlan) => {
         const plan = overridePlan || sessionPlan;
@@ -119,12 +145,12 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const initQueuesRef = useRef(null);
     useEffect(() => { initQueuesRef.current = initQueues; });
     useEffect(() => {
-        if (hanjaFilter && hanjaFilter.length > 0) {
+        if (contentPool != null && gameState !== 'playing' && gameState !== 'result') {
             initQueuesRef.current?.();
             setStarted(true);
             setGameState('playing');
         }
-    }, [hanjaFilter]);
+    }, [contentPool]);
 
     const pickNextFromPool = useCallback(() => {
         if (normalQueueRef.current.length === 0) return null;
@@ -157,15 +183,19 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 selectedHanja = pickNextFromPool();
             }
             if (!selectedHanja) {
+                stageClearArgsRef.current = [scoreRef.current, totalAnsweredRef.current, [...shownWordsRef.current]];
                 setGameState('result');
-                if (onStageClear) onStageClear(score, totalAnswered);
                 return;
             }
-            // 문장퀴즈 배정 단어(단어퀴즈 overflow)가 있으면 그걸 우선, 없으면 랜덤
-            const overflowForHanja = (sentenceQuizWords || []).filter(w => w.hanja_id === selectedHanja.id);
-            const targetWord = overflowForHanja.length > 0
-                ? overflowForHanja[Math.floor(Math.random() * overflowForHanja.length)]
-                : selectedHanja.words[Math.floor(Math.random() * selectedHanja.words.length)];
+            const validWords = selectedHanja.words.filter(w => w.word && w.meaning);
+            const seenSet = seenWordIds?.length > 0 ? new Set(seenWordIds) : null;
+            const allWordsSeen = seenSet && validWords.every(w => seenSet.has(w.id));
+            const wordPool = (!seenSet || allWordsSeen) ? validWords : validWords.filter(w => !seenSet.has(w.id));
+            const targetWord = wordPool[Math.floor(Math.random() * wordPool.length)] ?? validWords[0];
+            if (targetWord?.id != null && !shownWordsRef.current.includes(targetWord.id)) {
+                shownWordsRef.current = [...shownWordsRef.current, targetWord.id];
+                onWordSeen?.(targetWord.id);
+            }
             const allWords = HANJA_DATA.flatMap(h => (h.words || []).map(w => w.word));
             const distractors = [];
             while (distractors.length < 3) {
@@ -181,8 +211,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     // 퀴즈 시작
     const startQuiz = (overridePlan) => {
-        initQueues(overridePlan);
-        setScore(0); setTotalAnswered(0); setCombo(0);
+        let plan = overridePlan;
+        if (!plan && !contentPool && currentDayHanjaIds?.length > 0) {
+            const queue = buildMainQueue10();
+            if (queue?.length > 0) plan = { reviewQueue: queue, normalPool: [] };
+        }
+        initQueues(plan);
+        shownWordsRef.current = [];
+        setScore(0); scoreRef.current = 0;
+        setTotalAnswered(0); totalAnsweredRef.current = 0;
+        setCombo(0);
         setCurrentQuiz(null); setFeedback(null);
         setStarted(true);
         setGameState('playing');
@@ -206,20 +244,25 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             const newCombo = combo + 1;
             setIsCorrectSelected(true);
             setFeedback({ isCorrect: true, selected });
-            setTotalAnswered(prev => prev + 1);
-            setScore(prev => prev + 1);
+            totalAnsweredRef.current += 1;
+            setTotalAnswered(totalAnsweredRef.current);
+            scoreRef.current += 1;
+            setScore(scoreRef.current);
             setCombo(newCombo);
             setPopupCombo(newCombo);
-            setShowXPPopup(false);
-            setTimeout(() => {
-                setShowXPPopup(true);
-                setXpAnimKey(k => k + 1);
-                setTimeout(() => setShowXPPopup(false), 1500);
-            }, 0);
+            if (onHanjaAcquired) {
+                setShowXPPopup(false);
+                setTimeout(() => {
+                    setShowXPPopup(true);
+                    setXpAnimKey(k => k + 1);
+                    setTimeout(() => setShowXPPopup(false), 1500);
+                }, 0);
+                onHanjaAcquired(null, 10);
+            }
             playSound('correct');
             const hanjaId = currentQuiz._hanjaId || null;
-            if (onHanjaAcquired) onHanjaAcquired(null, 10);
             if (onMarkCorrect && hanjaId) onMarkCorrect(hanjaId);
+            if (currentQuiz.type === 'sentence' && currentQuiz.target?.id != null) onWordCorrect?.(currentQuiz.target.id);
             setGameState('feedback');
         } else {
             setWrongAttempts(prev => [...prev, selected]);
@@ -228,7 +271,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 wrongMarkedRef.current = true;
                 const hanjaId = currentQuiz._hanjaId || null;
                 if (currentQuiz.type === 'sentence' && onMarkWordWrong && currentQuiz.target) {
-                    onMarkWordWrong(currentQuiz.target.word, hanjaId, currentQuiz.target.reading, currentQuiz.target.meaning);
+                    onMarkWordWrong(currentQuiz.target.id, hanjaId, currentQuiz.target.reading, currentQuiz.target.meaning, currentQuiz.target.word);
                 } else if (onMarkWrong && hanjaId) {
                     onMarkWrong(hanjaId);
                 }
@@ -241,9 +284,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         setIsWordCardFlipped(false);
         setIsSpeaking(false);
         const poolExhausted = reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0;
-        if (totalAnswered >= 10 || poolExhausted) {
+        if (totalAnsweredRef.current >= 10 || poolExhausted) {
+            stageClearArgsRef.current = [scoreRef.current, totalAnsweredRef.current, [...shownWordsRef.current]];
             setGameState('result');
-            if (onStageClear) onStageClear(score, totalAnswered);
         } else {
             wrongMarkedRef.current = false;
             generateQuiz();
@@ -268,8 +311,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
         return (
             <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
-                style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300"
+                style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'linear-gradient(180deg, #FDEAEA 0%, #FFF0F0 100%)' }}
             >
                 <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
                     <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
@@ -313,7 +356,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 다시 풀기
                             </button>
                             <button
-                                onClick={() => setStarted(false)}
+                                onClick={() => {
+                                    if (stageClearArgsRef.current) {
+                                        onStageClear?.(...stageClearArgsRef.current);
+                                        stageClearArgsRef.current = null;
+                                    }
+                                    onBack();
+                                }}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                             >
                                 돌아가기

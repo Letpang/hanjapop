@@ -9,6 +9,13 @@ import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 
 const CATEGORIES = ['숫자와 기초 개념', '자연과 시간', '나와 가족 신체', '공간과 위치', '학교와 일상생활', '행동과 상태', '사회와 문화'];
 
+const CURRICULUM_ORDER = new Map();
+DAILY_CURRICULUM.forEach((day, dayIdx) => {
+    day.hanja.forEach((h, hIdx) => {
+        if (h.id !== null) CURRICULUM_ORDER.set(h.id, dayIdx * 100 + hIdx);
+    });
+});
+
 const getTotalDays = () => {
     try {
         const saved = JSON.parse(localStorage.getItem(SK.TOTAL_ACTIVITY_STATS) || '{}');
@@ -191,7 +198,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
 };
 
 // ─── 풀 학습지 화면 ──────────────────────────────────────────────────────
-const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast }) => {
+const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, onStudySheetComplete }) => {
     const questions = useMemo(() => buildWorksheetQuiz(item), [item.id]);
     const [answers, setAnswers] = useState({}); // { qId: isCorrect }
     const [quizDone, setQuizDone] = useState(false);
@@ -381,14 +388,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                     <div className="w-full flex flex-col gap-3 mt-4">
                                         {isSequence && (
                                             <button
-                                                onClick={onNext}
+                                                onClick={() => { onStudySheetComplete?.(item.id); onNext(); }}
                                                 className="w-full py-5 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-body-lg shadow-xl shadow-[#C3C6FF] active:scale-95 transition-all border-b-4 border-[#4A51D4]"
                                             >
                                                 {isLast ? '전체 학습 완료! →' : '다음 한자로 →'}
                                             </button>
                                         )}
                                         <button
-                                            onClick={onBack}
+                                            onClick={() => { onStudySheetComplete?.(item.id); onBack(); }}
                                             className="w-full py-5 rounded-[2rem] bg-[#F8FAF9] text-[#AEB7C5] font-extrabold text-body-lg active:scale-95 transition-all border-b-4 border-[#E9EDF2]"
                                         >
                                             학습 종료하기
@@ -536,7 +543,7 @@ const Flashcard = ({ item, onFlip, shouldBlink }) => {
 };
 
 // ─── 메인 FlashcardScreen ──────────────────────────────────────────────────
-const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, hanjaFilter, onStageClear, unlockedHanjaIds, onHanjaAcquired, userXp, selectedCharacter }) => {
+const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, hanjaFilter, onStageClear, unlockedHanjaIds, onHanjaAcquired, userXp, selectedCharacter, onStudySheetComplete }) => {
     const { t } = useLang();
     const [viewMode, setViewMode] = useState('grade');
     const [gradeFilter, setGradeFilter] = useState('8급');
@@ -609,11 +616,21 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
 
     const currentItems = useMemo(() => {
         if (hanjaFilter && hanjaFilter.length > 0) return HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
+        let items;
         if (viewMode === 'grade') {
-            return gradeFilter === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === gradeFilter);
+            items = gradeFilter === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === gradeFilter);
+        } else {
+            items = HANJA_DATA.filter(h => h.category === categoryFilter);
         }
-        return HANJA_DATA.filter(h => h.category === categoryFilter);
-    }, [viewMode, gradeFilter, categoryFilter, hanjaFilter]);
+        return [...items].sort((a, b) => {
+            const aU = unlockedIds.has(a.id);
+            const bU = unlockedIds.has(b.id);
+            if (aU !== bU) return aU ? -1 : 1;
+            const aO = CURRICULUM_ORDER.get(a.id) ?? 999999;
+            const bO = CURRICULUM_ORDER.get(b.id) ?? 999999;
+            return aO - bO;
+        });
+    }, [viewMode, gradeFilter, categoryFilter, hanjaFilter, unlockedIds]);
 
     const isUnlocked = (item) => hanjaFilter ? true : unlockedIds.has(item.id);
 
@@ -651,8 +668,11 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
         }
     };
 
-    if (studyItem && !hanjaFilter) {
-        return (
+    const unlockedInView = currentItems.filter(isUnlocked).length;
+
+    return (
+        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden animate-fade-in" style={{ backgroundColor: '#F7FAF9' }}>
+        {studyItem && !hanjaFilter && (
             <HanjaStudySheet
                 item={studyItem}
                 onBack={() => setStudyItem(null)}
@@ -660,14 +680,9 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 onMarkCorrect={onMarkCorrect}
                 onMarkWrong={onMarkWrong}
                 onMarkWordWrong={onMarkWordWrong}
+                onStudySheetComplete={onStudySheetComplete}
             />
-        );
-    }
-
-    const unlockedInView = currentItems.filter(isUnlocked).length;
-
-    return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden animate-fade-in" style={{ backgroundColor: '#F7FAF9' }}>
+        )}
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-5">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
@@ -705,6 +720,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             isSequence={true}
                             onNext={handleNext}
                             isLast={currentIndex === currentItems.length - 1}
+                            onStudySheetComplete={onStudySheetComplete}
                         />
                     </div>
                 ) : (

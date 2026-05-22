@@ -31,8 +31,16 @@
  *   srs_data JSONB DEFAULT '{}',
  *   total_stats JSONB DEFAULT '{}',
  *   unlocked_stickers JSONB DEFAULT '{}',
+ *   curriculum_progress JSONB DEFAULT '{}',
+ *   word_wrong_data JSONB DEFAULT '{}',
+ *   daily_study_log JSONB DEFAULT '{}',
  *   updated_at TIMESTAMPTZ DEFAULT NOW()
  * );
+ *
+ * -- 기존 테이블에 컬럼 추가 시 (마이그레이션):
+ * ALTER TABLE learning_data ADD COLUMN IF NOT EXISTS curriculum_progress JSONB DEFAULT '{}';
+ * ALTER TABLE learning_data ADD COLUMN IF NOT EXISTS word_wrong_data JSONB DEFAULT '{}';
+ * ALTER TABLE learning_data ADD COLUMN IF NOT EXISTS daily_study_log JSONB DEFAULT '{}';
  *
  * -- 실시간 랭킹 뷰 (상위 100명)
  * CREATE VIEW leaderboard AS
@@ -115,10 +123,19 @@ export const upsertUserProfile = async ({ nickname, characterType, xp, level, st
 
 /**
  * 학습 데이터 클라우드 백업
+ * curriculum_progress, word_wrong_data 컬럼이 없을 경우 기본 백업으로 자동 폴백
  */
-export const backupLearningData = async ({ masteryData, srsData, totalStats, unlockedStickers }) => {
+export const backupLearningData = async ({ masteryData, srsData, totalStats }) => {
     if (!isSupabaseEnabled || !supabase) return { error: 'offline' };
     const deviceId = getDeviceId();
+
+    let curriculumProgress = null;
+    let wordWrongData = null;
+    let dailyStudyLog = null;
+    try { curriculumProgress = JSON.parse(localStorage.getItem('curriculum_progress') || 'null'); } catch {}
+    try { wordWrongData = JSON.parse(localStorage.getItem('word_wrong_data') || 'null'); } catch {}
+    try { dailyStudyLog = JSON.parse(localStorage.getItem(SK.DAILY_STUDY_LOG) || 'null'); } catch {}
+
     const { data, error } = await supabase
         .from('learning_data')
         .upsert({
@@ -126,11 +143,12 @@ export const backupLearningData = async ({ masteryData, srsData, totalStats, unl
             mastery_data: masteryData,
             srs_data: srsData,
             total_stats: totalStats,
-            unlocked_stickers: unlockedStickers,
+            ...(curriculumProgress && { curriculum_progress: curriculumProgress }),
+            ...(wordWrongData && { word_wrong_data: wordWrongData }),
+            ...(dailyStudyLog && { daily_study_log: dailyStudyLog }),
             updated_at: new Date().toISOString(),
         }, { onConflict: 'device_id' })
-        .select()
-        .single();
+        .select().single();
     return { data, error };
 };
 
@@ -142,6 +160,20 @@ export const restoreLearningData = async () => {
     const deviceId = getDeviceId();
     const { data, error } = await supabase
         .from('learning_data')
+        .select('*')
+        .eq('device_id', deviceId)
+        .single();
+    return { data, error };
+};
+
+/**
+ * 유저 프로필 조회 (복원용)
+ */
+export const fetchUserProfile = async () => {
+    if (!isSupabaseEnabled || !supabase) return { data: null, error: 'offline' };
+    const deviceId = getDeviceId();
+    const { data, error } = await supabase
+        .from('user_profiles')
         .select('*')
         .eq('device_id', deviceId)
         .single();

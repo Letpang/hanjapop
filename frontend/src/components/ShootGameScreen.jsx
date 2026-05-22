@@ -98,9 +98,101 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
 };
 
 // ─────────────────────────────────────────────
+// 동적 밤하늘 개인 별빛 포지션 정보
+// ─────────────────────────────────────────────
+const COSMIC_STARS = [
+    { id: 1,  left: '8%',  top: '5%',  size: 4,  delay: '0s',   speed: '2.8s' },
+    { id: 2,  left: '22%', top: '3%',  size: 6,  delay: '0.5s', speed: '3.5s' },
+    { id: 3,  left: '45%', top: '7%',  size: 3,  delay: '1.2s', speed: '2.2s' },
+    { id: 4,  left: '68%', top: '4%',  size: 5,  delay: '0.8s', speed: '4.0s' },
+    { id: 5,  left: '88%', top: '6%',  size: 4,  delay: '1.8s', speed: '3.0s' },
+    { id: 6,  left: '5%',  top: '18%', size: 7,  delay: '0.3s', speed: '4.5s' },
+    { id: 7,  left: '35%', top: '15%', size: 3,  delay: '2.1s', speed: '2.6s' },
+    { id: 8,  left: '78%', top: '20%', size: 5,  delay: '1.4s', speed: '3.8s' },
+    { id: 9,  left: '93%', top: '15%', size: 4,  delay: '0.7s', speed: '2.9s' },
+    { id: 10, left: '15%', top: '32%', size: 6,  delay: '1.6s', speed: '4.2s' },
+    { id: 11, left: '55%', top: '28%', size: 3,  delay: '2.4s', speed: '2.4s' },
+    { id: 12, left: '82%', top: '38%', size: 8,  delay: '0.9s', speed: '5.0s' },
+    { id: 13, left: '3%',  top: '48%', size: 5,  delay: '1.3s', speed: '3.3s' },
+    { id: 14, left: '42%', top: '55%', size: 4,  delay: '2.7s', speed: '3.7s' },
+    { id: 15, left: '72%', top: '50%', size: 3,  delay: '0.4s', speed: '2.1s' },
+    { id: 16, left: '95%', top: '55%', size: 6,  delay: '1.9s', speed: '4.8s' },
+    { id: 17, left: '20%', top: '68%', size: 4,  delay: '0.6s', speed: '3.1s' },
+    { id: 18, left: '60%', top: '72%', size: 5,  delay: '2.2s', speed: '3.9s' },
+    { id: 19, left: '88%', top: '78%', size: 3,  delay: '1.1s', speed: '2.7s' },
+    { id: 20, left: '38%', top: '82%', size: 7,  delay: '0.2s', speed: '4.4s' },
+    { id: 21, left: '10%', top: '90%', size: 4,  delay: '1.5s', speed: '3.6s' },
+    { id: 22, left: '75%', top: '88%', size: 5,  delay: '0.9s', speed: '2.3s' },
+];
+
+const FLOATING_PARTICLES = [
+    { id: 1, left: '18%', top: '72%', size: 9,  delay: '0s',   speed: '7s'   },
+    { id: 2, left: '44%', top: '80%', size: 6,  delay: '1.8s', speed: '8.5s' },
+    { id: 3, left: '70%', top: '68%', size: 11, delay: '3.2s', speed: '7.5s' },
+    { id: 4, left: '8%',  top: '62%', size: 7,  delay: '2.1s', speed: '9s'   },
+    { id: 5, left: '86%', top: '74%', size: 5,  delay: '4.4s', speed: '6.5s' },
+    { id: 6, left: '54%', top: '58%', size: 8,  delay: '0.9s', speed: '8s'   },
+];
+
+// ─────────────────────────────────────────────
+// 배경 우주선 월드 테마 설정
+// ─────────────────────────────────────────────
+const THEMES_CONFIG = {
+    mint: {
+        bgColor: 'linear-gradient(180deg, #A8DECE 0%, #CAEEE5 50%, #E8F8F4 100%)',
+        animBg: 'linear-gradient(135deg, #A8DECE, #7EC8D8, #C5E8F0, #A8DEB8, #CAEEE5, #A8DECE)',
+        nebulaColor: 'rgba(45, 212, 191, 0.32)',
+        nebulaColor2: 'rgba(20, 184, 166, 0.20)',
+        accentColor: '#2ED6C5',
+        bottomGlow: 'rgba(45, 212, 191, 0.22)',
+    },
+    coral: {
+        bgColor: 'linear-gradient(180deg, #F8B898 0%, #FAD4C0 50%, #FBF0E8 100%)',
+        animBg: 'linear-gradient(135deg, #F8B898, #FAA070, #FBCAB0, #F8C8A8, #FAD4C0, #F8B898)',
+        nebulaColor: 'rgba(251, 146, 60, 0.32)',
+        nebulaColor2: 'rgba(234, 88, 12, 0.18)',
+        accentColor: '#FF9B73',
+        bottomGlow: 'rgba(251, 146, 60, 0.22)',
+    },
+    purple: {
+        bgColor: 'linear-gradient(180deg, #B8ADFA 0%, #D4CEFC 50%, #EDEAFE 100%)',
+        animBg: 'linear-gradient(135deg, #B8ADFA, #9C8FF8, #C8C2FF, #D4CEFC, #A8A0F8, #B8ADFA)',
+        nebulaColor: 'rgba(139, 92, 246, 0.30)',
+        nebulaColor2: 'rgba(99, 102, 241, 0.20)',
+        accentColor: '#7C83FF',
+        bottomGlow: 'rgba(139, 92, 246, 0.22)',
+    },
+    gold: {
+        bgColor: 'linear-gradient(180deg, #FCCF62 0%, #FDE8A0 50%, #FAF6E0 100%)',
+        animBg: 'linear-gradient(135deg, #FCCF62, #F8B830, #FDE8A0, #FAF0C0, #FCCF62, #FDE8A0)',
+        nebulaColor: 'rgba(245, 158, 11, 0.30)',
+        nebulaColor2: 'rgba(217, 119, 6, 0.18)',
+        accentColor: '#EAB308',
+        bottomGlow: 'rgba(245, 158, 11, 0.22)',
+    }
+};
+
+const getGameThemeKey = (currentDay, selectedGrade) => {
+    if (currentDay) {
+        const dayNum = Number(currentDay);
+        if (dayNum <= 30) return 'mint';
+        if (dayNum <= 60) return 'coral';
+        if (dayNum <= 90) return 'purple';
+        return 'gold';
+    }
+    if (selectedGrade) {
+        if (selectedGrade.includes('8급')) return 'mint';
+        if (selectedGrade.includes('7급')) return 'coral';
+        if (selectedGrade.includes('6급')) return 'purple';
+        return 'gold';
+    }
+    return 'mint';
+};
+
+// ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, onMarkWrong, onMarkCorrect, onWaveClear, masteryData, srsData, userLevel, hanjaFilter, unlockedHanjaIds, currentDayHanjaIds, reviewWordPool }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen }) => {
     const { lang, t } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -116,7 +208,15 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('8급');
-    const [selectedDifficulty, setSelectedDifficulty] = useState('normal');
+    const [selectedDifficulty, setSelectedDifficulty] = useState(() => {
+        if (currentDay) {
+            const dayNum = Number(currentDay);
+            if (dayNum <= 10) return 'easy';
+            if (dayNum <= 30) return 'normal';
+            return 'hard';
+        }
+        return 'normal';
+    });
 
     useEffect(() => {
         if (!selectedCategory && categories.length > 0) {
@@ -127,7 +227,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (hanjaFilter) {
+        if (contentPool) {
             onBack();
         } else {
             setStatus('idle');
@@ -163,13 +263,34 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     const diffConfig = useMemo(() => {
         const base = DIFFICULTY_CONFIG[selectedDifficulty] || DIFFICULTY_CONFIG.normal;
-        return hanjaFilter ? { ...base, wavesTotal: 1 } : base;
-    }, [selectedDifficulty, hanjaFilter]);
+        return contentPool ? { ...base, wavesTotal: 1 } : base;
+    }, [selectedDifficulty, contentPool]);
 
     const gamePoolData = useMemo(() => {
         let pool = [];
-        if (hanjaFilter && hanjaFilter.length > 0) {
-            pool = HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
+        if (contentPool) {
+            const allIds = new Set([
+                ...(contentPool.main?.hanjaIds || []),
+                ...(contentPool.review?.hanjaIds || [])
+            ]);
+            // 단어 ID가 포함된 한자 ID도 추가
+            const wordIds = new Set([
+                ...(contentPool.main?.wordIds || []),
+                ...(contentPool.review?.wordIds || [])
+            ]);
+            if (wordIds.size > 0) {
+                HANJA_DATA.forEach(h => {
+                    if (h.words && h.words.some(w => wordIds.has(w.id))) {
+                        allIds.add(h.id);
+                    }
+                });
+            }
+            pool = HANJA_DATA.filter(h => allIds.has(h.id));
+            
+            // fallback: 만약 pool이 텅 비어있다면 8급 전체 한자로 대체 (에러 방지)
+            if (pool.length === 0) {
+                pool = HANJA_DATA.filter(h => h.grade === '8급');
+            }
         } else if (viewMode === 'grade') {
             if (selectedGrade === '전체') pool = HANJA_DATA;
             else pool = HANJA_DATA.filter(h => h.grade === selectedGrade);
@@ -179,11 +300,11 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         }
         const relevantWords = pool.filter(h => h.words && h.words.length > 0);
         return { chars: pool, words: relevantWords };
-    }, [viewMode, selectedGrade, selectedCategory, hanjaFilter, unlockedIds]);
+    }, [viewMode, selectedGrade, selectedCategory, contentPool, unlockedIds]);
 
-    const sessionPlan = useMemo(() =>
-        buildSessionPlan(gamePoolData.chars, srsData, masteryData, hanjaFilter ? null : currentDayHanjaIds),
-    [gamePoolData, srsData, masteryData, hanjaFilter, currentDayHanjaIds]);
+    // 게임 시작 시점에 한 번만 계산 — 게임 중 srsData/masteryData 변경으로 큐가 리셋되는 것을 방지
+    const sessionPlanRef = useRef({ reviewQueue: [], normalPool: [] });
+    const sessionPlan = sessionPlanRef.current;
 
     const reviewQueueRef = useRef([]);
     const normalQueueRef = useRef([]);
@@ -191,21 +312,55 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const wordQueueRef = useRef([]);
     const lastSpawnedWordRef = useRef(null);
     const flatWordPoolRef = useRef([]);
-    // 복습 모드: 마운트 시 한 번만 캡처 (중간에 wordWrong 변경돼도 풀 유지)
-    const reviewWordPoolRef = useRef(reviewWordPool || []);
+    const spawnedHanjaSetRef = useRef(new Set());
+    const spawnedWordsSetRef = useRef(new Set());
+    const onHanjaSeenRef = useRef(onHanjaSeen);
+    useEffect(() => { onHanjaSeenRef.current = onHanjaSeen; });
+    const wordChanceRef = useRef(0.83);
+    const gameWrongHanjasRef = useRef(new Set());
+    const gameWrongWordsRef = useRef(new Set());
+    const [wrongItemsForRender, setWrongItemsForRender] = useState([]);
+
+    const flushWrongItems = useCallback(() => {
+        gameWrongHanjasRef.current.forEach(pairId => {
+            if (pairId && onMarkWrong) onMarkWrong(pairId);
+        });
+        gameWrongWordsRef.current.forEach(wordId => {
+            if (wordId && onWordWrong) onWordWrong(wordId);
+        });
+        gameWrongHanjasRef.current.clear();
+        gameWrongWordsRef.current.clear();
+    }, [onMarkWrong, onWordWrong]);
 
     const refillNormalQueue = useCallback((pool) => {
-        let shuffled = [...pool].sort(() => Math.random() - 0.5);
-        if (shuffled.length > 1 && shuffled[0]?.id === lastSpawnedIdRef.current) {
-            shuffled = [...shuffled.slice(1), shuffled[0]];
+        const todaySet = new Set(currentDayHanjaIds || []);
+        const todayInPool = pool.filter(h => todaySet.has(h.id));
+        const nonTodayInPool = pool.filter(h => !todaySet.has(h.id));
+
+        // 오늘 한자 전부 소진됐으면 새 라운드 (덱 리셋)
+        const unseenToday = todayInPool.filter(h => !spawnedHanjaSetRef.current.has(h.id));
+        if (unseenToday.length === 0 && todayInPool.length > 0) {
+            todayInPool.forEach(h => spawnedHanjaSetRef.current.delete(h.id));
         }
-        normalQueueRef.current = shuffled;
-    }, []);
+
+        const freshUnseen = todayInPool.filter(h => !spawnedHanjaSetRef.current.has(h.id));
+        const freshSeen   = todayInPool.filter(h =>  spawnedHanjaSetRef.current.has(h.id));
+
+        let queue = [
+            ...freshUnseen.sort(() => Math.random() - 0.5),
+            ...freshSeen.sort(() => Math.random() - 0.5),
+            ...nonTodayInPool.sort(() => Math.random() - 0.5),
+        ];
+        if (queue.length > 1 && queue[0]?.id === lastSpawnedIdRef.current) {
+            queue = [...queue.slice(1), queue[0]];
+        }
+        normalQueueRef.current = queue;
+    }, [currentDayHanjaIds]);
 
     const refillWordQueue = useCallback((pool) => {
         if (!pool || pool.length === 0) return;
         let ordered;
-        if (!hanjaFilter && currentDayHanjaIds?.length > 0) {
+        if (!contentPool && currentDayHanjaIds?.length > 0) {
             const todaySet = new Set(currentDayHanjaIds);
             const todayWords = pool.filter(w => todaySet.has(w.id)).sort(() => Math.random() - 0.5);
             const otherWords = pool.filter(w => !todaySet.has(w.id)).sort(() => Math.random() - 0.5);
@@ -217,40 +372,42 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             ordered = [...ordered.slice(1), ordered[0]];
         }
         wordQueueRef.current = ordered;
-    }, [hanjaFilter, currentDayHanjaIds]);
+    }, [contentPool, currentDayHanjaIds]);
 
     // 단어 풀을 flat 배열로 유지
     useEffect(() => {
-        if (reviewWordPoolRef.current.length > 0) {
-            // 복습 모드: 틀린 단어만 단어 몬스터로 사용
-            flatWordPoolRef.current = reviewWordPoolRef.current;
+        const oopsWordIds = new Set([
+            ...(contentPool?.main?.wordIds || []),
+            ...(contentPool?.review?.wordIds || []),
+        ]);
+        if (oopsWordIds.size > 0) {
+            // 특정 단어만 몬스터로 등장 (오답/복습 모드)
+            flatWordPoolRef.current = gamePoolData.words.flatMap(h =>
+                (h.words || []).filter(w => oopsWordIds.has(w.id) && w.word && w.meaning && w.reading).map(w => ({
+                    id: h.id, wordId: w.id, hanja: w.word, meaning: w.meaning, sound: w.reading, category: h.category,
+                }))
+            );
         } else {
             flatWordPoolRef.current = gamePoolData.words.flatMap(h =>
                 (h.words || []).filter(w => w.word && w.meaning && w.reading).map(w => ({
-                    id: h.id,
-                    hanja: w.word,
-                    meaning: w.meaning,
-                    sound: w.reading,
-                    category: h.category,
+                    id: h.id, wordId: w.id, hanja: w.word, meaning: w.meaning, sound: w.reading, category: h.category,
                 }))
             );
         }
         refillWordQueue(flatWordPoolRef.current);
-    }, [gamePoolData, refillWordQueue]);
 
-    useEffect(() => {
-        reviewQueueRef.current = [...sessionPlan.reviewQueue];
-        refillNormalQueue(sessionPlan.normalPool);
-        refillWordQueue(flatWordPoolRef.current);
-    }, [sessionPlan, refillNormalQueue, refillWordQueue]);
+        // wordChance 캐싱 업데이트
+        const totalWords = flatWordPoolRef.current.length;
+        const totalHanja = (sessionPlanRef.current?.normalPool?.length || 0) + (sessionPlanRef.current?.reviewQueue?.length || 0);
+        wordChanceRef.current = totalWords > 0 ? totalWords / Math.max(totalWords + totalHanja, 1) : 0.83;
+    }, [gamePoolData, contentPool, refillWordQueue]);
+
 
     const startGameRef = useRef(null);
     useEffect(() => { startGameRef.current = startGame; });
     useEffect(() => {
-        const hasHanja = hanjaFilter && hanjaFilter.length > 0;
-        const hasWords = reviewWordPoolRef.current.length > 0;
-        if (hasHanja || hasWords) startGameRef.current?.();
-    }, [hanjaFilter]);
+        if (contentPool != null) startGameRef.current?.();
+    }, [contentPool]);
 
     const startGame = (overrideDiff) => {
         try {
@@ -262,11 +419,24 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         } catch (e) {}
 
         const effectiveDiff = overrideDiff ? (DIFFICULTY_CONFIG[overrideDiff] || diffConfig) : diffConfig;
-        reviewQueueRef.current = [...sessionPlan.reviewQueue];
+        // 시작 시점의 srsData/masteryData로 플랜 계산 (게임 중 변경 무시)
+        const plan = buildSessionPlan(gamePoolData.chars, srsData, masteryData, contentPool ? null : currentDayHanjaIds, null);
+        sessionPlanRef.current = plan;
+        reviewQueueRef.current = [...plan.reviewQueue];
         lastSpawnedIdRef.current = null;
         lastSpawnedWordRef.current = null;
-        refillNormalQueue(sessionPlan.normalPool);
+        // 이전 활동에서 본 오늘 한자를 덱의 '이미 본' 상태로 초기화
+        const todaySet = new Set(currentDayHanjaIds || []);
+        spawnedHanjaSetRef.current = new Set((seenHanjaIds || []).filter(id => todaySet.has(id)));
+        spawnedWordsSetRef.current = new Set();
+        refillNormalQueue(plan.normalPool);
         refillWordQueue(flatWordPoolRef.current);
+
+        // wordChance 캐싱 업데이트
+        const totalWords = flatWordPoolRef.current.length;
+        const totalHanja = (plan.normalPool?.length || 0) + (plan.reviewQueue?.length || 0);
+        wordChanceRef.current = totalWords > 0 ? totalWords / Math.max(totalWords + totalHanja, 1) : 0.83;
+
         setWave(1);
         setWaveKills(0);
         setWaveTransition(false);
@@ -278,6 +448,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         setTargetId(null);
         setShake(false);
         setClearCombo(0);
+        
+        // 오답 큐 및 렌더 칩 리셋
+        gameWrongHanjasRef.current.clear();
+        gameWrongWordsRef.current.clear();
+        setWrongItemsForRender([]);
+        
         setStatus('playing');
     };
 
@@ -294,6 +470,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     useEffect(() => {
         if (hp <= 0 && status === 'playing') {
             setStatus('over');
+            if (contentPool && onGameFinish) onGameFinish();
         }
     }, [hp, status]);
 
@@ -308,10 +485,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             let xpEarned = xpTable.waveClear;
             if (newCombo >= 5) xpEarned += xpTable.combo5;
             else if (newCombo >= 3) xpEarned += xpTable.combo3;
-            if (onHanjaAcquired) onHanjaAcquired(null, xpEarned);
+            if (onHanjaAcquired) {
+                onHanjaAcquired(null, xpEarned);
+                setXpPopup({ show: true, key: Date.now(), amount: xpEarned });
+                setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
+            }
             setSessionXp(prev => prev + xpEarned);
-            setXpPopup({ show: true, key: Date.now(), amount: xpEarned });
-            setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
             if (onWaveClear) onWaveClear(waveKills);
             if (wave >= diffConfig.wavesTotal) {
                 setStatus('clear');
@@ -365,9 +544,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
                 let nextItem;
                 let isWord = false;
-                const wordChance = 0.4;
                 
-                if (Math.random() < wordChance && flatWordPoolRef.current.length > 0) {
+                if (Math.random() < wordChanceRef.current && flatWordPoolRef.current.length > 0) {
                     if (wordQueueRef.current.length === 0) refillWordQueue(flatWordPoolRef.current);
                     const wordItem = wordQueueRef.current.shift();
                     if (wordItem) {
@@ -380,12 +558,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     }
                 }
 
-                if (!nextItem && sessionPlan.normalPool.length > 0) {
+                if (!nextItem && sessionPlanRef.current.normalPool.length > 0) {
                     let ch;
                     if (reviewQueueRef.current.length > 0) {
                         ch = reviewQueueRef.current.shift();
                     } else {
-                        if (normalQueueRef.current.length === 0) refillNormalQueue(sessionPlan.normalPool);
+                        if (normalQueueRef.current.length === 0) refillNormalQueue(sessionPlanRef.current.normalPool);
                         ch = normalQueueRef.current.shift();
                     }
                     if (ch) {
@@ -396,10 +574,16 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
                 if (!nextItem) return prev;
                 if (fallingHanjas.has(nextItem.hanja)) return prev;
+                if (isWord) {
+                    if (nextItem.hanja) spawnedWordsSetRef.current.add(nextItem.hanja);
+                } else {
+                    if (nextItem.id) spawnedHanjaSetRef.current.add(nextItem.id);
+                }
 
                 return [...prev, {
                     id: Date.now() + Math.random(),
                     pairId: nextItem.id,
+                    wordId: nextItem.wordId || null,
                     hanja: nextItem.hanja,
                     answer: (nextItem.meaning || getMeaning(nextItem) || "") + " " + (nextItem.sound || ""),
                     sound: nextItem.sound || "",
@@ -415,7 +599,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         }, getSpawnInterval(wave));
 
         return () => { clearInterval(dropInterval); clearInterval(spawnInterval); };
-    }, [status, wave, waveTransition, gamePoolData, sessionPlan, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig, refillWordQueue]);
+    }, [status, wave, waveTransition, gamePoolData, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig, refillWordQueue]);
 
     // 타겟 & 보기 갱신
     useEffect(() => {
@@ -449,6 +633,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             setScore(prev => prev + 1);
             setWaveKills(prev => prev + 1);
             if (onMarkCorrect) onMarkCorrect(target.pairId);
+            if (target.isWord && target.hanja) onHanjaSeenRef.current?.([target.hanja]);
+            if (target.isWord && target.wordId != null) onWordCorrect?.(target.wordId);
             if (onHanjaAcquired) onHanjaAcquired(target.pairId, 10);
             const acqId = Date.now();
             setAcquisitions(prev => [...prev, { id: acqId, x: target.x, y: target.y, hanja: target.hanja }]);
@@ -459,10 +645,65 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             setShake(true);
             setIsInputLocked(true);
             setHp(prev => Math.max(0, prev - 1));
-            if (onMarkWrong) onMarkWrong(target.pairId);
+            
+            // 즉시 전송하지 않고 임시 셋에 오답 수집
+            if (target.pairId) gameWrongHanjasRef.current.add(target.pairId);
+            if (target.isWord && target.wordId != null) gameWrongWordsRef.current.add(target.wordId);
+            
+            // 결과 모달 노출용 칩 정보 적재 (정답 뜻/음 칩)
+            const isExist = wrongItemsForRender.some(item => item.hanja === target.hanja);
+            if (!isExist) {
+                setWrongItemsForRender(prev => [...prev, {
+                    hanja: target.hanja,
+                    answer: target.answer,
+                    isWord: target.isWord
+                }]);
+            }
+            
             setTimeout(() => { setShake(false); setIsInputLocked(false); inputLockedRef.current = false; }, 800);
         }
     };
+
+    const themeKey = getGameThemeKey(currentDay, selectedGrade);
+    const themeConfig = THEMES_CONFIG[themeKey] || THEMES_CONFIG.mint;
+
+    // <style> 태그를 document.head에 주입 — early return 앞에 있어야 Rules of Hooks 위반 없음
+    useEffect(() => {
+        const el = document.getElementById('shoot-game-theme-style') || (() => {
+            const s = document.createElement('style');
+            s.id = 'shoot-game-theme-style';
+            document.head.appendChild(s);
+            return s;
+        })();
+        el.textContent = `
+            .shoot-game-theme-container {
+                background: ${themeConfig.animBg};
+                background-size: 400% 400%;
+                animation: bgShift 12s ease infinite, hueShift 20s linear infinite;
+            }
+            @keyframes bgShift {
+                0%   { background-position: 0% 50%; }
+                50%  { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            @keyframes hueShift {
+                0%   { filter: hue-rotate(0deg); }
+                100% { filter: hue-rotate(360deg); }
+            }
+            @keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}
+            @keyframes starSparkle {
+                0%, 100% { opacity: 0.18; transform: scale(0.7); }
+                50% { opacity: 1; transform: scale(1.4); }
+            }
+            @keyframes particleDrift {
+                0%   { opacity: 0; transform: translateY(0px) scale(0.5); }
+                12%  { opacity: 0.6; }
+                80%  { opacity: 0.35; }
+                100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
+            }
+        `;
+        return () => { el.textContent = ''; };
+    }, [themeConfig]);
 
     // ─────────────────────────────────────────
     // IDLE 화면
@@ -627,7 +868,6 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         );
     }
 
-    // 결과 화면 상수는 메인 렌더링 내에서 처리 (매칭 게임과 동일 구조)
     const isClear = status === 'clear';
     const isResult = status === 'over' || status === 'clear';
 
@@ -635,8 +875,76 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     // 게임 화면
     // ─────────────────────────────────────────
     return (
-        <div className="fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden bg-[#F7FAF9]">
-            <style>{`@keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}`}</style>
+        <div className="fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden transition-all duration-1000 ease-out shoot-game-theme-container">
+
+            {/* Twinkling Stars */}
+            {COSMIC_STARS.map(star => (
+                <div
+                    key={star.id}
+                    className="absolute rounded-full pointer-events-none z-0"
+                    style={{
+                        left: star.left,
+                        top: star.top,
+                        width: `${star.size}px`,
+                        height: `${star.size}px`,
+                        backgroundColor: themeConfig.accentColor,
+                        boxShadow: `0 0 6px ${themeConfig.accentColor}, 0 0 14px ${themeConfig.accentColor}, 0 0 28px ${themeConfig.accentColor}`,
+                        animation: `starSparkle ${star.speed} ease-in-out infinite`,
+                        animationDelay: star.delay,
+                    }}
+                />
+            ))}
+
+            {/* Nebula Orb 1 — 화면 상단 중앙 */}
+            <div
+                className="absolute pointer-events-none z-0 rounded-full animate-pulse"
+                style={{
+                    left: '20%', top: '5%',
+                    width: '320px', height: '320px',
+                    background: `radial-gradient(circle, ${themeConfig.nebulaColor} 0%, transparent 70%)`,
+                    filter: 'blur(40px)',
+                    animationDuration: '5s',
+                }}
+            />
+            {/* Nebula Orb 2 — 우측 상단 */}
+            <div
+                className="absolute pointer-events-none z-0 rounded-full animate-pulse"
+                style={{
+                    left: '55%', top: '10%',
+                    width: '260px', height: '260px',
+                    background: `radial-gradient(circle, ${themeConfig.nebulaColor2} 0%, transparent 70%)`,
+                    filter: 'blur(50px)',
+                    animationDuration: '7s',
+                    animationDelay: '2s',
+                }}
+            />
+
+            {/* 하단 바닥 글로우 */}
+            <div
+                className="absolute bottom-0 left-0 right-0 pointer-events-none z-0"
+                style={{
+                    height: '180px',
+                    background: `linear-gradient(0deg, ${themeConfig.bottomGlow} 0%, transparent 100%)`,
+                }}
+            />
+
+            {/* Floating Particles */}
+            {FLOATING_PARTICLES.map(p => (
+                <div
+                    key={p.id}
+                    className="absolute rounded-full pointer-events-none z-0"
+                    style={{
+                        left: p.left,
+                        top: p.top,
+                        width: `${p.size}px`,
+                        height: `${p.size}px`,
+                        backgroundColor: themeConfig.accentColor,
+                        boxShadow: `0 0 12px ${themeConfig.accentColor}`,
+                        animation: `particleDrift ${p.speed} ease-in-out infinite`,
+                        animationDelay: p.delay,
+                    }}
+                />
+            ))}
             {xpPopup.show && (
                 <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[200]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '80px' }}>
                     <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
@@ -646,7 +954,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             )}
             <div className={`w-full mx-auto h-full flex flex-col relative ${shake ? "animate-shake" : ""}`}>
                 {/* 상단 HUD */}
-                <div className="absolute left-4 right-4 z-40 safe-top pt-4 flex justify-between items-center">
+                <div className="absolute top-0 left-4 right-4 z-40 safe-top pt-4 flex justify-between items-center">
                     {/* 1. HP */}
                     <div className="h-10 bg-white/90 backdrop-blur-md rounded-2xl px-4 shadow-md border border-white/50 flex items-center gap-2">
                         {Array.from({ length: diffConfig.hp }).map((_, i) => (
@@ -657,9 +965,11 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     <div className="flex items-center gap-2">
                         {/* 2. 진행도 */}
                         <div className="h-10 bg-white/90 backdrop-blur-md rounded-2xl px-4 shadow-md border border-white/50 flex items-center gap-3">
-                            <div className="w-16 h-1.5 bg-[#F4F7F8] rounded-full overflow-hidden">
-                                <div className="h-full bg-[#7C83FF] rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%` }} />
+                            <span className="text-xs font-black text-[#5B677A] whitespace-nowrap">Progress</span>
+                            <div className="w-24 md:w-36 h-2 bg-[#F4F7F8] rounded-full overflow-hidden relative">
+                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
                             </div>
+                            <span className="text-xs font-black text-[#AEB7C5] tabular-nums min-w-[2.5rem] text-right">{waveKills}/{diffConfig.killsPerWave}</span>
                         </div>
                         {/* 3. 스코어 */}
                         <div className="h-10 bg-white/90 backdrop-blur-md rounded-2xl px-4 shadow-md border border-white/50 flex items-center justify-center min-w-[3.5rem]">
@@ -737,14 +1047,14 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             <button
                                 key={i}
                                 onClick={() => handleOptionClick(opt)}
-                                className={`bg-white/95 px-5 py-2.5 rounded-[1.2rem] md:rounded-[1.8rem] font-extrabold border-4 border-white shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
+                                className={`bg-white/95 px-4 py-1.5 rounded-[1.2rem] md:rounded-[1.8rem] font-extrabold border-4 border-white shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
                             >
                                 {isWordTarget ? (
                                     <span className="text-slate-700 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
                                 ) : (
                                     <>
-                                        <span className="text-slate-700 text-lg sm:text-xl md:text-2xl">{meaning}</span>
-                                        <span className="text-[#7C83FF] text-lg sm:text-xl md:text-2xl">{sound}</span>
+                                        <span className="text-slate-700 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
+                                        <span className="text-[#7C83FF] text-sm sm:text-base md:text-lg leading-tight">{sound}</span>
                                     </>
                                 )}
                             </button>
@@ -773,28 +1083,61 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     <span className="text-sm font-extrabold text-[#AEB7C5]">
                                         {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
                                     </span>
-                                    <h1 className="text-h2-res font-black leading-snug" style={{ 
+                                    <h1 className="text-h2-res font-black leading-snug" style={{
                                         color: isClear ? '#FF9B73' : '#FF6B6B',
                                         letterSpacing: '-0.5px',
                                         textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
                                     }}>
-                                        {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                        {isClear && contentPool ? <>오답 몬스터를<br/>모두 격파했어요!</> : isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                     </h1>
                                     <div className="flex flex-col items-center gap-1 mt-3">
-                                        <p className="font-extrabold text-lg tracking-tight" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                            {score}마리의 몬스터 퇴치!<span className="text-[0.85em] inline-block ml-1">🔥</span>
-                                        </p>
+                                        {isClear && contentPool ? (
+                                            <p className="font-extrabold text-lg tracking-tight" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                                +{sessionXp} XP 획득!<span className="text-[0.85em] inline-block ml-1">⭐</span>
+                                            </p>
+                                        ) : (
+                                            <p className="font-extrabold text-lg tracking-tight" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                                {score}마리의 몬스터 퇴치!<span className="text-[0.85em] inline-block ml-1">🔥</span>
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
+
+                                {/* 몬스터 오답 노트 (Review Note) */}
+                                {wrongItemsForRender.length > 0 && (
+                                    <div className="w-full flex flex-col gap-2 relative z-10 mt-1 max-h-[140px] overflow-y-auto px-1">
+                                        <p className="text-xs font-black text-[#FF6B6B] text-center mb-1">💡 몬스터 오답 노트 (다시 확인하기)</p>
+                                        <div className="flex flex-wrap gap-2 justify-center">
+                                            {wrongItemsForRender.map((w, idx) => (
+                                                <div key={idx} className="bg-rose-50 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 shadow-sm">
+                                                    <span className="font-extrabold text-rose-500 text-sm">{w.hanja}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">{w.answer}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="w-full flex flex-col gap-3 relative z-10">
                                     <button
-                                        onClick={startGame}
+                                        onClick={() => {
+                                            flushWrongItems();
+                                            startGame();
+                                        }}
                                         className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
                                     >
                                         다시 하기
                                     </button>
                                     <button
-                                        onClick={hanjaFilter ? (onGameFinish || onBack) : () => setStatus('idle')}
+                                        onClick={() => {
+                                            flushWrongItems();
+                                            if (contentPool) {
+                                                if (onGameFinish) onGameFinish();
+                                                else onBack();
+                                            } else {
+                                                setStatus('idle');
+                                            }
+                                        }}
                                         className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                                     >
                                         돌아가기

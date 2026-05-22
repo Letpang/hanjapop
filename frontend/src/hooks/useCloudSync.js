@@ -11,10 +11,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getLevel } from '../utils/rankUtils.js';
+import { SK } from '../constants/storageKeys.js';
 import {
     isSupabaseEnabled,
     upsertUserProfile,
     backupLearningData,
+    restoreLearningData,
+    fetchUserProfile,
     fetchLeaderboard,
     fetchMyRank,
     subscribeLeaderboard,
@@ -31,14 +34,16 @@ export const useCloudSync = ({
     mastery,
     srsData,
     totalStats,
-    unlockedStickers,
 }) => {
     const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'error' | 'offline'
     const [lastSyncTime, setLastSyncTime] = useState(null);
     const [leaderboard, setLeaderboard] = useState([]);
     const [myRank, setMyRank] = useState(null);
     const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
     const syncTimerRef = useRef(null);
+    // device_id가 이미 존재했는지 (훅 초기화 전에 체크 — getDeviceId()가 새로 생성하기 전)
+    const deviceIdExistedRef = useRef(!!localStorage.getItem(SK.DEVICE_ID));
     const deviceId = getDeviceId();
 
     // 오프라인 모드 감지
@@ -56,13 +61,15 @@ export const useCloudSync = ({
             setSyncStatus('offline');
             return;
         }
+        // 캐릭터 미선택 상태에서 동기화 시 기본값으로 덮어씌우는 것 방지
+        if (!selectedCharacter) return;
         setSyncStatus('syncing');
         try {
             const level = getLevel(userXp);
             // 프로필 업데이트
             const { error: profileError } = await upsertUserProfile({
                 nickname: userNickname || '한자학습자',
-                characterType: selectedCharacter || 'garae',
+                characterType: selectedCharacter,
                 xp: userXp || 0,
                 level,
                 streakCount: streak?.count || 0,
@@ -75,7 +82,6 @@ export const useCloudSync = ({
                 masteryData: mastery || {},
                 srsData: srsData || {},
                 totalStats: totalStats || {},
-                unlockedStickers: unlockedStickers || {},
             });
             if (dataError && dataError !== 'offline') {
                 console.warn('[CloudSync] Data backup failed:', dataError);
@@ -86,7 +92,52 @@ export const useCloudSync = ({
             console.warn('[CloudSync] Sync error:', e);
             setSyncStatus('error');
         }
-    }, [userXp, userNickname, selectedCharacter, streak, mastery, srsData, totalStats, unlockedStickers]);
+    }, [userXp, userNickname, selectedCharacter, streak, mastery, srsData, totalStats]);
+
+    /**
+     * 클라우드에서 전체 프로필 복원
+     * 복원 성공 시 { success: true } 반환 — 호출자가 페이지 리로드 처리
+     */
+    const restoreFromCloud = useCallback(async () => {
+        if (!isSupabaseEnabled) return { success: false };
+        setIsRestoring(true);
+        try {
+            const [{ data: profile }, { data: learningData }] = await Promise.all([
+                fetchUserProfile(),
+                restoreLearningData(),
+            ]);
+            if (!profile && !learningData) { setIsRestoring(false); return { success: false }; }
+            if (profile) {
+                if (profile.nickname)       localStorage.setItem(SK.USER_NICKNAME, profile.nickname);
+                if (profile.character_type) localStorage.setItem(SK.SELECTED_CHARACTER, profile.character_type);
+                if (typeof profile.xp === 'number') localStorage.setItem(SK.USER_XP, String(profile.xp));
+            }
+            if (learningData) {
+                if (learningData.mastery_data)        localStorage.setItem('mastery_data', JSON.stringify(learningData.mastery_data));
+                if (learningData.srs_data)            localStorage.setItem('srs_data', JSON.stringify(learningData.srs_data));
+                if (learningData.total_stats)         localStorage.setItem('total_activity_stats', JSON.stringify(learningData.total_stats));
+                if (learningData.curriculum_progress) localStorage.setItem('curriculum_progress', JSON.stringify(learningData.curriculum_progress));
+                if (learningData.word_wrong_data)     localStorage.setItem('word_wrong_data', JSON.stringify(learningData.word_wrong_data));
+                if (learningData.daily_study_log)     localStorage.setItem(SK.DAILY_STUDY_LOG, JSON.stringify(learningData.daily_study_log));
+            }
+            setIsRestoring(false);
+            return { success: true };
+        } catch {
+            setIsRestoring(false);
+            return { success: false };
+        }
+    }, []);
+
+    // 앱 시작 시 자동 복원: device_id는 있는데 캐릭터가 없으면 데이터 유실로 판단
+    useEffect(() => {
+        if (!isSupabaseEnabled) return;
+        const hasCharacter = localStorage.getItem(SK.SELECTED_CHARACTER);
+        if (!hasCharacter && deviceIdExistedRef.current) {
+            restoreFromCloud().then(({ success }) => {
+                if (success) window.location.reload();
+            });
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // XP 변경 시 debounce 동기화
     useEffect(() => {
@@ -143,6 +194,8 @@ export const useCloudSync = ({
         isLeaderboardLoading,
         syncToCloud,
         loadLeaderboard,
+        restoreFromCloud,
+        isRestoring,
         isOnline: isSupabaseEnabled,
         deviceId,
     };

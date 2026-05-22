@@ -85,12 +85,14 @@ const RankRow = ({ user, index, isMe }) => {
     );
 };
 
-const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname }) => {
+const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname, streak }) => {
     const [cloudLeaderboard, setCloudLeaderboard] = useState(null);
     const [cloudMyRank, setCloudMyRank] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [lastUpdated, setLastUpdated] = useState(null);
+    const [error, setError] = useState(null);
     const deviceId = getDeviceId();
+    const streakCount = streak?.count || 0;
 
     // Mock 데이터 기반 리더보드 (폴백)
     const mockLeaderboard = useMemo(() => {
@@ -100,7 +102,7 @@ const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname }) => 
             xp: userXp || 0,
             isMe: true,
             character_type: selectedCharacter || 'garae',
-            streak_count: 0,
+            streak_count: streakCount,
         };
         return [...MOCK_USERS.map(u => ({
             ...u,
@@ -108,7 +110,7 @@ const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname }) => 
             character_type: u.charType,
             streak_count: Math.floor(Math.random() * 10),
         })), me].sort((a, b) => b.xp - a.xp).slice(0, 50);
-    }, [userXp, selectedCharacter, userNickname]);
+    }, [userXp, selectedCharacter, userNickname, streakCount]);
 
     const mockMyPosition = useMemo(() => {
         const all = [...MOCK_USERS, { xp: userXp || 0 }].sort((a, b) => b.xp - a.xp);
@@ -131,7 +133,7 @@ const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname }) => 
                         nickname: userNickname || '나',
                         xp: userXp || 0,
                         character_type: selectedCharacter || 'garae',
-                        streak_count: 0,
+                        streak_count: streakCount,
                         isMe: true,
                     });
                     withMe.sort((a, b) => b.xp - a.xp);
@@ -146,20 +148,40 @@ const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname }) => 
         } finally {
             setIsLoading(false);
         }
-    }, [userXp, selectedCharacter, userNickname, deviceId]);
+    }, [userXp, selectedCharacter, userNickname, deviceId, streakCount]);
 
     useEffect(() => {
         loadCloudLeaderboard();
-        // 실시간 구독
-        const unsubscribe = subscribeLeaderboard(() => {
-            loadCloudLeaderboard();
-        });
-        return unsubscribe;
+        // 실시간 구독 (에러 발생 시 안전하게 폴백)
+        let unsubscribe = () => {};
+        try {
+            unsubscribe = subscribeLeaderboard(() => {
+                loadCloudLeaderboard();
+            });
+        } catch (e) {
+            console.warn('[Rankings] Realtime subscription failed:', e);
+        }
+        return () => { try { unsubscribe(); } catch {} };
     }, [loadCloudLeaderboard]);
 
     const leaderboard = cloudLeaderboard || mockLeaderboard;
     const myPosition = cloudMyRank || mockMyPosition;
     const isLive = !!cloudLeaderboard;
+
+    // 심각한 에러 발생 시 안전 화면
+    if (error) {
+        return (
+            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center justify-center bg-[#F7FAF9] gap-4">
+                <span className="text-4xl">😓</span>
+                <p className="text-[#5B677A] font-bold">랭킹을 불러오지 못했습니다</p>
+                <button onClick={() => { setError(null); loadCloudLeaderboard(); }}
+                    className="px-6 py-2 rounded-2xl bg-[#7C83FF] text-white font-extrabold text-sm">
+                    다시 시도
+                </button>
+                <button onClick={onBack} className="text-[#AEB7C5] font-bold text-sm">←</button>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center overflow-y-auto bg-[#F7FAF9]">
@@ -170,7 +192,7 @@ const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname }) => 
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                         <button onClick={onBack}
                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
-                            <span>←</span><span className="ml-1">뒤로</span>
+                            ←
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
                             <h2 className="text-lg font-black text-slate-700 m-0">랭킹</h2>
