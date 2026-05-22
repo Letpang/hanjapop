@@ -89,37 +89,35 @@ const MissionCalendar = () => {
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
     return (
-        <div className="w-full rounded-[2rem] bg-white border border-[#E9EDF2] shadow-sm overflow-hidden">
+        <div className="w-full rounded-[2rem] bg-white shadow-[0_4px_24px_rgba(0,0,0,0.07)] overflow-hidden">
             {/* 헤더 */}
             <div className="px-6 pt-6 pb-4 flex justify-between items-center">
                 <button onClick={() => { setViewDate(new Date(year, month - 1, 1)); setSelectedDay(null); }}
-                    className="w-10 h-10 rounded-full bg-[#F8FAF9] flex items-center justify-center font-extrabold text-[#AEB7C5] border border-[#E9EDF2] active:scale-90 transition-all">‹</button>
+                    className="w-10 h-10 rounded-full bg-[#F4F6F8] flex items-center justify-center font-extrabold text-[#8E96A8] active:scale-90 transition-all text-lg">‹</button>
                 <div className="flex flex-col items-center gap-1">
-                    <span className="text-[10px] font-extrabold text-[#AEB7C5] tracking-[0.2em] uppercase">{year}</span>
+                    <span className="text-[10px] font-extrabold text-[#B0B8C4] tracking-[0.2em] uppercase">{year}</span>
                     <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-[#5D544F] text-lg tracking-tight">
-                            {month + 1}월 학습 일기
-                        </span>
+                        <span className="font-extrabold text-[#3D3530] text-lg tracking-tight">{month + 1}월 학습 일기</span>
                         {streakCount >= 3 && (
-                            <span className="text-xs font-extrabold text-[#FF9B73] bg-[#FFF0EA] px-2 py-0.5 rounded-full border border-[#FFD4B8]">
+                            <span className="text-xs font-extrabold text-[#FF8D7E] bg-[#FFF2F0] px-2.5 py-0.5 rounded-full">
                                 🔥 {streakCount}일 연속
                             </span>
                         )}
                     </div>
                 </div>
                 <button onClick={() => { setViewDate(new Date(year, month + 1, 1)); setSelectedDay(null); }}
-                    className="w-10 h-10 rounded-full bg-[#F8FAF9] flex items-center justify-center font-extrabold text-[#AEB7C5] border border-[#E9EDF2] active:scale-90 transition-all">›</button>
+                    className="w-10 h-10 rounded-full bg-[#F4F6F8] flex items-center justify-center font-extrabold text-[#8E96A8] active:scale-90 transition-all text-lg">›</button>
             </div>
 
             {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 px-4 mb-2">
+            <div className="grid grid-cols-7 px-5 mb-2">
                 {DAY_NAMES.map((d, i) => (
-                    <div key={d} className={`text-center text-[10px] font-extrabold py-1 tracking-widest ${i === 0 ? 'text-rose-400' : i === 6 ? 'text-[#7C83FF]' : 'text-[#AEB7C5]'}`}>{d}</div>
+                    <div key={d} className={`text-center text-xs font-extrabold py-1 ${i === 0 ? 'text-[#FF8D7E]' : i === 6 ? 'text-[#00C7AE]' : 'text-[#8E96A8]'}`}>{d}</div>
                 ))}
             </div>
 
             {/* 날짜 셀 */}
-            <div className="grid grid-cols-7 gap-1.5 px-4 pb-4">
+            <div className="grid grid-cols-7 gap-2 px-5 pb-4">
                 {cells.map((day, i) => {
                     if (!day) return <div key={`empty-${i}`} />;
                     const { state, isPerfect } = getDayInfo(day);
@@ -128,39 +126,48 @@ const MissionCalendar = () => {
 
                     if (state === 'today') return (
                         <button key={day} onClick={() => setSelectedDay(isSelected ? null : ds)}
-                            className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all ${isSelected ? 'scale-110 shadow-lg shadow-[#C3C6FF]' : 'active:scale-95'} bg-[#7C83FF] shadow-md`}>
-                            <span className="text-[10px] font-extrabold text-white/70 leading-none">오늘</span>
+                            className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all shadow-md shadow-[#00C7AE]/30 ${isSelected ? 'scale-110' : 'active:scale-95'} bg-[#00C7AE]`}>
+                            <span className="text-[9px] font-extrabold text-white/80 leading-none">오늘</span>
                             <span className="text-xs font-extrabold text-white leading-none">{day}</span>
                         </button>
                     );
 
                     if (state === 'done') return (
                         <button key={day} onClick={() => setSelectedDay(isSelected ? null : ds)}
-                            className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all ${isSelected ? 'scale-110' : 'active:scale-95'} ${isPerfect ? 'bg-amber-50 border border-amber-200' : 'bg-[#FFF5F0] border border-[#FFD4B8]'}`}>
+                            className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-0.5 transition-all shadow-sm ${isSelected ? 'scale-110 shadow-md' : 'active:scale-95'} ${isPerfect ? 'bg-[#FFFBEC] shadow-amber-100' : 'bg-[#FFF2F0] shadow-[#FFD4CC]'}`}>
                             <span className="text-sm leading-none">{isPerfect ? '👑' : '📖'}</span>
-                            <span className={`text-[10px] font-extrabold leading-none ${isPerfect ? 'text-amber-500' : 'text-[#FF9B73]'}`}>{day}</span>
+                            <span className={`text-[10px] font-extrabold leading-none ${isPerfect ? 'text-amber-500' : 'text-[#FF8D7E]'}`}>{day}</span>
                         </button>
                     );
 
                     if (state === 'miss') return (
-                        <div key={day} className="aspect-square rounded-2xl flex items-center justify-center bg-[#F8FAF9]">
-                            <span className="text-[10px] font-extrabold text-slate-200">{day}</span>
+                        <div key={day} className="aspect-square rounded-2xl flex items-center justify-center bg-[#F0F2F5]">
+                            <span className="text-[10px] font-extrabold text-[#C5CAD4]">{day}</span>
                         </div>
                     );
 
                     return (
                         <div key={day} className="aspect-square rounded-2xl flex items-center justify-center">
-                            <span className="text-[10px] font-extrabold text-slate-300">{day}</span>
+                            <span className="text-[10px] font-extrabold text-[#C5CAD4]">{day}</span>
                         </div>
                     );
                 })}
             </div>
 
             {/* 범례 */}
-            <div className="flex gap-4 mx-4 mb-4 justify-center bg-[#F8FAF9] py-2.5 rounded-2xl border border-[#E9EDF2]">
-                <div className="flex items-center gap-1.5"><span className="text-xs">📖</span><span className="text-[10px] font-extrabold text-[#AEB7C5]">학습 완료</span></div>
-                <div className="flex items-center gap-1.5"><span className="text-xs">👑</span><span className="text-[10px] font-extrabold text-[#AEB7C5]">완벽 클리어</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#7C83FF]" /><span className="text-[10px] font-extrabold text-[#AEB7C5]">오늘</span></div>
+            <div className="flex gap-5 mx-5 mb-5 justify-center bg-white rounded-2xl py-2.5 shadow-[0_2px_12px_rgba(0,0,0,0.06)] border border-[#F0F2F5]">
+                <div className="flex items-center gap-1.5">
+                    <span className="text-sm">📖</span>
+                    <span className="text-xs font-extrabold text-[#8E96A8]">학습 완료</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="text-sm">👑</span>
+                    <span className="text-xs font-extrabold text-[#8E96A8]">완벽 클리어</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-[#00C7AE] shadow-sm shadow-[#00C7AE]/40" />
+                    <span className="text-xs font-extrabold text-[#8E96A8]">오늘</span>
+                </div>
             </div>
 
             {/* 선택 날짜 상세 */}
@@ -177,49 +184,73 @@ const MissionCalendar = () => {
                 const hasData = hanjaList.length > 0 || correctWords.length > 0 || wrongWords.length > 0;
 
                 return (
-                    <div className="mx-4 mb-4 rounded-2xl bg-[#F8FAF9] border border-[#E9EDF2] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="mx-5 mb-5 rounded-[1.5rem] bg-white shadow-[0_4px_20px_rgba(0,0,0,0.08)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
                         {/* 날짜 헤더 */}
-                        <div className={`px-5 py-4 flex items-center justify-between ${isPerfectDay ? 'bg-gradient-to-r from-amber-50 to-yellow-50' : isToday ? 'bg-gradient-to-r from-[#F0EEFF] to-[#F5F0FF]' : 'bg-white'}`}>
+                        <div className="px-5 pt-5 pb-4 flex items-center justify-between border-b border-[#F4F6F8]">
                             <div>
-                                <div className="text-xs font-extrabold text-[#AEB7C5] tracking-widest">
+                                <div className="text-[11px] font-extrabold text-[#B0B8C4] tracking-widest mb-1">
                                     {isToday ? '오늘의 기록' : selectedDay.replace(/-/g, '.')}
                                 </div>
-                                <div className="text-sm font-extrabold text-[#5D544F] mt-0.5">
+                                <div className="text-base font-extrabold text-[#3D3530]">
                                     {isPerfectDay ? '완벽해요! 👑' : isToday ? '오늘도 성장했어요 ✨' : '열심히 했어요 📖'}
                                 </div>
                             </div>
                             {hasData && (
-                                <div className="flex gap-2">
-                                    {hanjaList.length > 0 && <div className="flex flex-col items-center"><span className="text-sm font-extrabold text-[#2ED6C5]">{hanjaList.length}</span><span className="text-[9px] font-extrabold text-[#AEB7C5]">한자</span></div>}
-                                    {correctWords.length > 0 && <div className="flex flex-col items-center"><span className="text-sm font-extrabold text-[#4CAF8A]">{correctWords.length}</span><span className="text-[9px] font-extrabold text-[#AEB7C5]">맞춤</span></div>}
-                                    {wrongOnly.length > 0 && <div className="flex flex-col items-center"><span className="text-sm font-extrabold text-rose-400">{wrongOnly.length}</span><span className="text-[9px] font-extrabold text-[#AEB7C5]">틀림</span></div>}
+                                <div className="flex gap-3">
+                                    {hanjaList.length > 0 && (
+                                        <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-base font-extrabold text-[#00C7AE]">{hanjaList.length}</span>
+                                            <span className="text-[9px] font-extrabold text-[#B0B8C4]">한자</span>
+                                        </div>
+                                    )}
+                                    {correctWords.length > 0 && (
+                                        <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-base font-extrabold text-[#FF8D7E]">{correctWords.length}</span>
+                                            <span className="text-[9px] font-extrabold text-[#B0B8C4]">맞춤</span>
+                                        </div>
+                                    )}
+                                    {wrongOnly.length > 0 && (
+                                        <div className="flex flex-col items-center gap-0.5">
+                                            <span className="text-base font-extrabold text-[#FF5C4D]">{wrongOnly.length}</span>
+                                            <span className="text-[9px] font-extrabold text-[#B0B8C4]">틀림</span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
 
                         {hasData ? (
-                            <div className="px-5 py-4 flex flex-col gap-4">
-                                {/* 한자어 */}
+                            <div className="px-5 py-4 flex flex-col gap-5">
+                                {/* 한자어 — 민트 계열 */}
                                 {hanjaList.length > 0 && (
                                     <div>
-                                        <div className="text-[10px] font-extrabold text-[#2ED6C5] tracking-widest mb-2 uppercase">한자어 {hanjaList.length}개</div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#00C7AE]" />
+                                            <span className="text-xs font-extrabold text-[#3D3530]">한자어</span>
+                                            <span className="text-xs font-extrabold text-[#B0B8C4]">{hanjaList.length}개</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
                                             {hanjaList.map(h => (
-                                                <span key={h.id} className="px-3 py-1.5 rounded-2xl bg-[#E8F8F4] text-[#1AAB94] text-xs font-extrabold shadow-inner shadow-[#C5EEE7]/50">
-                                                    <span className="text-sm mr-1">{h.hanja}</span>{h.sound}
+                                                <span key={h.id} className="px-3 py-2 rounded-2xl bg-[#E8FAF7] text-[#00A08E] text-xs font-extrabold shadow-sm">
+                                                    <span className="text-sm font-extrabold mr-1.5">{h.hanja}</span>
+                                                    <span className="text-[#4ECFBE]">{h.sound}</span>
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-                                {/* 맞춘 단어 */}
+                                {/* 맞춘 단어 — 코랄 계열 */}
                                 {correctWords.length > 0 && (
                                     <div>
-                                        <div className="text-[10px] font-extrabold text-[#4CAF8A] tracking-widest mb-2 uppercase">맞춘 단어 {correctWords.length}개</div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#FF8D7E]" />
+                                            <span className="text-xs font-extrabold text-[#3D3530]">맞춘 단어</span>
+                                            <span className="text-xs font-extrabold text-[#B0B8C4]">{correctWords.length}개</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
                                             {correctWords.map(w => (
-                                                <span key={w.id} className="px-3 py-1.5 rounded-2xl bg-[#EAF9F3] text-[#2E8B6A] text-xs font-extrabold shadow-inner shadow-[#B2EACF]/40">
-                                                    {w.word} <span className="text-[#7EC8AA]">{w.reading}</span>
+                                                <span key={w.id} className="px-3 py-2 rounded-2xl bg-[#FFF2F0] text-[#D45A4A] text-xs font-extrabold shadow-sm">
+                                                    {w.word} <span className="text-[#FFAA99]">{w.reading}</span>
                                                 </span>
                                             ))}
                                         </div>
@@ -228,23 +259,31 @@ const MissionCalendar = () => {
                                 {/* 틀린 단어 */}
                                 {wrongOnly.length > 0 && (
                                     <div>
-                                        <div className="text-[10px] font-extrabold text-rose-400 tracking-widest mb-2 uppercase">틀린 단어 {wrongOnly.length}개</div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#FF5C4D]" />
+                                            <span className="text-xs font-extrabold text-[#3D3530]">틀린 단어</span>
+                                            <span className="text-xs font-extrabold text-[#B0B8C4]">{wrongOnly.length}개</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
                                             {wrongOnly.map(w => (
-                                                <span key={w.id} className="px-3 py-1.5 rounded-2xl bg-rose-50 text-rose-500 text-xs font-extrabold shadow-inner shadow-rose-100/60">
-                                                    {w.word} <span className="text-rose-300">{w.reading}</span>
+                                                <span key={w.id} className="px-3 py-2 rounded-2xl bg-[#FFF0EE] text-[#CC3322] text-xs font-extrabold shadow-sm border border-[#FFD4CC]">
+                                                    {w.word} <span className="text-[#FF9988]">{w.reading}</span>
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-                                {/* 틀렸다 맞춘 단어 */}
+                                {/* 재도전 성공 */}
                                 {wrongCorrected.length > 0 && (
                                     <div>
-                                        <div className="text-[10px] font-extrabold text-amber-500 tracking-widest mb-2 uppercase">재도전 성공 {wrongCorrected.length}개</div>
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                            <span className="text-xs font-extrabold text-[#3D3530]">재도전 성공</span>
+                                            <span className="text-xs font-extrabold text-[#B0B8C4]">{wrongCorrected.length}개</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
                                             {wrongCorrected.map(w => (
-                                                <span key={w.id} className="px-3 py-1.5 rounded-2xl bg-amber-50 text-amber-600 text-xs font-extrabold shadow-inner shadow-amber-100/60">
+                                                <span key={w.id} className="px-3 py-2 rounded-2xl bg-amber-50 text-amber-700 text-xs font-extrabold shadow-sm">
                                                     {w.word} <span className="text-amber-300">{w.reading}</span>
                                                 </span>
                                             ))}
@@ -253,9 +292,9 @@ const MissionCalendar = () => {
                                 )}
                             </div>
                         ) : (
-                            <div className="px-5 py-6 text-center">
-                                <div className="text-2xl mb-2">😴</div>
-                                <div className="text-xs font-extrabold text-[#AEB7C5]">이 날은 학습 기록이 없어요</div>
+                            <div className="px-5 py-8 text-center">
+                                <div className="text-3xl mb-2">😴</div>
+                                <div className="text-sm font-extrabold text-[#B0B8C4]">이 날은 학습 기록이 없어요</div>
                             </div>
                         )}
                     </div>
@@ -263,7 +302,7 @@ const MissionCalendar = () => {
             })()}
 
             {/* 누적 미니 통계 */}
-            <div className="border-t border-[#E9EDF2] mx-4 mb-1" />
+            <div className="h-px bg-[#F4F6F8] mx-5 mb-1" />
             <MiniCumulativeStats />
         </div>
     );
@@ -309,39 +348,40 @@ const MiniCumulativeStats = () => {
         return { hanjaList, wordList, wrongWordIds: allWrong, studyDays, accuracy, totalActivities };
     }, [studyLog, totalActivity]);
 
-    const streakCopy = streakCount >= 30 ? '🏆 전설이에요!' : streakCount >= 7 ? '🔥 최고 기록!' : streakCount >= 3 ? `${streakCount}일째 도전 중` : streakCount > 0 ? '시작이 좋아요 🌱' : '오늘 시작해봐요';
-    const accuracyCopy = stats.accuracy === null ? null : stats.accuracy >= 90 ? '✨ 완벽해요!' : stats.accuracy >= 70 ? '👍 잘 하고 있어요' : '💪 더 할 수 있어요';
-    const daysCopy = stats.studyDays >= 30 ? '🏆 대단해요!' : stats.studyDays >= 7 ? '꾸준해요 👏' : stats.studyDays > 0 ? `${stats.studyDays}일째 학습 중` : '첫 걸음을 내딛어요';
+    const streakCopy = streakCount >= 30 ? '🏆 전설이에요!' : streakCount >= 7 ? '최고 기록!' : streakCount >= 3 ? `${streakCount}일째 도전 중` : streakCount > 0 ? '시작이 좋아요' : '오늘 시작해봐요';
+    const accuracyCopy = stats.accuracy === null ? null : stats.accuracy >= 90 ? '완벽해요!' : stats.accuracy >= 70 ? '잘 하고 있어요' : '더 할 수 있어요';
+    const daysCopy = stats.studyDays >= 30 ? '대단해요!' : stats.studyDays >= 7 ? '꾸준해요 👏' : stats.studyDays > 0 ? `${stats.studyDays}일째 학습 중` : '첫 걸음을 내딛어요';
 
     return (
-        <div className="px-4 pb-5 pt-4 flex flex-col gap-5">
+        <div className="px-5 pb-6 pt-5 flex flex-col gap-6">
 
             {/* 단어장 섹션 */}
             <div>
-                <div className="text-[10px] font-extrabold text-[#AEB7C5] tracking-widest mb-2.5 uppercase">단어장</div>
-                <div className="flex flex-col gap-2">
+                <div className="text-xs font-extrabold text-[#8E96A8] mb-3">단어장</div>
+                <div className="flex flex-col gap-2.5">
 
                     {/* 학습한 한자어 */}
-                    <div className="rounded-2xl overflow-hidden border border-[#D4F5EE] bg-[#F0FBF8]">
+                    <div className="rounded-[1.25rem] overflow-hidden bg-white shadow-[0_2px_12px_rgba(0,199,174,0.12)] border border-[#D6F5F0]">
                         <button onClick={() => setHanjaOpen(v => !v)}
-                            className="w-full flex items-center justify-between px-4 py-3.5 active:opacity-80 transition-opacity">
-                            <div className="flex items-center gap-2">
-                                <span className="text-base">🀄</span>
-                                <span className="text-sm font-extrabold text-[#1AAB94]">학습한 한자어</span>
+                            className="w-full flex items-center justify-between px-4 py-4 active:opacity-75 transition-opacity">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-2xl bg-[#E8FAF7] flex items-center justify-center text-base shadow-inner">🀄</div>
+                                <span className="text-sm font-extrabold text-[#3D3530]">학습한 한자어</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-extrabold text-[#1AAB94]">{stats.hanjaList.length}</span>
-                                <span className="text-[10px] font-extrabold text-[#2ED6C5] bg-white/60 px-1.5 py-0.5 rounded-full">{hanjaOpen ? '▲' : '▼'}</span>
+                                <span className="text-xl font-extrabold text-[#00C7AE]">{stats.hanjaList.length}</span>
+                                <span className="text-[#B0B8C4] text-xs font-bold">{hanjaOpen ? '▲' : '▼'}</span>
                             </div>
                         </button>
                         {hanjaOpen && (
-                            <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <div className="px-4 pb-4 pt-1 border-t border-[#F0FAF8] animate-in fade-in slide-in-from-top-1 duration-200">
                                 {stats.hanjaList.length === 0
-                                    ? <p className="text-xs text-[#AEB7C5] font-extrabold text-center py-3">아직 학습한 한자어가 없어요</p>
-                                    : <div className="flex flex-wrap gap-1.5">
+                                    ? <p className="text-xs text-[#B0B8C4] font-extrabold text-center py-3">아직 학습한 한자어가 없어요</p>
+                                    : <div className="flex flex-wrap gap-2">
                                         {stats.hanjaList.map(h => (
-                                            <span key={h.id} className="px-3 py-1.5 rounded-2xl bg-white text-[#1AAB94] text-xs font-extrabold shadow-sm border border-[#C5EEE7]">
-                                                <span className="text-sm mr-1">{h.hanja}</span>{h.sound}
+                                            <span key={h.id} className="px-3 py-2 rounded-2xl bg-[#E8FAF7] text-[#00A08E] text-xs font-extrabold shadow-sm">
+                                                <span className="text-sm font-extrabold mr-1.5">{h.hanja}</span>
+                                                <span className="text-[#4ECFBE]">{h.sound}</span>
                                             </span>
                                         ))}
                                     </div>
@@ -351,37 +391,37 @@ const MiniCumulativeStats = () => {
                     </div>
 
                     {/* 학습한 단어 */}
-                    <div className="rounded-2xl overflow-hidden border border-[#FFD4B8] bg-[#FFF5F0]">
+                    <div className="rounded-[1.25rem] overflow-hidden bg-white shadow-[0_2px_12px_rgba(255,141,126,0.12)] border border-[#FFD8D2]">
                         <button onClick={() => setWordsOpen(v => !v)}
-                            className="w-full flex items-center justify-between px-4 py-3.5 active:opacity-80 transition-opacity">
-                            <div className="flex items-center gap-2">
-                                <span className="text-base">📝</span>
-                                <span className="text-sm font-extrabold text-[#E07040]">학습한 단어</span>
+                            className="w-full flex items-center justify-between px-4 py-4 active:opacity-75 transition-opacity">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-2xl bg-[#FFF2F0] flex items-center justify-center text-base shadow-inner">📝</div>
+                                <span className="text-sm font-extrabold text-[#3D3530]">학습한 단어</span>
                                 {stats.wrongWordIds.size > 0 && (
-                                    <span className="text-[10px] font-extrabold text-rose-500 bg-rose-100 px-2 py-0.5 rounded-full">
+                                    <span className="text-[10px] font-extrabold text-[#FF5C4D] bg-[#FFF0EE] px-2 py-0.5 rounded-full">
                                         틀린 적 {stats.wrongWordIds.size}
                                     </span>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-xl font-extrabold text-[#E07040]">{stats.wordList.length}</span>
-                                <span className="text-[10px] font-extrabold text-[#FF9B73] bg-white/60 px-1.5 py-0.5 rounded-full">{wordsOpen ? '▲' : '▼'}</span>
+                                <span className="text-xl font-extrabold text-[#FF8D7E]">{stats.wordList.length}</span>
+                                <span className="text-[#B0B8C4] text-xs font-bold">{wordsOpen ? '▲' : '▼'}</span>
                             </div>
                         </button>
                         {wordsOpen && (
-                            <div className="px-4 pb-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <div className="px-4 pb-4 pt-1 border-t border-[#FFF5F3] animate-in fade-in slide-in-from-top-1 duration-200">
                                 {stats.wordList.length === 0
-                                    ? <p className="text-xs text-[#AEB7C5] font-extrabold text-center py-3">아직 학습한 단어가 없어요</p>
-                                    : <div className="flex flex-wrap gap-1.5">
+                                    ? <p className="text-xs text-[#B0B8C4] font-extrabold text-center py-3">아직 학습한 단어가 없어요</p>
+                                    : <div className="flex flex-wrap gap-2">
                                         {stats.wordList.map(w => {
                                             const hasWrong = stats.wrongWordIds.has(w.id);
                                             return (
-                                                <span key={w.id} className={`px-3 py-1.5 rounded-2xl text-xs font-extrabold shadow-sm border ${
+                                                <span key={w.id} className={`px-3 py-2 rounded-2xl text-xs font-extrabold shadow-sm ${
                                                     hasWrong
-                                                        ? 'bg-rose-50 border-rose-200 text-rose-500'
-                                                        : 'bg-white border-[#FFD4B8] text-[#E07040]'
+                                                        ? 'bg-[#FFF0EE] text-[#CC3322] border border-[#FFD4CC]'
+                                                        : 'bg-[#FFF2F0] text-[#D45A4A]'
                                                 }`}>
-                                                    {w.word} <span className={hasWrong ? 'text-rose-300' : 'text-[#FFBB88]'}>{w.reading}</span>
+                                                    {w.word} <span className={hasWrong ? 'text-[#FF9988]' : 'text-[#FFAA99]'}>{w.reading}</span>
                                                 </span>
                                             );
                                         })}
@@ -396,37 +436,37 @@ const MiniCumulativeStats = () => {
 
             {/* 학습 현황 */}
             <div>
-                <div className="text-[10px] font-extrabold text-[#AEB7C5] tracking-widest mb-2.5 uppercase">학습 현황</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="text-xs font-extrabold text-[#8E96A8] mb-3">학습 현황</div>
+                <div className="grid grid-cols-2 gap-3">
                     {/* 총 학습일 */}
-                    <div className="flex flex-col gap-1 p-4 rounded-2xl bg-[#F0EEFF] border border-[#D4CEFF]">
-                        <span className="text-xl">📅</span>
-                        <span className="text-2xl font-extrabold text-[#5B52D4] leading-none mt-1">{stats.studyDays}</span>
-                        <span className="text-[10px] font-extrabold text-[#7C83FF] tracking-widest">총 학습일</span>
-                        <span className="text-[10px] font-extrabold text-[#9DA4FF] mt-0.5">{daysCopy}</span>
+                    <div className="flex flex-col gap-2 p-4 rounded-[1.25rem] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
+                        <div className="w-10 h-10 rounded-2xl bg-[#EEF0FF] flex items-center justify-center text-xl shadow-inner">📅</div>
+                        <span className="text-2xl font-extrabold text-[#3D3530] leading-none mt-1">{stats.studyDays}</span>
+                        <span className="text-xs font-extrabold text-[#8E96A8]">총 학습일</span>
+                        <span className="text-xs font-extrabold text-[#00C7AE]">{daysCopy}</span>
                     </div>
                     {/* 연속 학습 */}
-                    <div className="flex flex-col gap-1 p-4 rounded-2xl bg-[#FFF3EC] border border-[#FFD4B8]">
-                        <span className="text-xl">🔥</span>
-                        <span className="text-2xl font-extrabold text-[#E07040] leading-none mt-1">{streakCount}</span>
-                        <span className="text-[10px] font-extrabold text-[#FF9B73] tracking-widest">연속 학습</span>
-                        <span className="text-[10px] font-extrabold text-[#FFB888] mt-0.5">{streakCopy}</span>
+                    <div className="flex flex-col gap-2 p-4 rounded-[1.25rem] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
+                        <div className="w-10 h-10 rounded-2xl bg-[#FFF2F0] flex items-center justify-center text-xl shadow-inner">🔥</div>
+                        <span className="text-2xl font-extrabold text-[#3D3530] leading-none mt-1">{streakCount}</span>
+                        <span className="text-xs font-extrabold text-[#8E96A8]">연속 학습</span>
+                        <span className="text-xs font-extrabold text-[#FF8D7E]">{streakCopy}</span>
                     </div>
                     {/* 정답률 */}
-                    <div className="flex flex-col gap-1 p-4 rounded-2xl bg-[#EDFAF4] border border-[#B2EACF]">
-                        <span className="text-xl">⭐</span>
-                        <span className="text-2xl font-extrabold text-[#2E8B6A] leading-none mt-1">
+                    <div className="flex flex-col gap-2 p-4 rounded-[1.25rem] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
+                        <div className="w-10 h-10 rounded-2xl bg-[#FFFBE8] flex items-center justify-center text-xl shadow-inner">⭐</div>
+                        <span className="text-2xl font-extrabold text-[#3D3530] leading-none mt-1">
                             {stats.accuracy !== null ? `${stats.accuracy}%` : '-'}
                         </span>
-                        <span className="text-[10px] font-extrabold text-[#4CAF8A] tracking-widest">정답률</span>
-                        {accuracyCopy && <span className="text-[10px] font-extrabold text-[#7EC8AA] mt-0.5">{accuracyCopy}</span>}
+                        <span className="text-xs font-extrabold text-[#8E96A8]">정답률</span>
+                        {accuracyCopy && <span className="text-xs font-extrabold text-[#00C7AE]">{accuracyCopy}</span>}
                     </div>
                     {/* 총 활동 */}
-                    <div className="flex flex-col gap-1 p-4 rounded-2xl bg-[#F8F4FF] border border-[#E0D4FF]">
-                        <span className="text-xl">⚡</span>
-                        <span className="text-2xl font-extrabold text-[#7C4FD4] leading-none mt-1">{stats.totalActivities}</span>
-                        <span className="text-[10px] font-extrabold text-[#A47FE0] tracking-widest">총 활동</span>
-                        <span className="text-[10px] font-extrabold text-[#BBA4F0] mt-0.5">{stats.totalActivities > 0 ? '열심히 하고 있어요!' : '첫 활동을 시작해요'}</span>
+                    <div className="flex flex-col gap-2 p-4 rounded-[1.25rem] bg-white shadow-[0_2px_12px_rgba(0,0,0,0.07)]">
+                        <div className="w-10 h-10 rounded-2xl bg-[#F5F2FF] flex items-center justify-center text-xl shadow-inner">⚡</div>
+                        <span className="text-2xl font-extrabold text-[#3D3530] leading-none mt-1">{stats.totalActivities}</span>
+                        <span className="text-xs font-extrabold text-[#8E96A8]">총 활동</span>
+                        <span className="text-xs font-extrabold text-[#FF8D7E]">{stats.totalActivities > 0 ? '열심히 하고 있어요!' : '첫 활동을 시작해요'}</span>
                     </div>
                 </div>
             </div>
