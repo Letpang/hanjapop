@@ -1,267 +1,177 @@
-/**
- * RankingsScreen.jsx
- * 실시간 랭킹 화면 (Supabase 연동 + Mock 폴백)
- *
- * Supabase 미설정 시: Mock 데이터로 자동 폴백
- * Supabase 설정 시: 실시간 업데이트 구독
- */
+import { useState, useMemo } from 'react';
+import { SK } from '../constants/storageKeys.js';
+import HANJA_DATA from '../hanja_unified.json';
+import { wordById } from '../utils/wordUtils.js';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { MOCK_USERS, getRankDetails } from '../utils/rankUtils.js';
-import { isSupabaseEnabled, fetchLeaderboard, fetchMyRank, subscribeLeaderboard, getDeviceId } from '../lib/supabase.js';
+const hanjaById = Object.fromEntries(HANJA_DATA.map(h => [h.id, h]));
 
-const getMedal = (index) => {
-    if (index === 0) return <span className="text-3xl md:text-4xl drop-shadow-lg">🥇</span>;
-    if (index === 1) return <span className="text-3xl md:text-4xl drop-shadow-lg">🥈</span>;
-    if (index === 2) return <span className="text-3xl md:text-4xl drop-shadow-lg">🥉</span>;
-    return <span className="text-lg md:text-xl font-extrabold text-[#AEB7C5] dark:text-[#5B677A]">#{index + 1}</span>;
-};
+const RankingsScreen = ({ onBack, isDarkMode }) => {
+    const [hanjaOpen, setHanjaOpen] = useState(false);
+    const [wordsOpen, setWordsOpen] = useState(false);
 
-// 실시간 지시자 컴포넌트
-const LiveIndicator = ({ isOnline }) => (
-    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-        style={{
-            background: isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(148,163,184,0.15)',
-            border: `1px solid ${isOnline ? 'rgba(16,185,129,0.3)' : 'rgba(148,163,184,0.3)'}`,
-        }}>
-        <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[#FF9B73] animate-pulse' : 'bg-slate-400'}`} />
-        <span className={`text-xs font-extrabold ${isOnline ? 'text-[#FF9B73] dark:text-[#FF9B73]' : 'text-[#AEB7C5]'}`}>
-            {isOnline ? 'LIVE' : 'LOCAL'}
-        </span>
-    </div>
-);
+    const studyLogDays = useMemo(() => {
+        try {
+            const raw = JSON.parse(localStorage.getItem(SK.STUDY_LOG) || '{}');
+            return raw.days || {};
+        } catch { return {}; }
+    }, []);
 
-// 랭킹 행 컴포넌트
-const RankRow = ({ user, index, isMe }) => {
-    const rankInfo = getRankDetails(user.xp || 0, user.character_type || user.charType || 'garae', index + 1);
+    const studyLogTotal = useMemo(() => {
+        try {
+            const raw = JSON.parse(localStorage.getItem(SK.STUDY_LOG) || '{}');
+            return raw.total || {};
+        } catch { return {}; }
+    }, []);
+
+    const missionHistory = useMemo(() => {
+        try { return JSON.parse(localStorage.getItem(SK.MISSION_HISTORY) || '{}'); } catch { return {}; }
+    }, []);
+
+    const stats = useMemo(() => {
+        const allHanjaIds = new Set();
+        const allWordIds = new Set();
+        const allCorrect = new Set();
+        const allWrong = new Set();
+        let studyDays = 0;
+
+        const allLoggedDays = new Set([
+            ...Object.keys(studyLogDays),
+            ...Object.keys(missionHistory)
+        ]);
+
+        allLoggedDays.forEach(ds => {
+            const entry = studyLogDays[ds] || {};
+            const hasMission = missionHistory && missionHistory[ds] && missionHistory[ds].length > 0;
+            const hasActivity = hasMission || (
+                (entry.hanjaIds?.length > 0) ||
+                (entry.wordIds?.length > 0) ||
+                (entry.correctWordIds?.length > 0) ||
+                (entry.wrongWordIds?.length > 0)
+            );
+            if (hasActivity) studyDays++;
+            (entry.hanjaIds || []).forEach(id => allHanjaIds.add(id));
+            (entry.wordIds || []).forEach(id => allWordIds.add(id));
+            (entry.correctWordIds || []).forEach(id => allCorrect.add(id));
+            (entry.wrongWordIds || []).forEach(id => allWrong.add(id));
+        });
+        const accuracy = (allCorrect.size + allWrong.size) > 0
+            ? Math.round((allCorrect.size / (allCorrect.size + allWrong.size)) * 100) : null;
+        const totalActivities =
+            (studyLogTotal.matchGame || 0) + (studyLogTotal.shootGame || 0) +
+            (studyLogTotal.wordQuiz || 0) + (studyLogTotal.sentenceQuiz || 0) +
+            (studyLogTotal.writing || 0);
+        const hanjaList = [...allHanjaIds].map(id => hanjaById[id]).filter(Boolean);
+        const wordList = [...allWordIds].map(id => wordById[id]).filter(Boolean);
+        return { hanjaList, wordList, wrongWordIds: allWrong, studyDays, accuracy, totalActivities };
+    }, [studyLog, totalActivity, missionHistory]);
 
     return (
-        <div
-            className={`flex items-center p-3 md:p-4 rounded-3xl transition-all duration-300 bg-white border border-[#E9EDF2] shadow-lg shadow-slate-100/50 ${
-                isMe ? 'ring-2 ring-[#FFB433] ring-offset-2' : ''
-            }`}
-        >
-            {/* 순위 */}
-            <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center shrink-0">
-                {getMedal(index)}
-            </div>
-
-            {/* 아바타 */}
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl ml-2 flex items-center justify-center shrink-0 overflow-hidden bg-[#F8FAF9] border border-[#E9EDF2] shadow-sm">
-                <img
-                    src={rankInfo.avatar}
-                    alt="avatar"
-                    className="w-full h-full object-contain"
-                    onError={(e) => { e.target.src = '/assets/images/characters/garae/rank_1.webp'; }}
-                />
-            </div>
-
-            {/* 이름 + 레벨 */}
-            <div className="ml-3 flex-1 flex flex-col min-w-0">
-                <span className={`font-extrabold text-sm md:text-base truncate ${
-                    isMe ? 'text-[#8B5E00] dark:text-[#FFB433]/25' : 'text-slate-700 dark:text-slate-100'
-                }`}>
-                    {user.nickname || user.name || '학습자'}{isMe && ' 👈'}
-                </span>
-                <span className="text-xs md:text-xs font-bold text-[#AEB7C5] dark:text-[#5B677A]">
-                    LV.{rankInfo.level} · {rankInfo.name}
-                    {user.streak_count > 0 && (
-                        <div className="flex items-center gap-1 bg-[#FFB433]/10 px-2 py-0.5 rounded-lg border border-[#FFB433]/15">
-                            <span className="streak-badge text-[#FFB433] text-xs">✦</span>
-                            <span className="text-xs font-extrabold text-[#FFB433]">{user.streak_count}</span>
-                        </div>
-                    )}
-                </span>
-            </div>
-
-            {/* XP */}
-            <div className={`font-extrabold text-base md:text-lg tracking-tighter ${
-                isMe ? 'text-[#FFB433] dark:text-[#FFB433]' : 'text-[#7C83FF] dark:text-[#7C83FF]'
-            }`}>
-                {(user.xp || 0).toLocaleString()}
-                <span className="text-xs font-bold text-[#AEB7C5] ml-1">XP</span>
-            </div>
-        </div>
-    );
-};
-
-const RankingsScreen = ({ onBack, userXp, selectedCharacter, userNickname, streak }) => {
-    const [cloudLeaderboard, setCloudLeaderboard] = useState(null);
-    const [cloudMyRank, setCloudMyRank] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState(null);
-    const [error, setError] = useState(null);
-    const deviceId = getDeviceId();
-    const streakCount = streak?.count || 0;
-
-    // Mock 데이터 기반 리더보드 (폴백)
-    const mockLeaderboard = useMemo(() => {
-        const me = {
-            id: 'me',
-            nickname: userNickname || '나',
-            xp: userXp || 0,
-            isMe: true,
-            character_type: selectedCharacter || 'garae',
-            streak_count: streakCount,
-        };
-        return [...MOCK_USERS.map(u => ({
-            ...u,
-            nickname: u.name,
-            character_type: u.charType,
-            streak_count: Math.floor(Math.random() * 10),
-        })), me].sort((a, b) => b.xp - a.xp).slice(0, 50);
-    }, [userXp, selectedCharacter, userNickname, streakCount]);
-
-    const mockMyPosition = useMemo(() => {
-        const all = [...MOCK_USERS, { xp: userXp || 0 }].sort((a, b) => b.xp - a.xp);
-        return all.findIndex(u => u.xp <= (userXp || 0)) + 1;
-    }, [userXp]);
-
-    // Supabase 리더보드 로드
-    const loadCloudLeaderboard = useCallback(async () => {
-        if (!isSupabaseEnabled) return;
-        setIsLoading(true);
-        try {
-            const { data } = await fetchLeaderboard();
-            if (data) {
-                const withMe = data.map(u => ({ ...u, isMe: u.device_id === deviceId }));
-                // 내가 없으면 추가
-                const meInList = withMe.some(u => u.isMe);
-                if (!meInList) {
-                    withMe.push({
-                        device_id: deviceId,
-                        nickname: userNickname || '나',
-                        xp: userXp || 0,
-                        character_type: selectedCharacter || 'garae',
-                        streak_count: streakCount,
-                        isMe: true,
-                    });
-                    withMe.sort((a, b) => b.xp - a.xp);
-                }
-                setCloudLeaderboard(withMe.slice(0, 50));
-                setLastUpdated(new Date());
-            }
-            const { rank } = await fetchMyRank(userXp || 0);
-            if (rank) setCloudMyRank(rank);
-        } catch (e) {
-            console.warn('[Rankings] Cloud load failed:', e);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [userXp, selectedCharacter, userNickname, deviceId, streakCount]);
-
-    useEffect(() => {
-        loadCloudLeaderboard();
-        // 실시간 구독 (에러 발생 시 안전하게 폴백)
-        let unsubscribe = () => {};
-        try {
-            unsubscribe = subscribeLeaderboard(() => {
-                loadCloudLeaderboard();
-            });
-        } catch (e) {
-            console.warn('[Rankings] Realtime subscription failed:', e);
-        }
-        return () => { try { unsubscribe(); } catch {} };
-    }, [loadCloudLeaderboard]);
-
-    const leaderboard = cloudLeaderboard || mockLeaderboard;
-    const myPosition = cloudMyRank || mockMyPosition;
-    const isLive = !!cloudLeaderboard;
-
-    // 심각한 에러 발생 시 안전 화면
-    if (error) {
-        return (
-            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center justify-center bg-[#F7FAF9] gap-4">
-                <span className="text-4xl">😓</span>
-                <p className="text-[#5B677A] font-bold">랭킹을 불러오지 못했습니다</p>
-                <button onClick={() => { setError(null); loadCloudLeaderboard(); }}
-                    className="px-6 py-2 rounded-2xl bg-[#7C83FF] text-white font-extrabold text-sm">
-                    다시 시도
-                </button>
-                <button onClick={onBack} className="text-[#AEB7C5] font-bold text-sm">←</button>
-            </div>
-        );
-    }
-
-    return (
-        <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center overflow-y-auto bg-[#F7FAF9]">
+        <div className={`fixed inset-0 w-full h-full z-50 flex flex-col items-center overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#3D3530]'}`}>
             <div className="w-full max-w-lg mx-auto flex flex-col relative z-10 px-4 pt-4 pb-20 safe-top">
-
                 {/* 헤더 */}
-                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-6">
+                    <div className={`flex items-center justify-between rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border w-full ${isDarkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-white'} backdrop-blur-md`}>
                         <button onClick={onBack}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
+                            className={`flex items-center justify-center border-2 rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black gap-1 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-white text-[#5B677A]'}`}>
                             ←
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <h2 className="text-lg font-black text-slate-700 m-0">랭킹</h2>
-                            <LiveIndicator isOnline={isLive} />
+                            <h2 className={`text-lg font-black m-0 ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>단어장</h2>
                         </div>
-                        <button
-                            onClick={loadCloudLeaderboard}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-[#AEB7C5] hover:text-[#7C83FF] transition-colors ${isLoading ? 'animate-spin' : ''}`}
-                        >
-                            <span className="text-lg font-extrabold">↻</span>
-                        </button>
+                        <div className="w-10 h-10" />
                     </div>
                 </div>
 
-                {/* 내 순위 배너 */}
-                <div className="mb-6 p-6 rounded-[2.5rem] flex items-center gap-6 bg-white border border-[#E9EDF2] shadow-xl shadow-slate-100/50 ring-2 ring-[#FFB433] ring-offset-2">
-                    <div className="flex flex-col items-center">
-                        <span className="text-4xl font-extrabold text-[#FFB433] tracking-tighter">
-                            #{myPosition}
-                        </span>
-                        <span className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-[0.2em]">Rank</span>
+                {/* 누적 미니 통계 뷰 */}
+                <div className="px-5 pb-6 pt-2 flex flex-col gap-6">
+                    <div className="flex flex-col gap-4">
+
+                        {/* 학습한 한자어 */}
+                        <div className={`rounded-[1.8rem] overflow-hidden shadow-md border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#D6F5F0]/50'}`}>
+                            <button onClick={() => setHanjaOpen(v => !v)}
+                                className="w-full flex items-center justify-between px-5 py-4 active:opacity-75 transition-opacity">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-[#E8FAF7] border-[#D6F5F0]/30'}`}>
+                                        <img src="/assets/images/icons/study.png" className="w-7 h-7 object-contain" alt="학습한 한자어" />
+                                    </div>
+                                    <span className={`text-sm font-black ${isDarkMode ? 'text-white' : 'text-[#3D3530]'}`}>학습한 한자어</span>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-xl font-black text-[#00C7AE] font-['Outfit']">{stats.hanjaList.length}</span>
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center border-2 shadow-md transition-all ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-white text-[#5B677A]'}`}>
+                                        <span className="text-[9px] font-black">{hanjaOpen ? '▲' : '▼'}</span>
+                                    </div>
+                                </div>
+                            </button>
+                            {hanjaOpen && (
+                                <div className={`px-5 pb-5 pt-2 border-t ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-[#F0FAF8]/60 bg-white'} animate-in fade-in slide-in-from-top-1 duration-200`}>
+                                    {stats.hanjaList.length === 0
+                                        ? <p className="text-xs text-[#B0B8C4] font-black text-center py-4">아직 학습한 한자어가 없어요</p>
+                                        : <div className="flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto pr-1">
+                                            {stats.hanjaList.map(h => (
+                                                <span key={h.id} className={`px-3 py-2 rounded-2xl text-xs font-extrabold shadow-sm whitespace-nowrap ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-[#F4F6F8]/70 text-[#5D677A]'}`}>
+                                                    <span className="text-sm font-extrabold mr-1.5">{h.hanja}</span>
+                                                    <span className={isDarkMode ? 'text-slate-400' : 'text-[#AEB7C5]'}>{h.sound}</span>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    }
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 학습한 단어 */}
+                        <div className={`rounded-[1.8rem] overflow-hidden shadow-md border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-[#FFD8D2]/50'}`}>
+                            <button onClick={() => setWordsOpen(v => !v)}
+                                className="w-full flex items-center justify-between px-5 py-4 active:opacity-75 transition-opacity">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-[#FFF2F0] border-[#FFD8D2]/30'}`}>
+                                        <img src="/assets/images/icons/writing.png" className="w-7 h-7 object-contain" alt="학습한 단어" />
+                                    </div>
+                                    <span className={`text-sm font-black ${isDarkMode ? 'text-white' : 'text-[#3D3530]'} whitespace-nowrap`}>학습한 단어</span>
+                                    {stats.wrongWordIds.size > 0 && (
+                                        <span className="text-[10px] font-black text-[#FF5C4D] bg-[#FFF0EE] px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                                            틀린 적 {stats.wrongWordIds.size}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-xl font-black text-[#FF8D7E] font-['Outfit']">{stats.wordList.length}</span>
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center border-2 shadow-md transition-all ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-white text-[#5B677A]'}`}>
+                                        <span className="text-[9px] font-black">{wordsOpen ? '▲' : '▼'}</span>
+                                    </div>
+                                </div>
+                            </button>
+                            {wordsOpen && (
+                                <div className={`px-5 pb-5 pt-2 border-t ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-[#FFF5F3] bg-white'} animate-in fade-in slide-in-from-top-1 duration-200`}>
+                                    {stats.wordList.length === 0
+                                        ? <p className="text-xs text-[#B0B8C4] font-extrabold text-center py-4">아직 학습한 단어가 없어요</p>
+                                        : <div className="flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto pr-1">
+                                            {stats.wordList.map(w => {
+                                                const hasWrong = stats.wrongWordIds.has(w.id);
+                                                return (
+                                                    <span key={w.id} className={`px-3 py-2 rounded-2xl text-xs font-extrabold shadow-sm whitespace-nowrap ${
+                                                        hasWrong
+                                                            ? isDarkMode
+                                                                ? 'bg-[#FF3B30]/10 text-red-300 border border-[#FF453A]/20'
+                                                                : 'bg-[#FFF0EE]/50 text-[#CC5544] border border-[#FFD4CC]/50'
+                                                            : isDarkMode
+                                                                ? 'bg-slate-800 text-slate-300'
+                                                                : 'bg-[#F4F6F8]/70 text-[#5D677A]'
+                                                    }`}>
+                                                        {w.word} <span className={hasWrong ? 'text-red-400/80' : (isDarkMode ? 'text-slate-400' : 'text-[#AEB7C5]')}>{w.reading}</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    }
+                                </div>
+                            )}
+                        </div>
+
                     </div>
-                    <div className="w-px h-10 bg-[#F4F7F8]" />
-                    <div className="flex-1">
-                        <div className="font-extrabold text-[#5D544F] text-lg tracking-tight uppercase">
-                            {userNickname || '나'}
-                        </div>
-                        <div className="text-[#7C83FF] font-bold text-xs">
-                            {(userXp || 0).toLocaleString()} XP
-                        </div>
-                    </div>
-                    {lastUpdated && (
-                        <div className="text-xs text-[#AEB7C5] font-extrabold uppercase tracking-widest text-right">
-                            {lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                    )}
                 </div>
 
-                {/* 로딩 상태 */}
-                {isLoading && (
-                    <div className="text-center py-4">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl"
-                            style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)' }}>
-                            <div className="w-4 h-4 border-2 border-[#7C83FF] border-t-transparent rounded-full animate-spin" />
-                            <span className="text-sm font-bold text-[#5B677A]">실시간 데이터 로딩 중...</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* 리더보드 */}
-                <div className="flex flex-col gap-2">
-                    {leaderboard.map((user, index) => (
-                        <RankRow
-                            key={user.device_id || user.id || index}
-                            user={user}
-                            index={index}
-                            isMe={user.isMe || false}
-                        />
-                    ))}
-                </div>
-
-                {/* 오프라인 안내 */}
-                {!isSupabaseEnabled && (
-                    <div className="mt-6 p-4 rounded-3xl text-center bg-white border border-[#E9EDF2] shadow-sm">
-                        <p className="text-xs text-[#AEB7C5] font-extrabold uppercase tracking-[0.2em]">
-                            💡 Sync with Supabase for Live Rankings
-                        </p>
-                    </div>
-                )}
             </div>
         </div>
     );

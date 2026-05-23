@@ -10,8 +10,9 @@ import { isSessionDoneToday } from './utils/sessionUtils.js';
 import { LangProvider } from './LangContext.jsx';
 import { SK } from './constants/storageKeys.js';
 import { updateRecord } from './utils/recordUtils.js';
-import { useDailyStudyLog, getTodaySeenWordIds } from './hooks/useDailyStudyLog.js';
-import { wordByString } from './utils/wordUtils.js';
+import { useHanjaData } from './hooks/useHanjaData.js';
+import { useWordData } from './hooks/useWordData.js';
+import { useStudyLog } from './hooks/useStudyLog.js';
 
 const FlashcardScreen        = lazy(() => import('./components/FlashcardScreen.jsx'));
 const WritingScreen          = lazy(() => import('./components/WritingScreen.jsx'));
@@ -33,12 +34,8 @@ import { getLevel } from './utils/rankUtils.js';
 import { useAdMob } from './hooks/useAdMob.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
-import { useMastery } from './hooks/useMastery.js';
-import { useTotalStats } from './hooks/useTotalStats.js';
-import { useSRS } from './hooks/useSRS.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
 import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
-import { useWordMastery } from './hooks/useWordMastery.js';
 
 const App = () => {
     // 온보딩 완료 여부
@@ -66,11 +63,13 @@ const App = () => {
     });
     const [sessionDoneToday, setSessionDoneToday] = useState(() => isSessionDoneToday());
 
-    // 레거시 키 일괄 제거 (구 행성/XP/스티커 시스템 잔재)
+    // 레거시 키 일괄 제거
     useEffect(() => {
         ['hanja_active_planet','hanja_dark_mode','hanja_last_planet','hanja_stages_save',
          'hanja_stickers_save','hanja_writing_paths','hanja_xp_save','intro_hook_done',
-         'main_seen_hanja','unlocked_characters','journey_state','unlocked_stickers'].forEach(k => localStorage.removeItem(k));
+         'main_seen_hanja','unlocked_characters','journey_state','unlocked_stickers',
+         'mastery_data','srs_data','word_wrong_data','today_stats','total_activity_stats',
+         'daily_study_log','main_seen_words'].forEach(k => localStorage.removeItem(k));
     }, []);
 
     // Persistence
@@ -102,65 +101,98 @@ const App = () => {
 
     const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission(sessionDoneToday);
 
-    // 오늘 활동 통계 (CoachCard용)
-    const [todayStats, setTodayStats] = useState(() => {
-        try {
-            const saved = localStorage.getItem(SK.TODAY_STATS);
-            const today = new Date().toDateString();
-            const parsed = saved ? JSON.parse(saved) : null;
-            if (parsed && parsed.date === today) return parsed;
-            return { date: today, flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0, wordQuiz: 0 };
-        } catch(e) { return { date: new Date().toDateString(), flashcard: 0, writing: 0, matchGame: 0, shootGame: 0, sentenceQuiz: 0, wordQuiz: 0 }; }
-    });
-    const addTodayStat = useCallback((type) => {
-        setTodayStats(prev => {
-            const updated = { ...prev, [type]: (prev[type] || 0) + 1 };
-            localStorage.setItem(SK.TODAY_STATS, JSON.stringify(updated));
-            return updated;
-        });
-    }, []);
-    const { mastery, markSeen, markCorrect, markWrong, clearWrong, getStats, getMasteryLevel } = useMastery();
-    const { logHanja, logWordId, logCorrectWord, logWrongWord } = useDailyStudyLog();
-    const { wordWrong, markWordWrong, clearWordWrongByHanjaId, getWrongWordHanjaIds } = useWordMastery();
-    const { totalStats, increment } = useTotalStats();
-    const { srsData, markCorrect: srsMarkCorrect, markWrong: srsMarkWrong, getDueItems, getWeightedPool, getStats: getSrsStats } = useSRS();
+    // ── 통합 학습 데이터 훅 ──────────────────────────────────────────────────
+    const {
+        hanjaData,
+        markSeen, markCorrect, markWrong, clearWrong,
+        getDueHanja, getWeightedPool, getMasteryLevel, getStats,
+    } = useHanjaData();
+
+    const {
+        wordData,
+        markWordWrong, markWordCorrect, clearWordWrong,
+        clearWordWrongByHanjaId, getDueWordIds, getWrongWordHanjaIds,
+    } = useWordData();
+
+    const {
+        log, totalStats, todayStats,
+        logHanja, logWord, logCorrectWord, logWrongWord, logActivity,
+        getTodayWordIds,
+    } = useStudyLog();
+
+    // addTodayStat / increment → logActivity로 통합
+    const addTodayStat = logActivity;
+    const increment = useCallback((key, amount = 1) => {
+        // total stats는 useStudyLog 내부에서 logActivity 시 자동 증가
+        // 별도 increment가 필요한 경우(wordCorrect 등)만 처리
+        if (key === 'wordCorrect') logCorrectWord(null); // wordCorrect 통계 누적
+    }, [logCorrectWord]);
+
     const { currentDay, completedDay, currentDayData, clearedHanjaIds, advanceDay } = useCurriculumProgress();
     const currentDayHanjaIds = useMemo(
         () => (currentDayData?.hanja || []).map(h => h.id).filter(Boolean),
         [currentDayData]
     );
 
-    // 메인 메뉴 standalone용: 방금 완료한 스테이지(completedDay) 한자
-    // (currentDay는 이미 다음 스테이지를 가리키므로 사용 불가)
     const lastCompletedDayHanjaIds = useMemo(() => {
         if (!completedDay) return [];
         const dayData = DAILY_CURRICULUM[completedDay - 1];
         return (dayData?.hanja || []).map(h => h.id).filter(Boolean);
     }, [completedDay]);
 
-    // SRS 복습 후보: 완료된 스테이지 중 마지막 제외
     const pastHanjaIds = useMemo(() =>
         clearedHanjaIds.filter(id => !lastCompletedDayHanjaIds.includes(id)),
         [clearedHanjaIds, lastCompletedDayHanjaIds]
     );
 
-    // 메인화면 공유 풀: 마지막 완료 스테이지(70%) + SRS 과거(30%)
-    const sessionContentPool = useMemo(() =>
-        lastCompletedDayHanjaIds.length > 0
-            ? buildUnifiedPool(lastCompletedDayHanjaIds, HANJA_DATA, srsData, mastery, pastHanjaIds)
-            : null,
-        [lastCompletedDayHanjaIds, srsData, mastery, pastHanjaIds]
-    );
+    // 메인화면 공유 풀: 하루 세션 시작 시 한 번만 계산 (커리큘럼 날짜가 바뀔 때만 재계산)
+    // hanjaData를 deps에 넣으면 맞출 때마다 재셔플되어 게임 도중 풀이 초기화됨
+    const hanjaDataRef = useRef(hanjaData);
+    useEffect(() => { hanjaDataRef.current = hanjaData; }, [hanjaData]);
 
-    // 단어 ID 로깅 (일일 학습 로그용)
+    const sessionContentPool = useMemo(() => {
+        if (lastCompletedDayHanjaIds.length === 0) return null;
+        // 계산 시점의 hanjaData 스냅샷 사용 (이후 hanjaData가 변해도 풀은 그대로 유지)
+        return buildUnifiedPool(lastCompletedDayHanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, pastHanjaIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [lastCompletedDayHanjaIds, pastHanjaIds]); // hanjaData 의도적으로 제외
+
+    // ── 세션 공유 seen 추적 (4개 게임 간 공유) ────────────────────────────────
+    // 하루 커리큘럼이 바뀔 때 초기화 — 같은 날 내에선 게임 간 연속성 유지
+    const [sessionSeenHanjaIds, setSessionSeenHanjaIds] = useState([]);
+    const [sessionSeenWordIds, setSessionSeenWordIds] = useState([]);
+    useEffect(() => {
+        setSessionSeenHanjaIds([]);
+        setSessionSeenWordIds([]);
+    }, [lastCompletedDayHanjaIds]);
+
+    const markHanjaSeenInSession = useCallback((hanjaIds) => {
+        if (!hanjaIds?.length) return;
+        setSessionSeenHanjaIds(prev => {
+            const s = new Set(prev);
+            hanjaIds.forEach(id => { if (id != null) s.add(id); });
+            return prev.length === s.size ? prev : [...s];
+        });
+    }, []);
+
+    const markWordSeenInSession = useCallback((wordIds) => {
+        if (!wordIds?.length) return;
+        setSessionSeenWordIds(prev => {
+            const s = new Set(prev);
+            wordIds.forEach(id => { if (id != null) s.add(id); });
+            return prev.length === s.size ? prev : [...s];
+        });
+    }, []);
+
+    // 단어 ID 로깅 (study_log 기록용 — seen 추적과 별개)
     const addMainSeenWords = useCallback((wordIds) => {
         if (!wordIds?.length) return;
-        wordIds.filter(Boolean).forEach(logWordId);
-    }, [logWordId]);
+        wordIds.filter(Boolean).forEach(logWord);
+    }, [logWord]);
 
     const { syncStatus, leaderboard, myRank, syncToCloud, restoreFromCloud, isRestoring } = useCloudSync({
         userXp, userNickname, selectedCharacter, streak,
-        mastery, srsData, totalStats,
+        hanjaData, totalStats,
     });
 
     // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
@@ -186,13 +218,13 @@ const App = () => {
     // 메인화면 진입할 때마다 오답 5개 이상이면 복습 토스트
     useEffect(() => {
         if (currentScreen !== 'main' || !selectedCharacter) return;
-        const hanjaWrongCount = Object.values(mastery).filter(m => (m.wrongCount || 0) > 0).length;
-        const wordWrongCount = Object.keys(wordWrong).length;
+        const hanjaWrongCount = Object.values(hanjaData).filter(m => (m.wrongCount || 0) > 0).length;
+        const wordWrongCount = Object.values(wordData).filter(v => (v.wrongCount || 0) > 0).length;
         if (hanjaWrongCount + wordWrongCount >= 5) {
             const t = setTimeout(() => setCharToast('review_reminder'), 800);
             return () => clearTimeout(t);
         }
-    }, [currentScreen, mastery, wordWrong, selectedCharacter]);
+    }, [currentScreen, hanjaData, wordData, selectedCharacter]);
 
     // 오답 복습 화면 입장 시 1회 50 XP
     useEffect(() => {
@@ -234,7 +266,7 @@ const App = () => {
                         userNickname={userNickname}
                         missions={missions}
                         doneCount={doneCount}
-                        mastery={mastery}
+                        mastery={hanjaData}
                         currentDay={currentDay}
                         onStartNextStage={() => setSessionDoneToday(false)}
                         isDarkMode={isDarkMode}
@@ -251,20 +283,18 @@ const App = () => {
                         handleHanjaAcquired(null, 50); // Increased to 50 XP for completing all study sheets
                         updateMissionProgress('flashcard', 5, addBonusXp);
                     }}
-                    onCardFlip={(id) => { 
-                        // Now mostly handled by StudySheet quiz correct answers, 
-                        // but keeping for legacy flip if needed (will give 0 if already awarded)
-                        addTodayStat('flashcard'); 
+                    onCardFlip={(id) => {
+                        addTodayStat('flashcard');
                         if (id) { markSeen(id); logHanja(id); }
                     }}
                     onWriteHanja={(hanja) => {
                         setWriteTargetHanja(hanja);
                         setCurrentScreen('writing');
                     }}
-                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
-                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
-                    onMarkWordWrong={(wordId, hanjaId, reading, meaning, word) => { markWordWrong(wordId, hanjaId, reading, meaning, word); srsMarkWrong(hanjaId); logWrongWord(wordId); }}
-                    onStudySheetComplete={() => increment('hanjaStudyComplete')}
+                    onMarkCorrect={(id) => markCorrect(id)}
+                    onMarkWrong={(id) => markWrong(id)}
+                    onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
+                    onStudySheetComplete={() => {}}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
                 />;
@@ -284,11 +314,10 @@ const App = () => {
                         handleHanjaAcquired(id || null, writingXp);
                         updateMissionProgress('writing', 1, addBonusXp);
                         addTodayStat('writing');
-                        increment('writing');
                         if (id) { markSeen(id); logHanja(id); }
                         if (id) {
-                            if (score >= 70) { markCorrect(id); srsMarkCorrect(id); }
-                            else { markWrong(id); srsMarkWrong(id); }
+                            if (score >= 70) markCorrect(id);
+                            else markWrong(id);
                         }
                     }}
                     initialHanja={writeTargetHanja}
@@ -300,56 +329,63 @@ const App = () => {
                 return <MatchGameScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 50); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); increment('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
-                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); logHanja(id); }}
+                    onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 50); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
+                    onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                     onMarkWrong={() => {}}
-                    srsData={srsData}
-                    masteryData={mastery}
+                    srsData={hanjaData}
+                    masteryData={hanjaData}
                     userLevel={currentLevel}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
                     contentPool={sessionContentPool}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     currentDayHanjaIds={currentDayHanjaIds}
-                    onHanjaSeen={addMainSeenWords}
+                    seenHanjaIds={sessionSeenHanjaIds}
+                    onHanjaSeen={(ids) => markHanjaSeenInSession(ids)}
+                    seenWordIds={sessionSeenWordIds}
+                    onWordSeen={(wordId) => markWordSeenInSession([wordId])}
                 />;
             case 'shootGame':
                 return <ShootGameScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
-                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); increment('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
-                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
-                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); logHanja(id); }}
-                    onWordCorrect={(wordId) => logCorrectWord(wordId)}
-                    onWordWrong={(wordId) => logWrongWord(wordId)}
-                    masteryData={mastery}
-                    srsData={srsData}
+                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
+                    onMarkWrong={(id) => markWrong(id)}
+                    onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
+                    onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordSeenInSession([wordId]); }}
+                    onWordWrong={(wordId) => { logWrongWord(wordId); markWordWrong(wordId); }}
+                    masteryData={hanjaData}
+                    srsData={hanjaData}
                     userLevel={currentLevel}
                     contentPool={sessionContentPool}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     currentDayHanjaIds={currentDayHanjaIds}
                     currentDay={currentDay}
-                    onHanjaSeen={addMainSeenWords}
+                    seenHanjaIds={sessionSeenHanjaIds}
+                    seenWordIds={sessionSeenWordIds}
+                    onHanjaSeen={(ids) => markHanjaSeenInSession(ids)}
                 />;
             case 'calendar':
                 return <ReviewScreen
                     onBack={() => setCurrentScreen('main')}
                     onNavigate={setCurrentScreen}
-                    mastery={mastery}
-                    markCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
-                    markWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
+                    mastery={hanjaData}
+                    markCorrect={markCorrect}
+                    markWrong={markWrong}
                     getStats={getStats}
-                    srsData={srsData}
-                    getDueItems={getDueItems}
+                    srsData={hanjaData}
+                    getDueItems={(list) => getDueHanja(list)}
                     currentDay={currentDay}
                     initialSection="calendar"
                 />;
             case 'review': {
-                const wrongHanjaIds = Object.entries(mastery)
+                const wrongHanjaIds = Object.entries(hanjaData)
                     .filter(([, m]) => (m.wrongCount || 0) > 0)
                     .map(([id]) => Number(id));
-                const wrongWordIds = Object.keys(wordWrong).map(Number);
+                const wrongWordIds = Object.entries(wordData)
+                    .filter(([, v]) => (v.wrongCount || 0) > 0)
+                    .map(([id]) => Number(id));
                 if (wrongHanjaIds.length === 0 && wrongWordIds.length === 0) {
                     return (
                         <div className="min-h-screen bg-[#F7FAF9] flex flex-col items-center justify-center gap-6 px-8">
@@ -371,13 +407,13 @@ const App = () => {
                     onGameFinish={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
-                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); increment('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
-                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
-                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); clearWrong(id); clearWordWrongByHanjaId(id); logHanja(id); }}
-                    onWordCorrect={(wordId) => logCorrectWord(wordId)}
-                    onWordWrong={(wordId) => logWrongWord(wordId)}
-                    masteryData={mastery}
-                    srsData={srsData}
+                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
+                    onMarkWrong={(id) => markWrong(id)}
+                    onMarkCorrect={(id) => { markCorrect(id); clearWrong(id); clearWordWrongByHanjaId(id); logHanja(id); }}
+                    onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
+                    onWordWrong={(wordId) => { logWrongWord(wordId); markWordWrong(wordId); }}
+                    masteryData={hanjaData}
+                    srsData={hanjaData}
                     userLevel={currentLevel}
                     contentPool={reviewPool}
                     currentDay={currentDay}
@@ -387,57 +423,54 @@ const App = () => {
                 return <SentenceQuizScreen
                     onBack={() => setCurrentScreen('main')}
                     onStageClear={(correct, total, newSeenWords) => {
-                        if (newSeenWords) addMainSeenWords(newSeenWords);
+                        if (newSeenWords) { addMainSeenWords(newSeenWords); markWordSeenInSession(newSeenWords); }
                         const bonus = 100 + (correct === total ? 100 : 0);
                         handleHanjaAcquired(null, bonus);
                         updateMissionProgress('sentenceQuiz', 1, addBonusXp);
                         addTodayStat('sentenceQuiz');
-                        increment('sentenceQuiz');
                     }}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onWordSeen={(wordId) => addMainSeenWords([wordId])}
-                    onWordCorrect={(wordId) => logCorrectWord(wordId)}
-                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
-                    onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
-                    onMarkWordWrong={(wordId, hanjaId, reading, meaning, word) => { markWordWrong(wordId, hanjaId, reading, meaning, word); srsMarkWrong(hanjaId); logWrongWord(wordId); }}
+                    onWordSeen={(wordId) => { addMainSeenWords([wordId]); markWordSeenInSession([wordId]); }}
+                    onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
+                    onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
                     onGoToReview={() => setCurrentScreen('review')}
-                    srsData={srsData}
-                    masteryData={mastery}
+                    srsData={hanjaData}
+                    masteryData={hanjaData}
                     userLevel={currentLevel}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
                     contentPool={sessionContentPool}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     currentDayHanjaIds={currentDayHanjaIds}
-                    seenWordIds={getTodaySeenWordIds()}
+                    seenHanjaIds={sessionSeenHanjaIds}
+                    seenWordIds={sessionSeenWordIds}
                 />;
             case 'wordQuiz':
                 return <WordQuizScreen
                     onBack={() => setCurrentScreen('main')}
                     onStageClear={(correct, total, maxCombo, newSeenWords) => {
-                        if (newSeenWords) addMainSeenWords(newSeenWords);
+                        if (newSeenWords) { addMainSeenWords(newSeenWords); markWordSeenInSession(newSeenWords); }
                         const bonus = 50 + (correct === total ? 50 : 0);
                         handleHanjaAcquired(null, bonus);
                         updateMissionProgress('wordQuiz', 1, addBonusXp);
                         addTodayStat('wordQuiz');
                         updateRecord('wordBestScore', correct);
                         if (maxCombo) updateRecord('wordMaxCombo', maxCombo);
-                        increment('wordQuiz');
                     }}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onWordCorrect={(wordId) => { increment('wordCorrect'); logCorrectWord(wordId); }}
-                    onWordSeen={(wordId) => addMainSeenWords([wordId])}
-                    onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
-                    onMarkWordWrong={(wordId, hanjaId, reading, meaning, word) => { markWordWrong(wordId, hanjaId, reading, meaning, word); srsMarkWrong(hanjaId); logWrongWord(wordId); }}
+                    onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
+                    onWordSeen={(wordId) => { addMainSeenWords([wordId]); markWordSeenInSession([wordId]); }}
+                    onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
                     onGoToReview={() => setCurrentScreen('review')}
-                    srsData={srsData}
-                    masteryData={mastery}
+                    srsData={hanjaData}
+                    masteryData={hanjaData}
                     userLevel={currentLevel}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
                     contentPool={sessionContentPool}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
-                    seenWordIds={getTodaySeenWordIds()}
+                    seenHanjaIds={sessionSeenHanjaIds}
+                    seenWordIds={sessionSeenWordIds}
                 />;
             case 'gradeTest':
                 return <GradeTestScreen
@@ -495,16 +528,12 @@ const App = () => {
                     setIsDarkMode={setIsDarkMode}
                     streak={streak}
                     totalStats={totalStats}
+                    studyLog={log}
                 />;
             case 'rankings':
                 return <RankingsScreen
-                    onBack={() => setCurrentScreen('main')}
-                    userXp={userXp}
-                    selectedCharacter={selectedCharacter}
-                    userNickname={userNickname}
-                    cloudLeaderboard={leaderboard}
-                    cloudMyRank={myRank}
-                    streak={streak}
+                    onBack={() => setCurrentScreen('mypage')}
+                    isDarkMode={isDarkMode}
                 />;
             default:
                 return (
@@ -515,7 +544,7 @@ const App = () => {
                         userNickname={userNickname}
                         missions={missions}
                         doneCount={doneCount}
-                        mastery={mastery}
+                        mastery={hanjaData}
                         currentDay={currentDay}
                         onStartNextStage={() => setSessionDoneToday(false)}
                         isDarkMode={isDarkMode}
@@ -570,12 +599,15 @@ const App = () => {
                                         onNavigate={setCurrentScreen}
                                         onAdvanceDay={advanceDay}
                                         currentDay={currentDay}
-                                        srsData={srsData}
-                                        masteryData={mastery}
+                                        srsData={hanjaData}
+                                        masteryData={hanjaData}
                                         selectedCharacter={selectedCharacter}
-                                        onMarkCorrect={(id) => { markCorrect(id); srsMarkCorrect(id); }}
-                                        onMarkWrong={(id) => { markWrong(id); srsMarkWrong(id); }}
-                                        onMarkWordWrong={(wordId, hanjaId, reading, meaning, word) => { markWordWrong(wordId, hanjaId, reading, meaning, word); srsMarkWrong(hanjaId); logWrongWord(wordId); }}
+                                        userXp={userXp}
+                                        onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
+                                        onMarkWrong={(id) => { markWrong(id); logHanja(id); }}
+                                        onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
+                                        onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
+                                        onWordSeen={(wordId) => logWord(wordId)}
                                         onHanjaAcquired={handleHanjaAcquired}
                                       />
                                     : renderScreen()

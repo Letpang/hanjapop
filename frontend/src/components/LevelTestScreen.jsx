@@ -3,13 +3,14 @@ import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getCharacterImage } from '../utils/rankUtils.js';
 import { getTodayStr } from '../utils/sessionUtils.js';
+import { playSound } from '../utils/playSound.js';
 
 const SORTED_HANJA = [...HANJA_DATA].sort((a, b) => a.id - b.id);
 
 const getTotalDays = () => {
     try {
-        const saved = JSON.parse(localStorage.getItem(SK.TOTAL_ACTIVITY_STATS) || '{}');
-        return saved.totalDays || 1;
+        const saved = JSON.parse(localStorage.getItem(SK.STUDY_LOG) || '{}');
+        return saved.total?.totalDays || 1;
     } catch { return 1; }
 };
 
@@ -175,17 +176,20 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
         setRevealed(true);
         setAnswers(prev => ({ ...prev, [q.id]: isCorrect }));
 
-        if (isCorrect && onHanjaAcquired) {
-            onHanjaAcquired(q.item?.id || null, 10);
+        if (isCorrect) {
+            if (onHanjaAcquired) onHanjaAcquired(q.item?.id || null, 10);
+            playSound('match');
             setXpPopup({ show: true, key: Date.now(), amount: 10 });
             setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
+        } else {
+            playSound('mismatch');
         }
     };
 
     const handleNext = () => {
         if (qIndex + 1 >= questions.length) {
             setPhase('result');
-            if (onComplete) onComplete({ correct: Object.values({ ...answers }).filter(Boolean).length + (isCorrect ? 1 : 0), total: questions.length });
+            if (onComplete) onComplete({ correct: Object.values({ ...answers }).filter(Boolean).length, total: questions.length });
         } else {
             setQIndex(prev => prev + 1);
             setSelected(null);

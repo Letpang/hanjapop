@@ -18,8 +18,8 @@ DAILY_CURRICULUM.forEach((day, dayIdx) => {
 
 const getTotalDays = () => {
     try {
-        const saved = JSON.parse(localStorage.getItem(SK.TOTAL_ACTIVITY_STATS) || '{}');
-        return saved.totalDays || 1;
+        const saved = JSON.parse(localStorage.getItem(SK.STUDY_LOG) || '{}');
+        return saved.total?.totalDays || 1;
     } catch { return 1; }
 };
 

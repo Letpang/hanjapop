@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import { SK } from '../constants/storageKeys.js';
 import { updateRecord } from '../utils/recordUtils.js';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
+import { getTodayStr } from '../utils/sessionUtils.js';
+import { buildUnifiedPool, buildOopsPool } from '../utils/learningPool.js';
 
 const ShootGameScreen = lazy(() => import('./ShootGameScreen.jsx'));
 const MatchGameScreen = lazy(() => import('./MatchGameScreen.jsx'));
@@ -15,18 +17,26 @@ const getStoredXp = () => { try { return Number(localStorage.getItem(SK.USER_XP)
 
 const getTodayDayNumber = () => {
     try {
-        const saved = JSON.parse(localStorage.getItem(SK.TOTAL_ACTIVITY_STATS) || '{}');
-        return Math.min(Math.max(saved.totalDays || 1, 1), 123);
+        const saved = JSON.parse(localStorage.getItem('curriculum_progress') || '{}');
+        const completed = saved.completedDay || 0;
+        return Math.min(completed + 1, DAILY_CURRICULUM.length);
     } catch { return 1; }
 };
+
+const MAP_PROGRESS_KEY = 'daily_map_progress';
 
 const markSessionDone = () => {
     try {
         localStorage.setItem(SK.DAILY_SESSION, JSON.stringify({
-            date: new Date().toISOString().slice(0, 10),
+            date: getTodayStr(),
             done: true,
         }));
     } catch {}
+};
+
+
+const clearMapProgress = () => {
+    try { localStorage.removeItem(MAP_PROGRESS_KEY); } catch {}
 };
 
 const speakKorean = (text, onEnd) => {
@@ -76,18 +86,6 @@ const playCardSound = (item) => {
     }
 };
 
-// SRS에서 복습 대상 7개 뽑기
-const getSrsReviewIds = (srsData, todayIds, count = 7) => {
-    try {
-        const now = Date.now();
-        const due = Object.entries(srsData || {})
-            .filter(([id, d]) => !todayIds.includes(Number(id)) && d.nextReview && d.nextReview <= now)
-            .sort((a, b) => a[1].nextReview - b[1].nextReview)
-            .slice(0, count)
-            .map(([id]) => Number(id));
-        return due;
-    } catch { return []; }
-};
 
 // ── Daily Flip Cards ────────────────────────────────────────────────────────
 const DailyFlashcard = ({ item, onFlip }) => {
@@ -171,7 +169,6 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
     const [flippedSet, setFlippedSet] = useState(new Set());
     const [showWords, setShowWords] = useState(false);
     const [showClearPopup, setShowClearPopup] = useState(false);
-    const [showExitModal, setShowExitModal] = useState(false);
 
     const item = items[currentIndex];
     const isLastCard = currentIndex === items.length - 1;
@@ -196,7 +193,6 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
             setFlippedSet(next);
             if (onCardFlip) onCardFlip(item.id);
             playCardSound(item);
-            if (isLastCard) setTimeout(() => setShowClearPopup(true), 600);
         } else if (!isLastCard) {
             goTo(currentIndex + 1);
         }
@@ -209,7 +205,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
 
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                    <button onClick={() => setShowExitModal(true)}
+                    <button onClick={onBack}
                         className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
                         <span>✕</span>
                     </button>
@@ -332,10 +328,17 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
                         이전
                     </button>
                     <button
-                        onClick={() => isFlipped && !isLastCard && goTo(currentIndex + 1)}
-                        disabled={!isFlipped || isLastCard}
+                        onClick={() => {
+                            if (!isFlipped) return;
+                            if (isLastCard) {
+                                setShowClearPopup(true);
+                            } else {
+                                goTo(currentIndex + 1);
+                            }
+                        }}
+                        disabled={!isFlipped}
                         className="flex-[2] clay-button py-4 rounded-[2rem] font-bold text-lg shadow-xl active:scale-95 border-4 border-white disabled:opacity-30 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: (!isFlipped || isLastCard) ? undefined : topicColor, color: (!isFlipped || isLastCard) ? undefined : '#fff' }}
+                        style={{ backgroundColor: !isFlipped ? undefined : topicColor, color: !isFlipped ? undefined : '#fff' }}
                     >
                         {isLastCard ? '완료' : '다음 ›'}
                     </button>
@@ -353,14 +356,14 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
                         <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
 
                         <img
-                            src={getCharacterImage(selectedCharacter, 'success')}
+                            src={getCharacterImage(charId, 'success')}
                             alt="clear"
                             className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
                             style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
                         />
                         <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                            <span className="text-xs-res font-extrabold text-[#AEB7C5]">정말 멋진 결과예요!</span>
-                            <h1 className="text-h2-res font-black leading-snug" style={{ 
+                            <span className="text-xs-res font-extrabold text-[#AEB7C5]">3개의 한자를 모두 익혔네요!</span>
+                            <h1 className="text-h2-res font-black leading-snug" style={{
                                 color: '#FF9B73',
                                 letterSpacing: '-0.5px',
                                 textShadow: '0 2px 10px rgba(255,160,120,0.16)'
@@ -373,49 +376,9 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
                                 onClick={() => { setShowClearPopup(false); onStageClear(); }}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
                             >
-                                다음 단계 ▶▶
-                            </button>
-                            <button
-                                onClick={() => { setShowClearPopup(false); onStageClear(); }}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
-                            >
-                                공유하기
+                                다음 단계 ▶
                             </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        )}
-        {showExitModal && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'rgba(120, 130, 160, 0.22)' }}>
-                <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
-                    <img
-                        src={getCharacterImage(selectedCharacter, 'keep_going')}
-                        alt="exit confirm"
-                        className="w-[120px] h-[120px] object-contain mb-4"
-                        style={{ filter: 'drop-shadow(0 8px 16px rgba(120,130,160,0.16))' }}
-                    />
-                    <div className="text-center flex flex-col gap-2 mb-6">
-                        <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
-                            정말 학습을 중단할까요? 🥺
-                        </h2>
-                        <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                            지금 나가면 오늘 여정의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 학습해 볼까요?
-                        </p>
-                    </div>
-                    <div className="w-full flex flex-col gap-3">
-                        <button
-                            onClick={() => setShowExitModal(false)}
-                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                        >
-                            계속 공부하기
-                        </button>
-                        <button
-                            onClick={onBack}
-                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
-                        >
-                            그만하고 나가기
-                        </button>
                     </div>
                 </div>
             </div>
@@ -445,6 +408,14 @@ const MapNode = ({ stepNum, label, icon, isLeft, activeColor, textColor, status,
     const isCurrent = status === 'active';
     const isLocked  = status === 'locked';
 
+    // Adjust scale for wide aspect ratio icons
+    let scale = 1.0;
+    if (icon && icon.includes('monster.png')) {
+        scale = 1.45;
+    } else if (icon && icon.includes('sentence.png')) {
+        scale = 1.25;
+    }
+
     return (
         <div className="relative w-full flex items-center justify-center" style={{ minHeight: 'clamp(60px, 10vh, 90px)' }}>
             {/* Spine dot */}
@@ -464,7 +435,7 @@ const MapNode = ({ stepNum, label, icon, isLeft, activeColor, textColor, status,
                             ${!isLocked ? 'active:scale-95' : ''}`}
                         style={isCurrent ? { boxShadow: '0 8px 24px rgba(255, 155, 115 ,0.4), 0 2px 8px rgba(255, 155, 115 ,0.2)' } : undefined}
                     >
-                        <div className="w-full h-full p-3.5 flex items-center justify-center z-10">
+                        <div className="w-full h-full p-3.5 flex items-center justify-center z-10" style={scale !== 1.0 ? { transform: `scale(${scale})` } : undefined}>
                             <img src={icon} className="w-full h-full object-contain" alt={label} />
                         </div>
                         {isLocked && <div className="absolute inset-0 bg-[#F7FAF9] opacity-75 mix-blend-multiply z-20 rounded-[2rem]" />}
@@ -494,6 +465,14 @@ const BranchOption = ({ node, status, activeColor, onTap }) => {
     const isActive  = status === 'active';
     const isDisabled = status === 'locked' || status === 'faded';
 
+    // Adjust scale for wide aspect ratio icons
+    let scale = 1.0;
+    if (node.icon && node.icon.includes('monster.png')) {
+        scale = 1.45;
+    } else if (node.icon && node.icon.includes('sentence.png')) {
+        scale = 1.25;
+    }
+
     return (
         <div className="flex flex-col items-center gap-1.5">
             <button disabled={!isActive} onClick={isActive ? () => onTap(node.id) : undefined}
@@ -502,7 +481,7 @@ const BranchOption = ({ node, status, activeColor, onTap }) => {
                     ${isActive ? 'active:scale-95' : ''}
                     ${isDone ? 'ring-4 ring-[#FF9B73]/20' : ''}`}
             >
-                <div className="w-full h-full p-3.5 flex items-center justify-center z-10">
+                <div className="w-full h-full p-3.5 flex items-center justify-center z-10" style={scale !== 1.0 ? { transform: `scale(${scale})` } : undefined}>
                     <img src={node.icon} className="w-full h-full object-contain" alt={node.label} />
                 </div>
                 {isDisabled && <div className="absolute inset-0 bg-[#F7FAF9] opacity-75 mix-blend-multiply z-20 rounded-[2rem]" />}
@@ -544,8 +523,8 @@ const BranchSection = ({ stepNum, sectionLabel, textColor, activeColor, leftNode
                     )}
                 </span>
                 <span className={`font-black tracking-tight leading-tight ${isLocked ? 'text-[#AEB7C5]' : 'text-[#334155]'} text-h3`} style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>{sectionLabel}</span>
-                {isCurrent && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 animate-pulse text-sm-res" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>선택하세요</span>}
-                {isDone    && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 text-sm-res" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>완료</span>}
+                {isCurrent && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 animate-pulse text-sm-res whitespace-nowrap" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>선택하세요</span>}
+                {isDone    && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 text-sm-res whitespace-nowrap" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>완료</span>}
             </div>
 
             {/* Diamond area */}
@@ -584,8 +563,8 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
     const allDone = done.has('writing');
 
     const currentStep = !done.has('flashcard') ? 'flashcard'
-        : !done.has('game')    ? 'game'
         : !done.has('quiz')    ? 'quiz'
+        : !done.has('game')    ? 'game'
         : !done.has('writing') ? 'writing'
         : 'done';
 
@@ -596,9 +575,9 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
             {/* Header */}
             <div className="w-full shrink-0 flex flex-col items-center px-5 pt-12 pb-6 relative">
                 <button onClick={onBack} className="absolute left-5 top-12 w-10 h-10 rounded-2xl bg-white/80 backdrop-blur-md shadow-lg border-2 border-white flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">←</button>
-                {/* Day Header */}
+                {/* Stage Header */}
                 <div className="flex flex-col items-center gap-2 mb-6">
-                    <h1 className="font-black text-[#3C3C3C] tracking-tight leading-none text-h1">DAY {dayNumber}</h1>
+                    <h1 className="font-black text-[#3C3C3C] tracking-tight leading-none text-h1">STAGE {dayNumber}</h1>
                     <div className="h-1.5 w-16 bg-[#FF9B73] rounded-full" />
                 </div>
                 {theme && <p className="font-bold text-[#FF9B73] break-keep mt-0.5 text-body-lg">{theme}</p>}
@@ -606,7 +585,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
             </div>
 
             {/* Road */}
-            <div className="flex-1 flex flex-col items-center px-4 pb-32 pt-6">
+            <div className="flex-1 flex flex-col items-center px-4 pb-10 pt-6">
                 <div className="w-full max-w-sm mx-auto">
                     {/* Steps container with spine */}
                     <div className="relative w-full flex flex-col gap-[clamp(1.5rem,6vh,3.5rem)] pt-0 pb-12">
@@ -618,146 +597,145 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         {/* 01. 한자 카드 */}
                         <MapNode
                             stepNum="01" label="한자 카드"
-                            icon="/assets/images/icons/menu_flashcard.webp"
+                            icon="/assets/images/icons/study.png"
                             isLeft={true} activeColor="#FF9B73" textColor="text-[#FF9B73]"
                             status={done.has('flashcard') ? 'done' : 'active'}
                             charImg={currentStep === 'flashcard' ? charImg : null}
                             onTap={() => onTapNode('flashcard')}
                         />
 
-                        {/* 02. 게임 */}
+                        {/* 02. 퀴즈 */}
                         <BranchSection
-                            stepNum="02" sectionLabel="게임" textColor="text-[#FF9B73]" activeColor="#FF9B73"
-                            leftNode={{ id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/menu_shoot_game.webp' }}
-                            rightNode={{ id: 'match', label: '메모리 게임', icon: '/assets/images/icons/menu_match_game.webp' }}
-                            available={done.has('flashcard')} chosen={chosenGame} stepDone={done.has('game')}
-                            showChar={currentStep === 'game'} charImg={charImg} onTap={onTapNode}
+                            stepNum="02" sectionLabel="퀴즈" textColor="text-[#FF9B73]" activeColor="#FF9B73"
+                            leftNode={{ id: 'word', label: '단어 퀴즈', icon: '/assets/images/icons/words.png' }}
+                            rightNode={{ id: 'sentence', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.png' }}
+                            available={done.has('flashcard')} chosen={chosenQuiz} stepDone={done.has('quiz')}
+                            showChar={currentStep === 'quiz'} charImg={charImg} onTap={onTapNode}
                         />
 
-                        {/* 03. 퀴즈 */}
+                        {/* 03. 게임 */}
                         <BranchSection
-                            stepNum="03" sectionLabel="퀴즈" textColor="text-[#FF9B73]" activeColor="#FF9B73"
-                            leftNode={{ id: 'word', label: '단어 퀴즈', icon: '/assets/images/icons/menu_word_quiz.webp' }}
-                            rightNode={{ id: 'sentence', label: '문장 퀴즈', icon: '/assets/images/icons/menu_sentence_quiz.webp' }}
-                            available={done.has('game')} chosen={chosenQuiz} stepDone={done.has('quiz')}
-                            showChar={currentStep === 'quiz'} charImg={charImg} onTap={onTapNode}
+                            stepNum="03" sectionLabel="게임" textColor="text-[#FF9B73]" activeColor="#FF9B73"
+                            leftNode={{ id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png' }}
+                            rightNode={{ id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png' }}
+                            available={done.has('quiz')} chosen={chosenGame} stepDone={done.has('game')}
+                            showChar={currentStep === 'game'} charImg={charImg} onTap={onTapNode}
                         />
 
                         {/* 04. 한자 쓰기 */}
                         <MapNode
                             stepNum="04" label="한자 쓰기"
-                            icon="/assets/images/icons/menu_writing.webp"
+                            icon="/assets/images/icons/writing.png"
                             isLeft={false} activeColor="#FFD3B6" textColor="text-orange-600"
-                            status={done.has('writing') ? 'done' : done.has('quiz') ? 'active' : 'locked'}
+                            status={done.has('writing') ? 'done' : done.has('game') ? 'active' : 'locked'}
                             charImg={currentStep === 'writing' ? charImg : null}
                             onTap={() => onTapNode('writing')}
                         />
                     </div>
 
-                    {/* End marker */}
+                    {/* End marker + 결과 보기 버튼 */}
                     {allDone && (
-                        <div className="flex flex-col items-center gap-3 pt-6 pb-10">
+                        <div className="flex flex-col items-center gap-4 pt-6 pb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="w-10 h-10 rounded-full bg-[#FF9B73] shadow-lg shadow-[#FF9B73]/20 flex items-center justify-center">
                                 <span className="text-white text-base font-black">✓</span>
                             </div>
-                            <p className="text-xs font-extrabold text-[#FF9B73] tracking-widest uppercase">여정 완료!</p>
+                            <p className="text-xs font-extrabold text-[#FF9B73] tracking-widest uppercase">스테이지 완료!</p>
+                            <button onClick={onShowResults}
+                                className="w-full py-5 rounded-[2.5rem] bg-[#FF9B73] font-black text-xl text-white shadow-2xl shadow-[#FF9B73]/20 active:scale-95 transition-all mt-2">
+                                결과 보기 →
+                            </button>
                         </div>
                     )}
                 </div>
             </div>
-
-            {/* Bottom button */}
-            {allDone && (
-                <div className="fixed bottom-0 left-0 right-0 px-6 pb-10 pt-6 bg-gradient-to-t from-[#F7FAF9] via-[#F7FAF9]/90 to-transparent">
-                    <button onClick={onShowResults}
-                        className="w-full py-5 rounded-[2.5rem] bg-[#FF9B73] font-black text-xl text-white shadow-2xl shadow-[#FF9B73]/20 active:scale-95 transition-all">
-                        결과 보기 →
-                    </button>
-                </div>
-            )}
         </div>
     );
 };
 
 // ── Results Screen (3D Style) ───────────────────────────────────────────────
-const ResultsScreen = ({ todayHanja, correctIds, wrongIds = [], onComplete, onNavigate }) => {
+const ResultsScreen = ({ todayHanja, correctIds, wrongIds = [], onComplete, onNavigate, selectedCharacter, chosenGame, chosenQuiz }) => {
     const total = todayHanja.filter(h => h.id).length;
-    const correct = todayHanja.filter(h => correctIds.includes(h.id) && !wrongIds.includes(h.id)).length;
-    const wrongHanja = todayHanja.filter(h => h.id && wrongIds.includes(h.id));
-    const hasWrong = wrongHanja.length > 0;
+    const unchosenGame = chosenGame === 'shoot'
+        ? { label: '짝 맞추기',   desc: '카드를 짝지어 맞춰요', screen: 'matchGame',    icon: '/assets/images/icons/past/menu_match_game.webp' }
+        : { label: '몬스터 슈팅', desc: '한자로 몬스터 격파',   screen: 'shootGame',    icon: '/assets/images/icons/past/menu_shoot_game.webp' };
 
-    const recommendations = hasWrong
-        ? [
-            { label: '오답 몬스터 격파', desc: `틀린 한자 ${wrongHanja.length}개 복습`, screen: 'review', color: '#ff9a6c', icon: '/assets/images/icons/icon_monster_glossy.webp' },
-            { label: '한자 쓰기', desc: '획순으로 완벽하게', screen: 'writing', color: '#FFD3B6', icon: '/assets/images/icons/node_stroke_test.webp' },
-          ]
-        : [
-            { label: '단어 퀴즈', desc: '어휘력을 높여봐요', screen: 'wordQuiz', color: '#A0E4FF', icon: '/assets/images/icons/word_quiz_node.webp' },
-            { label: '몬스터 슈팅', desc: '실력을 더 키워봐요', screen: 'shootGame', color: '#FFADAD', icon: '/assets/images/icons/node_monster_shooting.webp' },
-          ];
+    const unchosenQuiz = chosenQuiz === 'word'
+        ? { label: '문장 퀴즈', desc: '문장 속 한자를 익혀요', screen: 'sentenceQuiz', icon: '/assets/images/icons/past/menu_sentence_quiz.webp' }
+        : { label: '단어 퀴즈', desc: '어휘력을 높여봐요',     screen: 'wordQuiz',     icon: '/assets/images/icons/past/menu_word_quiz.webp' };
+
+    const recommendations = [
+        { label: '한자 학습지', desc: '카드로 한자 복습', screen: 'flashcard', icon: '/assets/images/icons/past/menu_flashcard.webp' },
+        unchosenQuiz,
+        unchosenGame,
+    ];
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6 bg-[#F7FAF9] overflow-y-auto">
-            <div className="minimal-card-studio w-full max-w-md p-10 flex flex-col items-center gap-8 animate-in fade-in zoom-in duration-500 my-8">
-                <div className="w-28 h-28 minimal-icon-box bg-white border border-[#E9EDF2] shadow-inner">
-                    <span className="text-h1-res text-[#FFB433] animate-pulse">✦</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                    <h1 className="text-h2-res font-extrabold text-[#5D544F] tracking-tight uppercase flex items-center gap-2">
-                        <span className="pastel-star-pink">✦</span>
-                        학습 완료!
-                        <span className="pastel-star-indigo">✦</span>
-                    </h1>
-                    <p className="text-[#AEB7C5] font-bold uppercase text-xs tracking-widest">오늘의 여정을 모두 마쳤습니다</p>
-                </div>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overflow-y-auto"
+            style={{ background: 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' }}
+        >
+            <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden my-4">
+                <div className="pt-6 pb-8 px-6 flex flex-col items-center gap-6 w-full relative">
 
-                <div className="flex gap-4">
-                    {todayHanja.map((h, i) => {
-                        const isWrong = wrongIds.includes(h.id);
-                        const isCorrect = correctIds.includes(h.id) && !isWrong;
-                        const color = isWrong ? '#FF6B6B' : isCorrect ? '#4CCB7F' : '#AEB7C5';
-                        const bg = isWrong ? 'bg-rose-50/50' : isCorrect ? 'bg-emerald-50/50' : 'bg-slate-50/50';
-                        return (
-                            <div key={i} className={`minimal-card w-20 h-20 flex flex-col items-center justify-center relative !border-[#E9EDF2] ${bg}`}>
-                                <span className="text-h3-res font-extrabold" style={{ color }}>{h.hanja}</span>
-                                <span className="text-xs font-bold text-[#AEB7C5] mt-0.5">{h.sound}</span>
-                                <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-extrabold shadow-lg`} style={{ backgroundColor: color }}>
-                                    {isWrong ? '✕' : isCorrect ? '✓' : '–'}
-                                </div>
+                    {/* 캐릭터 글로우 */}
+                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+
+                    {/* 캐릭터 */}
+                    <img
+                        src={getCharacterImage(selectedCharacter, 'success')}
+                        alt="success"
+                        className="w-[160px] h-[160px] object-contain relative z-10 mt-4"
+                        style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
+                    />
+
+                    {/* 타이틀 */}
+                    <div className="text-center flex flex-col gap-2 relative z-10 -mt-4">
+                        <span className="text-sm font-extrabold text-[#AEB7C5] break-keep">{total}개의 한자를 모두 익혔네요!</span>
+                        <h1 className="text-h2-res font-black leading-snug break-keep"
+                            style={{ color: '#FF9B73', letterSpacing: '-0.5px', textShadow: '0 2px 10px rgba(255,160,120,0.16)' }}>
+                            와우! 참 잘했어요!
+                        </h1>
+                    </div>
+
+                    {/* 한자 카드 3개 — 플래시카드 뒷면 스타일 */}
+                    <div className="flex gap-2.5 w-full relative z-10">
+                        {todayHanja.filter(h => h.id).map((h, i) => (
+                            <div key={i} className="flex-1 clay-panel !rounded-[1.6rem] flex flex-col items-center justify-center py-4 px-2 gap-1 border-[3px] border-white !bg-[#F8FAF9]">
+                                <span className="text-3xl font-black text-slate-700 leading-none">{h.hanja}</span>
+                                <span className="text-sm font-black text-[#FF9B73] leading-tight">{h.sound}</span>
+                                <span className="text-[11px] font-bold text-[#5B677A] text-center break-keep leading-tight">{h.meaning}</span>
                             </div>
-                        );
-                    })}
-                </div>
-
-                {/* 추천 */}
-                <div className="w-full flex flex-col gap-3">
-                    <p className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-[0.2em] text-center">
-                        {hasWrong ? '🔥 이 한자가 약해요 — 지금 바로 복습!' : '🎉 완벽해요! 더 연습해볼까요?'}
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                        {recommendations.map((r) => (
-                            <button
-                                key={r.screen}
-                                onClick={() => { onComplete(); onNavigate(r.screen); }}
-                                className="rounded-[1.5rem] bg-white border-4 border-white flex flex-col items-start gap-2 p-4 active:scale-95 transition-transform"
-                                style={{ boxShadow: `0 6px 20px ${r.color}66` }}
-                            >
-                                <img src={r.icon} alt={r.label} className="w-9 h-9 object-contain" />
-                                <div>
-                                    <div className="font-extrabold text-[#3C3C3C] text-sm leading-tight">{r.label}</div>
-                                    <div className="text-[#AEB7C5] font-bold text-xs mt-0.5">{r.desc}</div>
-                                </div>
-                            </button>
                         ))}
                     </div>
-                </div>
 
-                <button
-                    onClick={onComplete}
-                    className="pill-button-primary w-full py-5 text-xl"
-                >
-                    메인으로 가기 →
-                </button>
+                    {/* 추천 버튼 */}
+                    <div className="w-full flex flex-col gap-2.5 relative z-10">
+                        <p className="text-xs font-extrabold text-center" style={{ color: '#2ED6C5' }}>
+                            이런 메뉴들도 한 번 해봐요!
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                            {recommendations.map(r => (
+                                <button key={r.screen}
+                                    onClick={() => onNavigate(r.screen)}
+                                    className="bg-white/80 py-3 px-2 rounded-2xl flex flex-col items-center gap-1 active:scale-95 transition-all border-2 border-white shadow-sm">
+                                    <img src={r.icon} alt={r.label} className="w-10 h-10 object-contain" />
+                                    <span className="font-extrabold text-xs text-[#3C3C3C] leading-tight text-center">{r.label}</span>
+                                    <span className="text-[10px] font-bold text-[#AEB7C5] text-center leading-tight">{r.desc}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 메인으로 가기 */}
+                    <button
+                        onClick={onComplete}
+                        className="w-full py-4 rounded-[2rem] font-black text-xl text-white active:scale-95 transition-all relative z-10"
+                        style={{ backgroundColor: '#FF9B73', borderBottom: '5px solid #E0735A', boxShadow: '0 8px 24px rgba(255,155,115,0.35)' }}
+                    >
+                        메인으로 가기 →
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -774,34 +752,115 @@ const DailySessionScreen = ({
     onMarkCorrect,
     onMarkWrong,
     onMarkWordWrong,
+    onWordCorrect,
+    onWordSeen,
     selectedCharacter,
     updateMissionProgress,
     addTodayStat,
     increment,
     addBonusXp,
     onHanjaAcquired,
+    userXp,
 }) => {
-    const dayNumber = currentDay || getTodayDayNumber();
+    // dayNumber를 마운트 시점의 값으로 고정 (advanceDay 후 currentDay가 증가해도 현재 세션 스테이지 번호 유지)
+    const [dayNumber] = useState(() => currentDay || getTodayDayNumber());
     const dayData = DAILY_CURRICULUM[dayNumber - 1] || DAILY_CURRICULUM[0];
     const todayHanja = dayData.hanja.filter(h => h.id !== null);
 
     const todayIds = useMemo(() => todayHanja.map(h => h.id), [dayNumber]);
-    const reviewIds = useMemo(() => getSrsReviewIds(srsData, todayIds, 7), [dayNumber]);
-    const hanjaPool = useMemo(() => [...new Set([...todayIds, ...reviewIds])], [todayIds, reviewIds]);
+
+    // 이전 스테이지 한자 ID (SRS 복습 후보)
+    const pastHanjaIds = useMemo(() => {
+        const result = [];
+        for (let d = 0; d < dayNumber - 1 && d < DAILY_CURRICULUM.length; d++) {
+            (DAILY_CURRICULUM[d].hanja || []).forEach(h => { if (h.id) result.push(h.id); });
+        }
+        return result;
+    }, [dayNumber]);
+
+    // 오늘(70%) + SRS 과거(30%) 통합 풀
+    const contentPool = useMemo(() =>
+        buildUnifiedPool(todayIds, HANJA_DATA, srsData, masteryData, pastHanjaIds),
+        [todayIds, srsData, masteryData, pastHanjaIds]
+    );
 
     const [activity, setActivity] = useState(null); // null = map view
     const [done, setDone] = useState(new Set());
     const [chosenGame, setChosenGame] = useState(null);
     const [chosenQuiz, setChosenQuiz] = useState(null);
+    const [seenHanjaIds, setSeenHanjaIds] = useState([]);
+    const [seenWordIds, setSeenWordIds] = useState([]);
+
+    const markHanjaSeen = useCallback((ids) => {
+        if (!ids?.length) return;
+        setSeenHanjaIds(prev => {
+            const s = new Set(prev);
+            ids.forEach(id => { if (id != null) s.add(id); });
+            return prev.length === s.size ? prev : [...s];
+        });
+    }, []);
+
+    const markWordSeen = useCallback((ids) => {
+        if (!ids?.length) return;
+        setSeenWordIds(prev => {
+            const s = new Set(prev);
+            ids.forEach(id => { if (id != null) s.add(id); });
+            return prev.length === s.size ? prev : [...s];
+        });
+    }, []);
     const [writingIdx, setWritingIdx] = useState(0);
     const [correctIds, setCorrectIds] = useState([]);
     const [wrongIds, setWrongIds] = useState([]);
+    const [wrongWordIds, setWrongWordIds] = useState([]);
     const [showResults, setShowResults] = useState(false);
+    const mapRestoredRef = useRef(false);
+
+    // 이전 진행 상황 복원 (같은 day이고 writing 미완료인 경우만)
+    useEffect(() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem(MAP_PROGRESS_KEY) || '{}');
+            if (saved.day === dayNumber && saved.done?.length > 0) {
+                if (saved.done.includes('writing')) {
+                    // writing까지 완료된 오래된 데이터 — 삭제 후 복원하지 않음
+                    clearMapProgress();
+                } else {
+                    setDone(new Set(saved.done));
+                    if (saved.chosenGame) setChosenGame(saved.chosenGame);
+                    if (saved.chosenQuiz) setChosenQuiz(saved.chosenQuiz);
+                }
+            }
+        } catch {}
+        mapRestoredRef.current = true;
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // done/chosenGame/chosenQuiz 변경 시 localStorage에 저장 (writing 완료 후에는 저장 안 함)
+    useEffect(() => {
+        if (!mapRestoredRef.current) return;
+        if (done.size === 0) return;
+        if (done.has('writing')) return;
+        try {
+            localStorage.setItem(MAP_PROGRESS_KEY, JSON.stringify({
+                day: dayNumber,
+                done: [...done],
+                chosenGame,
+                chosenQuiz,
+            }));
+        } catch {}
+    }, [done, chosenGame, chosenQuiz, dayNumber]);
 
     const addCorrect = (id) => {
         if (!id || !todayIds.includes(id)) return;
         setCorrectIds(prev => prev.includes(id) ? prev : [...prev, id]);
         setWrongIds(prev => prev.filter(w => w !== id));
+        try {
+            const h = HANJA_DATA.find(x => x.id === id);
+            if (h && h.words) {
+                const wIds = h.words.map(w => w.id).filter(Boolean);
+                if (wIds.length > 0) {
+                    setWrongWordIds(prev => prev.filter(wId => !wIds.includes(wId)));
+                }
+            }
+        } catch (e) {}
     };
 
     const addWrong = (id) => {
@@ -827,6 +886,7 @@ const DailySessionScreen = ({
         if (next < todayHanja.length) {
             setWritingIdx(next);
         } else {
+            clearMapProgress();
             markSessionDone();
             if (onAdvanceDay) onAdvanceDay();
             completeStep('writing');
@@ -839,8 +899,11 @@ const DailySessionScreen = ({
                 todayHanja={todayHanja}
                 correctIds={correctIds}
                 wrongIds={wrongIds}
-                onComplete={onComplete}
-                onNavigate={onNavigate}
+                onComplete={() => onComplete()}
+                onNavigate={(screen) => onNavigate(screen)}
+                selectedCharacter={selectedCharacter}
+                chosenGame={chosenGame}
+                chosenQuiz={chosenQuiz}
             />
         );
     }
@@ -866,6 +929,11 @@ const DailySessionScreen = ({
         );
     }
 
+    // 오답이 있으면 오답 풀, 없으면 통합 풀
+    const activePool = (wrongIds.length > 0 || wrongWordIds.length > 0)
+        ? buildOopsPool(wrongIds, wrongWordIds)
+        : contentPool;
+
     if (activity === 'shoot') {
         return (
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
@@ -875,13 +943,19 @@ const DailySessionScreen = ({
                     if (updateMissionProgress) updateMissionProgress('shootGame', 1, addBonusXp);
                     completeStep('game', { chosenGame: 'shoot' });
                 }}
-                hanjaFilter={hanjaPool}
+                contentPool={activePool}
                 selectedCharacter={selectedCharacter}
                 onWaveClear={(kills) => { if (addTodayStat) addTodayStat('shootGame'); if (increment) increment('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
                 onMarkCorrect={(id) => { addCorrect(id); onMarkCorrect(id); }}
                 onMarkWrong={(id) => { addWrong(id); onMarkWrong(id); }}
                 masteryData={masteryData}
                 srsData={srsData}
+                currentDay={dayNumber}
+                seenHanjaIds={seenHanjaIds}
+                onHanjaSeen={(ids) => markHanjaSeen(ids)}
+                seenWordIds={seenWordIds}
+                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
             />
             </Suspense>
         );
@@ -892,7 +966,7 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
             <MatchGameScreen
                 onBack={() => setActivity(null)}
-                hanjaFilter={hanjaPool}
+                contentPool={activePool}
                 onStageClear={(round, elapsedSec) => {
                     if (updateMissionProgress) updateMissionProgress('matchGame', 1, addBonusXp);
                     if (addTodayStat) addTodayStat('matchGame');
@@ -904,6 +978,11 @@ const DailySessionScreen = ({
                 onMarkWrong={() => {}}
                 srsData={srsData}
                 masteryData={masteryData}
+                seenHanjaIds={seenHanjaIds}
+                onHanjaSeen={(ids) => markHanjaSeen(ids)}
+                seenWordIds={seenWordIds}
+                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
             />
             </Suspense>
         );
@@ -914,19 +993,35 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
             <WordQuizScreen
                 onBack={() => setActivity(null)}
-                hanjaFilter={hanjaPool}
-                onHanjaAcquired={(id) => addCorrect(id)}
-                onMarkCorrect={(id) => { addCorrect(id); onMarkCorrect(id); }}
-                onMarkWordWrong={(word, hanjaId, reading, meaning) => { addWrong(hanjaId); if (onMarkWordWrong) onMarkWordWrong(word, hanjaId, reading, meaning); }}
+                contentPool={contentPool}
+                selectedCharacter={selectedCharacter}
+                userXp={userXp}
+                onMarkWordWrong={(wordId, hanjaId, reading, meaning, wordText) => {
+                    addWrong(hanjaId);
+                    if (wordId) {
+                        setWrongWordIds(prev => prev.includes(wordId) ? prev : [...prev, wordId]);
+                    }
+                    if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning, wordText);
+                }}
+                onWordCorrect={(wordId) => {
+                    if (wordId) {
+                        setWrongWordIds(prev => prev.filter(wId => wId !== wordId));
+                        if (onWordCorrect) onWordCorrect(wordId);
+                    }
+                }}
                 srsData={srsData}
                 masteryData={masteryData}
-                onStageClear={(correct, total, maxCombo) => {
+                onStageClear={(correct, total, maxCombo, newSeenIds) => {
+                    if (newSeenIds) markHanjaSeen(newSeenIds);
                     if (updateMissionProgress) updateMissionProgress('wordQuiz', 1, addBonusXp);
                     if (addTodayStat) addTodayStat('wordQuiz');
                     if (correct != null) updateRecord('wordBestScore', correct);
                     if (maxCombo) updateRecord('wordMaxCombo', maxCombo);
                     completeStep('quiz', { chosenQuiz: 'word' });
                 }}
+                seenHanjaIds={seenHanjaIds}
+                seenWordIds={seenWordIds}
+                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
             />
             </Suspense>
         );
@@ -937,13 +1032,29 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
             <SentenceQuizScreen
                 onBack={() => setActivity(null)}
-                hanjaFilter={hanjaPool}
-                onHanjaAcquired={(id) => addCorrect(id)}
-                onMarkCorrect={(id) => { addCorrect(id); onMarkCorrect(id); }}
-                onMarkWordWrong={(word, hanjaId, reading, meaning) => { addWrong(hanjaId); if (onMarkWordWrong) onMarkWordWrong(word, hanjaId, reading, meaning); }}
+                contentPool={contentPool}
+                selectedCharacter={selectedCharacter}
+                userXp={userXp}
+                onMarkWordWrong={(wordId, hanjaId, reading, meaning, wordText) => {
+                    addWrong(hanjaId);
+                    if (wordId) {
+                        setWrongWordIds(prev => prev.includes(wordId) ? prev : [...prev, wordId]);
+                    }
+                    if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning, wordText);
+                }}
+                onWordCorrect={(wordId) => {
+                    if (wordId) {
+                        setWrongWordIds(prev => prev.filter(wId => wId !== wordId));
+                        if (onWordCorrect) onWordCorrect(wordId);
+                    }
+                }}
                 srsData={srsData}
                 masteryData={masteryData}
-                onStageClear={() => {
+                seenHanjaIds={seenHanjaIds}
+                seenWordIds={seenWordIds}
+                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                onStageClear={(correct, total, newSeenIds) => {
+                    if (newSeenIds) markHanjaSeen(newSeenIds);
                     if (updateMissionProgress) updateMissionProgress('sentenceQuiz', 1, addBonusXp);
                     if (addTodayStat) addTodayStat('sentenceQuiz');
                     completeStep('quiz', { chosenQuiz: 'sentence' });
@@ -967,6 +1078,7 @@ const DailySessionScreen = ({
                     if (updateMissionProgress) updateMissionProgress('writing', 1, addBonusXp);
                 }}
                 onStageClear={() => {
+                    clearMapProgress();
                     markSessionDone();
                     if (onAdvanceDay) onAdvanceDay();
                     completeStep('writing');
