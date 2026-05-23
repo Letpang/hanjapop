@@ -53,7 +53,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
 
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
-    const [selectedGrade, setSelectedGrade] = useState('8급');
+    const [selectedGrade, setSelectedGrade] = useState('전체');
 
     const characterAvatar = useMemo(() => getRankDetails(userXp, selectedCharacter).avatar, [userXp, selectedCharacter]);
 

@@ -207,7 +207,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     }, []);
     
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
-    const [selectedGrade, setSelectedGrade] = useState('8급');
+    const [selectedGrade, setSelectedGrade] = useState('전체');
     const [selectedDifficulty, setSelectedDifficulty] = useState(() => {
         if (currentDay) {
             const dayNum = Number(currentDay);

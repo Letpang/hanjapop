@@ -134,7 +134,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
-    const [selectedGrade, setSelectedGrade] = useState('8급');
+    const [selectedGrade, setSelectedGrade] = useState('전체');
 
     const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
@@ -191,9 +191,9 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
             return getSRSWeightedPool(base, srsData, masteryData, userLevel, null);
         }
         if (viewMode === 'grade') {
-            if (selectedGrade === '기타') base = HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
-            else base = HANJA_DATA.filter(h => h.grade === selectedGrade);
-            base = base.filter(h => unlockedIds.has(h.id));
+            if (selectedGrade === '전체') base = HANJA_DATA.filter(h => unlockedIds.has(h.id));
+            else if (selectedGrade === '기타') base = HANJA_DATA.filter(h => (!h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON') && unlockedIds.has(h.id));
+            else base = HANJA_DATA.filter(h => h.grade === selectedGrade && unlockedIds.has(h.id));
         } else {
             base = HANJA_DATA.filter(h => h.category === selectedCategory && unlockedIds.has(h.id));
         }
