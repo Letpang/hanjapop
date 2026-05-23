@@ -3,7 +3,7 @@ import HANJA_DATA from '../hanja_unified.json';
 import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
-import { buildSessionPlan, getSRSWeightedPool } from '../utils/learningPool.js';
+import { buildSessionPlan, buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import { playSound } from '../utils/playSound.js';
@@ -31,7 +31,7 @@ const speakKorean = (text, onEnd) => {
         utter.rate = 0.8;
         utter.pitch = 0.95;
         if (onEnd) utter.onend = onEnd;
-        
+
         const voices = window.speechSynthesis.getVoices();
         const koVoices = voices.filter(v => v.lang.startsWith('ko') || v.lang.includes('ko-KR'));
         if (koVoices.length > 0) {
@@ -125,7 +125,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
         const todayHanja = withWords.filter(h => todaySet.has(h.id));
         const unseenToday = todayHanja.filter(h => !seenSet.has(h.id)).sort(() => Math.random() - 0.5);
-        const seenToday   = todayHanja.filter(h =>  seenSet.has(h.id)).sort(() => Math.random() - 0.5);
+        const seenToday = todayHanja.filter(h => seenSet.has(h.id)).sort(() => Math.random() - 0.5);
         const todayPicked = [...unseenToday, ...seenToday].slice(0, 7);
 
         const srsHanja = withWords.filter(h => srsSeenIds.has(h.id) && !todaySet.has(h.id));
@@ -144,11 +144,11 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     const initQueuesRef = useRef(null);
     useEffect(() => { initQueuesRef.current = initQueues; });
+    const startQuizRef = useRef(null);
+    useEffect(() => { startQuizRef.current = startQuiz; });
     useEffect(() => {
         if (contentPool != null && gameState !== 'playing' && gameState !== 'result') {
-            initQueuesRef.current?.();
-            setStarted(true);
-            setGameState('playing');
+            startQuizRef.current?.();
         }
     }, [contentPool]);
 
@@ -212,9 +212,15 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     // 퀴즈 시작
     const startQuiz = (overridePlan) => {
         let plan = overridePlan;
-        if (!plan && !contentPool && currentDayHanjaIds?.length > 0) {
-            const queue = buildMainQueue10();
-            if (queue?.length > 0) plan = { reviewQueue: queue, normalPool: [] };
+        if (!plan) {
+            if (contentPool) {
+                const base = activeHanjaSet.filter(h => h.words?.length > 0);
+                const stage = buildHanjaStage(contentPool, base, srsData, masteryData, seenHanjaIds || [], 10);
+                plan = { reviewQueue: stage, normalPool: [] };
+            } else if (currentDayHanjaIds?.length > 0) {
+                const queue = buildMainQueue10();
+                if (queue?.length > 0) plan = { reviewQueue: queue, normalPool: [] };
+            }
         }
         initQueues(plan);
         shownWordsRef.current = [];
@@ -316,7 +322,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             >
                 <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
                     <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
-                        
+
                         {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                         <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
 
@@ -333,16 +339,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             <span className="text-xs-res font-extrabold text-[#AEB7C5]">
                                 {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
                             </span>
-                            <h1 className="text-h2-res font-black leading-snug" style={{ 
+                            <h1 className="text-h2-res font-black leading-snug" style={{
                                 color: isClear ? '#FF9B73' : '#FF6B6B',
                                 letterSpacing: '-0.5px',
                                 textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
                             }}>
-                                {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br />다시 도전해봐요!</>}
                             </h1>
                             <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                {isClear 
-                                    ? <>총 10문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></> 
+                                {isClear
+                                    ? <>총 10문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
                                     : '조금만 더 노력하면 성공할 수 있어요!'}
                             </p>
                         </div>
@@ -409,50 +415,50 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     🔥 {popupCombo}x 콤보!
                                 </div>
                             )}
-                             <div
-                                 className="px-7 py-3 rounded-full font-extrabold text-xl"
-                                 style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
-                             >
-                                 ⭐ +10 XP
-                             </div>
-                         </div>
-                     </div>
-                 )}
+                            <div
+                                className="px-7 py-3 rounded-full font-extrabold text-xl"
+                                style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
+                            >
+                                ⭐ +10 XP
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                 {/* 헤더 */}
-                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                         <button onClick={started ? () => setShowExitModal(true) : onBack}
-                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
-                             <span>{started ? '✕' : '←'}</span>
-                         </button>
-                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                             <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
-                             <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 한자를 선택하세요</p>
-                         </div>
-                         <div className="flex items-center justify-end w-11">
-                             <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, 10)}/10</span>
-                         </div>
-                     </div>
-                     <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
-                         <div
-                             className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
-                             style={{ width: `${(Math.min(totalAnswered + 1, 10) / 10) * 100}%` }}
-                         >
-                             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
-                                 <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
-                             </div>
-                         </div>
-                     </div>
-                 </div>
+                {/* 헤더 */}
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
+                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                        <button onClick={started ? () => setShowExitModal(true) : onBack}
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                            <span>{started ? '✕' : '←'}</span>
+                        </button>
+                        <div className="flex flex-col items-center min-w-0 flex-1 px-2">
+                            <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
+                            <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 한자를 선택하세요</p>
+                        </div>
+                        <div className="flex items-center justify-end w-11">
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, 10)}/10</span>
+                        </div>
+                    </div>
+                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
+                        <div
+                            className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
+                            style={{ width: `${(Math.min(totalAnswered + 1, 10) / 10) * 100}%` }}
+                        >
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
+                                <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* 본문 */}
                 <div className="flex-1 overflow-y-auto pb-6">
-                    <div className="w-full max-w-xl mx-auto px-4 pt-5 flex flex-col gap-12">
+                    <div className="w-full max-w-xl mx-auto px-4 pt-5 flex flex-col gap-5">
 
                         {/* 문제 카드 (플립) */}
                         <div
-                            className="relative w-full aspect-[16/13]"
+                            className="relative w-full aspect-[16/10]"
                             style={{ perspective: '2000px' }}
                             onClick={() => {
                                 if (isCorrectSelected && currentQuiz?.type === 'sentence') {
@@ -471,7 +477,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             >
                                 {/* 앞면: 빈칸 문장 */}
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-center px-8 overflow-hidden shadow-xl"
+                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-8 overflow-hidden shadow-xl"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isWordCardFlipped ? 0 : 1 }}
                                 >
                                     <p className="text-3xl sm:text-[2.6rem] font-bold leading-[1.8] text-center text-[#5B677A]/90 break-keep">
@@ -479,11 +485,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                             <>
                                                 {currentQuiz.sentence.split('(')[0]}
                                                 <span
-                                                    className={`inline-flex items-center justify-center min-w-[120px] rounded-2xl transition-all duration-300 mx-2 py-0.5 ${
-                                                        feedback
-                                                        ? (feedback.isCorrect ? 'bg-[#7C83FF]/10 border-2 border-[#7C83FF] shadow-sm' : 'bg-rose-50 border-2 border-rose-400 shadow-sm')
-                                                        : 'bg-[#F8FAF9] border-2 border-dashed border-[#7C83FF]/30 shadow-inner'
-                                                    }`}
+                                                    className={`inline-flex items-center justify-center min-w-[120px] rounded-2xl transition-all duration-300 mx-2 py-0.5 ${feedback
+                                                            ? (feedback.isCorrect ? 'bg-[#7C83FF]/10 border-2 border-[#7C83FF] shadow-sm' : 'bg-rose-50 border-2 border-rose-400 shadow-sm')
+                                                            : 'bg-[#F8FAF9] border-2 border-dashed border-[#7C83FF]/30 shadow-inner'
+                                                        }`}
                                                     style={{ verticalAlign: 'baseline' }}
                                                 >
                                                     <span
@@ -510,7 +515,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                                 {/* 뒷면: 단어 정보 */}
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between px-3 py-8 shadow-xl"
+                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-between px-3 py-6 shadow-xl"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', zIndex: isWordCardFlipped ? 1 : 0 }}
                                 >
                                     <div className="flex flex-row items-baseline gap-3">
@@ -523,9 +528,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     </div>
                                     <button
                                         onClick={handleSpeak}
-                                        className={`w-12 h-12 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-xl border-4 border-white ${isSpeaking ? 'bg-[#7C83FF] text-white' : 'bg-[#F8FAF9] text-slate-200'}`}
+                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-xl border-2 border-white ${isSpeaking ? 'bg-[#7C83FF] text-white' : 'bg-[#F8FAF9] text-slate-200'}`}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                         </svg>
                                     </button>
@@ -542,7 +547,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         </div>
 
                         {/* 선택지 */}
-                        <div className="grid grid-cols-1 gap-4 w-full">
+                        <div className="grid grid-cols-1 gap-2.5 w-full">
                             {options.map((opt, i) => {
                                 const isWrong = wrongAttempts.includes(opt);
                                 const isCorrect = isCorrectSelected && opt === currentAnswer;
@@ -551,15 +556,14 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         key={i}
                                         disabled={isCorrectSelected}
                                         onClick={() => handleAnswer(opt)}
-                                        className={`py-4 px-6 rounded-[2rem] font-bold text-h3-res border-2 transition-all flex justify-between items-center break-keep relative active:translate-y-[4px] active:border-b-0 ${
-                                            isCorrect
-                                            ? 'bg-[#F2F3FF] border-[#7C83FF] border-b-8 border-b-[#7C83FF] text-[#4F56D9] -translate-y-[4px]'
-                                            : isWrong
-                                            ? 'bg-white border-[#FFA88D] border-b-8 border-b-[#FFA88D] text-[#FF8D72] -translate-y-[4px]'
-                                            : isCorrectSelected
-                                            ? 'bg-white border-[#E9EDF2] text-[#AEB7C5] opacity-60'
-                                            : 'bg-white border-[#E9EDF2] border-b-8 border-b-slate-200 text-[#5D544F] -translate-y-[4px] hover:border-[#7C83FF]'
-                                        }`}
+                                        className={`py-2.5 px-6 rounded-[1.6rem] font-bold text-h3-res border-2 transition-all flex justify-between items-center break-keep relative active:translate-y-[4px] active:border-b-0 ${isCorrect
+                                                ? 'bg-[#F2F3FF] border-[#7C83FF] border-b-4 border-b-[#7C83FF] text-[#4F56D9] -translate-y-[4px]'
+                                                : isWrong
+                                                    ? 'bg-white border-[#FFA88D] border-b-4 border-b-[#FFA88D] text-[#FF8D72] -translate-y-[4px]'
+                                                    : isCorrectSelected
+                                                        ? 'bg-white border-[#E9EDF2] text-[#AEB7C5] opacity-60'
+                                                        : 'bg-white border-[#E9EDF2] border-b-4 border-b-slate-200 text-[#5D544F] -translate-y-[4px] hover:border-[#7C83FF]'
+                                            }`}
                                         style={{ boxShadow: '0 10px 16px rgba(120,130,160,0.10)' }}
                                     >
                                         <span className="text-left w-full">{opt}</span>
@@ -575,13 +579,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             <div className="w-full flex gap-5 animate-in fade-in slide-in-from-top-4 duration-500">
                                 <button
                                     disabled
-                                    className="flex-1 py-5 rounded-[2.5rem] bg-white font-bold text-h3-res text-slate-200 border-2 border-[#E9EDF2]"
+                                    className="flex-1 py-3 rounded-[1.8rem] bg-white font-bold text-h3-res text-slate-200 border-2 border-[#E9EDF2]"
                                 >
                                     ‹ 이전
                                 </button>
                                 <button
                                     onClick={handleNext}
-                                    className="flex-[2] py-5 rounded-[2.5rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="flex-[2] py-3 rounded-[1.8rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
                                     {totalAnswered >= 10 ? '결과 보기 ›' : '다음 ›'}
                                 </button>
@@ -677,7 +681,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <button
                             onClick={() => startQuiz()}
                             className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-[0_8px_24px_rgba(255,168,141,0.35)] flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
-                            style={{ 
+                            style={{
                                 background: 'linear-gradient(135deg, #FFA88D 0%, #FF8D72 100%)',
                                 borderBottom: '6px solid #E0735A'
                             }}

@@ -40,7 +40,8 @@ const buildPairPool = (items) => {
     const pairs = [];
     // 1) 한자 ↔ 뜻+음 페어
     items.forEach(h => {
-        pairs.push({ pairId: `h_${h.id}`, a: h.hanja, b: `${h.meaning} ${h.sound}`, typeA: 'hanja', typeB: 'meaning', hanjaId: h.id });
+        const hw = (h.words || []).filter(w => w.word && w.meaning && w.reading).map(w => w.word);
+        pairs.push({ pairId: `h_${h.id}`, a: h.hanja, b: `${h.meaning} ${h.sound}`, typeA: 'hanja', typeB: 'meaning', hanjaId: h.id, words: hw });
     });
     // 2) 단어 ↔ 뜻 페어 (중복 단어 제거)
     const seenWords = new Set();
@@ -48,7 +49,8 @@ const buildPairPool = (items) => {
         (h.words || []).forEach(w => {
             if (w.word && w.meaning && !seenWords.has(w.word)) {
                 seenWords.add(w.word);
-                pairs.push({ pairId: `w_${w.word}`, a: w.word, b: w.meaning, typeA: 'word', typeB: 'meaning', hanjaId: h.id });
+                // wordId 저장 — seen 추적에 사용
+                pairs.push({ pairId: `w_${w.word}`, a: w.word, b: w.meaning, typeA: 'word', typeB: 'meaning', hanjaId: h.id, wordId: w.id ?? null, words: [w.word] });
             }
         });
     });
@@ -112,7 +114,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 });
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, hanjaFilter, unlockedHanjaIds, currentDayHanjaIds }) => {
+const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen }) => {
     const { lang, t } = useLang();
 
     // 16단계 캐릭터 로테이션 이미지 생성
@@ -154,7 +156,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (hanjaFilter) {
+        if (contentPool) {
             onBack();
         } else {
             setGameStarted(false);
@@ -172,23 +174,38 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
     const onMarkCorrectRef = useRef(onMarkCorrect);
     const onHanjaAcquiredRef = useRef(onHanjaAcquired);
+    const onHanjaSeenRef = useRef(onHanjaSeen);
+    const onWordSeenRef = useRef(onWordSeen);
     onMarkCorrectRef.current = onMarkCorrect;
     onHanjaAcquiredRef.current = onHanjaAcquired;
+    onHanjaSeenRef.current = onHanjaSeen;
+    onWordSeenRef.current = onWordSeen;
+    const currentRoundWordsRef = useRef([]);
 
     // ── 현재 선택된 한자 풀 (SRS 우선순위 순서로 정렬 → 초반 라운드에 복습 필요 한자 등장) ──
     const activeHanjaSet = useMemo(() => {
         let base;
-        if (hanjaFilter && hanjaFilter.length > 0) {
-            base = HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
-        } else if (viewMode === 'grade') {
+        if (contentPool) {
+            const allIds = new Set([...(contentPool.main?.hanjaIds || []), ...(contentPool.review?.hanjaIds || [])]);
+            base = HANJA_DATA.filter(h => allIds.has(h.id));
+            return getSRSWeightedPool(base, srsData, masteryData, userLevel, null);
+        }
+        if (viewMode === 'grade') {
             if (selectedGrade === '기타') base = HANJA_DATA.filter(h => !h.grade || h.grade === '' || h.grade === '기타' || h.grade === 'NON');
             else base = HANJA_DATA.filter(h => h.grade === selectedGrade);
             base = base.filter(h => unlockedIds.has(h.id));
         } else {
             base = HANJA_DATA.filter(h => h.category === selectedCategory && unlockedIds.has(h.id));
         }
-        return getSRSWeightedPool(base, srsData, masteryData, userLevel, null, hanjaFilter ? null : currentDayHanjaIds);
-    }, [viewMode, selectedGrade, selectedCategory, srsData, masteryData, userLevel, hanjaFilter, unlockedIds, currentDayHanjaIds]);
+        const todaySet = new Set(currentDayHanjaIds || []);
+        const seenSet  = new Set(seenHanjaIds || []);
+        const sortGroup = (g) => getSRSWeightedPool(g, srsData, masteryData, userLevel, null);
+        return [
+            ...sortGroup(base.filter(h => todaySet.has(h.id) && !seenSet.has(h.id))),
+            ...sortGroup(base.filter(h => todaySet.has(h.id) &&  seenSet.has(h.id))),
+            ...sortGroup(base.filter(h => !todaySet.has(h.id))),
+        ];
+    }, [viewMode, selectedGrade, selectedCategory, srsData, masteryData, userLevel, contentPool, unlockedIds, currentDayHanjaIds]);
 
     // ── 게임 시작 ───────────────────────────────────────────────────────────
     const startGame = useCallback((overrideSet) => {
@@ -196,13 +213,30 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         if (!targetSet || targetSet.length === 0) return;
 
         let pool = buildPairPool(targetSet);
-        const isStageMode = hanjaFilter && hanjaFilter.length > 0;
-        
-        // 스테이지 모드면 5쌍 고정, 아니면 선택된 개수에 따라 라운드당 페어 수 결정
-        const pairsPerRound = isStageMode ? 5 : selectedCardCount / 2;
-        
+        const isStageMode = contentPool != null;
+
+        if (isStageMode && contentPool) {
+            const oopsWordIds = new Set([
+                ...(contentPool.main?.wordIds || []),
+                ...(contentPool.review?.wordIds || [])
+            ]);
+            if (oopsWordIds.size > 0) {
+                pool = pool.filter(p => {
+                    if (p.typeA === 'word') {
+                        const matchedHanja = targetSet.find(h => h.id === p.hanjaId);
+                        const isOopsWord = matchedHanja?.words?.some(w => w.word === p.a && oopsWordIds.has(w.id));
+                        return isOopsWord;
+                    }
+                    return true;
+                });
+            }
+        }
+
+        // 스테이지 모드면 5쌍 고정(오답 페어가 적으면 그만큼 축소), 아니면 선택된 개수에 따라 라운드당 페어 수 결정
+        const pairsPerRound = isStageMode ? Math.min(5, pool.length) : selectedCardCount / 2;
+
         if (isStageMode) {
-            pool = pool.slice(0, 5);
+            pool = pool.slice(0, pairsPerRound);
         }
 
         const total = isStageMode ? 1 : Math.ceil(pool.length / pairsPerRound);
@@ -216,6 +250,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setGameStarted(true);
 
         const slice = pool.slice(0, pairsPerRound);
+        currentRoundWordsRef.current = [...new Set(slice.filter(p => p.typeA === 'word').map(p => p.a).filter(Boolean))];
         const newCards = [];
         slice.forEach((pair, i) => {
             newCards.push({ uniqueId: `a-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.a, type: pair.typeA, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
@@ -233,14 +268,14 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setTimeLeft(slice.length * 10);
         roundStartTimeRef.current = Date.now();
         setGameState('playing');
-    }, [activeHanjaSet, selectedCardCount, hanjaFilter]);
+    }, [activeHanjaSet, selectedCardCount, contentPool]);
 
     // 스테이지 모드 진입 시 자동 시작
     useEffect(() => {
-        if (hanjaFilter && hanjaFilter.length > 0 && !gameStarted && activeHanjaSet.length > 0) {
+        if (contentPool != null && !gameStarted && activeHanjaSet.length > 0) {
             startGame();
         }
-    }, [hanjaFilter, gameStarted, activeHanjaSet, startGame]);
+    }, [contentPool, gameStarted, activeHanjaSet, startGame]);
 
     // ── 타이머 ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -275,6 +310,14 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         const [a, b] = flippedCards;
         if (a.pairId === b.pairId) {
             playSound('match');
+            const wordCard = [a, b].find(c => c.type === 'word');
+            if (wordCard?.content) {
+                // 한자 ID(숫자)로 seen 보고
+                if (a.hanjaId != null) onHanjaSeenRef.current?.([a.hanjaId]);
+                // 단어 ID seen 보고
+                const matchedPair = [a, b].find(c => c.type === 'word');
+                if (matchedPair?.wordId != null) onWordSeenRef.current?.(matchedPair.wordId);
+            }
             setTimeout(() => {
                 if (onMarkCorrectRef.current && a.hanjaId) onMarkCorrectRef.current(a.hanjaId);
                 if (onHanjaAcquiredRef.current && a.hanjaId) {
@@ -321,14 +364,31 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
     // ── 다음 라운드 ─────────────────────────────────────────────────────────
     const goNextRound = useCallback(() => {
-        const pairsPerRound = (hanjaFilter && hanjaFilter.length > 0) ? 5 : selectedCardCount / 2;
+        const pairsPerRound = contentPool != null ? 5 : selectedCardCount / 2;
         const nextRound = currentRound + 1;
         const nextIdx = poolIndex + pairsPerRound;
-        if (nextIdx >= pairPool.length) { setGameState('allClear'); return; }
+
+        let workPool = pairPool;
+        let workIdx = nextIdx;
+
+        if (nextIdx >= pairPool.length) {
+            if (contentPool != null) { setGameState('allClear'); return; }
+            // standalone: 풀을 다 쓰면 리셔플
+            workPool = [...pairPool].sort(() => Math.random() - 0.5);
+            workIdx = 0;
+            pairPoolRef.current = workPool;
+            poolIndexRef.current = 0;
+            setPairPool(workPool);
+            setPoolIndex(0);
+            setTotalRounds(prev => prev + Math.ceil(workPool.length / pairsPerRound));
+        } else {
+            setPoolIndex(nextIdx);
+            poolIndexRef.current = nextIdx;
+        }
+
         setCurrentRound(nextRound);
-        setPoolIndex(nextIdx);
-        poolIndexRef.current = nextIdx;
-        const slice = pairPool.slice(nextIdx, nextIdx + pairsPerRound);
+        const slice = workPool.slice(workIdx, workIdx + pairsPerRound);
+        currentRoundWordsRef.current = [...new Set(slice.filter(p => p.typeA === 'word').map(p => p.a).filter(Boolean))];
         const newCards = [];
         slice.forEach((pair, i) => {
             newCards.push({ uniqueId: `a-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.a, type: pair.typeA, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
@@ -346,11 +406,11 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setTimeLeft(slice.length * 10);
         roundStartTimeRef.current = Date.now();
         setGameState('playing');
-    }, [currentRound, poolIndex, pairPool, hanjaFilter, selectedCardCount]);
+    }, [currentRound, poolIndex, pairPool, contentPool, selectedCardCount]);
 
     // ── 재도전 ──────────────────────────────────────────────────────────────
     const retryRound = useCallback(() => {
-        const pairsPerRound = (hanjaFilter && hanjaFilter.length > 0) ? 5 : selectedCardCount / 2;
+        const pairsPerRound = contentPool != null ? 5 : selectedCardCount / 2;
         const slice = pairPool.slice(poolIndex, poolIndex + pairsPerRound);
         const newCards = [];
         slice.forEach((pair, i) => {
@@ -369,7 +429,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setTimeLeft(slice.length * 10);
         roundStartTimeRef.current = Date.now();
         setGameState('playing');
-    }, [pairPool, poolIndex, selectedCardCount, hanjaFilter]);
+    }, [pairPool, poolIndex, selectedCardCount, contentPool]);
 
     const gradeColor = selectedGrade ? GRADE_COLORS[selectedGrade] : GRADE_COLORS['8급'];
 
@@ -389,7 +449,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         <p className="text-[#AEB7C5] font-extrabold text-xs mt-2">총 {totalRounds}라운드 전부 클리어!</p>
                     </div>
                     <button
-                        onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
+                        onClick={contentPool ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
                         className="pill-button-primary w-full py-5 text-xl shadow-xl shadow-[#C3C6FF] relative z-10"
                     >
                         다른 모드 해보기
@@ -522,7 +582,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                         {gameState === 'clear' ? '다음 라운드' : '다시 하기'}
                                     </button>
                                     <button
-                                        onClick={hanjaFilter ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
+                                        onClick={contentPool ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
                                         className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                                     >
                                         돌아가기

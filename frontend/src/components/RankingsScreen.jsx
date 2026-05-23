@@ -63,7 +63,7 @@ const RankingsScreen = ({ onBack, isDarkMode }) => {
         const hanjaList = [...allHanjaIds].map(id => hanjaById[id]).filter(Boolean);
         const wordList = [...allWordIds].map(id => wordById[id]).filter(Boolean);
         return { hanjaList, wordList, wrongWordIds: allWrong, studyDays, accuracy, totalActivities };
-    }, [studyLog, totalActivity, missionHistory]);
+    }, [studyLogDays, studyLogTotal, missionHistory]);
 
     return (
         <div className={`fixed inset-0 w-full h-full z-50 flex flex-col items-center overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#3D3530]'}`}>

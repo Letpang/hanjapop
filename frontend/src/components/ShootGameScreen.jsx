@@ -5,7 +5,7 @@ import {
 } from './Icons.jsx';
 import { useLang } from '../LangContext.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
-import { buildSessionPlan } from '../utils/learningPool.js';
+import { buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
@@ -23,10 +23,10 @@ const DIFFICULTY_CONFIG = {
     easy: {
         label: '느림',
         dropSpeedBase: 0.18,       // 낙하 속도 (% per tick, 50ms) — ~18초 바닥 도달
-        dropSpeedPerWave: 0.015,   // 웨이브당 속도 증가
-        maxOnScreen: 2,
-        spawnIntervalBase: 3000,
-        spawnIntervalPerWave: -150,
+        dropSpeedPerWave: 0.015,
+        maxOnScreen: 3,
+        spawnIntervalBase: 1800,   // 3000 → 1800ms
+        spawnIntervalPerWave: -100,
         wrongAnswerMode: 'other_theme',
         wavesTotal: 1,
         killsPerWave: 10,
@@ -37,8 +37,8 @@ const DIFFICULTY_CONFIG = {
         dropSpeedBase: 0.28,       // ~11초 바닥 도달
         dropSpeedPerWave: 0.03,
         maxOnScreen: 3,
-        spawnIntervalBase: 2400,
-        spawnIntervalPerWave: -200,
+        spawnIntervalBase: 1400,   // 2400 → 1400ms
+        spawnIntervalPerWave: -120,
         wrongAnswerMode: 'same_theme',
         wavesTotal: 1,
         killsPerWave: 12,
@@ -49,8 +49,8 @@ const DIFFICULTY_CONFIG = {
         dropSpeedBase: 0.40,       // ~7.5초 바닥 도달
         dropSpeedPerWave: 0.05,
         maxOnScreen: 4,
-        spawnIntervalBase: 1600,
-        spawnIntervalPerWave: -180,
+        spawnIntervalBase: 900,    // 1600 → 900ms
+        spawnIntervalPerWave: -100,
         wrongAnswerMode: 'same_reading_prefix',
         wavesTotal: 1,
         killsPerWave: 15,
@@ -294,68 +294,44 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         } else if (viewMode === 'grade') {
             if (selectedGrade === '전체') pool = HANJA_DATA;
             else pool = HANJA_DATA.filter(h => h.grade === selectedGrade);
-            pool = pool.filter(h => unlockedIds.has(h.id));
+            // unlockedIds가 비어있으면(커리큘럼 미진행) 해당 급수 전체 한자를 폴백으로 사용
+            const locked = pool.filter(h => unlockedIds.has(h.id));
+            pool = locked.length > 0 ? locked : pool;
         } else {
-            pool = HANJA_DATA.filter(h => h.category === selectedCategory && unlockedIds.has(h.id));
+            const full = HANJA_DATA.filter(h => h.category === selectedCategory);
+            const locked = full.filter(h => unlockedIds.has(h.id));
+            pool = locked.length > 0 ? locked : full;
         }
         const relevantWords = pool.filter(h => h.words && h.words.length > 0);
         return { chars: pool, words: relevantWords };
     }, [viewMode, selectedGrade, selectedCategory, contentPool, unlockedIds]);
 
-    // 게임 시작 시점에 한 번만 계산 — 게임 중 srsData/masteryData 변경으로 큐가 리셋되는 것을 방지
-    const sessionPlanRef = useRef({ reviewQueue: [], normalPool: [] });
-    const sessionPlan = sessionPlanRef.current;
+    // 게임 시작 시점에 한번에 선택된 한자 풀 (순환 스폰용)
+    const hanjaStageRef = useRef([]);
+    const stageIndexRef = useRef(0);
 
-    const reviewQueueRef = useRef([]);
-    const normalQueueRef = useRef([]);
     const lastSpawnedIdRef = useRef(null);
     const wordQueueRef = useRef([]);
     const lastSpawnedWordRef = useRef(null);
     const flatWordPoolRef = useRef([]);
-    const spawnedHanjaSetRef = useRef(new Set());
     const spawnedWordsSetRef = useRef(new Set());
     const onHanjaSeenRef = useRef(onHanjaSeen);
     useEffect(() => { onHanjaSeenRef.current = onHanjaSeen; });
     const wordChanceRef = useRef(0.83);
     const gameWrongHanjasRef = useRef(new Set());
-    const gameWrongWordsRef = useRef(new Set());
+    const gameWrongWordsRef = useRef(new Map()); // wordId → { hanjaId, reading, meaning }
     const [wrongItemsForRender, setWrongItemsForRender] = useState([]);
 
     const flushWrongItems = useCallback(() => {
         gameWrongHanjasRef.current.forEach(pairId => {
             if (pairId && onMarkWrong) onMarkWrong(pairId);
         });
-        gameWrongWordsRef.current.forEach(wordId => {
-            if (wordId && onWordWrong) onWordWrong(wordId);
+        gameWrongWordsRef.current.forEach((info, wordId) => {
+            if (wordId && onWordWrong) onWordWrong(wordId, info.hanjaId, info.reading, info.meaning);
         });
         gameWrongHanjasRef.current.clear();
         gameWrongWordsRef.current.clear();
     }, [onMarkWrong, onWordWrong]);
-
-    const refillNormalQueue = useCallback((pool) => {
-        const todaySet = new Set(currentDayHanjaIds || []);
-        const todayInPool = pool.filter(h => todaySet.has(h.id));
-        const nonTodayInPool = pool.filter(h => !todaySet.has(h.id));
-
-        // 오늘 한자 전부 소진됐으면 새 라운드 (덱 리셋)
-        const unseenToday = todayInPool.filter(h => !spawnedHanjaSetRef.current.has(h.id));
-        if (unseenToday.length === 0 && todayInPool.length > 0) {
-            todayInPool.forEach(h => spawnedHanjaSetRef.current.delete(h.id));
-        }
-
-        const freshUnseen = todayInPool.filter(h => !spawnedHanjaSetRef.current.has(h.id));
-        const freshSeen   = todayInPool.filter(h =>  spawnedHanjaSetRef.current.has(h.id));
-
-        let queue = [
-            ...freshUnseen.sort(() => Math.random() - 0.5),
-            ...freshSeen.sort(() => Math.random() - 0.5),
-            ...nonTodayInPool.sort(() => Math.random() - 0.5),
-        ];
-        if (queue.length > 1 && queue[0]?.id === lastSpawnedIdRef.current) {
-            queue = [...queue.slice(1), queue[0]];
-        }
-        normalQueueRef.current = queue;
-    }, [currentDayHanjaIds]);
 
     const refillWordQueue = useCallback((pool) => {
         if (!pool || pool.length === 0) return;
@@ -396,17 +372,25 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         }
         refillWordQueue(flatWordPoolRef.current);
 
-        // wordChance 캐싱 업데이트
-        const totalWords = flatWordPoolRef.current.length;
-        const totalHanja = (sessionPlanRef.current?.normalPool?.length || 0) + (sessionPlanRef.current?.reviewQueue?.length || 0);
-        wordChanceRef.current = totalWords > 0 ? totalWords / Math.max(totalWords + totalHanja, 1) : 0.83;
+        // wordChance는 startGame에서 hanjaStage 확정 후 재계산 — 여기선 0으로 초기화
+        wordChanceRef.current = 0;
     }, [gamePoolData, contentPool, refillWordQueue]);
 
 
     const startGameRef = useRef(null);
     useEffect(() => { startGameRef.current = startGame; });
+
+    // contentPool이 prop 참조 변경(hanjaData 업데이트)으로 매번 새 객체가 되므로,
+    // 실제 hanjaIds 내용이 바뀔 때만 auto-start하도록 키로 비교한다.
+    const lastContentKeyRef = useRef(null);
     useEffect(() => {
-        if (contentPool != null) startGameRef.current?.();
+        if (contentPool == null) return;
+        // main.hanjaIds 기준으로만 비교 (review는 랜덤 선택이라 제외)
+        const key = JSON.stringify([...(contentPool.main?.hanjaIds || [])].sort());
+        if (key !== lastContentKeyRef.current) {
+            lastContentKeyRef.current = key;
+            startGameRef.current?.();
+        }
     }, [contentPool]);
 
     const startGame = (overrideDiff) => {
@@ -419,23 +403,28 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         } catch (e) {}
 
         const effectiveDiff = overrideDiff ? (DIFFICULTY_CONFIG[overrideDiff] || diffConfig) : diffConfig;
-        // 시작 시점의 srsData/masteryData로 플랜 계산 (게임 중 변경 무시)
-        const plan = buildSessionPlan(gamePoolData.chars, srsData, masteryData, contentPool ? null : currentDayHanjaIds, null);
-        sessionPlanRef.current = plan;
-        reviewQueueRef.current = [...plan.reviewQueue];
+        // 게임 시작 시점에 한자 풀 사전 선택 (게임 중 srsData/masteryData 변경 무시)
+        let stage;
+        if (contentPool) {
+            stage = buildHanjaStage(contentPool, gamePoolData.chars, srsData, masteryData, seenHanjaIds || [], effectiveDiff.killsPerWave);
+        } else {
+            stage = getSRSWeightedPool(gamePoolData.chars, srsData, masteryData, userLevel, effectiveDiff.killsPerWave, currentDayHanjaIds?.length > 0 ? currentDayHanjaIds : null);
+        }
+        if (stage.length === 0) stage = [...gamePoolData.chars].sort(() => Math.random() - 0.5).slice(0, effectiveDiff.killsPerWave);
+        hanjaStageRef.current = stage;
+        stageIndexRef.current = 0;
+
         lastSpawnedIdRef.current = null;
         lastSpawnedWordRef.current = null;
-        // 이전 활동에서 본 오늘 한자를 덱의 '이미 본' 상태로 초기화
-        const todaySet = new Set(currentDayHanjaIds || []);
-        spawnedHanjaSetRef.current = new Set((seenHanjaIds || []).filter(id => todaySet.has(id)));
         spawnedWordsSetRef.current = new Set();
-        refillNormalQueue(plan.normalPool);
         refillWordQueue(flatWordPoolRef.current);
 
-        // wordChance 캐싱 업데이트
+        // wordChance: 단어풀이 너무 적으면 비율 낮춰서 한자 스폰이 막히지 않게
         const totalWords = flatWordPoolRef.current.length;
-        const totalHanja = (plan.normalPool?.length || 0) + (plan.reviewQueue?.length || 0);
-        wordChanceRef.current = totalWords > 0 ? totalWords / Math.max(totalWords + totalHanja, 1) : 0.83;
+        const totalHanja = stage.length;
+        wordChanceRef.current = totalWords > 0
+            ? Math.min(0.75, totalWords / Math.max(totalWords + totalHanja, 1))
+            : 0;
 
         setWave(1);
         setWaveKills(0);
@@ -558,14 +547,18 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     }
                 }
 
-                if (!nextItem && sessionPlanRef.current.normalPool.length > 0) {
-                    let ch;
-                    if (reviewQueueRef.current.length > 0) {
-                        ch = reviewQueueRef.current.shift();
-                    } else {
-                        if (normalQueueRef.current.length === 0) refillNormalQueue(sessionPlanRef.current.normalPool);
-                        ch = normalQueueRef.current.shift();
+                if (!nextItem && hanjaStageRef.current.length > 0) {
+                    if (stageIndexRef.current >= hanjaStageRef.current.length) {
+                        const reshuffled = [...hanjaStageRef.current].sort(() => Math.random() - 0.5);
+                        if (reshuffled.length > 1 && reshuffled[0]?.id === lastSpawnedIdRef.current) {
+                            const [first, ...rest] = reshuffled;
+                            hanjaStageRef.current = [...rest, first];
+                        } else {
+                            hanjaStageRef.current = reshuffled;
+                        }
+                        stageIndexRef.current = 0;
                     }
+                    const ch = hanjaStageRef.current[stageIndexRef.current++];
                     if (ch) {
                         lastSpawnedIdRef.current = ch.id;
                         nextItem = { ...ch, isWrongItem: (masteryData?.[String(ch.id)]?.wrongCount || 0) >= 1 };
@@ -574,10 +567,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
                 if (!nextItem) return prev;
                 if (fallingHanjas.has(nextItem.hanja)) return prev;
-                if (isWord) {
-                    if (nextItem.hanja) spawnedWordsSetRef.current.add(nextItem.hanja);
-                } else {
-                    if (nextItem.id) spawnedHanjaSetRef.current.add(nextItem.id);
+                if (isWord && nextItem.hanja) {
+                    spawnedWordsSetRef.current.add(nextItem.hanja);
                 }
 
                 return [...prev, {
@@ -633,7 +624,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             setScore(prev => prev + 1);
             setWaveKills(prev => prev + 1);
             if (onMarkCorrect) onMarkCorrect(target.pairId);
-            if (target.isWord && target.hanja) onHanjaSeenRef.current?.([target.hanja]);
+            // 한자 ID(숫자)로 seen 보고 — 한자 몬스터와 단어 몬스터 모두
+            if (target.pairId != null) onHanjaSeenRef.current?.([target.pairId]);
             if (target.isWord && target.wordId != null) onWordCorrect?.(target.wordId);
             if (onHanjaAcquired) onHanjaAcquired(target.pairId, 10);
             const acqId = Date.now();
@@ -648,7 +640,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             
             // 즉시 전송하지 않고 임시 셋에 오답 수집
             if (target.pairId) gameWrongHanjasRef.current.add(target.pairId);
-            if (target.isWord && target.wordId != null) gameWrongWordsRef.current.add(target.wordId);
+            if (target.isWord && target.wordId != null) {
+                gameWrongWordsRef.current.set(target.wordId, {
+                    hanjaId: target.pairId || null,
+                    reading: target.sound || '',
+                    meaning: target.hanja || '',
+                });
+            }
             
             // 결과 모달 노출용 칩 정보 적재 (정답 뜻/음 칩)
             const isExist = wrongItemsForRender.some(item => item.hanja === target.hanja);
@@ -954,37 +952,36 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             )}
             <div className={`w-full mx-auto h-full flex flex-col relative ${shake ? "animate-shake" : ""}`}>
                 {/* 상단 HUD */}
-                <div className="absolute top-0 left-4 right-4 z-40 safe-top pt-4 flex justify-between items-center">
+                <div className="absolute top-0 left-2 right-2 z-40 safe-top pt-3 flex items-center gap-1.5">
                     {/* 1. HP */}
-                    <div className="h-10 bg-white/90 backdrop-blur-md rounded-2xl px-4 shadow-md border border-white/50 flex items-center gap-2">
+                    <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center gap-1.5 shrink-0">
                         {Array.from({ length: diffConfig.hp }).map((_, i) => (
-                            <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i < hp ? "bg-rose-300" : "bg-[#F4F7F8]"}`} />
+                            <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i < hp ? "bg-rose-300" : "bg-[#F4F7F8]"}`} />
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        {/* 2. 진행도 */}
-                        <div className="h-10 bg-white/90 backdrop-blur-md rounded-2xl px-4 shadow-md border border-white/50 flex items-center gap-3">
-                            <span className="text-xs font-black text-[#5B677A] whitespace-nowrap">Progress</span>
-                            <div className="w-24 md:w-36 h-2 bg-[#F4F7F8] rounded-full overflow-hidden relative">
-                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
-                            </div>
-                            <span className="text-xs font-black text-[#AEB7C5] tabular-nums min-w-[2.5rem] text-right">{waveKills}/{diffConfig.killsPerWave}</span>
+                    {/* 2. 진행도 */}
+                    <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center gap-2 flex-1 min-w-0">
+                        <div className="flex-1 h-2 bg-[#F4F7F8] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
                         </div>
-                        {/* 3. 스코어 */}
-                        <div className="h-10 bg-white/90 backdrop-blur-md rounded-2xl px-4 shadow-md border border-white/50 flex items-center justify-center min-w-[3.5rem]">
-                            <span className="font-bold text-[#AEB7C5] text-base leading-none tabular-nums">{score}</span>
-                        </div>
-                        {/* 4. 종료 */}
-                        <button 
-                            onClick={() => setShowExitModal(true)} 
-                            className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white shadow-lg active:scale-95 transition-all group"
-                        >
-                            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-slate-400 stroke-[3] group-hover:stroke-rose-400 transition-colors">
-                                <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </button>
+                        <span className="text-xs font-black text-[#AEB7C5] tabular-nums whitespace-nowrap">{waveKills}/{diffConfig.killsPerWave}</span>
                     </div>
+
+                    {/* 3. 스코어 */}
+                    <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center justify-center shrink-0 min-w-[2.5rem]">
+                        <span className="font-bold text-[#AEB7C5] text-sm leading-none tabular-nums">{score}</span>
+                    </div>
+
+                    {/* 4. 종료 */}
+                    <button 
+                        onClick={() => setShowExitModal(true)} 
+                        className="w-9 h-9 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white shadow-lg active:scale-95 transition-all shrink-0"
+                    >
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-slate-400 stroke-[3]">
+                            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </button>
                 </div>
 
                 {/* 게임 영역 */}
