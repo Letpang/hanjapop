@@ -216,7 +216,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             if (contentPool) {
                 const base = activeHanjaSet.filter(h => h.words?.length > 0);
                 const stage = buildHanjaStage(contentPool, base, srsData, masteryData, seenHanjaIds || [], 10);
-                plan = { reviewQueue: stage, normalPool: [] };
+                if (stage.length > 0) {
+                    // stage가 10개 미만이면 normalPool에 재활용 아이템으로 채워 항상 10문제 보장
+                    const extras = [];
+                    let i = 0;
+                    while (stage.length + extras.length < 10) {
+                        extras.push(stage[i % stage.length]);
+                        i++;
+                    }
+                    plan = { reviewQueue: [...stage], normalPool: extras };
+                }
             } else if (currentDayHanjaIds?.length > 0) {
                 const queue = buildMainQueue10();
                 if (queue?.length > 0) plan = { reviewQueue: queue, normalPool: [] };
