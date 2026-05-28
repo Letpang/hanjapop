@@ -48,33 +48,45 @@ const saveSRS = (data) => {
  * @returns {Object} 업데이트된 카드 상태
  */
 const sm2Update = (card, quality) => {
-    const { ef = DEFAULT_EF, interval = 0, repetitions = 0 } = card;
+    const rawEf = Number(card?.ef);
+    const rawInterval = Number(card?.interval);
+    const rawRepetitions = Number(card?.repetitions);
+    const ef = Number.isFinite(rawEf) && rawEf >= MIN_EF ? rawEf : DEFAULT_EF;
+    const interval = Number.isFinite(rawInterval) && rawInterval >= 0 ? rawInterval : 0;
+    const repetitions = Number.isFinite(rawRepetitions) && rawRepetitions >= 0 ? Math.floor(rawRepetitions) : 0;
 
     let newEf = ef;
     let newInterval;
     let newRepetitions;
 
     if (quality >= 3) {
-        // 정답
         if (repetitions === 0) {
-            newInterval = INTERVAL_TABLE[0]; // 1일
+            newInterval = INTERVAL_TABLE[0];
         } else if (repetitions === 1) {
-            newInterval = INTERVAL_TABLE[1]; // 3일
+            newInterval = INTERVAL_TABLE[1];
         } else if (repetitions === 2) {
-            newInterval = INTERVAL_TABLE[2]; // 7일
+            newInterval = INTERVAL_TABLE[2];
         } else {
             newInterval = Math.round(interval * ef);
         }
         newRepetitions = repetitions + 1;
-        // EF 조정: 품질이 높을수록 EF 증가
         newEf = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
         newEf = Math.max(MIN_EF, newEf);
+        // 밀린 만큼 EF 페널티 (최대 0.3)
+        if (card?.lastReviewed && interval > 0) {
+            const actualDays = (Date.now() - new Date(card.lastReviewed)) / (1000 * 60 * 60 * 24);
+            const delay = Math.max(0, actualDays - interval);
+            if (delay > 0) newEf = Math.max(MIN_EF, newEf - Math.min(0.3, delay * 0.02));
+        }
     } else {
-        // 오답: 처음부터 다시
         newInterval = 1;
         newRepetitions = 0;
         newEf = Math.max(MIN_EF, ef - 0.2);
     }
+
+    // NaN/Infinity 방어: 이상 값이면 1일로 리셋
+    if (!Number.isFinite(newInterval) || newInterval < 1) newInterval = 1;
+    newInterval = Math.min(newInterval, 365); // 최대 1년 캡
 
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + newInterval);
@@ -86,7 +98,7 @@ const sm2Update = (card, quality) => {
         repetitions: newRepetitions,
         nextReview: nextReview.toISOString(),
         lastQuality: quality,
-        totalReviews: (card.totalReviews || 0) + 1,
+        totalReviews: (card?.totalReviews || 0) + 1,
         lastReviewed: new Date().toISOString(),
     };
 };

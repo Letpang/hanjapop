@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>한자 탐험기</title>
+    <title>hanjapop</title>
+    <link rel="icon" type="image/webp" href="/assets/images/characters/muzi/rank_5.webp" />
 
     <!-- GmarketSans (한국어 메인 폰트) -->
     <link href="https://webfontworld.github.io/gmarket/GmarketSans.css" rel="stylesheet">
@@ -19,31 +20,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&display=swap" rel="stylesheet">
     <!-- Noto Sans KR (한자 bold 일관성) -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@900&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS (CDN) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontSize: {
-              'display': 'var(--text-display)',
-              'h1':      'var(--text-h1)',
-              'h2':      'var(--text-h2)',
-              'h3':      'var(--text-h3)',
-              'body-lg': 'var(--text-body-lg)',
-              'body':    'var(--text-body)',
-              'sm-res':  'var(--text-sm)',
-              'xs-res':  'var(--text-xs)',
-            },
-            lineHeight: {
-              'standard': 'var(--line-height-standard)',
-            }
-          }
-        }
-      }
-    </script>
     <!-- Hanzi Writer (획순 가이드용) -->
     <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <!-- Lemon Squeezy 오버레이 결제 -->
+    <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,8 +1,7 @@
-import React, { createContext, useState, useContext, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { strings } from './i18n/strings.js';
 import { SK } from './constants/storageKeys.js';
-
-const LangContext = createContext();
+import { LangContext } from './context/langContextValue.js';
 
 export const LangProvider = ({ children }) => {
     const [lang, setLang] = useState(() => {
@@ -28,12 +27,4 @@ export const LangProvider = ({ children }) => {
             {children}
         </LangContext.Provider>
     );
-};
-
-export const useLang = () => {
-    const context = useContext(LangContext);
-    if (!context) {
-        throw new Error('useLang must be used within a LangProvider');
-    }
-    return context;
 };

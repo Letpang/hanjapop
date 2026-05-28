@@ -76,10 +76,52 @@ export const isSupabaseEnabled = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 export const supabase = isSupabaseEnabled
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: false },
+        auth: { persistSession: true, storage: localStorage },
         realtime: { params: { eventsPerSecond: 2 } },
     })
     : null;
+
+// ── Auth 헬퍼 ────────────────────────────────────────────────────────────────
+
+/** 현재 로그인된 유저 반환 (없으면 null) */
+export const getCurrentUser = async () => {
+    if (!supabase) return null;
+    const { data: { user } } = await supabase.auth.getUser();
+    return user ?? null;
+};
+
+/** Apple ID token → Supabase 로그인 */
+export const signInWithAppleToken = async (identityToken) => {
+    if (!supabase) return { error: 'offline' };
+    return supabase.auth.signInWithIdToken({ provider: 'apple', token: identityToken });
+};
+
+/** Google ID token → Supabase 로그인 */
+export const signInWithGoogleToken = async (idToken) => {
+    if (!supabase) return { error: 'offline' };
+    return supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+};
+
+/** 로그아웃 */
+export const signOut = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+};
+
+/**
+ * 로그인 후 기존 device_id 데이터를 auth_user_id에 연결
+ * - user_profiles, learning_data 모두 처리
+ */
+export const linkAuthToDevice = async (userId) => {
+    if (!supabase) return;
+    const deviceId = getDeviceId();
+    await supabase.from('user_profiles')
+        .update({ auth_user_id: userId })
+        .eq('device_id', deviceId);
+    await supabase.from('learning_data')
+        .update({ auth_user_id: userId })
+        .eq('device_id', deviceId);
+};
 
 /**
  * 디바이스 고유 ID 생성/조회
@@ -178,6 +220,32 @@ export const fetchUserProfile = async () => {
         .eq('device_id', deviceId)
         .single();
     return { data, error };
+};
+
+/**
+ * 현재 유저의 구매 팩 조회
+ * unlocked_pack: 0=free, 1=pack1(21~60), 2=pack2(61~124), 3=fullpack(1~124)
+ * 하위 호환: is_premium=true → pack 3
+ */
+export const fetchUnlockedPack = async () => {
+    if (!isSupabaseEnabled || !supabase) return 0;
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const deviceId = getDeviceId();
+        const query = user
+            ? supabase.from('user_profiles').select('unlocked_pack, is_premium').eq('auth_user_id', user.id).single()
+            : supabase.from('user_profiles').select('unlocked_pack, is_premium').eq('device_id', deviceId).single();
+        const { data } = await query;
+        if (!data) return 0;
+        if (data.unlocked_pack != null) return data.unlocked_pack;
+        return data.is_premium ? 3 : 0;
+    } catch { return 0; }
+};
+
+/** @deprecated use fetchUnlockedPack */
+export const fetchIsPremium = async () => {
+    const pack = await fetchUnlockedPack();
+    return pack > 0;
 };
 
 /**

@@ -17,22 +17,33 @@ export const getLeaderboardPosition = (xp, mockUsers = MOCK_USERS) => {
 };
 
 /**
- * LV.10 레벨 시스템
+ * LV.20 레벨 시스템 확장
  *
- * 레벨 | 필요 XP | 캐릭터 이미지
- * ─────────────────────────────────────────
- *  1   |     0   | rank_1.png  (새싹 뭉치)
- *  2   |   500   | rank_1.png
- *  3   |  1500   | rank_2.png  (성장 뭉치)
- *  4   |  3500   | rank_2.png
- *  5   |  7000   | rank_3.png  (중급 뭉치)
- *  6   | 12000   | rank_3.png
- *  7   | 19000   | rank_4.png  (고급 뭉치)
- *  8   | 28000   | rank_4.png
- *  9   | 40000   | rank_5.png  (마스터 뭉치)
- * 10   | 55000   | rank_5.png  (전설 뭉치)
+ * 두 레벨마다 칭호가 바뀝니다. (새싹 -> 성장 -> 중급 -> 고급 -> 마스터 -> 영웅 -> 전설 -> 신화 -> 천상 -> 불멸)
+ * 캐릭터 이미지는 레벨 17이 되어야 최종 5단계(불멸/천상)에 도달합니다.
  */
-const LEVEL_THRESHOLDS = [0, 500, 1500, 3500, 7000, 12000, 19000, 28000, 40000, 55000];
+const LEVEL_THRESHOLDS = [
+    0,      // 1: 새싹
+    500,    // 2: 새싹
+    1500,   // 3: 성장
+    3500,   // 4: 성장
+    7000,   // 5: 중급
+    12000,  // 6: 중급
+    19000,  // 7: 고급
+    28000,  // 8: 고급
+    40000,  // 9: 마스터
+    55000,  // 10: 마스터
+    75000,  // 11: 영웅
+    100000, // 12: 영웅
+    130000, // 13: 전설
+    170000, // 14: 전설
+    220000, // 15: 신화
+    280000, // 16: 신화
+    360000, // 17: 천상
+    460000, // 18: 천상
+    600000, // 19: 불멸
+    800000  // 20: 불멸
+];
 
 export const getLevel = (xp) => {
     let level = 1;
@@ -42,27 +53,27 @@ export const getLevel = (xp) => {
             break;
         }
     }
-    return level;
+    return Math.min(level, 20); // Max level 20
 };
 
 export const getNextLevelXp = (level) => {
-    if (level >= 10) return null; // MAX
-    return LEVEL_THRESHOLDS[level]; // level은 1-based, index는 0-based이므로 level이 곧 다음 임계값 인덱스
+    if (level >= 20) return null; // MAX
+    return LEVEL_THRESHOLDS[level]; // level은 1-based, index는 0-based
 };
 
 export const getLevelProgress = (xp, level) => {
-    if (level >= 10) return 100;
+    if (level >= 20) return 100;
     const current = LEVEL_THRESHOLDS[level - 1];
     const next = LEVEL_THRESHOLDS[level];
-    return Math.min(100, Math.round(((xp - current) / (next - current)) * 100));
+    return Math.max(0, Math.min(100, Math.round(((xp - current) / (next - current)) * 100)));
 };
 
 // 레벨 → 캐릭터 이미지 단계 (1~5)
 const levelToImageRank = (level) => {
-    if (level >= 9) return 5;
-    if (level >= 7) return 4;
-    if (level >= 5) return 3;
-    if (level >= 3) return 2;
+    if (level >= 17) return 5;
+    if (level >= 13) return 4;
+    if (level >= 9)  return 3;
+    if (level >= 5)  return 2;
     return 1;
 };
 
@@ -79,8 +90,19 @@ export const getRankDetails = (xp, charType, position = 9999) => {
         muzi: '무지뭉치'
     };
 
-    const rankNames = ['새싹', '새싹', '성장', '성장', '중급', '중급', '고급', '고급', '마스터', '전설'];
-    const rankName = rankNames[level - 1] || '새싹';
+    const rankNames = [
+        '새싹', '새싹', 
+        '성장', '성장', 
+        '중급', '중급', 
+        '고급', '고급', 
+        '마스터', '마스터', 
+        '영웅', '영웅', 
+        '전설', '전설', 
+        '신화', '신화', 
+        '천상', '천상', 
+        '불멸', '불멸'
+    ];
+    const rankName = rankNames[level - 1] || '불멸';
 
     return {
         name: fullName[type] || '뭉치',

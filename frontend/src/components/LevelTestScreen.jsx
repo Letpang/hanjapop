@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getCharacterImage } from '../utils/rankUtils.js';
-import { getTodayStr } from '../utils/sessionUtils.js';
 import { playSound } from '../utils/playSound.js';
 
 const SORTED_HANJA = [...HANJA_DATA].sort((a, b) => a.id - b.id);
@@ -16,27 +15,6 @@ const getTotalDays = () => {
 
 const getLevelTestBonus = () => {
     try { return Number(localStorage.getItem(SK.LEVEL_TEST_BONUS) || '0'); } catch { return 0; }
-};
-
-const isPremium = () => {
-    try { return localStorage.getItem(SK.PREMIUM) === 'true'; } catch { return false; }
-};
-
-const getTodayPassCount = () => {
-    try {
-        const today = getTodayStr();
-        const data = JSON.parse(localStorage.getItem(SK.LEVEL_TEST_DAILY) || '{}');
-        return data.date === today ? (data.count || 0) : 0;
-    } catch { return 0; }
-};
-
-const incrementTodayPassCount = () => {
-    try {
-        const today = getTodayStr();
-        const data = JSON.parse(localStorage.getItem(SK.LEVEL_TEST_DAILY) || '{}');
-        const count = data.date === today ? (data.count || 0) + 1 : 1;
-        localStorage.setItem(SK.LEVEL_TEST_DAILY, JSON.stringify({ date: today, count }));
-    } catch {}
 };
 
 const shuffle = (arr) => {
@@ -143,8 +121,6 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
     const currentBonus = getLevelTestBonus();
     const totalDays = getTotalDays();
     const unlockedCount = totalDays * 3 + currentBonus;
-    const todayPassCount = getTodayPassCount();
-    const canTest = isPremium() || todayPassCount < 2;
 
     const unlockedHanja = useMemo(() => SORTED_HANJA.slice(0, unlockedCount), [unlockedCount]);
     const questions = useMemo(() => buildLevelTestQuestions(unlockedHanja), [unlockedHanja]);
@@ -158,6 +134,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
     const [selected, setSelected] = useState(null); // selected choice
     const [revealed, setRevealed] = useState(false);
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
+    const xpPopupKeyRef = useRef(0);
 
     const handleStart = () => {
         if (unlockedHanja.length < 3) return; // too few hanja to test
@@ -179,7 +156,8 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
         if (isCorrect) {
             if (onHanjaAcquired) onHanjaAcquired(q.item?.id || null, 10);
             playSound('match');
-            setXpPopup({ show: true, key: Date.now(), amount: 10 });
+            xpPopupKeyRef.current += 1;
+            setXpPopup({ show: true, key: xpPopupKeyRef.current, amount: 10 });
             setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
         } else {
             playSound('mismatch');
@@ -204,7 +182,6 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
         if (passed) {
             const newBonus = currentBonus + 2;
             localStorage.setItem(SK.LEVEL_TEST_BONUS, String(newBonus));
-            incrementTodayPassCount();
         }
         onBack();
     };
@@ -245,7 +222,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                                 <span className="text-body-lg-res font-extrabold text-[#4A51D4] dark:text-[#7C83FF]">{questions.length}문항</span>
                             </div>
                             <div className="bg-[#FFB433]/10/50 dark:bg-[#FFB433]/30 rounded-3xl p-5 flex flex-col items-center justify-center border-2 border-[#FFB433]/15/50 dark:border-[#8B5E00]">
-                                <span className="text-h2-res mb-2">🎯</span>
+
                                 <span className="text-xs text-[#FFB433] font-extrabold uppercase tracking-widest mb-1">통과 기준</span>
                                 <span className="text-body-lg-res font-extrabold text-[#FFB433] dark:text-[#FFB433]">{PASS_THRESHOLD}점 이상</span>
                             </div>
@@ -259,15 +236,6 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                                     통과 시 <span className="text-[#FF9B73] dark:text-[#FF9B73] font-extrabold">학습지 2개 추가 오픈</span>
                                 </p>
                             </div>
-                            <div className="flex items-center gap-4 bg-[#F8FAF9] dark:bg-slate-700/50 rounded-2xl px-5 py-4 border-2 border-[#E9EDF2] dark:border-slate-600">
-                                <span className="text-h3-res">📅</span>
-                                <div className="flex flex-col">
-                                    <span className="text-[#5B677A] dark:text-[#AEB7C5] font-bold text-sm">
-                                        오늘 통과 횟수: {todayPassCount} / 2
-                                    </span>
-                                    {isPremium() && <span className="text-xs text-[#FFB433] font-extrabold">PREMIUM UNLIMITED</span>}
-                                </div>
-                            </div>
                         </div>
 
                         {unlockedHanja.length < 3 && (
@@ -275,16 +243,11 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                                 ⚠️ 학습지를 3개 이상 완료해야 합니다.
                             </p>
                         )}
-                        {!canTest && (
-                            <p className="text-[#FFB433] font-extrabold text-xs bg-[#FFB433]/10 dark:bg-[#FFB433]/20 px-4 py-3 rounded-xl border border-[#FFB433]/15 dark:border-[#8B5E00] w-full">
-                                오늘 2회 통과 완료! 내일 다시 도전하세요.
-                            </p>
-                        )}
                     </div>
 
                     <button
                         onClick={handleStart}
-                        disabled={unlockedHanja.length < 3 || !canTest}
+                        disabled={unlockedHanja.length < 3}
                         className="px-12 py-4 rounded-[2rem] bg-[#7C83FF] disabled:bg-slate-300 text-white font-extrabold text-lg shadow-xl active:scale-95 transition-all"
                     >
                         시작하기

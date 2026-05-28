@@ -1,12 +1,22 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
-import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { buildSessionPlan, buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import { playSound } from '../utils/playSound.js';
+import CtaButton from './common/CtaButton.jsx';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
+
+const CELEB_MESSAGES = [
+    "대단해요! 정답이에요",
+    "한자 지식이 마구 쌓여요!",
+    "정답을 꿰뚫는 혜안!",
+    "완벽한 어휘력이에요!",
+    "탐험 진도 쾌속 질주!",
+    "한자 마스터의 감각!"
+];
 
 const wordReadingMap = {};
 HANJA_DATA.forEach(h => {
@@ -17,6 +27,7 @@ HANJA_DATA.forEach(h => {
 
 const speakKorean = (text, onEnd) => {
     if (!text) return;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     const audioUrl = `/assets/audio/words/word_${encodeURIComponent(text.trim())}.mp3`;
     const audio = new Audio(audioUrl);
     if (onEnd) audio.onended = onEnd;
@@ -45,9 +56,7 @@ const speakKorean = (text, onEnd) => {
     });
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds }) => {
-    const { t } = useLang();
-
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds, dailyMapNode, hideRetry }) => {
     // ── 선택 상태 ──────────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
@@ -60,17 +69,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
     // ── 퀴즈 진행 상태 ────────────────────────────────────────────────────
-    const [started, setStarted] = useState(false);
+    const [started, setStarted] = useState(!!contentPool);
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (contentPool) {
-            onBack();
-        } else {
-            setStarted(false);
-        }
+        onBack();
     };
-    const [gameState, setGameState] = useState('idle'); // 'idle' | 'playing' | 'feedback' | 'result'
+    const [gameState, setGameState] = useState(contentPool ? 'init' : 'playing'); // 'init' | 'playing' | 'feedback' | 'result'
     const [currentQuiz, setCurrentQuiz] = useState(null);
     const [options, setOptions] = useState([]);
     const [score, setScore] = useState(0);
@@ -87,6 +92,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [xpAnimKey, setXpAnimKey] = useState(0);
     const [isWordCardFlipped, setIsWordCardFlipped] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [celebrationMsg, setCelebrationMsg] = useState('');
+    const celebrationIndexRef = useRef(0);
     const stageClearArgsRef = useRef(null); // 결과 화면 표시 후 "돌아가기" 시점에 onStageClear로 전달할 데이터
     const shownWordsRef = useRef([]); // 이번 세션에서 출제된 단어 목록
 
@@ -113,10 +120,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         const base = activeHanjaSet.filter(h => h.words && h.words.length > 0);
         return buildSessionPlan(base, srsData, masteryData, contentPool ? null : currentDayHanjaIds, seenHanjaIds?.length > 0 ? seenHanjaIds : null);
         // 큐는 여기서 초기화하지 않음 — srsData/masteryData 변경마다 리셋되는 버그 방지
-    }, [activeHanjaSet, srsData, masteryData, userLevel, contentPool, currentDayHanjaIds]);
+    }, [activeHanjaSet, srsData, masteryData, contentPool, currentDayHanjaIds, seenHanjaIds]);
 
     // 메인화면 모드: 미출제 오늘 한자 7개 + SRS 복습 3개 = 10문제 고정 큐
-    const buildMainQueue10 = () => {
+    const buildMainQueue10 = useCallback(() => {
         if (!currentDayHanjaIds?.length) return null;
         const seenSet = new Set(mainSeenHanjaIds || []);
         const todaySet = new Set(currentDayHanjaIds);
@@ -132,7 +139,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         const srsPicked = getSRSWeightedPool(srsHanja, srsData, masteryData, userLevel, 3);
 
         return [...todayPicked, ...srsPicked];
-    };
+    }, [activeHanjaSet, currentDayHanjaIds, mainSeenHanjaIds, masteryData, srsData, userLevel]);
 
     const initQueues = useCallback((overridePlan) => {
         const plan = overridePlan || sessionPlan;
@@ -144,13 +151,6 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     const initQueuesRef = useRef(null);
     useEffect(() => { initQueuesRef.current = initQueues; });
-    const startQuizRef = useRef(null);
-    useEffect(() => { startQuizRef.current = startQuiz; });
-    useEffect(() => {
-        if (contentPool != null && gameState !== 'playing' && gameState !== 'result') {
-            startQuizRef.current?.();
-        }
-    }, [contentPool]);
 
     const pickNextFromPool = useCallback(() => {
         if (normalQueueRef.current.length === 0) return null;
@@ -207,10 +207,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         }
         setFeedback(null);
         setGameState('playing');
-    }, [sessionPlan, activeHanjaSet, pickNextFromPool]);
+    }, [sessionPlan, activeHanjaSet, pickNextFromPool, seenWordIds, onWordSeen]);
 
     // 퀴즈 시작
-    const startQuiz = (overridePlan) => {
+    function startQuiz(overridePlan) {
         let plan = overridePlan;
         if (!plan) {
             if (contentPool) {
@@ -239,12 +239,22 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         setCurrentQuiz(null); setFeedback(null);
         setStarted(true);
         setGameState('playing');
-    };
+    }
+
+    const startQuizRef = useRef(null);
+    useEffect(() => { startQuizRef.current = startQuiz; });
+    useEffect(() => {
+        if (contentPool == null || (gameState !== 'init' && gameState !== 'idle')) return undefined;
+
+        const timer = setTimeout(() => startQuizRef.current?.(), 0);
+        return () => clearTimeout(timer);
+    }, [contentPool, gameState]);
 
     useEffect(() => {
-        if (started && gameState === 'playing' && !currentQuiz) {
-            generateQuiz();
-        }
+        if (!started || gameState !== 'playing' || currentQuiz) return undefined;
+
+        const timer = setTimeout(() => generateQuiz(), 0);
+        return () => clearTimeout(timer);
     }, [started, gameState, currentQuiz, generateQuiz]);
 
     const handleAnswer = (selected) => {
@@ -258,7 +268,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         if (isCorrect) {
             const newCombo = combo + 1;
             setIsCorrectSelected(true);
+            const nextMsg = CELEB_MESSAGES[celebrationIndexRef.current % CELEB_MESSAGES.length];
+            celebrationIndexRef.current += 1;
+            setCelebrationMsg(nextMsg);
             setFeedback({ isCorrect: true, selected });
+            if (currentQuiz?.type === 'sentence') {
+                setTimeout(() => {
+                    setIsWordCardFlipped(true);
+                    handleSpeak();
+                }, 1500);
+            }
             totalAnsweredRef.current += 1;
             setTotalAnswered(totalAnsweredRef.current);
             scoreRef.current += 1;
@@ -308,6 +327,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             setWrongAttempts([]);
             setIsCorrectSelected(false);
             setFeedback(null);
+            setCelebrationMsg('');
         }
     };
 
@@ -322,8 +342,58 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     // ── 결과 화면 ──────────────────────────────────────────────────────────
     if (started && gameState === 'result') {
         const isClear = score >= 10 * 0.7;
-        const wrongCount = 10 - score;
+        const correctXp = score * 10;
+        const reward = getRewardPreview?.(correctXp + 30);
 
+        // 데일리 세션 모드: 지도 + 단일 버튼 (WordQuizScreen과 동일한 패턴)
+        if (dailyMapNode) {
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%)' }}>
+                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative animate-in zoom-in-95 duration-200">
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
+
+                        <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
+                            {/* 텍스트 영역 */}
+                            <div className="text-center flex flex-col gap-1 w-full">
+                                <span className="text-sm font-extrabold text-[#94A3B8]">
+                                    {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
+                                </span>
+                                <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: isClear ? '#FF9B73' : '#FF6B6B', letterSpacing: '-0.02em', textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none' }}>
+                                    {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                </h1>
+                                <p className="text-xs-res font-bold leading-relaxed break-keep mt-2" style={{ color: '#A5AFBF' }}>
+                                    {isClear
+                                        ? <>총 10문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
+                                        : '조금만 더 노력하면 성공할 수 있어요!'}
+                                </p>
+                            </div>
+
+                            {/* 여정 지도 */}
+                            <div className="w-full">
+                                {dailyMapNode}
+                            </div>
+
+                            <RewardBreakdown reward={reward} correctXp={correctXp} />
+
+                            {/* 다음 단계 버튼 */}
+                            <div className="w-full mt-3">
+                                <CtaButton theme="coral" onClick={() => {
+                                    if (stageClearArgsRef.current) {
+                                        onStageClear?.(...stageClearArgsRef.current);
+                                        stageClearArgsRef.current = null;
+                                    }
+                                }}>
+                                    <span className="font-black text-white text-[1.5rem] drop-shadow-md">다음 단계로 이동</span>
+                                    <span className="text-white font-black text-[1.5rem] drop-shadow-md ml-2">▶</span>
+                                </CtaButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 일반 모드: 기존 결과 카드
         return (
             <div
                 className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300"
@@ -362,14 +432,18 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             </p>
                         </div>
 
+                        <RewardBreakdown reward={reward} correctXp={correctXp} />
+
                         {/* 버튼 2단 */}
                         <div className="w-full flex flex-col gap-3 relative z-10">
-                            <button
-                                onClick={() => { setCurrentQuiz(null); setScore(0); setTotalAnswered(0); setCombo(0); setGameState('playing'); }}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                            >
-                                다시 풀기
-                            </button>
+                            {!hideRetry && (
+                                <button
+                                    onClick={() => { setCurrentQuiz(null); setScore(0); setTotalAnswered(0); setCombo(0); setGameState('playing'); }}
+                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                                >
+                                    다시 풀기
+                                </button>
+                            )}
                             <button
                                 onClick={() => {
                                     if (stageClearArgsRef.current) {
@@ -396,6 +470,21 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         const reading = wordReadingMap[word] || currentQuiz?.target?.reading || word;
         const meaning = currentQuiz?.target?.meaning || '';
 
+        const sentenceParts = (() => {
+            if (!currentQuiz?.sentence || !currentQuiz.sentence.includes('(')) return null;
+            const parts = currentQuiz.sentence.split('(');
+            const before = parts[0];
+            const rest = parts[1].split(')');
+            const wordVal = rest[0];
+            const after = rest[1] || '';
+            
+            const particleMatch = after.match(/^([^\s]+)/);
+            const particle = particleMatch ? particleMatch[1] : '';
+            const remaining = after.substring(particle.length);
+            
+            return { before, word: wordVal, particle, remaining };
+        })();
+
         return (
             <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
                 <style>{`
@@ -405,6 +494,40 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         40%  { opacity: 1; transform: scale(1) translateY(0); }
                         68%  { opacity: 1; transform: scale(1) translateY(0); }
                         100% { opacity: 0; transform: translateY(-28px); }
+                    }
+                    @keyframes star-burst-1 {
+                        0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                        50% { opacity: 1; }
+                        100% { transform: translate(-80px, -45px) scale(1.2) rotate(180deg); opacity: 0; }
+                    }
+                    @keyframes star-burst-2 {
+                        0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                        50% { opacity: 1; }
+                        100% { transform: translate(80px, -35px) scale(1) rotate(-120deg); opacity: 0; }
+                    }
+                    @keyframes star-burst-3 {
+                        0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                        50% { opacity: 1; }
+                        100% { transform: translate(-45px, -65px) scale(1.3) rotate(90deg); opacity: 0; }
+                    }
+                    @keyframes star-burst-4 {
+                        0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                        50% { opacity: 1; }
+                        100% { transform: translate(45px, -65px) scale(0.9) rotate(-90deg); opacity: 0; }
+                    }
+                    @keyframes star-burst-5 {
+                        0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                        50% { opacity: 1; }
+                        100% { transform: translate(-65px, 35px) scale(1.1) rotate(140deg); opacity: 0; }
+                    }
+                    @keyframes star-burst-6 {
+                        0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                        50% { opacity: 1; }
+                        100% { transform: translate(65px, 35px) scale(1) rotate(-140deg); opacity: 0; }
+                    }
+                    @keyframes pop-bubble {
+                        0% { transform: scale(0.8) translateY(10px) translateX(-50%); opacity: 0; }
+                        100% { transform: scale(1) translateY(0) translateX(-50%); opacity: 1; }
                     }
                 `}</style>
 
@@ -490,41 +613,39 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isWordCardFlipped ? 0 : 1 }}
                                 >
                                     <p className="text-3xl sm:text-[2.6rem] font-bold leading-[1.8] text-center text-[#5B677A]/90 break-keep">
-                                        {currentQuiz?.type === 'sentence' && currentQuiz?.sentence?.includes('(') ? (
+                                        {currentQuiz?.type === 'sentence' && sentenceParts ? (
                                             <>
-                                                {currentQuiz.sentence.split('(')[0]}
-                                                <span
-                                                    className={`inline-flex items-center justify-center min-w-[120px] rounded-2xl transition-all duration-300 mx-2 py-0.5 ${feedback
-                                                            ? (feedback.isCorrect ? 'bg-[#7C83FF]/10 border-2 border-[#7C83FF] shadow-sm' : 'bg-rose-50 border-2 border-rose-400 shadow-sm')
-                                                            : 'bg-[#F8FAF9] border-2 border-dashed border-[#7C83FF]/30 shadow-inner'
-                                                        }`}
-                                                    style={{ verticalAlign: 'baseline' }}
-                                                >
+                                                {sentenceParts.before}
+                                                <span className="inline-block whitespace-nowrap">
                                                     <span
-                                                        className="font-bold text-3xl sm:text-[2.6rem]"
-                                                        style={{
-                                                            color: feedback ? (feedback.isCorrect ? '#7C83FF' : '#E05C5C') : '#C3C6FF'
-                                                        }}
+                                                        className={`inline-flex items-center justify-center min-w-[120px] rounded-2xl transition-all duration-300 mx-2 py-0.5 ${feedback
+                                                                ? (feedback.isCorrect ? 'bg-[#7C83FF]/10 border-2 border-[#7C83FF] shadow-sm' : 'bg-rose-50 border-2 border-rose-400 shadow-sm')
+                                                                : 'bg-[#F8FAF9] border-2 border-dashed border-[#7C83FF]/30 shadow-inner'
+                                                            }`}
+                                                        style={{ verticalAlign: 'baseline' }}
                                                     >
-                                                        {feedback ? currentQuiz.target.word : '?'}
+                                                        <span
+                                                            className="font-bold text-3xl sm:text-[2.6rem]"
+                                                            style={{
+                                                                color: feedback ? (feedback.isCorrect ? '#7C83FF' : '#E05C5C') : '#C3C6FF'
+                                                            }}
+                                                        >
+                                                            {feedback ? currentQuiz.target.word : '?'}
+                                                        </span>
                                                     </span>
+                                                    {sentenceParts.particle}
                                                 </span>
-                                                {currentQuiz.sentence.split(')')[1]}
+                                                {sentenceParts.remaining}
                                             </>
                                         ) : (
                                             <span className="text-7xl font-black">{currentQuiz?.char}</span>
                                         )}
                                     </p>
-                                    {isCorrectSelected && !isWordCardFlipped && currentQuiz?.type === 'sentence' && (
-                                        <div className="mt-6 px-8 py-2.5 rounded-full font-black text-sm bg-[#F8FAF9] text-[#AEB7C5] uppercase tracking-[0.4em] border-2 border-[#E9EDF2]/50 animate-bounce">
-                                            더 알아보기
-                                        </div>
-                                    )}
                                 </div>
 
                                 {/* 뒷면: 단어 정보 */}
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-between px-3 py-6 shadow-xl"
+                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-between px-8 py-6 shadow-xl"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', zIndex: isWordCardFlipped ? 1 : 0 }}
                                 >
                                     <div className="flex flex-row items-baseline gap-3">
@@ -543,8 +664,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                         </svg>
                                     </button>
-                                    <div className="w-full flex flex-col items-start text-left">
-                                        <p className="text-body-lg-res font-medium text-[#5B677A] leading-relaxed break-keep tracking-normal">
+                                    <div className="w-full flex flex-col items-start text-left px-2">
+                                        <p className="text-body-res font-medium text-[#5B677A] leading-relaxed break-all tracking-tight">
                                             <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#7C83FF]/10 text-[#7C83FF] text-sm font-black mr-3 shadow-sm border border-[#7C83FF]/20 transform -translate-y-0.5">
                                                 의미
                                             </span>
@@ -578,6 +699,34 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         <span className="text-left w-full">{opt}</span>
                                         {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
                                         {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
+
+                                        {/* 정답 축하 3D 스피치 버블 및 별 쏟아짐 효과 */}
+                                        {isCorrect && celebrationMsg && (
+                                            <div 
+                                                className="absolute bottom-[125%] left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-[1.3rem] text-white font-extrabold text-[1.05rem] shadow-xl flex items-center justify-center whitespace-nowrap z-[20] pointer-events-none"
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #FF9B73 0%, #FF6B6B 100%)',
+                                                    boxShadow: '0 8px 24px rgba(255, 107, 107, 0.3), inset 0 -3px 0 rgba(0,0,0,0.15)',
+                                                    animation: 'pop-bubble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                                                }}
+                                            >
+                                                <span className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.15)]">{celebrationMsg}</span>
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-[#FF6B6B]" />
+                                            </div>
+                                        )}
+
+                                        {isCorrect && (
+                                            <>
+                                                <span className="absolute left-[15%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-1 1s ease-out forwards' }}>⭐</span>
+                                                <span className="absolute left-[35%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-2 1.2s ease-out forwards' }}>✨</span>
+                                                <span className="absolute left-[45%] top-1/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-3 0.9s ease-out forwards' }}>⭐</span>
+                                                <span className="absolute left-[55%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-4 1.1s ease-out forwards' }}>✨</span>
+                                                <span className="absolute left-[65%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-5 1.3s ease-out forwards' }}>⭐</span>
+                                                <span className="absolute left-[85%] top-1/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-6 1s ease-out forwards' }}>✨</span>
+                                                <span className="absolute left-[25%] top-2/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-3 1.1s ease-out forwards' }}>⭐</span>
+                                                <span className="absolute left-[75%] top-2/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-1 1.2s ease-out forwards' }}>✨</span>
+                                            </>
+                                        )}
                                     </button>
                                 );
                             })}
@@ -603,6 +752,40 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                     </div>
                 </div>
+                {showExitModal && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'rgba(120, 130, 160, 0.22)' }}>
+                        <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                            <img
+                                src={getCharacterImage(selectedCharacter, 'keep_going')}
+                                alt="exit confirm"
+                                className="w-[120px] h-[120px] object-contain mb-4"
+                                style={{ filter: 'drop-shadow(0 8px 16px rgba(120,130,160,0.16))' }}
+                            />
+                            <div className="text-center flex flex-col gap-2 mb-6">
+                                <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                                    정말 퀴즈를 중단할까요? 🥺
+                                </h2>
+                                <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                    지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?
+                                </p>
+                            </div>
+                            <div className="w-full flex flex-col gap-3">
+                                <button
+                                    onClick={() => setShowExitModal(false)}
+                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                                >
+                                    계속 공부하기
+                                </button>
+                                <button
+                                    onClick={handleExitConfirm}
+                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                >
+                                    그만하고 나가기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }

@@ -1,11 +1,13 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
-import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { getWordSRSWeightedPool } from '../utils/learningPool.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
+import CtaButton from './common/CtaButton.jsx';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
+
 
 // Flatten all words from all hanja into a single pool
 const buildWordPool = () => {
@@ -112,10 +114,55 @@ const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedI
 };
 
 // ─── Result Screen ──────────────────────────────────────────────────────────
-const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedCharacter }) => {
+const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedCharacter, dailyMapNode, hideRetry, getRewardPreview }) => {
     const pct = Math.round((correct / total) * 100);
     const isClear = pct >= 70;
-    const wrongCount = total - correct;
+    const correctXp = correct * 5;
+    const reward = getRewardPreview?.(correctXp + 30);
+
+    if (dailyMapNode) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%)' }}>
+                <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative animate-in zoom-in-95 duration-200">
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
+                    
+                    <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
+                        
+                        {/* 텍스트 영역 */}
+                        <div className="text-center flex flex-col gap-1 w-full">
+                            <span className="text-sm font-extrabold text-[#94A3B8]">
+                                {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
+                            </span>
+                            <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: isClear ? '#FF9B73' : '#FF6B6B', letterSpacing: '-0.02em', textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none' }}>
+                                {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                            </h1>
+                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-2" style={{ color: '#A5AFBF' }}>
+                                {isClear 
+                                    ? <>총 {total}문제 중 {correct}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></> 
+                                    : '조금만 더 노력하면 성공할 수 있어요!'}
+                            </p>
+                        </div>
+
+                        {/* 심플하고 직관적인 여정 지도 (Stepper) */}
+                        <div className="w-full">
+                            {dailyMapNode}
+                        </div>
+
+                        <RewardBreakdown reward={reward} correctXp={correctXp} />
+
+                        {/* 3D 다음 단계 버튼 */}
+                        <div className="w-full mt-3">
+                            <CtaButton theme="coral" onClick={onBack}>
+                                <span className="font-black text-white text-[1.5rem] drop-shadow-md">다음 단계로 이동</span>
+                                <span className="text-white font-black text-[1.5rem] drop-shadow-md ml-2">▶</span>
+                            </CtaButton>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -123,7 +170,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
             style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'linear-gradient(180deg, #FDEAEA 0%, #FFF0F0 100%)' }}
         >
             <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
-                <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+                <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative`}>
                     
                     {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                     <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
@@ -155,17 +202,21 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         </p>
                     </div>
 
+                    <RewardBreakdown reward={reward} correctXp={correctXp} />
+
                     {/* 버튼 2단 */}
                     <div className="w-full flex flex-col gap-3 relative z-10">
-                        <button
-                            onClick={onRetry}
-                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                        >
-                            다시 풀기
-                        </button>
+                        {!hideRetry && (
+                            <button
+                                onClick={onRetry}
+                                className="w-full py-5 rounded-2xl font-black text-[1.5rem] retry-quiz-button"
+                            >
+                                다시 풀기
+                            </button>
+                        )}
                         <button
                             onClick={onBack}
-                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                            className="w-full py-5 rounded-2xl font-black text-[1.5rem] active:scale-95 transition-all shadow-sm back-quiz-button"
                         >
                             돌아가기
                         </button>
@@ -179,6 +230,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
 // ─── Quiz Card ──────────────────────────────────────────────────────────────
 const speakKorean = (text, onEnd) => {
     if (!text) return;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     const audioUrl = `/assets/audio/words/word_${encodeURIComponent(text.trim())}.mp3`;
     const audio = new Audio(audioUrl);
     if (onEnd) audio.onended = onEnd;
@@ -207,6 +259,15 @@ const speakKorean = (text, onEnd) => {
     });
 };
 
+const CELEB_MESSAGES = [
+    "대단해요! 정답이에요",
+    "한자 지식이 마구 쌓여요!",
+    "정답을 꿰뚫는 혜안!",
+    "완벽한 어휘력이에요!",
+    "탐험 진도 쾌속 질주!",
+    "한자 마스터의 감각!"
+];
+
 const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onWrongAttempt }) => {
     const [wrongChoices, setWrongChoices] = useState([]);
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
@@ -214,11 +275,20 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
     const [xpAnimKey, setXpAnimKey] = useState(0);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isFlipped, setIsFlipped] = useState(false);
+    const [celebrationMsg, setCelebrationMsg] = useState('');
+    const celebrationIndexRef = useRef(0);
 
     const handleSelect = (choice) => {
         if (isCorrectSelected || wrongChoices.includes(choice)) return;
         if (choice === q.meaning) {
             setIsCorrectSelected(true);
+            const nextMsg = CELEB_MESSAGES[celebrationIndexRef.current % CELEB_MESSAGES.length];
+            celebrationIndexRef.current += 1;
+            setCelebrationMsg(nextMsg);
+            setTimeout(() => {
+                setIsFlipped(true);
+                handleSpeak();
+            }, 1500);
             if (!suppressXp) {
                 setShowXPPopup(true);
                 setXpAnimKey(k => k + 1);
@@ -257,6 +327,40 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                     40%  { opacity: 1; transform: scale(1) translateY(0); }
                     68%  { opacity: 1; transform: scale(1) translateY(0); }
                     100% { opacity: 0; transform: translateY(-28px); }
+                }
+                @keyframes star-burst-1 {
+                    0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translate(-80px, -45px) scale(1.2) rotate(180deg); opacity: 0; }
+                }
+                @keyframes star-burst-2 {
+                    0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translate(80px, -35px) scale(1) rotate(-120deg); opacity: 0; }
+                }
+                @keyframes star-burst-3 {
+                    0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translate(-45px, -65px) scale(1.3) rotate(90deg); opacity: 0; }
+                }
+                @keyframes star-burst-4 {
+                    0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translate(45px, -65px) scale(0.9) rotate(-90deg); opacity: 0; }
+                }
+                @keyframes star-burst-5 {
+                    0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translate(-65px, 35px) scale(1.1) rotate(140deg); opacity: 0; }
+                }
+                @keyframes star-burst-6 {
+                    0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translate(65px, 35px) scale(1) rotate(-140deg); opacity: 0; }
+                }
+                @keyframes pop-bubble {
+                    0% { transform: scale(0.8) translateY(10px) translateX(-50%); opacity: 0; }
+                    100% { transform: scale(1) translateY(0) translateX(-50%); opacity: 1; }
                 }
             `}</style>
 
@@ -319,16 +423,11 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                             <span className={`${wordFontSize} font-black text-[#1e293b] tracking-tighter drop-shadow-sm text-center leading-none`}>
                                 {q.word}
                             </span>
-                            {isCorrectSelected && !isFlipped && (
-                                <div className="mt-8 px-10 py-3 rounded-full font-black text-sm bg-[#F8FAF9] text-[#AEB7C5] uppercase tracking-[0.4em] border-2 border-[#E9EDF2]/50 animate-bounce">
-                                    더 알아보기
-                                </div>
-                            )}
                         </div>
 
                         {/* 카드 뒷면: 정답 및 예문 */}
                         <div 
-                            className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between px-3 py-8 shadow-xl"
+                            className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between px-6 py-8 shadow-xl"
                             style={{ 
                                 backfaceVisibility: 'hidden', 
                                 WebkitBackfaceVisibility: 'hidden',
@@ -357,8 +456,8 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                             </button>
 
                             {/* 하단: 예문 영역 */}
-                            <div className="w-full flex flex-col items-start text-left">
-                                <p className="text-body-lg-res font-medium text-[#5B677A] leading-relaxed break-keep tracking-normal">
+                            <div className="w-full flex flex-col items-start text-left px-2">
+                                <p className="text-body-res font-medium text-[#5B677A] leading-relaxed break-all tracking-tight">
                                     <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#7C83FF]/10 text-[#7C83FF] text-sm font-black mr-3 shadow-sm border border-[#7C83FF]/20 transform -translate-y-0.5">
                                         예문
                                     </span>
@@ -395,6 +494,34 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                                 <span className="text-left w-full">{choice}</span>
                                 {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
                                 {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
+
+                                {/* 정답 축하 3D 스피치 버블 및 별 쏟아짐 효과 */}
+                                {isCorrect && celebrationMsg && (
+                                    <div 
+                                        className="absolute bottom-[125%] left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-[1.3rem] text-white font-extrabold text-[1.05rem] shadow-xl flex items-center justify-center whitespace-nowrap z-[20] pointer-events-none"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #FF9B73 0%, #FF6B6B 100%)',
+                                            boxShadow: '0 8px 24px rgba(255, 107, 107, 0.3), inset 0 -3px 0 rgba(0,0,0,0.15)',
+                                            animation: 'pop-bubble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                                        }}
+                                    >
+                                        <span className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.15)]">{celebrationMsg}</span>
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-[#FF6B6B]" />
+                                    </div>
+                                )}
+
+                                {isCorrect && (
+                                    <>
+                                        <span className="absolute left-[15%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-1 1s ease-out forwards' }}>⭐</span>
+                                        <span className="absolute left-[35%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-2 1.2s ease-out forwards' }}>✨</span>
+                                        <span className="absolute left-[45%] top-1/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-3 0.9s ease-out forwards' }}>⭐</span>
+                                        <span className="absolute left-[55%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-4 1.1s ease-out forwards' }}>✨</span>
+                                        <span className="absolute left-[65%] top-1/2 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-5 1.3s ease-out forwards' }}>⭐</span>
+                                        <span className="absolute left-[85%] top-1/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-6 1s ease-out forwards' }}>✨</span>
+                                        <span className="absolute left-[25%] top-2/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-3 1.1s ease-out forwards' }}>⭐</span>
+                                        <span className="absolute left-[75%] top-2/3 w-4 h-4 pointer-events-none z-[15]" style={{ animation: 'star-burst-1 1.2s ease-out forwards' }}>✨</span>
+                                    </>
+                                )}
                             </button>
                         );
                     })}
@@ -406,14 +533,14 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                         {!isFirst && (
                             <button
                                 onClick={onPrev}
-                                className="flex-1 py-5 rounded-[2.5rem] bg-white font-bold text-h3-res text-[#5B677A] border-2 border-[#E9EDF2] shadow-sm active:scale-95 transition-all"
+                                className="flex-[1.5] py-5 rounded-[2.5rem] bg-white font-black text-[1.5rem] text-[#5B677A] border-2 border-[#E9EDF2] shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
                                 ‹ 이전
                             </button>
                         )}
                         <button 
                             onClick={handleNext}
-                            className="flex-[2] py-5 rounded-[2.5rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
+                            className="flex-[2.5] py-5 rounded-[2.5rem] bg-[#7278F2] font-black text-[1.5rem] text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
                             다음 ›
                         </button>
@@ -425,27 +552,22 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
 };
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
-const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, contentPool, unlockedHanjaIds, seenWordIds }) => {
-    const { t } = useLang();
+const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, seenWordIds, dailyMapNode, hideRetry }) => {
     const [viewMode, setViewMode] = useState('grade');
     const [gradeFilter, setGradeFilter] = useState('전체');
     const [categoryFilter, setCategoryFilter] = useState(CATEGORIES[0] || '');
-    const [phase, setPhase] = useState('select');
+    const [phase, setPhase] = useState(contentPool ? 'init' : 'select');
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (contentPool) {
-            onBack();
-        } else {
-            setPhase('select');
-        }
+        onBack();
     };
     const [questions, setQuestions] = useState([]);
     const [currentIdx, setCurrentIdx] = useState(0);
     const [correctCount, setCorrectCount] = useState(0);
     const correctCountRef = useRef(0); // stale 클로저 방지: handleNext에서 항상 최신값 사용
     const [combo, setCombo] = useState(0);
-    const [maxCombo, setMaxCombo] = useState(0);
+    const [, setMaxCombo] = useState(0);
     const comboRef = useRef(0);
     const maxComboRef = useRef(0); // stale 클로저 방지
     const stageClearArgsRef = useRef(null); // 결과 화면 표시 후 onBack 시점에 전달할 데이터
@@ -470,13 +592,15 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
         setMaxCombo(0);
         maxComboRef.current = 0;
         setPhase('quiz');
-    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, contentPool, unlockedIds]);
+    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, contentPool, unlockedIds, seenWordIds]);
 
     const startQuizRef = useRef(null);
     useEffect(() => { startQuizRef.current = startQuiz; });
     useEffect(() => {
-        if (contentPool && phase === 'select') startQuizRef.current?.();
-    }, [contentPool]);
+        if (!contentPool || (phase !== 'select' && phase !== 'init')) return;
+        const timer = setTimeout(() => startQuizRef.current?.(), 0);
+        return () => clearTimeout(timer);
+    }, [contentPool, phase]);
 
     const handleAnswer = useCallback((isCorrect) => {
         const q = questions[currentIdx];
@@ -496,7 +620,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
             comboRef.current = 0;
             setCombo(0);
         }
-    }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onWordSeen]);
+    }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onWordCorrect, onWordSeen]);
 
     const handleNext = useCallback(() => {
         const next = currentIdx + 1;
@@ -660,10 +784,13 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                                     onStageClear?.(...stageClearArgsRef.current);
                                     stageClearArgsRef.current = null;
                                 }
-                                onBack();
+                                if (!dailyMapNode) onBack();
                             }}
                             onGoToReview={onGoToReview}
                             selectedCharacter={selectedCharacter}
+                            dailyMapNode={dailyMapNode}
+                            hideRetry={hideRetry}
+                            getRewardPreview={getRewardPreview}
                         />
                     )}
                 </div>

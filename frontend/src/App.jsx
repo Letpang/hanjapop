@@ -2,10 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspens
 import HANJA_DATA from './hanja_unified.json';
 import DAILY_CURRICULUM from './data/dailyCurriculum.js';
 import { buildUnifiedPool, buildOopsPool } from './utils/learningPool.js';
-import MainMenu from './components/MainMenuRenewal.jsx';
-import OnboardingScreen from './components/OnboardingScreen.jsx';
 import CharacterToast from './components/CharacterToast.jsx';
-import DailySessionScreen from './components/DailySessionScreen.jsx';
 import { isSessionDoneToday } from './utils/sessionUtils.js';
 import { LangProvider } from './LangContext.jsx';
 import { SK } from './constants/storageKeys.js';
@@ -15,14 +12,18 @@ import { useWordData } from './hooks/useWordData.js';
 import { useStudyLog } from './hooks/useStudyLog.js';
 
 const FlashcardScreen        = lazy(() => import('./components/FlashcardScreen.jsx'));
+const MainMenu               = lazy(() => import('./components/MainMenuRenewal.jsx'));
+const OnboardingScreen       = lazy(() => import('./components/OnboardingScreen.jsx'));
+const DailySessionScreen     = lazy(() => import('./components/DailySessionScreen.jsx'));
 const WritingScreen          = lazy(() => import('./components/WritingScreen.jsx'));
 const MatchGameScreen        = lazy(() => import('./components/MatchGameScreen.jsx'));
 const ShootGameScreen        = lazy(() => import('./components/ShootGameScreen.jsx'));
-const ReviewScreen           = lazy(() => import('./components/ReviewScreen.jsx'));
 const SentenceQuizScreen     = lazy(() => import('./components/SentenceQuizScreen.jsx'));
 const WordQuizScreen         = lazy(() => import('./components/WordQuizScreen.jsx'));
+const WrongReviewSession     = lazy(() => import('./components/WrongReviewSession.jsx'));
 const LevelTestScreen        = lazy(() => import('./components/LevelTestScreen.jsx'));
-const RankingsScreen         = lazy(() => import('./components/RankingsScreen.jsx'));
+const StudyHistoryScreen     = lazy(() => import('./components/StudyHistoryScreen.jsx'));
+const VocabularyScreen       = lazy(() => import('./components/VocabularyScreen.jsx'));
 const MyPageScreen           = lazy(() => import('./components/MyPageScreen.jsx'));
 const SettingsScreen         = lazy(() => import('./components/SettingsScreen.jsx'));
 const CharacterSelectionScreen = lazy(() => import('./components/CharacterSelectionScreen.jsx'));
@@ -30,36 +31,63 @@ const GradeTestScreen          = lazy(() => import('./components/GradeTestScreen
 const GradeTest72Screen        = lazy(() => import('./components/GradeTest72Screen.jsx'));
 const GradeTest7Screen         = lazy(() => import('./components/GradeTest7Screen.jsx'));
 const GradeTest62Screen        = lazy(() => import('./components/GradeTest62Screen.jsx'));
-import { getLevel } from './utils/rankUtils.js';
-import { useAdMob } from './hooks/useAdMob.js';
+const GradeTest6Screen         = lazy(() => import('./components/GradeTest6Screen.jsx'));
+import { getLevel, getRankDetails } from './utils/rankUtils.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
 import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
+import { useAuth } from './hooks/useAuth.js';
+import { PremiumProvider } from './context/PremiumContext.jsx';
+import { canAccessStage } from './utils/premiumAccess.js';
+
+const LoginModal             = lazy(() => import('./components/LoginModal.jsx'));
+const PremiumModal           = lazy(() => import('./components/PremiumModal.jsx'));
+const GradeTestAlertModal    = lazy(() => import('./components/GradeTestAlertModal.jsx'));
+
+import { incrementTodaySessionCount } from './utils/sessionUtils.js';
+import { fetchUnlockedPack } from './lib/supabase.js';
 
 const App = () => {
+    const { user, platform, signInWithApple, signInWithGoogle } = useAuth();
+    const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [gradeTestAlert, setGradeTestAlert] = useState(null);
+    const [unlockedPack, setUnlockedPack] = useState(() => {
+        try { return Number(localStorage.getItem('unlocked_pack') || '0'); } catch { return 0; }
+    });
+    const isPremium = unlockedPack > 0;
+
+    // 로그인 상태 변경 시 팩 조회
+    useEffect(() => {
+        fetchUnlockedPack().then(pack => {
+            setUnlockedPack(pack);
+            localStorage.setItem('unlocked_pack', String(pack));
+        });
+    }, [user]);
+
     // 온보딩 완료 여부
     const [onboardingDone, setOnboardingDone] = useState(() => {
-        try { return localStorage.getItem(SK.ONBOARDING_DONE) === 'true'; } catch(e) { return false; }
+        try { return localStorage.getItem(SK.ONBOARDING_DONE) === 'true'; } catch { return false; }
     });
     const [currentScreen, setCurrentScreen] = useState('main');
     // 한자 카드에서 쓰기로 직접 진입할 때 사용
     const [writeTargetHanja, setWriteTargetHanja] = useState(null);
     const [userXp, setUserXp] = useState(() => {
-        try { return Number(localStorage.getItem(SK.USER_XP)) || 0; } catch(e) { return 0; }
+        try { return Number(localStorage.getItem(SK.USER_XP)) || 0; } catch { return 0; }
     });
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        try { return localStorage.getItem(SK.DARK_MODE) === 'true'; } catch(e) { return false; }
+        try { return localStorage.getItem(SK.DARK_MODE) === 'true'; } catch { return false; }
     });
     const [selectedCharacter, setSelectedCharacter] = useState(() => {
         try {
             const saved = localStorage.getItem(SK.SELECTED_CHARACTER);
             const VALID = ['garae', 'jeolmi', 'chapssal', 'muzi'];
             return VALID.includes(saved) ? saved : null;
-        } catch(e) { return null; }
+        } catch { return null; }
     });
     const [userNickname, setUserNickname] = useState(() => {
-        try { return localStorage.getItem(SK.USER_NICKNAME) || ''; } catch(e) { return ''; }
+        try { return localStorage.getItem(SK.USER_NICKNAME) || ''; } catch { return ''; }
     });
     const [sessionDoneToday, setSessionDoneToday] = useState(() => isSessionDoneToday());
 
@@ -83,15 +111,13 @@ const App = () => {
         if ('wakeLock' in navigator) {
             let wakeLock = null;
             const requestWakeLock = async () => {
-                try { wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+                try { wakeLock = await navigator.wakeLock.request('screen'); } catch { wakeLock = null; }
             };
             requestWakeLock();
             return () => { if (wakeLock) wakeLock.release(); };
         }
     }, []);
 
-    // Hooks for Mobile readiness
-    const { showBanner, showInterstitial } = useAdMob();
     useVersionCheck();
 
     useEffect(() => {
@@ -105,34 +131,34 @@ const App = () => {
     const {
         hanjaData,
         markSeen, markCorrect, markWrong, clearWrong,
-        getDueHanja, getWeightedPool, getMasteryLevel, getStats,
     } = useHanjaData();
 
     const {
         wordData,
         markWordWrong, markWordCorrect, clearWordWrong,
-        clearWordWrongByHanjaId, getDueWordIds, getWrongWordHanjaIds,
     } = useWordData();
 
     const {
-        log, totalStats, todayStats,
-        logHanja, logWord, logCorrectWord, logWrongWord, logActivity,
-        getTodayWordIds,
+        totalStats,
+        logHanja, logWord, logCorrectWord, logWrongWord, logActivity, logXp,
     } = useStudyLog();
 
-    // addTodayStat / increment → logActivity로 통합
+    // addTodayStat → logActivity로 통합
     const addTodayStat = logActivity;
-    const increment = useCallback((key, amount = 1) => {
-        // total stats는 useStudyLog 내부에서 logActivity 시 자동 증가
-        // 별도 increment가 필요한 경우(wordCorrect 등)만 처리
-        if (key === 'wordCorrect') logCorrectWord(null); // wordCorrect 통계 누적
-    }, [logCorrectWord]);
 
     const { currentDay, completedDay, currentDayData, clearedHanjaIds, advanceDay } = useCurriculumProgress();
     const currentDayHanjaIds = useMemo(
         () => (currentDayData?.hanja || []).map(h => h.id).filter(Boolean),
         [currentDayData]
     );
+
+    // 메인화면 공유 풀: 하루 세션 시작 시 한 번만 계산 (커리큘럼 날짜가 바뀔 때만 재계산)
+    // hanjaData를 deps에 넣으면 맞출 때마다 재셔플되어 게임 도중 풀이 초기화됨
+    const hanjaDataRef = useRef(hanjaData);
+    useEffect(() => { hanjaDataRef.current = hanjaData; }, [hanjaData]);
+
+    const wordDataRef = useRef(wordData);
+    useEffect(() => { wordDataRef.current = wordData; }, [wordData]);
 
     const lastCompletedDayHanjaIds = useMemo(() => {
         if (!completedDay) return [];
@@ -145,43 +171,81 @@ const App = () => {
         [clearedHanjaIds, lastCompletedDayHanjaIds]
     );
 
-    // 메인화면 공유 풀: 하루 세션 시작 시 한 번만 계산 (커리큘럼 날짜가 바뀔 때만 재계산)
-    // hanjaData를 deps에 넣으면 맞출 때마다 재셔플되어 게임 도중 풀이 초기화됨
-    const hanjaDataRef = useRef(hanjaData);
-    useEffect(() => { hanjaDataRef.current = hanjaData; }, [hanjaData]);
+    useEffect(() => {
+        if (!completedDay) return;
+        const grade = DAILY_CURRICULUM[completedDay - 1]?.gradeTestAlert;
+        if (grade) setGradeTestAlert(grade);
+    }, [completedDay]);
 
     const sessionContentPool = useMemo(() => {
-        if (lastCompletedDayHanjaIds.length === 0) return null;
-        // 계산 시점의 hanjaData 스냅샷 사용 (이후 hanjaData가 변해도 풀은 그대로 유지)
-        return buildUnifiedPool(lastCompletedDayHanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, pastHanjaIds);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lastCompletedDayHanjaIds, pastHanjaIds]); // hanjaData 의도적으로 제외
+        // main = completedDay(가장 최근 완료 단계) 한자, review = 그 이전 단계 한자(SRS 가중치)
+        // eslint-disable-next-line react-hooks/refs
+        return buildUnifiedPool(lastCompletedDayHanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, pastHanjaIds, 0.3, wordDataRef.current);
+    }, [lastCompletedDayHanjaIds, pastHanjaIds]); // hanjaData/wordData 의도적으로 제외
 
-    // ── 세션 공유 seen 추적 (4개 게임 간 공유) ────────────────────────────────
-    // 하루 커리큘럼이 바뀔 때 초기화 — 같은 날 내에선 게임 간 연속성 유지
-    const [sessionSeenHanjaIds, setSessionSeenHanjaIds] = useState([]);
-    const [sessionSeenWordIds, setSessionSeenWordIds] = useState([]);
+    // 퀴즈 세션 오답 복습 풀
+    const [sessionReviewPool, setSessionReviewPool] = useState(null);
+
+    // 과거 스테이지 선택 플레이
+    const [selectedPastStage, setSelectedPastStage] = useState(null);
+    const pastStagePool = useMemo(() => {
+        if (!selectedPastStage) return null;
+        const dayData = DAILY_CURRICULUM[selectedPastStage - 1];
+        if (!dayData) return null;
+        const hanjaIds = (dayData.hanja || []).map(h => h.id).filter(Boolean);
+        // eslint-disable-next-line react-hooks/refs
+        return buildUnifiedPool(hanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, [], 0, wordDataRef.current);
+    }, [selectedPastStage]);
+
+    // 급수별 선택 플레이
+    const [selectedGrade, setSelectedGrade] = useState(null);
+    const gradePool = useMemo(() => {
+        if (!selectedGrade) return null;
+        const hanjaIds = HANJA_DATA.filter(h => h.grade === selectedGrade && clearedHanjaIds.includes(h.id)).map(h => h.id);
+        // eslint-disable-next-line react-hooks/refs
+        return buildUnifiedPool(hanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, [], 0, wordDataRef.current);
+    }, [selectedGrade, clearedHanjaIds]);
+
+    const effectivePool = selectedPastStage ? pastStagePool : selectedGrade ? gradePool : sessionContentPool;
+
+    // ── 세션 큐 (4개 게임 간 공유, index 기반 순차 출제) ────────────────────────
+    // 풀(스테이지)이 바뀔 때 한 번 셔플 → 각 게임이 순서대로 소비 → 소진 시 자동 리셔플
+    const sessionQueueRef = useRef({ hanjaIds: [], wordIds: [], hanjaIdx: 0, wordIdx: 0 });
     useEffect(() => {
-        setSessionSeenHanjaIds([]);
-        setSessionSeenWordIds([]);
-    }, [lastCompletedDayHanjaIds]);
+        if (!effectivePool) { sessionQueueRef.current = { hanjaIds: [], wordIds: [], hanjaIdx: 0, wordIdx: 0 }; return; }
+        const sh = (a) => [...a].sort(() => Math.random() - 0.5);
+        // 큐에는 현재 스테이지(main)만 — review(SRS 과거 스테이지)는 섞지 않음
+        sessionQueueRef.current = {
+            hanjaIds: sh([...(effectivePool.main?.hanjaIds || []), ...(effectivePool.review?.hanjaIds || [])]),
+            wordIds:  sh([...(effectivePool.main?.wordIds  || []), ...(effectivePool.review?.wordIds  || [])]),
+            hanjaIdx: 0, wordIdx: 0,
+        };
+    }, [effectivePool]);
 
-    const markHanjaSeenInSession = useCallback((hanjaIds) => {
-        if (!hanjaIds?.length) return;
-        setSessionSeenHanjaIds(prev => {
-            const s = new Set(prev);
-            hanjaIds.forEach(id => { if (id != null) s.add(id); });
-            return prev.length === s.size ? prev : [...s];
-        });
+    const getNextHanjaIds = useCallback((n) => {
+        const q = sessionQueueRef.current;
+        if (!q.hanjaIds.length) return [];
+        let { hanjaIds, hanjaIdx } = q;
+        const result = [];
+        while (result.length < n) {
+            if (hanjaIdx >= hanjaIds.length) { hanjaIds = [...hanjaIds].sort(() => Math.random() - 0.5); hanjaIdx = 0; }
+            result.push(hanjaIds[hanjaIdx++]);
+        }
+        sessionQueueRef.current = { ...q, hanjaIds, hanjaIdx };
+        return result;
     }, []);
 
-    const markWordSeenInSession = useCallback((wordIds) => {
-        if (!wordIds?.length) return;
-        setSessionSeenWordIds(prev => {
-            const s = new Set(prev);
-            wordIds.forEach(id => { if (id != null) s.add(id); });
-            return prev.length === s.size ? prev : [...s];
-        });
+    const getNextWordIds = useCallback((n) => {
+        const q = sessionQueueRef.current;
+        if (!q.wordIds.length) return [];
+        let { wordIds, wordIdx } = q;
+        const result = [];
+        while (result.length < n) {
+            if (wordIdx >= wordIds.length) { wordIds = [...wordIds].sort(() => Math.random() - 0.5); wordIdx = 0; }
+            result.push(wordIds[wordIdx++]);
+        }
+        sessionQueueRef.current = { ...q, wordIds, wordIdx };
+        return result;
     }, []);
 
     // 단어 ID 로깅 (study_log 기록용 — seen 추적과 별개)
@@ -190,69 +254,93 @@ const App = () => {
         wordIds.filter(Boolean).forEach(logWord);
     }, [logWord]);
 
-    const { syncStatus, leaderboard, myRank, syncToCloud, restoreFromCloud, isRestoring } = useCloudSync({
+    const { restoreFromCloud, isRestoring } = useCloudSync({
         userXp, userNickname, selectedCharacter, streak,
         hanjaData, totalStats,
     });
 
-    // 미션 보너스 XP를 userXp에 실제로 반영하는 헬퍼
-    const addBonusXp = useCallback((xp) => {
-        if (!xp || xp <= 0) return;
-        // 스트릭 XP 배율 적용: 3~6일 1.2배, 7일+ 1.5배
-        const streakCount = streak?.count || 0;
-        const multiplier = streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
-        const finalXp = Math.round(xp * multiplier);
-        setUserXp(prev => prev + finalXp);
-    }, [streak]);
-
-    const [xpBuffExpiresAt, setXpBuffExpiresAt] = useState(() => {
+    const [xpBuffExpiresAt] = useState(() => {
         try { return Number(localStorage.getItem(SK.XP_BUFF_EXPIRES) || '0'); } catch { return 0; }
     });
+
+    const getRewardXp = useCallback((xp) => {
+        if (!xp || xp <= 0) return 0;
+        const streakCount = streak?.count || 0;
+        const streakMultiplier = streakCount >= 15 ? 2.0 : streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
+        const buffMultiplier = Date.now() < xpBuffExpiresAt ? 2.0 : 1.0;
+        return Math.round(xp * streakMultiplier * buffMultiplier);
+    }, [streak, xpBuffExpiresAt]);
+
+    const getRewardPreview = useCallback((xp) => {
+        if (!xp || xp <= 0) return null;
+        const streakCount = streak?.count || 0;
+        const streakMultiplier = streakCount >= 15 ? 2.0 : streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
+        const buffMultiplier = Date.now() < xpBuffExpiresAt ? 2.0 : 1.0;
+        const multiplier = streakMultiplier * buffMultiplier;
+        const parts = [];
+        if (streakMultiplier > 1) parts.push(`스트릭 ${streakMultiplier}`);
+        if (buffMultiplier > 1) parts.push(`버프 ${buffMultiplier}`);
+        return {
+            baseXp: xp,
+            finalXp: Math.round(xp * multiplier),
+            multiplier,
+            multiplierText: parts.join(' x '),
+        };
+    }, [streak, xpBuffExpiresAt]);
+
+    // 모든 XP 보상은 스트릭/버프 배율을 같은 규칙으로 적용한다.
+    const addBonusXp = useCallback((xp) => {
+        const finalXp = getRewardXp(xp);
+        if (!finalXp) return;
+        setUserXp(prev => prev + finalXp);
+        logXp(finalXp);
+    }, [getRewardXp, logXp]);
 
     // 캐릭터 토스트 메시지
     const [charToast, setCharToast] = useState(null);
     const missionToastShownRef = useRef(false);
-    const reviewEntryXpRef = useRef(false);
     const dismissToast = useCallback(() => setCharToast(null), []);
 
-    // 메인화면 진입할 때마다 오답 5개 이상이면 복습 토스트
+    // 메인화면 진입할 때마다 오답 5개 이상이고 개수가 늘어났을 때만 복습 토스트
     useEffect(() => {
         if (currentScreen !== 'main' || !selectedCharacter) return;
         const hanjaWrongCount = Object.values(hanjaData).filter(m => (m.wrongCount || 0) > 0).length;
         const wordWrongCount = Object.values(wordData).filter(v => (v.wrongCount || 0) > 0).length;
-        if (hanjaWrongCount + wordWrongCount >= 5) {
-            const t = setTimeout(() => setCharToast('review_reminder'), 800);
-            return () => clearTimeout(t);
+        const currentWrongCount = hanjaWrongCount + wordWrongCount;
+
+        try {
+            const lastNotified = Number(localStorage.getItem('last_notified_wrong_count')) || 0;
+            
+            // 오답 개수가 줄어들면 알림 카운트 하향 동기화 (나중에 다시 쌓일 때 알림이 오도록 함)
+            if (currentWrongCount < lastNotified) {
+                localStorage.setItem('last_notified_wrong_count', String(currentWrongCount));
+            }
+
+            // 오답이 5개 이상이고, 마지막으로 안내했던 개수보다 오답이 더 많아졌을 때만 팝업 노출
+            if (currentWrongCount >= 5 && currentWrongCount > lastNotified) {
+                const t = setTimeout(() => {
+                    setCharToast('review_reminder');
+                    localStorage.setItem('last_notified_wrong_count', String(currentWrongCount));
+                }, 800);
+                return () => clearTimeout(t);
+            }
+        } catch {
+            return undefined;
         }
     }, [currentScreen, hanjaData, wordData, selectedCharacter]);
 
-    // 오답 복습 화면 입장 시 1회 50 XP
-    useEffect(() => {
-        if (currentScreen === 'review') {
-            if (!reviewEntryXpRef.current) {
-                reviewEntryXpRef.current = true;
-                handleHanjaAcquired(null, 50);
-            }
-        } else {
-            reviewEntryXpRef.current = false;
-        }
-    }, [currentScreen]);
-
-    // 미션 전체 완료 시: 팡파레 토스트 + 보너스 XP
+    // 미션 전체 완료 시: 팡파레 토스트만 표시한다. +200 XP는 updateMissionProgress에서 1회 지급.
     useEffect(() => {
         if (!allDone || missionToastShownRef.current) return;
         missionToastShownRef.current = true;
         setCharToast('mission_complete');
-        addBonusXp(200);
-    }, [allDone, addBonusXp]);
+    }, [allDone]);
 
     const handleHanjaAcquired = (id, xpAmount = 10) => {
-        // 스트릭 XP 배율 적용: 3~6일 1.2배, 7~14일 1.5배, 15일+ 2.0배
-        const streakCount = streak?.count || 0;
-        const multiplier = streakCount >= 15 ? 2.0 : streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
-        const buffMult = Date.now() < xpBuffExpiresAt ? 2.0 : 1.0;
-        const finalXp = Math.round(xpAmount * multiplier * buffMult);
+        const finalXp = getRewardXp(xpAmount);
+        if (!finalXp) return;
         setUserXp(prev => prev + finalXp);
+        logXp(finalXp);
     };
 
     const renderScreen = () => {
@@ -268,7 +356,19 @@ const App = () => {
                         doneCount={doneCount}
                         mastery={hanjaData}
                         currentDay={currentDay}
-                        onStartNextStage={() => setSessionDoneToday(false)}
+                        completedDay={completedDay}
+                        onStartNextStage={() => {
+                            if (!selectedPastStage && !selectedGrade && !canAccessStage(unlockedPack, currentDay)) { 
+                                setShowPremiumModal(true); 
+                                return; 
+                            }
+                            setCurrentScreen('flashcard');
+                            setSessionDoneToday(false);
+                        }}
+                        onSelectPastStage={(n) => { setSelectedGrade(null); setSelectedPastStage(n); }}
+                        selectedPastStage={selectedPastStage}
+                        onSelectGrade={(g) => { setSelectedPastStage(null); setSelectedGrade(g); }}
+                        selectedGrade={selectedGrade}
                         isDarkMode={isDarkMode}
                         setIsDarkMode={setIsDarkMode}
                         streak={streak}
@@ -277,7 +377,9 @@ const App = () => {
             case 'flashcard':
                 return <FlashcardScreen
                     onBack={() => setCurrentScreen('main')}
-                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    isPremium={isPremium}
+                    contentPool={effectivePool}
+                    unlockedHanjaIds={clearedHanjaIds}
                     onHanjaAcquired={handleHanjaAcquired}
                     onStageClear={() => {
                         handleHanjaAcquired(null, 50); // Increased to 50 XP for completing all study sheets
@@ -297,6 +399,7 @@ const App = () => {
                     onStudySheetComplete={() => {}}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
+                    getRewardPreview={getRewardPreview}
                 />;
             case 'writing':
                 return <WritingScreen
@@ -310,7 +413,7 @@ const App = () => {
                         }
                     }}
                     onWritingComplete={(id, score) => {
-                        const writingXp = score >= 90 ? 150 : 50;
+                        const writingXp = 30;
                         handleHanjaAcquired(id || null, writingXp);
                         updateMissionProgress('writing', 1, addBonusXp);
                         addTodayStat('writing');
@@ -321,15 +424,18 @@ const App = () => {
                         }
                     }}
                     initialHanja={writeTargetHanja}
-                    unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
+                    isPremium={isPremium}
+                    contentPool={effectivePool}
+                    unlockedHanjaIds={clearedHanjaIds}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
+                    getRewardPreview={getRewardPreview}
                 />;
             case 'matchGame':
                 return <MatchGameScreen
                     onBack={() => setCurrentScreen('main')}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 50); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
+                    onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 20); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
                     onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                     onMarkWrong={() => {}}
                     srsData={hanjaData}
@@ -337,13 +443,13 @@ const App = () => {
                     userLevel={currentLevel}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
-                    contentPool={sessionContentPool}
+                    getRewardPreview={getRewardPreview}
+                    isPremium={isPremium}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     currentDayHanjaIds={currentDayHanjaIds}
-                    seenHanjaIds={sessionSeenHanjaIds}
-                    onHanjaSeen={(ids) => markHanjaSeenInSession(ids)}
-                    seenWordIds={sessionSeenWordIds}
-                    onWordSeen={(wordId) => markWordSeenInSession([wordId])}
+                    contentPool={effectivePool}
+                    onGetNextHanjaIds={getNextHanjaIds}
+                    onGetNextWordIds={getNextWordIds}
                 />;
             case 'shootGame':
                 return <ShootGameScreen
@@ -353,39 +459,33 @@ const App = () => {
                     onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
                     onMarkWrong={(id) => markWrong(id)}
                     onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
-                    onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordSeenInSession([wordId]); }}
+                    onWordCorrect={(wordId) => logCorrectWord(wordId)}
                     onWordWrong={(wordId) => { logWrongWord(wordId); markWordWrong(wordId); }}
                     masteryData={hanjaData}
                     srsData={hanjaData}
                     userLevel={currentLevel}
-                    contentPool={sessionContentPool}
+                    getRewardPreview={getRewardPreview}
+                    isPremium={isPremium}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     currentDayHanjaIds={currentDayHanjaIds}
                     currentDay={currentDay}
-                    seenHanjaIds={sessionSeenHanjaIds}
-                    seenWordIds={sessionSeenWordIds}
-                    onHanjaSeen={(ids) => markHanjaSeenInSession(ids)}
+                    contentPool={effectivePool}
+                    sharedPoolMode={!!effectivePool}
+                    onGetNextHanjaIds={getNextHanjaIds}
+                    onGetNextWordIds={getNextWordIds}
                 />;
             case 'calendar':
-                return <ReviewScreen
-                    onBack={() => setCurrentScreen('main')}
-                    onNavigate={setCurrentScreen}
-                    mastery={hanjaData}
-                    markCorrect={markCorrect}
-                    markWrong={markWrong}
-                    getStats={getStats}
-                    srsData={hanjaData}
-                    getDueItems={(list) => getDueHanja(list)}
-                    currentDay={currentDay}
-                    initialSection="calendar"
+                return <StudyHistoryScreen
+                    onBack={() => setCurrentScreen('mypage')}
+                    isDarkMode={isDarkMode}
                 />;
             case 'review': {
-                const wrongHanjaIds = Object.entries(hanjaData)
-                    .filter(([, m]) => (m.wrongCount || 0) > 0)
-                    .map(([id]) => Number(id));
-                const wrongWordIds = Object.entries(wordData)
-                    .filter(([, v]) => (v.wrongCount || 0) > 0)
-                    .map(([id]) => Number(id));
+                const wrongHanjaIds = sessionReviewPool
+                    ? sessionReviewPool.main.hanjaIds
+                    : Object.entries(hanjaData).filter(([, m]) => (m.wrongCount || 0) > 0).map(([id]) => Number(id));
+                const wrongWordIds = sessionReviewPool
+                    ? sessionReviewPool.main.wordIds
+                    : Object.entries(wordData).filter(([, v]) => (v.wrongCount || 0) > 0).map(([id]) => Number(id));
                 if (wrongHanjaIds.length === 0 && wrongWordIds.length === 0) {
                     return (
                         <div className="min-h-screen bg-[#F7FAF9] flex flex-col items-center justify-center gap-6 px-8">
@@ -402,75 +502,79 @@ const App = () => {
                     );
                 }
                 const reviewPool = buildOopsPool(wrongHanjaIds, wrongWordIds);
-                return <ShootGameScreen
-                    onBack={() => setCurrentScreen('main')}
-                    onGameFinish={() => setCurrentScreen('main')}
+                return <WrongReviewSession
+                    onBack={() => { setSessionReviewPool(null); setCurrentScreen('main'); }}
+                    onComplete={() => { setSessionReviewPool(null); setCurrentScreen('main'); }}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
-                    onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
-                    onMarkWrong={(id) => markWrong(id)}
-                    onMarkCorrect={(id) => { markCorrect(id); clearWrong(id); clearWordWrongByHanjaId(id); logHanja(id); }}
+                    onClearAllWrong={() => {
+                        // 리뷰 세션 풀에 있는 모든 오답을 초기화
+                        if (reviewPool && reviewPool.main) {
+                            reviewPool.main.hanjaIds.forEach(id => clearWrong(id));
+                            reviewPool.main.wordIds.forEach(id => clearWordWrong(id));
+                        }
+                    }}
+                    onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                     onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
-                    onWordWrong={(wordId) => { logWrongWord(wordId); markWordWrong(wordId); }}
                     masteryData={hanjaData}
                     srsData={hanjaData}
                     userLevel={currentLevel}
                     contentPool={reviewPool}
-                    currentDay={currentDay}
+                    isPremium={isPremium}
                 />;
             }
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
                     onBack={() => setCurrentScreen('main')}
                     onStageClear={(correct, total, newSeenWords) => {
-                        if (newSeenWords) { addMainSeenWords(newSeenWords); markWordSeenInSession(newSeenWords); }
-                        const bonus = 100 + (correct === total ? 100 : 0);
-                        handleHanjaAcquired(null, bonus);
+                        if (newSeenWords) addMainSeenWords(newSeenWords);
+                        handleHanjaAcquired(null, 30);
                         updateMissionProgress('sentenceQuiz', 1, addBonusXp);
-                        addTodayStat('sentenceQuiz');
+                        addTodayStat('sentenceQuiz', total || 1);
                     }}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onWordSeen={(wordId) => { addMainSeenWords([wordId]); markWordSeenInSession([wordId]); }}
+                    onWordSeen={(wordId) => addMainSeenWords([wordId])}
                     onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
                     onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
-                    onGoToReview={() => setCurrentScreen('review')}
+                    onGoToReview={(wrongIds) => { if (wrongIds) setSessionReviewPool(buildOopsPool(wrongIds.hanjaIds || [], wrongIds.wordIds || [])); setCurrentScreen('review'); }}
                     srsData={hanjaData}
                     masteryData={hanjaData}
                     userLevel={currentLevel}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
-                    contentPool={sessionContentPool}
+                    getRewardPreview={getRewardPreview}
+                    isPremium={isPremium}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     currentDayHanjaIds={currentDayHanjaIds}
-                    seenHanjaIds={sessionSeenHanjaIds}
-                    seenWordIds={sessionSeenWordIds}
+                    contentPool={effectivePool}
+                    onGetNextWordIds={getNextWordIds}
                 />;
             case 'wordQuiz':
                 return <WordQuizScreen
                     onBack={() => setCurrentScreen('main')}
                     onStageClear={(correct, total, maxCombo, newSeenWords) => {
-                        if (newSeenWords) { addMainSeenWords(newSeenWords); markWordSeenInSession(newSeenWords); }
-                        const bonus = 50 + (correct === total ? 50 : 0);
-                        handleHanjaAcquired(null, bonus);
+                        if (newSeenWords) addMainSeenWords(newSeenWords);
+                        handleHanjaAcquired(null, 30);
                         updateMissionProgress('wordQuiz', 1, addBonusXp);
-                        addTodayStat('wordQuiz');
+                        addTodayStat('wordQuiz', total || 1);
                         updateRecord('wordBestScore', correct);
                         if (maxCombo) updateRecord('wordMaxCombo', maxCombo);
                     }}
                     onHanjaAcquired={handleHanjaAcquired}
                     onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
-                    onWordSeen={(wordId) => { addMainSeenWords([wordId]); markWordSeenInSession([wordId]); }}
+                    onWordSeen={(wordId) => addMainSeenWords([wordId])}
                     onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
-                    onGoToReview={() => setCurrentScreen('review')}
+                    onGoToReview={(wrongIds) => { if (wrongIds) setSessionReviewPool(buildOopsPool(wrongIds.hanjaIds || [], wrongIds.wordIds || [])); setCurrentScreen('review'); }}
                     srsData={hanjaData}
                     masteryData={hanjaData}
                     userLevel={currentLevel}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
-                    contentPool={sessionContentPool}
+                    getRewardPreview={getRewardPreview}
+                    isPremium={isPremium}
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
-                    seenHanjaIds={sessionSeenHanjaIds}
-                    seenWordIds={sessionSeenWordIds}
+                    contentPool={effectivePool}
+                    onGetNextWordIds={getNextWordIds}
                 />;
             case 'gradeTest':
                 return <GradeTestScreen
@@ -492,6 +596,11 @@ const App = () => {
                     onBack={() => setCurrentScreen('mypage')}
                     onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 500); }}
                 />;
+            case 'gradeTest6':
+                return <GradeTest6Screen
+                    onBack={() => setCurrentScreen('mypage')}
+                    onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 600); }}
+                />;
             case 'levelTest':
                 return <LevelTestScreen
                     onBack={() => setCurrentScreen('main')}
@@ -502,7 +611,6 @@ const App = () => {
                         const isPassed = correct >= 7;
                         const ltXp = 20 + (isPassed ? 50 : 0) + (isPerfect ? 100 : 0);
                         handleHanjaAcquired(null, ltXp);
-                        updateMissionProgress('levelTest', 1, addBonusXp);
                     }}
                 />;
             case 'settings':
@@ -528,10 +636,9 @@ const App = () => {
                     setIsDarkMode={setIsDarkMode}
                     streak={streak}
                     totalStats={totalStats}
-                    studyLog={log}
                 />;
-            case 'rankings':
-                return <RankingsScreen
+            case 'vocabulary':
+                return <VocabularyScreen
                     onBack={() => setCurrentScreen('mypage')}
                     isDarkMode={isDarkMode}
                 />;
@@ -546,7 +653,9 @@ const App = () => {
                         doneCount={doneCount}
                         mastery={hanjaData}
                         currentDay={currentDay}
-                        onStartNextStage={() => setSessionDoneToday(false)}
+                        onStartNextStage={() => {
+                            setSessionDoneToday(false);
+                        }}
                         isDarkMode={isDarkMode}
                         streak={streak}
                     />
@@ -557,6 +666,8 @@ const App = () => {
     const currentLevel = getLevel(userXp);
 
     return (
+        <PremiumProvider unlockedPack={unlockedPack} onShowPremium={() => setShowPremiumModal(true)}>
+
         <LangProvider>
             <div 
                 className={`app-container premium-aurora-bg diamond-overlay ${isDarkMode ? 'dark-mode' : ''} transition-colors duration-500 min-h-screen`}
@@ -574,14 +685,15 @@ const App = () => {
                             onAction={charToast === 'review_reminder' ? () => setCurrentScreen('review') : undefined}
                         />
                     )}
-                    {!onboardingDone
+                    <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+                        {!onboardingDone
                         ? <OnboardingScreen onComplete={(grade, xp) => {
                             setOnboardingDone(true);
                             handleHanjaAcquired(null, xp);
                           }}
                           />
-                        : <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
-                            {!selectedCharacter
+                        : (
+                            !selectedCharacter
                                 ? <CharacterSelectionScreen
                                     onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }}
                                     onBack={() => {
@@ -589,7 +701,7 @@ const App = () => {
                                         setOnboardingDone(false);
                                     }}
                                   />
-                                : !sessionDoneToday
+                                : !sessionDoneToday && canAccessStage(unlockedPack, currentDay)
                                     ? <DailySessionScreen
                                         onComplete={() => {
                                             setSessionDoneToday(true);
@@ -597,7 +709,7 @@ const App = () => {
                                             setCurrentScreen('main');
                                         }}
                                         onNavigate={setCurrentScreen}
-                                        onAdvanceDay={advanceDay}
+                                        onAdvanceDay={() => { advanceDay(); incrementTodaySessionCount(); }}
                                         currentDay={currentDay}
                                         srsData={hanjaData}
                                         masteryData={hanjaData}
@@ -609,14 +721,44 @@ const App = () => {
                                         onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
                                         onWordSeen={(wordId) => logWord(wordId)}
                                         onHanjaAcquired={handleHanjaAcquired}
+                                        updateMissionProgress={updateMissionProgress}
+                                        addBonusXp={addBonusXp}
+                                        getRewardPreview={getRewardPreview}
+                                        missions={missions}
+                                        doneCount={doneCount}
                                       />
                                     : renderScreen()
-                            }
-                          </Suspense>
-                    }
+                        )}
+                    </Suspense>
                 </div>
+                <Suspense fallback={null}>
+                    {showLoginModal && (
+                        <LoginModal
+                            platform={platform}
+                            signInWithApple={signInWithApple}
+                            signInWithGoogle={signInWithGoogle}
+                            onClose={() => setShowLoginModal(false)}
+                        />
+                    )}
+                    {showPremiumModal && (
+                        <PremiumModal
+                            onClose={() => setShowPremiumModal(false)}
+                            onShowLogin={() => { setShowPremiumModal(false); setShowLoginModal(true); }}
+                            avatarUrl={selectedCharacter ? getRankDetails(userXp, selectedCharacter).avatar : '/assets/images/characters/default_3d.webp'}
+                        />
+                    )}
+                    {gradeTestAlert && (
+                        <GradeTestAlertModal
+                            grade={gradeTestAlert}
+                            onNavigate={setCurrentScreen}
+                            onClose={() => setGradeTestAlert(null)}
+                        />
+                    )}
+                </Suspense>
             </div>
         </LangProvider>
+
+        </PremiumProvider>
     );
 };
 

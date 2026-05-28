@@ -31,8 +31,7 @@ export const useCloudSync = ({
     userNickname,
     selectedCharacter,
     streak,
-    mastery,
-    srsData,
+    hanjaData,
     totalStats,
 }) => {
     const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'synced' | 'error' | 'offline'
@@ -79,8 +78,8 @@ export const useCloudSync = ({
             }
             // 학습 데이터 백업
             const { error: dataError } = await backupLearningData({
-                masteryData: mastery || {},
-                srsData: srsData || {},
+                masteryData: hanjaData || {},
+                srsData: hanjaData || {},
                 totalStats: totalStats || {},
             });
             if (dataError && dataError !== 'offline') {
@@ -92,7 +91,7 @@ export const useCloudSync = ({
             console.warn('[CloudSync] Sync error:', e);
             setSyncStatus('error');
         }
-    }, [userXp, userNickname, selectedCharacter, streak, mastery, srsData, totalStats]);
+    }, [userXp, userNickname, selectedCharacter, streak, hanjaData, totalStats]);
 
     /**
      * 클라우드에서 전체 프로필 복원
@@ -113,12 +112,10 @@ export const useCloudSync = ({
                 if (typeof profile.xp === 'number') localStorage.setItem(SK.USER_XP, String(profile.xp));
             }
             if (learningData) {
-                if (learningData.mastery_data)        localStorage.setItem('mastery_data', JSON.stringify(learningData.mastery_data));
-                if (learningData.srs_data)            localStorage.setItem('srs_data', JSON.stringify(learningData.srs_data));
-                if (learningData.total_stats)         localStorage.setItem('total_activity_stats', JSON.stringify(learningData.total_stats));
+                if (learningData.mastery_data)        localStorage.setItem('hanja_data', JSON.stringify(learningData.mastery_data));
+                if (learningData.total_stats)         localStorage.setItem('study_log', JSON.stringify({ total: learningData.total_stats, days: {} }));
                 if (learningData.curriculum_progress) localStorage.setItem('curriculum_progress', JSON.stringify(learningData.curriculum_progress));
-                if (learningData.word_wrong_data)     localStorage.setItem('word_wrong_data', JSON.stringify(learningData.word_wrong_data));
-                if (learningData.daily_study_log)     localStorage.setItem(SK.DAILY_STUDY_LOG, JSON.stringify(learningData.daily_study_log));
+                if (learningData.word_wrong_data)     localStorage.setItem('word_data', JSON.stringify(learningData.word_wrong_data));
             }
             setIsRestoring(false);
             return { success: true };

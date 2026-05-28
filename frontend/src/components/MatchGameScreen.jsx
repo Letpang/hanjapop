@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from 'react';
 import HANJA_DATA_RAW from '../hanja_unified.json';
 import { getSRSWeightedPool } from '../utils/learningPool.js';
-import { useLang } from '../LangContext.jsx';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import { playSound } from '../utils/playSound.js';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
 
 // ── 중복 제거된 데이터 (hanja 문자 기준) ────────────────────────────────────
 const HANJA_DATA = Object.values(
@@ -114,9 +114,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 });
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen }) => {
-    const { lang, t } = useLang();
-
+const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry }) => {
     // 16단계 캐릭터 로테이션 이미지 생성
     const cardBackSequence = useMemo(() => {
         const chars = ['garae', 'jeolmi', 'chapssal', 'muzi'];
@@ -139,7 +137,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
     // ── 게임 로직 ──────────────────────────────────────────────────────────
-    const [gameStarted, setGameStarted] = useState(false);
+    const [gameStarted, setGameStarted] = useState(!!contentPool);
     const [pairPool, setPairPool] = useState([]);
     const [poolIndex, setPoolIndex] = useState(0);
     const [currentRound, setCurrentRound] = useState(0);
@@ -150,7 +148,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const [targetMatches, setTargetMatches] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
     const [gameState, setGameState] = useState('idle'); // 'idle'|'playing'|'clear'|'over'|'allClear'
-    const [clearCombo, setClearCombo] = useState(0); // 연속 클리어 콤보 카운터
+    const clearCombo = 0; // Legacy display value; combo scoring was removed.
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [showExitModal, setShowExitModal] = useState(false);
 
@@ -176,10 +174,12 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const onHanjaAcquiredRef = useRef(onHanjaAcquired);
     const onHanjaSeenRef = useRef(onHanjaSeen);
     const onWordSeenRef = useRef(onWordSeen);
-    onMarkCorrectRef.current = onMarkCorrect;
-    onHanjaAcquiredRef.current = onHanjaAcquired;
-    onHanjaSeenRef.current = onHanjaSeen;
-    onWordSeenRef.current = onWordSeen;
+    useEffect(() => {
+        onMarkCorrectRef.current = onMarkCorrect;
+        onHanjaAcquiredRef.current = onHanjaAcquired;
+        onHanjaSeenRef.current = onHanjaSeen;
+        onWordSeenRef.current = onWordSeen;
+    }, [onMarkCorrect, onHanjaAcquired, onHanjaSeen, onWordSeen]);
     const currentRoundWordsRef = useRef([]);
 
     // ── 현재 선택된 한자 풀 (SRS 우선순위 순서로 정렬 → 초반 라운드에 복습 필요 한자 등장) ──
@@ -205,7 +205,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
             ...sortGroup(base.filter(h => todaySet.has(h.id) &&  seenSet.has(h.id))),
             ...sortGroup(base.filter(h => !todaySet.has(h.id))),
         ];
-    }, [viewMode, selectedGrade, selectedCategory, srsData, masteryData, userLevel, contentPool, unlockedIds, currentDayHanjaIds]);
+    }, [viewMode, selectedGrade, selectedCategory, srsData, masteryData, userLevel, contentPool, unlockedIds, currentDayHanjaIds, seenHanjaIds]);
 
     // ── 게임 시작 ───────────────────────────────────────────────────────────
     const startGame = useCallback((overrideSet) => {
@@ -272,10 +272,10 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
     // 스테이지 모드 진입 시 자동 시작
     useEffect(() => {
-        if (contentPool != null && !gameStarted && activeHanjaSet.length > 0) {
-            startGame();
-        }
-    }, [contentPool, gameStarted, activeHanjaSet, startGame]);
+        if (contentPool == null || gameState !== 'idle' || activeHanjaSet.length === 0) return undefined;
+        const timer = setTimeout(() => startGame(), 0);
+        return () => clearTimeout(timer);
+    }, [contentPool, gameState, activeHanjaSet, startGame]);
 
     // ── 타이머 ──────────────────────────────────────────────────────────────
     useEffect(() => {
@@ -347,7 +347,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 isLockedRef.current = false;
             }, 900);
         }
-    }, [flippedCards, targetMatches]);
+    }, [flippedCards, targetMatches, selectedGrade, viewMode]);
 
     // ── 라운드 클리어 감지 ──────────────────────────────────────────────────
     useEffect(() => {
@@ -356,11 +356,15 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 ? Math.round((Date.now() - roundStartTimeRef.current) / 1000)
                 : null;
             setTimeout(() => {
-                setGameState('clear');
-                if (onStageClear) onStageClear(currentRound + 1, elapsedSec);
+                if (contentPool != null) {
+                    if (onStageClear) onStageClear(currentRound + 1, elapsedSec);
+                } else {
+                    setGameState('clear');
+                    if (onStageClear) onStageClear(currentRound + 1, elapsedSec);
+                }
             }, 380);
         }
-    }, [matches, targetMatches, gameState]);
+    }, [matches, targetMatches, gameState, contentPool, currentRound, onStageClear]);
 
     // ── 다음 라운드 ─────────────────────────────────────────────────────────
     const goNextRound = useCallback(() => {
@@ -431,7 +435,9 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         setGameState('playing');
     }, [pairPool, poolIndex, selectedCardCount, contentPool]);
 
-    const gradeColor = selectedGrade ? GRADE_COLORS[selectedGrade] : GRADE_COLORS['8급'];
+    const matchXp = matches * 3;
+    const clearXp = gameState === 'clear' ? 20 : 0;
+    const reward = getRewardPreview?.(matchXp + clearXp);
 
     // ════════════════════════════════════════════════════════════════════════
     // 전체 클리어 화면
@@ -542,17 +548,22 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         style={{ background: gameState === 'clear' ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
                         <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
-                            <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+                            {dailyMapNode}
+                            <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
-                                <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                                {!dailyMapNode && (
+                                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                                )}
 
                                 {/* 아이콘 */}
-                                <img
-                                    src={gameState === 'clear' ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
-                                    alt={gameState === 'clear' ? 'great' : 'timeout'}
-                                    className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
-                                    style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
-                                />
+                                {!dailyMapNode && (
+                                    <img
+                                        src={gameState === 'clear' ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
+                                        alt={gameState === 'clear' ? 'great' : 'timeout'}
+                                        className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
+                                        style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
+                                    />
+                                )}
 
                                 {/* 텍스트 */}
                                 <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
@@ -569,23 +580,32 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                     <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
                                         {gameState === 'clear'
                                             ? <>콤보 {clearCombo}회 연속 성공! 계속 달려봐요<span className="text-[0.85em] inline-block ml-1">🔥</span></>
-                                            : '조금만 더 빨리 하면 성공할 수 있어요!'}
+                                        : '조금만 더 빨리 하면 성공할 수 있어요!'}
                                     </p>
                                 </div>
 
+                                <RewardBreakdown
+                                    reward={reward}
+                                    correctXp={matchXp}
+                                    clearXp={clearXp}
+                                    correctLabel="짝 맞춤"
+                                />
+
                                 {/* 버튼 2단 */}
                                 <div className="w-full flex flex-col gap-3 relative z-10">
+                                    {(!hideRetry || gameState === 'clear') && (
                                     <button
                                         onClick={gameState === 'clear' ? goNextRound : retryRound}
-                                        className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                                        className="w-full py-5 rounded-2xl font-black text-[1.5rem] retry-quiz-button"
                                     >
                                         {gameState === 'clear' ? '다음 라운드' : '다시 하기'}
                                     </button>
+                                    )}
                                     <button
                                         onClick={contentPool ? onBack : () => { setGameStarted(false); setGameState('idle'); }}
-                                        className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                        className="w-full py-5 rounded-2xl font-black text-[1.5rem] active:scale-95 transition-all shadow-sm back-quiz-button"
                                     >
-                                        돌아가기
+                                        {(dailyMapNode && gameState !== 'over') ? '다음 단계로 이동' : '돌아가기'}
                                     </button>
                                 </div>
                             </div>
@@ -593,6 +613,40 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                     </div>
                 )}
 
+                {showExitModal && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'rgba(120, 130, 160, 0.22)' }}>
+                        <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                            <img
+                                src={getCharacterImage(selectedCharacter, 'keep_going')}
+                                alt="exit confirm"
+                                className="w-[120px] h-[120px] object-contain mb-4"
+                                style={{ filter: 'drop-shadow(0 8px 16px rgba(120,130,160,0.16))' }}
+                            />
+                            <div className="text-center flex flex-col gap-2 mb-6">
+                                <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                                    정말 매칭을 중단할까요? 🥺
+                                </h2>
+                                <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                    지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?
+                                </p>
+                            </div>
+                            <div className="w-full flex flex-col gap-3">
+                                <button
+                                    onClick={() => setShowExitModal(false)}
+                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                                >
+                                    계속 플레이하기
+                                </button>
+                                <button
+                                    onClick={handleExitConfirm}
+                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                >
+                                    그만하고 나가기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -640,8 +694,6 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                             {GRADES.map(g => {
                                 const isLocked = g !== '전체' && !unlockedGrades.has(g);
                                 const isSelected = selectedGrade === g;
-                                const is8th = g === '8급';
-                                
                                 return (
                                     <button
                                         key={g}

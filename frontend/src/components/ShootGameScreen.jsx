@@ -3,7 +3,7 @@ import HANJA_DATA from '../hanja_unified.json';
 import {
     MONSTER_COMPONENTS, IconTarget, IconHpDrop, IconExplosionBig
 } from './Icons.jsx';
-import { useLang } from '../LangContext.jsx';
+import { useLang } from '../hooks/useLang.js';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
@@ -11,6 +11,8 @@ import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import { playSound } from '../utils/playSound.js';
 import { SK } from '../constants/storageKeys.js';
+import CtaButton from './common/CtaButton.jsx';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
 
 const getStoredXp = () => {
     try { return Number(localStorage.getItem(SK.USER_XP) || '0'); } catch { return 0; }
@@ -192,8 +194,8 @@ const getGameThemeKey = (currentDay, selectedGrade) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen }) => {
-    const { lang, t } = useLang();
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, dailyMapNode, hideRetry }) => {
+    const { lang } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
     const getMeaning = useCallback((item) => {
@@ -218,26 +220,16 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         return 'normal';
     });
 
-    useEffect(() => {
-        if (!selectedCategory && categories.length > 0) {
-            setSelectedCategory(categories[0]);
-        }
-    }, [categories, selectedCategory]);
-    const [status, setStatus] = useState('idle');
+    const [status, setStatus] = useState(contentPool ? 'loading' : 'idle');
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (contentPool) {
-            onBack();
-        } else {
-            setStatus('idle');
-        }
+        onBack();
     };
     const [wave, setWave] = useState(1);
     const [waveKills, setWaveKills] = useState(0);
     const [waveTransition, setWaveTransition] = useState(false);
     const [clearCombo, setClearCombo] = useState(0); // 연속 웨이브 클리어 콤보
-    const [combo, setCombo] = useState(0);
     const [score, setScore] = useState(0);
     const [sessionXp, setSessionXp] = useState(0);
 
@@ -255,6 +247,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [isInputLocked, setIsInputLocked] = useState(false);
     const inputLockedRef = useRef(false);
+    const effectIdRef = useRef(0);
 
     const shipRef = useRef(null);
     const gameAreaRef = useRef(null);
@@ -371,29 +364,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             );
         }
         refillWordQueue(flatWordPoolRef.current);
-
-        // wordChance는 startGame에서 hanjaStage 확정 후 재계산 — 여기선 0으로 초기화
-        wordChanceRef.current = 0;
     }, [gamePoolData, contentPool, refillWordQueue]);
 
-
-    const startGameRef = useRef(null);
-    useEffect(() => { startGameRef.current = startGame; });
-
-    // contentPool이 prop 참조 변경(hanjaData 업데이트)으로 매번 새 객체가 되므로,
-    // 실제 hanjaIds 내용이 바뀔 때만 auto-start하도록 키로 비교한다.
-    const lastContentKeyRef = useRef(null);
-    useEffect(() => {
-        if (contentPool == null) return;
-        // main.hanjaIds 기준으로만 비교 (review는 랜덤 선택이라 제외)
-        const key = JSON.stringify([...(contentPool.main?.hanjaIds || [])].sort());
-        if (key !== lastContentKeyRef.current) {
-            lastContentKeyRef.current = key;
-            startGameRef.current?.();
-        }
-    }, [contentPool]);
-
-    const startGame = (overrideDiff) => {
+    function startGame(overrideDiff) {
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if (AudioCtx) {
@@ -444,7 +417,24 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         setWrongItemsForRender([]);
         
         setStatus('playing');
-    };
+    }
+
+    const startGameRef = useRef(null);
+    useEffect(() => { startGameRef.current = startGame; });
+
+    // contentPool이 prop 참조 변경(hanjaData 업데이트)으로 매번 새 객체가 되므로,
+    // 실제 hanjaIds 내용이 바뀔 때만 auto-start하도록 키로 비교한다.
+    const lastContentKeyRef = useRef(null);
+    useEffect(() => {
+        if (contentPool == null) return;
+        // main.hanjaIds 기준으로만 비교 (review는 랜덤 선택이라 제외)
+        const key = JSON.stringify([...(contentPool.main?.hanjaIds || [])].sort());
+        if (key !== lastContentKeyRef.current) {
+            lastContentKeyRef.current = key;
+            const timer = setTimeout(() => startGameRef.current?.(), 0);
+            return () => clearTimeout(timer);
+        }
+    }, [contentPool]);
 
     // 현재 웨이브 기반 속도/간격 계산
     const getDropSpeed = useCallback((currentWave) => {
@@ -457,16 +447,21 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     // HP 0 → game over
     useEffect(() => {
-        if (hp <= 0 && status === 'playing') {
+        if (hp > 0 || status !== 'playing') return undefined;
+
+        const timer = setTimeout(() => {
             setStatus('over');
             if (contentPool && onGameFinish) onGameFinish();
-        }
-    }, [hp, status]);
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [hp, status, contentPool, onGameFinish]);
 
     // 웨이브 킬 수 체크 → 다음 웨이브 or 게임 클리어
     useEffect(() => {
-        if (status !== 'playing' || waveTransition) return;
-        if (waveKills >= diffConfig.killsPerWave) {
+        if (status !== 'playing' || waveTransition || waveKills < diffConfig.killsPerWave) return undefined;
+
+        const timer = setTimeout(() => {
             // 웨이브 클리어 XP + 콤보 보너스
             const xpTable = DIFFICULTY_XP[selectedDifficulty] || DIFFICULTY_XP['normal'];
             const newCombo = clearCombo + 1;
@@ -476,13 +471,19 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             else if (newCombo >= 3) xpEarned += xpTable.combo3;
             if (onHanjaAcquired) {
                 onHanjaAcquired(null, xpEarned);
-                setXpPopup({ show: true, key: Date.now(), amount: xpEarned });
+                effectIdRef.current += 1;
+                setXpPopup({ show: true, key: effectIdRef.current, amount: xpEarned });
                 setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
             }
             setSessionXp(prev => prev + xpEarned);
             if (onWaveClear) onWaveClear(waveKills);
             if (wave >= diffConfig.wavesTotal) {
-                setStatus('clear');
+                if (dailyMapNode) {
+                    flushWrongItems();
+                    if (onGameFinish) onGameFinish();
+                } else {
+                    setStatus('clear');
+                }
             } else {
                 setWaveTransition(true);
                 setWords([]);
@@ -493,8 +494,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     setWaveTransition(false);
                 }, 2000);
             }
-        }
-    }, [waveKills, wave, diffConfig, status, waveTransition]);
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [waveKills, wave, diffConfig, status, waveTransition, selectedDifficulty, clearCombo, onHanjaAcquired, onWaveClear, dailyMapNode, flushWrongItems, onGameFinish]);
 
     // 낙하 + 스폰 루프
     useEffect(() => {
@@ -571,8 +574,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     spawnedWordsSetRef.current.add(nextItem.hanja);
                 }
 
+                effectIdRef.current += 1;
                 return [...prev, {
-                    id: Date.now() + Math.random(),
+                    id: effectIdRef.current,
                     pairId: nextItem.id,
                     wordId: nextItem.wordId || null,
                     hanja: nextItem.hanja,
@@ -594,18 +598,28 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     // 타겟 & 보기 갱신
     useEffect(() => {
-        if (status !== 'playing' || words.length === 0) { setOptions([]); setTargetId(null); return; }
+        if (status !== 'playing' || words.length === 0) {
+            const timer = setTimeout(() => {
+                setOptions([]);
+                setTargetId(null);
+            }, 0);
+            return () => clearTimeout(timer);
+        }
         const fallingWords = words.filter(w => w.state === 'falling');
-        if (fallingWords.length === 0) return;
+        if (fallingWords.length === 0) return undefined;
         const lowestWord = fallingWords.reduce((prev, curr) => (prev.y > curr.y ? prev : curr), fallingWords[0]);
         if (lowestWord.id !== targetId) {
-            setTargetId(lowestWord.id);
-            setIsWordTarget(lowestWord.isWord || false);
-            const allChars = gamePoolData.chars.length > 10 ? gamePoolData.chars : HANJA_DATA;
-            const wrongOpts = getWrongOptions(lowestWord, allChars, diffConfig.wrongAnswerMode, lowestWord.category);
-            setOptions([...wrongOpts, lowestWord.answer].sort(() => 0.5 - Math.random()));
+            const timer = setTimeout(() => {
+                setTargetId(lowestWord.id);
+                setIsWordTarget(lowestWord.isWord || false);
+                const allChars = gamePoolData.chars.length > 10 ? gamePoolData.chars : HANJA_DATA;
+                const wrongOpts = getWrongOptions(lowestWord, allChars, diffConfig.wrongAnswerMode, lowestWord.category);
+                setOptions([...wrongOpts, lowestWord.answer].sort(() => 0.5 - Math.random()));
+            }, 0);
+            return () => clearTimeout(timer);
         }
-    }, [words, status, targetId, gamePoolData, diffConfig, getMeaning]);
+        return undefined;
+    }, [words, status, targetId, gamePoolData, diffConfig]);
 
     const handleOptionClick = (selectedAnswer) => {
         if (status !== 'playing' || !targetId || inputLockedRef.current) return;
@@ -617,7 +631,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
             setTurretAngle(angle);
             playSound('shoot');
-            const laserId = Date.now();
+            effectIdRef.current += 1;
+            const laserId = effectIdRef.current;
             setLasers(prev => [...prev, { id: laserId, targetX: target.x, targetY: target.y, shipX: 50, shipY: 95 }]);
             setTimeout(() => { setLasers(prev => prev.filter(l => l.id !== laserId)); playSound('boom'); }, 100);
             setWords(prev => prev.map(w => w.id === targetId ? { ...w, state: 'exploding', timer: 6 } : w));
@@ -628,7 +643,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             if (target.pairId != null) onHanjaSeenRef.current?.([target.pairId]);
             if (target.isWord && target.wordId != null) onWordCorrect?.(target.wordId);
             if (onHanjaAcquired) onHanjaAcquired(target.pairId, 10);
-            const acqId = Date.now();
+            effectIdRef.current += 1;
+            const acqId = effectIdRef.current;
             setAcquisitions(prev => [...prev, { id: acqId, x: target.x, y: target.y, hanja: target.hanja }]);
             setTimeout(() => { setAcquisitions(prev => prev.filter(a => a.id !== acqId)); inputLockedRef.current = false; }, 1000);
         } else {
@@ -679,6 +695,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 background-size: 400% 400%;
                 animation: bgShift 12s ease infinite, hueShift 20s linear infinite;
             }
+            .shoot-game-theme-container.result-active {
+                animation: bgShift 12s ease infinite;
+                filter: none !important;
+            }
             @keyframes bgShift {
                 0%   { background-position: 0% 50%; }
                 50%  { background-position: 100% 50%; }
@@ -706,6 +726,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     // ─────────────────────────────────────────
     // IDLE 화면
     // ─────────────────────────────────────────
+    if (status === 'loading') return null;
+
     if (status === 'idle') {
         return (
             <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
@@ -749,8 +771,6 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                 {GRADES.map(g => {
                                     const isLocked = g !== '전체' && !unlockedGrades.has(g);
                                     const isSelected = selectedGrade === g;
-                                    const is8th = g === '8급';
-                                    
                                     return (
                                         <button
                                             key={g}
@@ -868,12 +888,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     const isClear = status === 'clear';
     const isResult = status === 'over' || status === 'clear';
+    const reward = getRewardPreview?.(sessionXp);
 
     // ─────────────────────────────────────────
     // 게임 화면
     // ─────────────────────────────────────────
     return (
-        <div className="fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden transition-all duration-1000 ease-out shoot-game-theme-container">
+        <div className={`fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden transition-all duration-1000 ease-out shoot-game-theme-container ${isResult ? 'result-active' : ''}`}>
 
             {/* Twinkling Stars */}
             {COSMIC_STARS.map(star => (
@@ -1066,16 +1087,21 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
                         <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
-                            <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+                            {dailyMapNode}
+                            <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
-                                <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                                {!dailyMapNode && (
+                                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                                )}
 
-                                <img
-                                    src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
-                                    alt={isClear ? 'clear' : 'over'}
-                                    className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
-                                    style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
-                                />
+                                {!dailyMapNode && (
+                                    <img
+                                        src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
+                                        alt={isClear ? 'clear' : 'over'}
+                                        className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
+                                        style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
+                                    />
+                                )}
                                 <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
                                     <span className="text-sm font-extrabold text-[#AEB7C5]">
                                         {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
@@ -1085,7 +1111,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         letterSpacing: '-0.5px',
                                         textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
                                     }}>
-                                        {isClear && contentPool ? <>오답 몬스터를<br/>모두 격파했어요!</> : isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                        {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                     </h1>
                                     <div className="flex flex-col items-center gap-1 mt-3">
                                         {isClear && contentPool ? (
@@ -1099,6 +1125,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         )}
                                     </div>
                                 </div>
+
+                                <RewardBreakdown
+                                    reward={reward}
+                                    correctXp={sessionXp}
+                                    clearXp={0}
+                                    correctLabel="웨이브"
+                                />
 
                                 {/* 몬스터 오답 노트 (Review Note) */}
                                 {wrongItemsForRender.length > 0 && (
@@ -1116,29 +1149,49 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                 )}
 
                                 <div className="w-full flex flex-col gap-3 relative z-10">
+                                    {!hideRetry && (
                                     <button
                                         onClick={() => {
                                             flushWrongItems();
                                             startGame();
                                         }}
-                                        className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
+                                        className="w-full py-5 rounded-2xl font-black text-[1.5rem] retry-quiz-button"
                                     >
-                                        다시 하기
+                                        계속하기
                                     </button>
-                                    <button
-                                        onClick={() => {
-                                            flushWrongItems();
-                                            if (contentPool) {
-                                                if (onGameFinish) onGameFinish();
-                                                else onBack();
-                                            } else {
-                                                setStatus('idle');
-                                            }
-                                        }}
-                                        className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
-                                    >
-                                        돌아가기
-                                    </button>
+                                    )}
+                                    {(dailyMapNode && isClear) ? (
+                                        <CtaButton
+                                            theme="coral"
+                                            onClick={() => {
+                                                flushWrongItems();
+                                                if (contentPool) {
+                                                    if (onGameFinish) onGameFinish();
+                                                    else onBack();
+                                                } else {
+                                                    setStatus('idle');
+                                                }
+                                            }}
+                                        >
+                                            <span className="font-black text-white text-[1.5rem] drop-shadow-md">다음 단계로 이동</span>
+                                            <span className="text-white font-black text-[1.5rem] drop-shadow-md ml-2">▶</span>
+                                        </CtaButton>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                flushWrongItems();
+                                                if (contentPool) {
+                                                    if (onGameFinish && isClear) onGameFinish();
+                                                    else onBack();
+                                                } else {
+                                                    setStatus('idle');
+                                                }
+                                            }}
+                                            className="w-full py-5 rounded-2xl font-black text-[1.5rem] active:scale-95 transition-all shadow-sm back-quiz-button"
+                                        >
+                                            돌아가기
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

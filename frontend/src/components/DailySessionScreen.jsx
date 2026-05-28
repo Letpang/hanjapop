@@ -5,13 +5,14 @@ import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { getTodayStr } from '../utils/sessionUtils.js';
-import { buildUnifiedPool, buildOopsPool } from '../utils/learningPool.js';
+import { buildUnifiedPool } from '../utils/learningPool.js';
+import CtaButton from './common/CtaButton.jsx';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
 
 const ShootGameScreen = lazy(() => import('./ShootGameScreen.jsx'));
 const MatchGameScreen = lazy(() => import('./MatchGameScreen.jsx'));
-const WordQuizScreen = lazy(() => import('./WordQuizScreen.jsx'));
 const SentenceQuizScreen = lazy(() => import('./SentenceQuizScreen.jsx'));
-const WritingScreen = lazy(() => import('./WritingScreen.jsx'));
+const WordQuizScreen = lazy(() => import('./WordQuizScreen.jsx'));
 
 const getStoredXp = () => { try { return Number(localStorage.getItem(SK.USER_XP)) || 0; } catch { return 0; } };
 
@@ -31,12 +32,14 @@ const markSessionDone = () => {
             date: getTodayStr(),
             done: true,
         }));
-    } catch {}
+    } catch {
+        return;
+    }
 };
 
 
 const clearMapProgress = () => {
-    try { localStorage.removeItem(MAP_PROGRESS_KEY); } catch {}
+    try { localStorage.removeItem(MAP_PROGRESS_KEY); } catch { return; }
 };
 
 const speakKorean = (text, onEnd) => {
@@ -55,7 +58,7 @@ const speakKorean = (text, onEnd) => {
         utter.rate = 0.8;
         utter.pitch = 0.95;
         if (onEnd) utter.onend = onEnd;
-        
+
         const voices = window.speechSynthesis.getVoices();
         const koVoices = voices.filter(v => v.lang.startsWith('ko') || v.lang.includes('ko-KR'));
         if (koVoices.length > 0) {
@@ -138,7 +141,7 @@ const DailyFlashcard = ({ item, onFlip }) => {
                         </div>
                         <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar">
                             {item.words.map((w, i) => (
-                                <div key={i} 
+                                <div key={i}
                                     onClick={() => speakKorean(w.reading)}
                                     className="bg-[#7C83FF]/10 px-3 py-2 rounded-xl border border-[#7C83FF]/30 cursor-pointer hover:bg-[#7C83FF]/20 active:scale-[0.98] transition-all flex flex-col justify-between">
                                     <div className="flex items-baseline justify-between gap-2">
@@ -162,7 +165,7 @@ const DailyFlashcard = ({ item, onFlip }) => {
     );
 };
 
-const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId }) => {
+const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getRewardPreview }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -173,7 +176,6 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
     const item = items[currentIndex];
     const isLastCard = currentIndex === items.length - 1;
     const topicColor = '#7C83FF';
-    const charImg = getRankDetails(getStoredXp(), charId).avatar;
 
     const goTo = (idx) => {
         setIsTransitioning(true);
@@ -200,307 +202,545 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, charId })
 
     return (
         <>
-        <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center px-6 overflow-y-auto bg-[#F7FAF9]">
-            <div className="w-full max-w-sm mx-auto flex flex-col relative z-10 safe-top pt-4 pb-20">
+            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center px-6 overflow-y-auto bg-[#F7FAF9]">
+                <div className="w-full max-w-sm mx-auto flex flex-col relative z-10 safe-top pt-4 pb-20">
 
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                    <button onClick={onBack}
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
-                        <span>✕</span>
-                    </button>
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <h2 className="text-lg font-black text-slate-700 m-0">한자 카드</h2>
-                        <span className="text-[#7C83FF] opacity-60 text-base font-bold whitespace-nowrap">{currentIndex + 1}/{items.length}</span>
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                        <button onClick={onBack}
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                            <span>✕</span>
+                        </button>
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <h2 className="text-lg font-black text-slate-700 m-0">한자 카드</h2>
+                            <span className="text-[#7C83FF] opacity-60 text-base font-bold whitespace-nowrap">{currentIndex + 1}/{items.length}</span>
+                        </div>
                     </div>
-                </div>
 
-                {/* Progress dots */}
-                <div className="flex gap-2 justify-center mb-6">
-                    {items.map((_, i) => (
-                        <div key={i} className="rounded-full transition-all duration-300" style={{
-                            width: i === currentIndex ? '24px' : '10px',
-                            height: '10px',
-                            backgroundColor: flippedSet.has(i) ? '#7C83FF' : i === currentIndex ? '#99E6DF' : '#e2e8f0',
-                        }} />
-                    ))}
-                </div>
+                    {/* Progress dots */}
+                    <div className="flex gap-2 justify-center mb-6">
+                        {items.map((_, i) => (
+                            <div key={i} className="rounded-full transition-all duration-300" style={{
+                                width: i === currentIndex ? '24px' : '10px',
+                                height: '10px',
+                                backgroundColor: flippedSet.has(i) ? '#7C83FF' : i === currentIndex ? '#99E6DF' : '#e2e8f0',
+                            }} />
+                        ))}
+                    </div>
 
-                {/* Card */}
-                <div className={`relative w-full aspect-[4/5] transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                    <div className="w-full h-full cursor-pointer flashcard-perspective" onClick={handleCardClick}>
-                        <div className={`relative w-full h-full flashcard-preserve-3d transition-all duration-500 ${isFlipped ? 'rotate-y-180' : ''}`}>
+                    {/* Card */}
+                    <div className={`relative w-full aspect-[4/5] transition-all duration-300 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+                        <div className="w-full h-full cursor-pointer flashcard-perspective" onClick={handleCardClick}>
+                            <div className={`relative w-full h-full flashcard-preserve-3d transition-all duration-500 ${isFlipped ? 'rotate-y-180' : ''}`}>
 
-                            {/* FRONT */}
-                            <div className="flashcard-face-front flex flex-col items-center justify-center overflow-hidden"
-                                style={{ background: '#ffffff', border: '6px solid #ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.07)', padding: '2rem' }}>
-                                <img
-                                    src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
-                                    onError={e => { e.target.src = '/assets/images/hanja_placeholder.webp'; }}
-                                    className="w-[clamp(80px,25vw,112px)] h-[clamp(80px,25vw,112px)] object-contain mb-4"
-                                    alt={item.hanja}
-                                />
-                                <span className="font-black text-[#3C3C3C] tracking-tighter leading-none" style={{ fontSize: 'clamp(3rem, 15vw, 5rem)' }}>
-                                    {item.hanja}
-                                </span>
-                                <div className="mt-6 px-6 py-2 rounded-full bg-[#F8FAF9] border-2 border-transparent">
-                                    <span className="font-bold text-xs uppercase tracking-[0.2em] text-[#AEB7C5]">탭해서 확인</span>
-                                </div>
-                            </div>
-
-                            {/* BACK */}
-                            <div className="flashcard-face-back flex flex-col items-center overflow-hidden"
-                                style={{ background: '#ffffff', border: '6px solid #ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.09)', padding: '2rem' }}>
-                                {/* 중앙: 한자 + 구분선 + 열십 */}
-                                <div className="flex-1 flex flex-col items-center justify-center">
-                                    <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: 'clamp(4rem, 20vw, 7rem)', color: '#1e293b' }}>
+                                {/* FRONT */}
+                                <div className="flashcard-face-front flex flex-col items-center justify-center overflow-hidden"
+                                    style={{ background: '#ffffff', border: '6px solid #ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.07)', padding: '2rem' }}>
+                                    <img
+                                        src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
+                                        onError={e => { e.target.src = '/assets/images/hanja_placeholder.webp'; }}
+                                        className="w-[clamp(80px,25vw,112px)] h-[clamp(80px,25vw,112px)] object-contain mb-4"
+                                        alt={item.hanja}
+                                    />
+                                    <span className="font-black text-[#3C3C3C] tracking-tighter leading-none" style={{ fontSize: 'clamp(3rem, 15vw, 5rem)' }}>
                                         {item.hanja}
                                     </span>
-                                    <div className="w-12 h-1 rounded-full mb-5 bg-slate-300" />
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="font-black text-[#AEB7C5] leading-tight break-keep" style={{ fontSize: 'clamp(2rem, 10vw, 3.8rem)' }}>
-                                            {item.meaning}
-                                        </span>
-                                        <span className="font-black tracking-tighter leading-none" style={{ fontSize: 'clamp(2rem, 10vw, 3.8rem)', color: topicColor }}>
-                                            {item.sound}
-                                        </span>
+                                    <div className="mt-6 px-6 py-2 rounded-full bg-[#F8FAF9] border-2 border-transparent">
+                                        <span className="font-bold text-xs uppercase tracking-[0.2em] text-[#AEB7C5]">탭해서 확인</span>
                                     </div>
                                 </div>
-                                {/* 하단: 관련단어 + 완료 — 바닥 컬러바 위에 */}
-                                <div className="flex flex-col items-center gap-2 mb-4">
-                                    {item.words?.length > 0 && (
-                                        <button onClick={e => { e.stopPropagation(); setShowWords(true); }}
-                                            className="bg-white px-4 py-2.5 rounded-2xl border border-[#E9EDF2] shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
-                                            <img src="/assets/images/icons/related_words.webp" className="w-10 h-10 object-contain" alt="관련단어" />
-                                            <span className="text-xl font-black text-[#AEB7C5] uppercase tracking-wider">관련단어</span>
-                                        </button>
-                                    )}
-                                    {isLastCard && (
-                                        <div className="px-5 py-1.5 rounded-full bg-[#7C83FF]/10">
-                                            <span className="font-bold text-xs uppercase tracking-[0.2em] text-[#7C83FF]">완료 ✓</span>
+
+                                {/* BACK */}
+                                <div className="flashcard-face-back flex flex-col items-center overflow-hidden"
+                                    style={{ background: '#ffffff', border: '6px solid #ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.09)', padding: '2rem' }}>
+                                    {/* 중앙: 한자 + 구분선 + 열십 */}
+                                    <div className="flex-1 flex flex-col items-center justify-center">
+                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: 'clamp(4rem, 20vw, 7rem)', color: '#1e293b' }}>
+                                            {item.hanja}
+                                        </span>
+                                        <div className="w-12 h-1 rounded-full mb-5 bg-slate-300" />
+                                        <div className="flex items-baseline gap-3">
+                                            <span className="font-black text-[#AEB7C5] leading-tight break-keep" style={{ fontSize: 'clamp(2rem, 10vw, 3.8rem)' }}>
+                                                {item.meaning}
+                                            </span>
+                                            <span className="font-black tracking-tighter leading-none" style={{ fontSize: 'clamp(2rem, 10vw, 3.8rem)', color: topicColor }}>
+                                                {item.sound}
+                                            </span>
                                         </div>
-                                    )}
+                                    </div>
+                                    {/* 하단: 관련단어 + 완료 — 바닥 컬러바 위에 */}
+                                    <div className="flex flex-col items-center gap-2 mb-4">
+                                        {item.words?.length > 0 && (
+                                            <button onClick={e => { e.stopPropagation(); setShowWords(true); }}
+                                                className="bg-white px-4 py-2.5 rounded-2xl border border-[#E9EDF2] shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
+                                                <img src="/assets/images/icons/related_words.webp" className="w-10 h-10 object-contain" alt="관련단어" />
+                                                <span className="text-xl font-black text-[#AEB7C5] uppercase tracking-wider">관련단어</span>
+                                            </button>
+                                        )}
+                                        {isLastCard && (
+                                            <div className="px-5 py-1.5 rounded-full bg-[#7C83FF]/10">
+                                                <span className="font-bold text-xs uppercase tracking-[0.2em] text-[#7C83FF]">완료 ✓</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Words popup */}
+                        {showWords && (
+                            <div className="absolute inset-0 z-[100] flex items-center justify-center" onClick={() => setShowWords(false)}>
+                                <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white flex flex-col shadow-2xl shadow-[#7C83FF]/20"
+                                    style={{ width: 'calc(100% - 8px)', maxHeight: '320px' }} onClick={e => e.stopPropagation()}>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-xs font-black text-[#7C83FF] uppercase tracking-widest">단어장</span>
+                                        <button onClick={() => setShowWords(false)} className="w-6 h-6 rounded-full bg-[#F4F7F8] flex items-center justify-center text-[#AEB7C5] text-sm font-black">✕</button>
+                                    </div>
+                                    <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar">
+                                        {item.words.map((w, i) => (
+                                            <div key={i}
+                                                onClick={() => speakKorean(w.reading)}
+                                                className="bg-[#7C83FF]/10 px-3 py-2 rounded-xl border border-[#7C83FF]/30 cursor-pointer hover:bg-[#7C83FF]/20 active:scale-[0.98] transition-all flex flex-col justify-between">
+                                                <div className="flex items-baseline justify-between gap-2">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-black text-sm text-slate-700">{w.word}</span>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#7C83FF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                                        </svg>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-[#7C83FF] shrink-0">{w.reading}</span>
+                                                </div>
+                                                <div className="text-xs text-[#5B677A] font-bold mt-0.5">{w.meaning}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setShowWords(false)} className="mt-3 w-full py-2 bg-[#7C83FF] text-white text-xs font-black rounded-xl shadow-lg shadow-[#7C83FF]/20 active:scale-[0.98] transition-all">닫기</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Words popup */}
-                    {showWords && (
-                        <div className="absolute inset-0 z-[100] flex items-center justify-center" onClick={() => setShowWords(false)}>
-                            <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white flex flex-col shadow-2xl shadow-[#7C83FF]/20"
-                                style={{ width: 'calc(100% - 8px)', maxHeight: '320px' }} onClick={e => e.stopPropagation()}>
-                                <div className="flex justify-between items-center mb-3">
-                                    <span className="text-xs font-black text-[#7C83FF] uppercase tracking-widest">단어장</span>
-                                    <button onClick={() => setShowWords(false)} className="w-6 h-6 rounded-full bg-[#F4F7F8] flex items-center justify-center text-[#AEB7C5] text-sm font-black">✕</button>
-                                </div>
-                                <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar">
-                                    {item.words.map((w, i) => (
-                                        <div key={i} 
-                                            onClick={() => speakKorean(w.reading)}
-                                            className="bg-[#7C83FF]/10 px-3 py-2 rounded-xl border border-[#7C83FF]/30 cursor-pointer hover:bg-[#7C83FF]/20 active:scale-[0.98] transition-all flex flex-col justify-between">
-                                            <div className="flex items-baseline justify-between gap-2">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-black text-sm text-slate-700">{w.word}</span>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#7C83FF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                                                    </svg>
-                                                </div>
-                                                <span className="text-xs font-bold text-[#7C83FF] shrink-0">{w.reading}</span>
-                                            </div>
-                                            <div className="text-xs text-[#5B677A] font-bold mt-0.5">{w.meaning}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button onClick={() => setShowWords(false)} className="mt-3 w-full py-2 bg-[#7C83FF] text-white text-xs font-black rounded-xl shadow-lg shadow-[#7C83FF]/20 active:scale-[0.98] transition-all">닫기</button>
+                    {/* Nav buttons */}
+                    <div className="flex gap-3 w-full mt-6">
+                        <button
+                            disabled={currentIndex === 0}
+                            onClick={() => currentIndex > 0 && goTo(currentIndex - 1)}
+                            className="flex-1 clay-button py-4 rounded-[2rem] text-[#3C3C3C] font-bold text-lg shadow-xl active:scale-95 border-4 border-white disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            이전
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (!isFlipped) return;
+                                if (isLastCard) {
+                                    setShowClearPopup(true);
+                                } else {
+                                    goTo(currentIndex + 1);
+                                }
+                            }}
+                            disabled={!isFlipped}
+                            className="flex-[2] clay-button py-4 rounded-[2rem] font-bold text-lg shadow-xl active:scale-95 border-4 border-white disabled:opacity-30 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: !isFlipped ? undefined : topicColor, color: !isFlipped ? undefined : '#fff' }}
+                        >
+                            {isLastCard ? '완료' : '다음 ›'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stage Clear Popup */}
+
+            {showClearPopup && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%)' }}>
+                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative">
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
+                        
+                        <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-7 w-full relative z-10">
+                            
+                            {/* 텍스트 영역 */}
+                            <div className="text-center flex flex-col gap-1 w-full">
+                                <span className="text-sm font-extrabold text-[#94A3B8]">3개의 한자를 모두 익혔네요!</span>
+                                <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: '#FF9B73', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(255,160,120,0.15)' }}>
+                                    와우! 참 잘했어요!
+                                </h1>
                             </div>
+
+                            {/* 심플하고 직관적인 여정 지도 (Stepper) */}
+                            <div className="w-full relative z-10 my-2 px-1">
+                                {/* 배경 트랙 라인 */}
+                                <div className="absolute top-[1.65rem] left-[10%] w-[80%] h-[6px] rounded-full bg-slate-100 shadow-inner" />
+                                {/* 진행 트랙 라인 (한자카드 -> 퀴즈 절반까지) */}
+                                <div className="absolute top-[1.65rem] left-[10%] w-[40%] h-[6px] rounded-full bg-gradient-to-r from-[#2ED6C5] to-[#0D9488] shadow-[0_0_8px_rgba(46,214,197,0.4)]" />
+
+                                <div className="flex items-start justify-between w-full relative">
+                                    {/* 1. 한자 카드 (완료) */}
+                                    <div className="flex flex-col items-center gap-2 relative z-10">
+                                        <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#E0F2FE] to-[#7DD3FC] shadow-md border-[3px] border-white flex items-center justify-center relative transform transition-transform hover:scale-105">
+                                            <img src="/assets/images/icons/study.png" className="w-7 h-7 object-contain opacity-90 drop-shadow-sm" alt="Study" />
+                                            <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm border border-white">✓</div>
+                                        </div>
+                                        <span className="text-[11px] font-black text-[#FF9B73]">한자 카드</span>
+                                    </div>
+
+                                    {/* 2. 퀴즈 (현재) */}
+                                    <div className="flex flex-col items-center gap-2 relative z-10">
+                                        <div className="absolute -top-7 text-xl animate-bounce drop-shadow-sm">📍</div>
+                                        <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#A7F3D0] to-[#10B981] shadow-[0_8px_16px_rgba(16,185,129,0.3)] border-[3px] border-white flex items-center justify-center transform scale-110">
+                                            <img src="/assets/images/icons/sentence.png" className="w-7 h-7 object-contain drop-shadow-md" alt="Quiz" />
+                                        </div>
+                                        <span className="text-[12px] font-black text-[#10B981] mt-0.5">퀴즈</span>
+                                    </div>
+
+                                    {/* 3. 게임 (잠김) */}
+                                    <div className="flex flex-col items-center gap-2 relative z-10">
+                                        <div className="w-14 h-14 rounded-[1.2rem] bg-[#F1F5F9] shadow-inner border-[3px] border-white flex items-center justify-center grayscale opacity-50">
+                                            <img src="/assets/images/icons/monster.png" className="w-7 h-7 object-contain" alt="Game" />
+                                        </div>
+                                        <span className="text-[11px] font-bold text-[#94A3B8]">게임</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <RewardBreakdown
+                                reward={getRewardPreview?.(50)}
+                                correctXp={0}
+                                clearXp={50}
+                                clearLabel="학습 완료"
+                            />
+
+                            {/* 3D 다음 단계 버튼 */}
+                            <div className="w-full mt-3">
+                                <CtaButton theme="coral" onClick={() => { setShowClearPopup(false); onStageClear(); }}>
+                                    <span className="font-black text-white text-[1.5rem] drop-shadow-md">다음 단계로 이동</span>
+                                    <span className="text-white font-black text-[1.5rem] drop-shadow-md">▶</span>
+                                </CtaButton>
+                            </div>
+
                         </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+// ── Intro Screen ──────────────────────────────────────────────────────────
+const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep }) => {
+    const buttonContent = useMemo(() => {
+        if (resumeStep === 'quizPick') {
+            return {
+                title: "단어 퀴즈 도전하기",
+                subtitle: "배운 한자의 뜻과 음을 맞혀보세요"
+            };
+        }
+        if (resumeStep === 'dice') {
+            return {
+                title: "오늘의 게임 플레이하기",
+                subtitle: "재미있는 미니 게임을 클리어하세요"
+            };
+        }
+        return {
+            title: "학습 시작하기",
+            subtitle: "오늘의 한자를 익혀보세요"
+        };
+    }, [resumeStep]);
+
+    return (
+        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-5">
+            <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#2ED6C5] blur-[100px] opacity-15 pointer-events-none" />
+            <div className="absolute -bottom-24 right-0 w-96 h-96 rounded-full bg-[#FF9B73] blur-[100px] opacity-15 pointer-events-none" />
+
+            <button onClick={onBack}
+                className="absolute left-5 top-12 w-11 h-11 rounded-2xl bg-white/60 backdrop-blur-xl shadow-md border-2 border-white/80 flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">
+                ←
+            </button>
+
+            <div className="w-full max-w-sm rounded-[2rem] px-4 pt-5 pb-5 border border-white/60 mb-8"
+                style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', boxShadow: '0 8px 32px rgba(46,214,197,0.10), 0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div className="flex flex-col items-center gap-2 mb-4">
+                    <div className="rounded-full px-5 py-1.5 mt-[-1.8rem] bg-white border-2 border-[#F1F5F9] shadow-sm z-10 flex items-center gap-2.5">
+                        <span className="w-2 h-2 rounded-full bg-[#9FA5FF]"></span>
+                        <h1 className="font-black text-[#6168EB] tracking-tight leading-none pt-0.5" style={{ fontSize: '1.25rem' }}>
+                            한자 탐험 {dayNumber}단계
+                        </h1>
+                        <span className="w-2 h-2 rounded-full bg-[#9FA5FF]"></span>
+                    </div>
+                    {theme && (
+                        <p className="font-extrabold tracking-widest mt-1" style={{ fontSize: '1.35rem', background: 'linear-gradient(90deg, #FF9B73, #FF6B6B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{theme}</p>
                     )}
                 </div>
-
-                {/* Nav buttons */}
-                <div className="flex gap-3 w-full mt-6">
-                    <button
-                        disabled={currentIndex === 0}
-                        onClick={() => currentIndex > 0 && goTo(currentIndex - 1)}
-                        className="flex-1 clay-button py-4 rounded-[2rem] text-[#3C3C3C] font-bold text-lg shadow-xl active:scale-95 border-4 border-white disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        이전
-                    </button>
-                    <button
-                        onClick={() => {
-                            if (!isFlipped) return;
-                            if (isLastCard) {
-                                setShowClearPopup(true);
-                            } else {
-                                goTo(currentIndex + 1);
-                            }
-                        }}
-                        disabled={!isFlipped}
-                        className="flex-[2] clay-button py-4 rounded-[2rem] font-bold text-lg shadow-xl active:scale-95 border-4 border-white disabled:opacity-30 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: !isFlipped ? undefined : topicColor, color: !isFlipped ? undefined : '#fff' }}
-                    >
-                        {isLastCard ? '완료' : '다음 ›'}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        {/* Stage Clear Popup */}
-
-        {showClearPopup && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' }}>
-                <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
-                    <div className="pt-6 pb-12 px-8 flex flex-col items-center gap-7 w-full relative">
-                        {/* 캐릭터 아래 백그라운드 글로우 추가 */}
-                        <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
-
-                        <img
-                            src={getCharacterImage(charId, 'success')}
-                            alt="clear"
-                            className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
-                            style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
-                        />
-                        <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                            <span className="text-xs-res font-extrabold text-[#AEB7C5]">3개의 한자를 모두 익혔네요!</span>
-                            <h1 className="text-h2-res font-black leading-snug" style={{
-                                color: '#FF9B73',
-                                letterSpacing: '-0.5px',
-                                textShadow: '0 2px 10px rgba(255,160,120,0.16)'
-                            }}>
-                                와우! 참 잘했어요!
-                            </h1>
-                        </div>
-                        <div className="w-full flex flex-col gap-3 relative z-10">
-                            <button
-                                onClick={() => { setShowClearPopup(false); onStageClear(); }}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                            >
-                                다음 단계 ▶
-                            </button>
+                {todayHanja.length > 0 && (
+                    <div className="flex flex-col gap-3 w-full">
+                        <p className="text-center font-black" style={{ fontSize: '1.2rem', color: '#3C3C3C' }}>다음의 한자를 배워요!</p>
+                        <div className="flex gap-3 w-full">
+                            {todayHanja.map((h, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center rounded-[1.3rem] px-2 py-4"
+                                    style={{ background: 'rgba(255,255,255,0.70)', border: '1px solid rgba(46,214,197,0.18)', boxShadow: '0 2px 8px rgba(46,214,197,0.08)' }}>
+                                    <img src={`/assets/images/hanja_all/${h.id}_${encodeURIComponent(h.hanja)}.webp`}
+                                        onError={e => { e.target.src = '/assets/images/hanja_placeholder.webp'; }}
+                                        className="w-20 h-20 object-contain mix-blend-multiply" alt={h.hanja} />
+                                    <span className="text-[42px] font-black text-[#334155] leading-none mt-2">{h.hanja}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                </div>
+                )}
             </div>
-        )}
-        </>
+
+            <CtaButton theme="blue" onClick={onStart} className="max-w-sm">
+                <div className="flex flex-col items-center justify-center gap-1.5 w-full py-1">
+                    <div className="font-black text-white leading-tight drop-shadow-md flex items-center justify-center gap-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.02em' }}>
+                        <span>{buttonContent.title}</span>
+                        <span className="text-[1.55rem] translate-y-[1px]">▶</span>
+                    </div>
+                    <div className="font-bold text-white/90 text-center" style={{ fontSize: '1.15rem' }}>
+                        {buttonContent.subtitle}
+                    </div>
+                </div>
+            </CtaButton>
+        </div>
+    );
+};
+
+// ── Game Pick Screen ───────────────────────────────────────────────────────
+const GAMES = [
+    { id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
+    { id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png', theme: 'mint', color: '#2ED6C5', bg: '#F0FDFB' },
+];
+
+const GamePickScreen = ({ onResult }) => {
+    const game = useMemo(() => pickDailyOption(GAMES, 'game'), []);
+
+    return (
+        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-6">
+            <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#2ED6C5] blur-[100px] opacity-10 pointer-events-none" />
+            <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
+
+            <p className="font-bold text-sm text-[#94A3B8] mb-3 tracking-wide">오늘의 게임</p>
+            <h2 className="font-black text-[#3C3C3C] mb-10 text-center" style={{ fontSize: '1.7rem' }}>{game.label}</h2>
+
+            <div className="flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
+                style={{ background: game.bg, borderColor: game.color + '55', boxShadow: `0 12px 32px ${game.color}33` }}>
+                <img src={game.icon} className="w-28 h-28 object-contain" alt={game.label} />
+            </div>
+
+            <div className="w-full max-w-xs">
+                <CtaButton theme={game.theme} onClick={() => onResult(game.id)}>
+                    <div className="font-black text-white leading-tight drop-shadow-md flex items-center justify-center gap-2 py-0.5" style={{ fontSize: '1.85rem', letterSpacing: '-0.02em' }}>
+                        <span>시작하기</span>
+                        <span className="text-[1.35rem] translate-y-[1px]">▶</span>
+                    </div>
+                </CtaButton>
+            </div>
+        </div>
+    );
+};
+
+// ── Quiz Pick Screen ───────────────────────────────────────────────────────
+const QUIZZES = [
+    { id: 'wordQuiz',     label: '단어 퀴즈', icon: '/assets/images/icons/words.png',    theme: 'blue', color: '#7C83FF', bg: '#F5F5FF' },
+    { id: 'sentenceQuiz', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.png', theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
+];
+
+const pickDailyOption = (options, salt = '') => {
+    const key = `${getTodayStr()}-${salt}`;
+    const hash = [...key].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return options[hash % options.length];
+};
+
+const QuizPickScreen = ({ onResult }) => {
+    const quiz = useMemo(() => pickDailyOption(QUIZZES, 'quiz'), []);
+
+    return (
+        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-6">
+            <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#7C83FF] blur-[100px] opacity-10 pointer-events-none" />
+            <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
+
+            <p className="font-bold text-sm text-[#94A3B8] mb-3 tracking-wide">오늘의 퀴즈</p>
+            <h2 className="font-black text-[#3C3C3C] mb-10 text-center" style={{ fontSize: '1.7rem' }}>{quiz.label}</h2>
+
+            <div className="flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
+                style={{ background: quiz.bg, borderColor: quiz.color + '55', boxShadow: `0 12px 32px ${quiz.color}33` }}>
+                <img src={quiz.icon} className="w-28 h-28 object-contain" alt={quiz.label} />
+            </div>
+
+            <div className="w-full max-w-xs">
+                <CtaButton theme={quiz.theme} onClick={() => onResult(quiz.id)}>
+                    <div className="font-black text-white leading-tight drop-shadow-md flex items-center justify-center gap-2 py-0.5" style={{ fontSize: '1.85rem', letterSpacing: '-0.02em' }}>
+                        <span>시작하기</span>
+                        <span className="text-[1.35rem] translate-y-[1px]">▶</span>
+                    </div>
+                </CtaButton>
+            </div>
+        </div>
     );
 };
 
 // ── Character Data ─────────────────────────────────────────────────────────
 
-// ── 한글팝 style road components ───────────────────────────────────────────
 const PULSE_CSS = `
 @keyframes pulse-ring {
-    0%   { transform: scale(1);   opacity: 0.7; }
-    80%  { transform: scale(1.2); opacity: 0;   }
-    100% { transform: scale(1.2); opacity: 0;   }
+    0%   { transform: scale(0.95); opacity: 0.8; }
+    50%  { transform: scale(1.4); opacity: 0; }
+    100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes float-gentle {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
+}
+@keyframes float-active {
+    0%   { transform: translateY(0px) scale(1.1); }
+    50%  { transform: translateY(-12px) scale(1.12); }
+    100% { transform: translateY(0px) scale(1.1); }
+}
+@keyframes twinkle {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+@keyframes cloud-drift {
+    0%   { transform: translateX(-20px); }
+    50%  { transform: translateX(20px); }
+    100% { transform: translateX(-20px); }
+}
+@keyframes peek-monster {
+    0%, 80%, 100% { transform: translate(10px, 20px) rotate(15deg); opacity: 0; }
+    85%, 95%      { transform: translate(-15px, -30px) rotate(-10deg); opacity: 1; }
 }
 .node-pulse { position: relative; z-index: 10; }
 .node-pulse::before {
-    content: none;
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(46,214,197,0.4) 0%, rgba(46,214,197,0) 70%);
+    animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
     z-index: -1;
-}`;
+    pointer-events: none;
+}
+.active-node-shadow {
+    box-shadow: 0 16px 32px rgba(46,214,197,0.35), 0 0 20px rgba(46,214,197,0.4);
+}
+.float-gentle {
+    animation: float-gentle 4s ease-in-out infinite;
+}
+.float-active {
+    animation: float-active 3s ease-in-out infinite;
+}
+`;
 
-// ── Single Map Node ────────────────────────────────────────────────────────
-const MapNode = ({ stepNum, label, icon, isLeft, activeColor, textColor, status, charImg, onTap }) => {
-    const isDone    = status === 'done';
-    const isCurrent = status === 'active';
-    const isLocked  = status === 'locked';
+// ── Game-style 3D Node Button ──────────────────────────────────────────────
+const GameNodeButton = ({ status, icon }) => {
+    const isLocked = status === 'locked';
+    const isDone = status === 'done';
 
-    // Adjust scale for wide aspect ratio icons
-    let scale = 1.0;
-    if (icon && icon.includes('monster.png')) {
-        scale = 1.45;
-    } else if (icon && icon.includes('sentence.png')) {
-        scale = 1.25;
+    let bgStyle = "";
+    let shadowStyle = "";
+    let ringStyle = "";
+    
+    if (isLocked) {
+        bgStyle = "bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0]";
+        shadowStyle = "shadow-[inset_0_-6px_0_rgba(148,163,184,0.4),0_8px_16px_rgba(0,0,0,0.05)] border-white";
+        ringStyle = "ring-4 ring-[#E2E8F0]/40";
+    } else if (isDone) {
+        bgStyle = "bg-gradient-to-br from-[#E0F2FE] to-[#7DD3FC]"; // Sky blue
+        shadowStyle = "shadow-[inset_0_-8px_0_rgba(2,132,199,0.3),0_12px_24px_rgba(56,189,248,0.3)] border-white";
+        ringStyle = "ring-4 ring-[#38bdf8]/40";
+    } else {
+        // Active
+        bgStyle = "bg-gradient-to-br from-[#A7F3D0] to-[#10B981]"; // Emerald / Mint
+        shadowStyle = "shadow-[inset_0_-8px_0_rgba(4,120,87,0.3),0_16px_32px_rgba(16,185,129,0.4)] border-white";
+        ringStyle = "ring-4 ring-[#10B981]/40";
     }
 
     return (
-        <div className="relative w-full flex items-center justify-center" style={{ minHeight: 'clamp(60px, 10vh, 90px)' }}>
-            {/* Spine dot */}
-            <div className={`absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md z-20 transition-colors duration-500 ${isLocked ? 'bg-slate-300' : 'bg-[#FF9B73]'}`} />
+        <div className={`absolute inset-0 rounded-[2.5rem] border-[4px] overflow-hidden ${bgStyle} ${shadowStyle} ${ringStyle} transition-all duration-300`}>
+            {/* Glossy top reflection */}
+            <div className="absolute top-0 inset-x-0 h-[45%] bg-gradient-to-b from-white/70 to-transparent pointer-events-none rounded-t-[2.5rem]" />
+            
+            {/* The Icon */}
+            {icon && (
+                <div className="absolute inset-0 flex items-center justify-center p-3.5 z-10">
+                    <img src={icon} className={`w-full h-full object-contain transition-all ${isLocked ? 'grayscale opacity-40 mix-blend-multiply' : 'drop-shadow-[0_6px_8px_rgba(0,0,0,0.25)] scale-110'}`} alt="" />
+                </div>
+            )}
+        </div>
+    );
+};
 
-            {/* Dashed connector: 36px wide, starts at spine edge (±12px from center) */}
-            <div className="absolute top-1/2 -translate-y-1/2 h-0 border-t-2 border-dashed border-[#E9EDF2] z-[1]"
-                style={{ width: '18px', ...(isLeft ? { right: 'calc(50% + 12px)' } : { left: 'calc(50% + 12px)' }) }} />
+// ── Single Map Node ────────────────────────────────────────────────────────
+const MapNode = ({ label, icon, isLeft, activeColor, status, charImg, onTap }) => {
+    const isDone = status === 'done';
+    const isCurrent = status === 'active';
+    const isLocked = status === 'locked';
 
-            {/* Icon card: starts 30px from center (12px spine + 18px dash) */}
-            <div className={`absolute top-1/2 -translate-y-1/2 z-10 ${isLeft ? 'right-[calc(50%+30px)]' : 'left-[calc(50%+30px)]'}`}>
+    return (
+        <div className={`relative w-full flex flex-col items-center justify-center my-4 ${isLeft ? 'items-end pr-6' : 'items-start pl-6'}`} style={{ zIndex: 10 }}>
+            {/* The Floating Island Button */}
+            <div className={`relative ${isCurrent ? 'float-active' : 'float-gentle'}`}>
+                {/* Character standing on the active node */}
+                {isCurrent && charImg && (
+                    <div className="absolute -top-[80px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                        <img src={charImg} alt="캐릭터" className="w-[80px] h-[80px] max-w-none object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.15)] origin-bottom" />
+                    </div>
+                )}
+
+                {/* Pulse ring for active */}
                 <div className={isCurrent ? 'node-pulse' : ''}>
                     <button disabled={isLocked} onClick={isLocked ? undefined : onTap}
-                        className={`w-[clamp(80px,20vw,96px)] h-[clamp(80px,20vw,96px)] rounded-[2rem] sm:rounded-[2.5rem] flex items-center justify-center bg-white shadow-2xl transition-all duration-300 relative overflow-hidden
-                            ${isLocked ? 'shadow-none border border-[#E9EDF2]' : 'border-2 border-white'}
-                            ${isCurrent ? 'scale-110' : ''}
-                            ${!isLocked ? 'active:scale-95' : ''}`}
-                        style={isCurrent ? { boxShadow: '0 8px 24px rgba(255, 155, 115 ,0.4), 0 2px 8px rgba(255, 155, 115 ,0.2)' } : undefined}
+                        className={`w-[clamp(140px,38vw,170px)] h-[clamp(140px,38vw,170px)] flex items-center justify-center transition-all duration-300 relative bg-transparent ${!isLocked ? 'active:scale-95 hover:scale-105' : ''}`}
                     >
-                        <div className="w-full h-full p-3.5 flex items-center justify-center z-10" style={scale !== 1.0 ? { transform: `scale(${scale})` } : undefined}>
-                            <img src={icon} className="w-full h-full object-contain" alt={label} />
-                        </div>
-                        {isLocked && <div className="absolute inset-0 bg-[#F7FAF9] opacity-75 mix-blend-multiply z-20 rounded-[2rem]" />}
-                        {isDone && <div className="absolute top-2 right-2 bg-[#FF9B73] text-white w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-lg z-30">✓</div>}
+                        <GameNodeButton status={status} icon={icon} activeColor={activeColor} />
+                        {isDone && (
+                            <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-9 h-9 rounded-full flex items-center justify-center text-xl font-black shadow-lg border-2 border-white z-30 transform rotate-12">✓</div>
+                        )}
                     </button>
+                    {/* Stars for completed nodes */}
+                    {isDone && (
+                        <>
+                            <img src="/assets/images/icons/clay_star.png" alt="star" className="absolute -top-4 -right-4 w-8 h-8 object-contain animate-pulse drop-shadow-[0_4px_8px_rgba(255,211,182,0.6)]" style={{ animationDelay: '0.2s' }} />
+                            <div className="absolute -bottom-2 -left-3 text-xl animate-pulse" style={{ animationDelay: '0.7s', filter: 'drop-shadow(0 0 4px #FFD3B6)' }}>🌟</div>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* Text side */}
-            <div className={`absolute top-1/2 -translate-y-1/2 flex flex-col w-[40%] ${isLeft ? 'left-[55%]' : 'right-[55%] text-right'}`}>
-                <span className={`inline-block relative mb-1 ${isLeft ? 'self-start' : 'self-end'}`}>
-                    <span className={`font-black tracking-tighter leading-none ${isLocked ? 'text-[#AEB7C5]' : 'text-[#FF9B73]'} text-h2-res`} style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>{stepNum}</span>
-                    {isCurrent && charImg && (
-                        <img src={charImg} alt="" className="absolute top-1/2 -translate-y-1/2 left-full ml-1 w-[clamp(36px,10vw,52px)] h-[clamp(36px,10vw,52px)] object-contain drop-shadow-xl pointer-events-none" />
-                    )}
+            {/* Label Underneath */}
+            <div className="mt-3 flex flex-col items-center">
+                <span className={`font-black tracking-tight leading-tight text-center ${isLocked ? 'text-[#94A3B8]' : 'text-[#334155]'} text-[clamp(20px,5.5vw,26px)] drop-shadow-sm`}>
+                    {label}
                 </span>
-                <span className={`font-black tracking-tight leading-tight ${isLocked ? 'text-[#AEB7C5]' : 'text-[#334155]'} text-h3`} style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>{label}</span>
-                {isDone    && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 text-sm-res" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>완료</span>}
             </div>
+
         </div>
     );
 };
 
 // ── Branch option card ─────────────────────────────────────────────────────
 const BranchOption = ({ node, status, activeColor, onTap }) => {
-    const isDone    = status === 'done';
-    const isActive  = status === 'active';
+    const isDone = status === 'done';
+    const isActive = status === 'active';
     const isDisabled = status === 'locked' || status === 'faded';
-
-    // Adjust scale for wide aspect ratio icons
-    let scale = 1.0;
-    if (node.icon && node.icon.includes('monster.png')) {
-        scale = 1.45;
-    } else if (node.icon && node.icon.includes('sentence.png')) {
-        scale = 1.25;
-    }
 
     return (
         <div className="flex flex-col items-center gap-1.5">
             <button disabled={!isActive} onClick={isActive ? () => onTap(node.id) : undefined}
-                className={`w-[clamp(72px,18vw,96px)] h-[clamp(72px,18vw,96px)] rounded-[2rem] flex items-center justify-center bg-white shadow-xl transition-all duration-300 relative overflow-hidden
-                    ${isDisabled ? 'shadow-none border border-[#E9EDF2]' : 'border-2 border-white'}
-                    ${isActive ? 'active:scale-95' : ''}
-                    ${isDone ? 'ring-4 ring-[#FF9B73]/20' : ''}`}
+                className={`w-[clamp(120px,30vw,145px)] h-[clamp(120px,30vw,145px)] flex items-center justify-center transition-all duration-300 relative bg-transparent
+                    ${isActive ? 'active:scale-95 scale-105 hover:scale-110' : ''}`}
             >
-                <div className="w-full h-full p-3.5 flex items-center justify-center z-10" style={scale !== 1.0 ? { transform: `scale(${scale})` } : undefined}>
-                    <img src={node.icon} className="w-full h-full object-contain" alt={node.label} />
-                </div>
-                {isDisabled && <div className="absolute inset-0 bg-[#F7FAF9] opacity-75 mix-blend-multiply z-20 rounded-[2rem]" />}
-                {isDone && <div className="absolute top-1.5 right-1.5 bg-[#FF9B73] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs z-30">✓</div>}
+                <GameNodeButton status={status} icon={node.icon} activeColor={activeColor} />
+                {isDone && <div className="absolute -top-1.5 -right-1.5 bg-[#FF9B73] text-white w-8 h-8 rounded-full flex items-center justify-center text-base font-black shadow-lg border-2 border-white z-30 transform rotate-12">✓</div>}
             </button>
-            <span className={`text-[clamp(14px,3.5vw,18px)] font-black text-center break-keep leading-tight max-w-[120px] ${isDisabled ? 'text-[#AEB7C5] opacity-100 saturate-[30%] contrast-75 brightness-110' : isDone ? 'text-[#FF9B73] opacity-100' : 'text-[#5B677A] opacity-100'}`}>
+            <span className={`mt-2 text-[clamp(17px,4.5vw,21px)] font-black text-center break-keep leading-tight ${isDisabled ? 'text-[#94A3B8]' : isDone ? 'text-[#FF9B73]' : 'text-[#334155]'}`}>
                 {node.label}
             </span>
-            {isDone   && <span className="text-base font-black text-[#FF9B73] uppercase tracking-wider">완료</span>}
         </div>
     );
 };
 
-// ── Branch Section: diamond shape on the road ──────────────────────────────
-const BranchSection = ({ stepNum, sectionLabel, textColor, activeColor, leftNode, rightNode, available, chosen, stepDone, showChar, charImg, onTap }) => {
+// ── Branch Section: Floating islands ──────────────────────────────────────────
+const BranchSection = ({ activeColor, leftNode, rightNode, available, chosen, stepDone, charImg, onTap }) => {
     const isCurrent = available && !stepDone;
-    const isLocked  = !available;
-    const isDone    = stepDone;
-    const dotFill   = isLocked ? '#CBD5E1' : '#FF9B73';
 
     const getStatus = (id) => {
         if (!available) return 'locked';
@@ -508,48 +748,36 @@ const BranchSection = ({ stepNum, sectionLabel, textColor, activeColor, leftNode
         return 'active';
     };
 
-    // Diamond geometry: 320px wide, 100px tall (flat)
-    // Top(160,0) → Left(36,50) → Bottom(160,100) → Right(284,50) → Top
-    const D = { cx: 160, cy: 50, top: 0, bot: 100, lx: 36, rx: 284 };
-
     return (
-        <div className="relative w-full" style={{ zIndex: 1 }}>
-            {/* Label block centered ABOVE diamond */}
-            <div className={`w-full flex flex-col items-center pb-3`}>
-                <span className="inline-block relative mb-0">
-                    <span className={`font-black tracking-tighter leading-none ${isLocked ? 'text-[#AEB7C5]' : 'text-[#FF9B73]'} text-h2-res`} style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>{stepNum}</span>
-                    {isCurrent && charImg && (
-                        <img src={charImg} alt="" className="absolute top-1/2 -translate-y-1/2 left-full ml-1 w-[clamp(36px,10vw,52px)] h-[clamp(36px,10vw,52px)] object-contain drop-shadow-xl pointer-events-none" />
-                    )}
-                </span>
-                <span className={`font-black tracking-tight leading-tight ${isLocked ? 'text-[#AEB7C5]' : 'text-[#334155]'} text-h3`} style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>{sectionLabel}</span>
-                {isCurrent && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 animate-pulse text-sm-res whitespace-nowrap" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>선택하세요</span>}
-                {isDone    && <span className="font-black text-[#FF9B73] uppercase tracking-widest mt-1 text-sm-res whitespace-nowrap" style={{ textShadow: '0 0 8px #fff, 0 0 16px #fff' }}>완료</span>}
-            </div>
+        <div className="relative w-full my-6 flex flex-col items-center" style={{ zIndex: 10 }}>
+            {/* Character standing above the branch options */}
+            {isCurrent && charImg && (
+                <div className="absolute -top-[70px] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                    <img src={charImg} alt="캐릭터" className="w-[80px] h-[80px] max-w-none object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.15)] origin-bottom animate-bounce" />
+                </div>
+            )}
 
-            {/* Diamond area */}
-            <div className="relative w-full max-w-[320px] mx-auto" style={{ height: `${D.bot}px` }}>
-                {/* Diamond road SVG */}
-                <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 320 ${D.bot}`} overflow="visible" style={{ zIndex: 0 }}>
-                    <defs>
-                        <path id="diamond-path" d={`M${D.cx},${D.top} L${D.lx},${D.cy} L${D.cx},${D.bot} L${D.rx},${D.cy} Z`} />
-                    </defs>
-                    {/* Background fill to block spine inside diamond */}
-                    <use href="#diamond-path" fill="#F7FAF9" stroke="none" />
-                    {/* Road body */}
-                    <use href="#diamond-path" fill="none" stroke="rgba(200,221,216,0.45)" strokeWidth="24" strokeLinejoin="round" strokeLinecap="round" />
-                    {/* Dots */}
-                    <circle cx={D.cx} cy={D.top} r="8" fill={dotFill} stroke="white" strokeWidth="2.5" />
-                    <circle cx={D.cx} cy={D.bot} r="8" fill={dotFill} stroke="white" strokeWidth="2.5" />
-                </svg>
+            {/* 선택 힌트 */}
+            {isCurrent && (
+                <div className="mb-4 px-4 py-1.5 rounded-full bg-white/80 border border-white/60 shadow-sm backdrop-blur-sm">
+                    <span className="text-[13px] font-black text-[#5B677A]">둘 중 하나만 골라요!</span>
+                </div>
+            )}
 
-                {/* Left option card — at left diamond point */}
-                <div className="absolute z-10" style={{ left: '8px', top: '50%', transform: 'translateY(-50%)' }}>
-                    <BranchOption node={leftNode}  status={getStatus(leftNode.id)}  activeColor={activeColor} onTap={onTap} />
+            {/* Branch options container */}
+            <div className="relative w-full flex justify-center items-center gap-4 sm:gap-8">
+                {/* Left option card */}
+                <div className={`relative z-10 ${isCurrent ? 'float-gentle' : ''}`} style={{ animationDelay: '0s' }}>
+                    <BranchOption node={leftNode} status={getStatus(leftNode.id)} activeColor={activeColor} onTap={onTap} />
                 </div>
 
-                {/* Right option card — at right diamond point */}
-                <div className="absolute z-10" style={{ right: '8px', top: '50%', transform: 'translateY(-50%)' }}>
+                {/* VS divider */}
+                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center z-20 ${isCurrent ? 'bg-white shadow-md border-2 border-slate-100' : 'opacity-0'}`}>
+                    <span className="text-[11px] font-black text-[#94A3B8]">VS</span>
+                </div>
+
+                {/* Right option card */}
+                <div className={`relative z-10 ${isCurrent ? 'float-active' : ''}`} style={{ animationDelay: '0.5s' }}>
                     <BranchOption node={rightNode} status={getStatus(rightNode.id)} activeColor={activeColor} onTap={onTap} />
                 </div>
             </div>
@@ -558,41 +786,134 @@ const BranchSection = ({ stepNum, sectionLabel, textColor, activeColor, leftNode
 };
 
 // ── Journey Map (main map view) ────────────────────────────────────────────
-const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, onTapNode, onShowResults, onBack }) => {
+const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, onTapNode, onShowResults, onBack, todayHanja = [] }) => {
     const charImg = getRankDetails(getStoredXp(), charId).avatar;
     const allDone = done.has('writing');
 
     const currentStep = !done.has('flashcard') ? 'flashcard'
-        : !done.has('quiz')    ? 'quiz'
-        : !done.has('game')    ? 'game'
-        : !done.has('writing') ? 'writing'
-        : 'done';
+        : !done.has('quiz') ? 'quiz'
+            : !done.has('game') ? 'game'
+                : !done.has('writing') ? 'writing'
+                    : 'done';
 
     return (
         <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col overflow-y-auto">
             <style>{PULSE_CSS}</style>
 
-            {/* Header */}
-            <div className="w-full shrink-0 flex flex-col items-center px-5 pt-12 pb-6 relative">
-                <button onClick={onBack} className="absolute left-5 top-12 w-10 h-10 rounded-2xl bg-white/80 backdrop-blur-md shadow-lg border-2 border-white flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">←</button>
-                {/* Stage Header */}
-                <div className="flex flex-col items-center gap-2 mb-6">
-                    <h1 className="font-black text-[#3C3C3C] tracking-tight leading-none text-h1">STAGE {dayNumber}</h1>
-                    <div className="h-1.5 w-16 bg-[#FF9B73] rounded-full" />
+            {/* Background Layers */}
+            <div className="fixed inset-0 pointer-events-none z-0 bg-[#F7FAF9]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#E0F7FA]/50 via-[#F1F8E9]/50 to-[#E0F7FA]/50" />
+                
+                {/* Floating Elements */}
+                <div className="absolute inset-0 overflow-hidden opacity-80">
+                    {/* Clouds & Monster */}
+                    <div className="absolute top-[5%] right-[10%] text-[50px] opacity-80" style={{ animation: 'cloud-drift 22s ease-in-out infinite' }}>☁️</div>
+                    <div className="absolute top-[45%] -left-[10%] opacity-90 flex justify-center items-center" style={{ animation: 'cloud-drift 28s ease-in-out infinite reverse' }}>
+                        <img src="/assets/images/icons/cute_monster.png" alt="hidden monster" className="absolute w-16 h-16 z-0 drop-shadow-md" style={{ animation: 'peek-monster 14s ease-in-out infinite' }} />
+                        <span className="text-[70px] relative z-10">☁️</span>
+                    </div>
+                    <div className="absolute bottom-[15%] right-[15%] text-[60px] opacity-70" style={{ animation: 'cloud-drift 19s ease-in-out infinite 2s' }}>☁️</div>
                 </div>
-                {theme && <p className="font-bold text-[#FF9B73] break-keep mt-0.5 text-body-lg">{theme}</p>}
-                <p className="text-[#AEB7C5] font-bold mt-1 text-center text-body-lg">하나씩 차례대로 정복해봐요!</p>
+
+                {/* Soft Glowing Orbs */}
+                <div className="absolute -top-20 -left-20 w-96 h-96 bg-[#2ED6C5] rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-pulse" />
+                <div className="absolute top-1/3 -right-20 w-80 h-80 bg-[#7C83FF] rounded-full mix-blend-multiply filter blur-[100px] opacity-15" style={{ animationDelay: '2s' }} />
+                <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-[#FF9B73] rounded-full mix-blend-multiply filter blur-[120px] opacity-20" style={{ animationDelay: '4s' }} />
+            </div>
+
+            {/* Header */}
+            <div className="w-full shrink-0 flex flex-col items-center px-4 pt-12 pb-4 relative z-10">
+                <button onClick={onBack} className="absolute left-4 top-12 w-11 h-11 rounded-2xl bg-white/60 backdrop-blur-xl shadow-[0_8px_16px_rgba(0,0,0,0.06)] border-2 border-white/80 flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">←</button>
+
+                {/* 제목 + 한자카드 통합 패널 */}
+                <div className="w-full max-w-sm mt-1 rounded-[2rem] px-4 pt-5 pb-5 border border-white/60"
+                    style={{
+                        background: 'rgba(255,255,255,0.55)',
+                        backdropFilter: 'blur(18px)',
+                        WebkitBackdropFilter: 'blur(18px)',
+                        boxShadow: '0 8px 32px rgba(46,214,197,0.10), 0 2px 8px rgba(0,0,0,0.05)',
+                    }}>
+                    <div className="flex flex-col items-center gap-1 mb-4">
+                        <h1 className="font-black text-transparent bg-clip-text bg-gradient-to-r from-[#2ED6C5] to-[#0D9488] tracking-tight leading-none pb-1" style={{ fontSize: '2rem' }}>
+                            한자 탐험 {dayNumber}단계
+                        </h1>
+                        {theme && (
+                            <p className="font-extrabold tracking-widest" style={{ fontSize: '1.35rem', background: 'linear-gradient(90deg, #FF9B73, #FF6B6B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{theme}</p>
+                        )}
+                    </div>
+                    {todayHanja.length > 0 && (
+                        <div className="flex flex-col gap-3 w-full">
+                        <p className="text-center font-black" style={{ fontSize: '1.2rem', letterSpacing: '-0.01em', color: '#3C3C3C' }}>다음의 한자를 배워요!</p>
+                        <div className="flex gap-3 w-full">
+                            {todayHanja.map((h, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center rounded-[1.3rem] px-2 py-4"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.70)',
+                                        border: '1px solid rgba(46,214,197,0.18)',
+                                        boxShadow: '0 2px 8px rgba(46,214,197,0.08)',
+                                    }}>
+                                    <img
+                                        src={`/assets/images/hanja_all/${h.id}_${encodeURIComponent(h.hanja)}.webp`}
+                                        onError={e => { e.target.src = '/assets/images/hanja_placeholder.webp'; }}
+                                        className="w-20 h-20 object-contain mix-blend-multiply"
+                                        alt={h.hanja}
+                                    />
+                                    <span className="text-[42px] font-black text-[#334155] leading-none mt-2">{h.hanja}</span>
+                                </div>
+                            ))}
+                        </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Road */}
-            <div className="flex-1 flex flex-col items-center px-4 pb-10 pt-6">
+            <div className="flex-1 flex flex-col items-center px-4 pb-10 pt-4 relative z-10">
                 <div className="w-full max-w-sm mx-auto">
                     {/* Steps container with spine */}
-                    <div className="relative w-full flex flex-col gap-[clamp(1.5rem,6vh,3.5rem)] pt-0 pb-12">
+                    <div className="relative w-full flex flex-col gap-[clamp(1rem,3vh,2rem)] pt-0 pb-12 z-10">
 
-                        {/* Spine */}
-                        <div className="absolute left-1/2 -translate-x-1/2 w-6 rounded-full z-0"
-                            style={{ top: 0, bottom: 'clamp(15px, 2.5vh, 25px)', backgroundColor: 'rgba(200,221,216,0.45)' }} />
+                        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden opacity-50 w-full">
+                            <div className="absolute top-10 -left-10 text-[60px] opacity-80" style={{ animation: 'cloud-drift 20s ease-in-out infinite' }}>☁️</div>
+
+                            {/* 두 번째 구름 + 숨어있는 몬스터 */}
+                            <div className="absolute top-1/2 -right-10 opacity-70 flex justify-center items-center" style={{ animation: 'cloud-drift 25s ease-in-out infinite reverse' }}>
+                                <img src="/assets/images/icons/cute_monster.png" alt="hidden monster" className="absolute w-16 h-16 z-0 drop-shadow-md" style={{ animation: 'peek-monster 12s ease-in-out infinite' }} />
+                                <span className="text-[80px] relative z-10">☁️</span>
+                            </div>
+
+                            <div className="absolute bottom-20 left-10 text-[50px] opacity-70" style={{ animation: 'cloud-drift 18s ease-in-out infinite 2s' }}>☁️</div>
+                        </div>
+
+                        {/* S-Curve SVG Track */}
+                        <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+                            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" className="drop-shadow-lg opacity-80">
+                                <defs>
+                                    <filter id="track-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="3" result="blur" />
+                                        <feMerge>
+                                            <feMergeNode in="blur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                                <path
+                                    d="M 50,0 Q 80,12 50,25 T 50,50 Q 20,62 50,75 T 50,100"
+                                    fill="none"
+                                    stroke="rgba(255,255,255,0.8)"
+                                    strokeWidth="8"
+                                    vectorEffect="non-scaling-stroke"
+                                    filter="url(#track-glow)"
+                                />
+                                <path
+                                    d="M 50,0 Q 80,12 50,25 T 50,50 Q 20,62 50,75 T 50,100"
+                                    fill="none"
+                                    stroke="rgba(46, 214, 197, 0.5)"
+                                    strokeWidth="3"
+                                    vectorEffect="non-scaling-stroke"
+                                />
+                            </svg>
+                        </div>
 
                         {/* 01. 한자 카드 */}
                         <MapNode
@@ -623,118 +944,131 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         />
 
                         {/* 04. 한자 쓰기 */}
-                        <MapNode
-                            stepNum="04" label="한자 쓰기"
-                            icon="/assets/images/icons/writing.png"
-                            isLeft={false} activeColor="#FFD3B6" textColor="text-orange-600"
-                            status={done.has('writing') ? 'done' : done.has('game') ? 'active' : 'locked'}
-                            charImg={currentStep === 'writing' ? charImg : null}
-                            onTap={() => onTapNode('writing')}
-                        />
+                        <div className="mt-[30px]">
+                            <MapNode
+                                stepNum="04" label="한자 쓰기"
+                                icon="/assets/images/icons/writing.png"
+                                isLeft={false} activeColor="#FFD3B6" textColor="text-orange-600"
+                                status={done.has('writing') ? 'done' : done.has('game') ? 'active' : 'locked'}
+                                charImg={currentStep === 'writing' ? charImg : null}
+                                onTap={() => onTapNode('writing')}
+                            />
+                        </div>
                     </div>
 
                     {/* End marker + 결과 보기 버튼 */}
                     {allDone && (
-                        <div className="flex flex-col items-center gap-4 pt-6 pb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="w-10 h-10 rounded-full bg-[#FF9B73] shadow-lg shadow-[#FF9B73]/20 flex items-center justify-center">
-                                <span className="text-white text-base font-black">✓</span>
-                            </div>
-                            <p className="text-xs font-extrabold text-[#FF9B73] tracking-widest uppercase">스테이지 완료!</p>
+                        <div className="flex flex-col items-center pt-4 pb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <button onClick={onShowResults}
-                                className="w-full py-5 rounded-[2.5rem] bg-[#FF9B73] font-black text-xl text-white shadow-2xl shadow-[#FF9B73]/20 active:scale-95 transition-all mt-2">
+                                className="w-[85%] max-w-[280px] py-3.5 rounded-full bg-[#FF9B73] font-black text-lg text-white shadow-xl shadow-[#FF9B73]/20 active:scale-95 transition-all mt-2">
                                 결과 보기 →
                             </button>
                         </div>
                     )}
                 </div>
             </div>
+
         </div>
     );
 };
 
-// ── Results Screen (3D Style) ───────────────────────────────────────────────
-const ResultsScreen = ({ todayHanja, correctIds, wrongIds = [], onComplete, onNavigate, selectedCharacter, chosenGame, chosenQuiz }) => {
-    const total = todayHanja.filter(h => h.id).length;
-    const unchosenGame = chosenGame === 'shoot'
-        ? { label: '짝 맞추기',   desc: '카드를 짝지어 맞춰요', screen: 'matchGame',    icon: '/assets/images/icons/past/menu_match_game.webp' }
-        : { label: '몬스터 슈팅', desc: '한자로 몬스터 격파',   screen: 'shootGame',    icon: '/assets/images/icons/past/menu_shoot_game.webp' };
+// ── Results Screen (3D Style - Premium Crossroads) ───────────────────────────
+const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, dayNumber, missions, doneCount }) => {
+    const charImg = getCharacterImage(selectedCharacter, 'success');
 
-    const unchosenQuiz = chosenQuiz === 'word'
-        ? { label: '문장 퀴즈', desc: '문장 속 한자를 익혀요', screen: 'sentenceQuiz', icon: '/assets/images/icons/past/menu_sentence_quiz.webp' }
-        : { label: '단어 퀴즈', desc: '어휘력을 높여봐요',     screen: 'wordQuiz',     icon: '/assets/images/icons/past/menu_word_quiz.webp' };
-
-    const recommendations = [
-        { label: '한자 학습지', desc: '카드로 한자 복습', screen: 'flashcard', icon: '/assets/images/icons/past/menu_flashcard.webp' },
-        unchosenQuiz,
-        unchosenGame,
-    ];
+    const missionTotal = missions?.length || 6;
+    const missionDone = doneCount || 0;
+    const allDone = missionDone >= missionTotal;
+    const progressPct = missionTotal ? (missionDone / missionTotal) * 100 : 0;
 
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overflow-y-auto"
             style={{ background: 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' }}
         >
-            <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden my-4">
-                <div className="pt-6 pb-8 px-6 flex flex-col items-center gap-6 w-full relative">
+            <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden my-4 relative">
+                {/* Decorative glow background */}
+                <div className="absolute top-[-50px] w-[260px] h-[260px] rounded-full blur-[80px] opacity-25 z-0" style={{ backgroundColor: '#2ED6C5' }} />
 
-                    {/* 캐릭터 글로우 */}
-                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                <div className="pt-6 pb-8 px-6 flex flex-col items-center gap-5 w-full relative z-10">
 
-                    {/* 캐릭터 */}
-                    <img
-                        src={getCharacterImage(selectedCharacter, 'success')}
-                        alt="success"
-                        className="w-[160px] h-[160px] object-contain relative z-10 mt-4"
-                        style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
-                    />
+                    {/* 캐릭터 이미지 (성공 애니메이션) */}
+                    <div className="relative flex items-center justify-center mt-3">
+                        <div className="absolute w-[120px] h-[120px] bg-[#2ED6C5]/10 rounded-full blur-md z-0" />
+                        <img
+                            src={charImg}
+                            alt="great"
+                            className="w-[124px] h-[124px] object-contain drop-shadow-[0_12px_20px_rgba(46,214,197,0.3)] animate-bounce relative z-10"
+                            style={{ animationDuration: '3s' }}
+                            onError={e => { e.target.src = '/assets/images/characters/default_3d.webp'; }}
+                        />
+                    </div>
 
                     {/* 타이틀 */}
-                    <div className="text-center flex flex-col gap-2 relative z-10 -mt-4">
-                        <span className="text-sm font-extrabold text-[#AEB7C5] break-keep">{total}개의 한자를 모두 익혔네요!</span>
-                        <h1 className="text-h2-res font-black leading-snug break-keep"
-                            style={{ color: '#FF9B73', letterSpacing: '-0.5px', textShadow: '0 2px 10px rgba(255,160,120,0.16)' }}>
+                    <div className="text-center flex flex-col gap-1 -mt-2">
+                        <span className="text-xs font-extrabold text-[#AEB7C5] tracking-tight">오늘의 {dayNumber}단계 탐험 완료! 🏆</span>
+                        <h1 className="text-[1.85rem] font-black leading-tight tracking-tight"
+                            style={{ color: '#FF9B73', textShadow: '0 2px 10px rgba(255,160,120,0.12)' }}>
                             와우! 참 잘했어요!
                         </h1>
-                    </div>
-
-                    {/* 한자 카드 3개 — 플래시카드 뒷면 스타일 */}
-                    <div className="flex gap-2.5 w-full relative z-10">
-                        {todayHanja.filter(h => h.id).map((h, i) => (
-                            <div key={i} className="flex-1 clay-panel !rounded-[1.6rem] flex flex-col items-center justify-center py-4 px-2 gap-1 border-[3px] border-white !bg-[#F8FAF9]">
-                                <span className="text-3xl font-black text-slate-700 leading-none">{h.hanja}</span>
-                                <span className="text-sm font-black text-[#FF9B73] leading-tight">{h.sound}</span>
-                                <span className="text-[11px] font-bold text-[#5B677A] text-center break-keep leading-tight">{h.meaning}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* 추천 버튼 */}
-                    <div className="w-full flex flex-col gap-2.5 relative z-10">
-                        <p className="text-xs font-extrabold text-center" style={{ color: '#2ED6C5' }}>
-                            이런 메뉴들도 한 번 해봐요!
+                        <p className="font-extrabold text-sm tracking-tight mt-1 text-[#8F99AD]">
+                            데일리 세션 보너스 <span className="text-[#FF9B73] font-black">+200 XP</span> 획득! 🌟
                         </p>
-                        <div className="grid grid-cols-3 gap-2">
-                            {recommendations.map(r => (
-                                <button key={r.screen}
-                                    onClick={() => onNavigate(r.screen)}
-                                    className="bg-white/80 py-3 px-2 rounded-2xl flex flex-col items-center gap-1 active:scale-95 transition-all border-2 border-white shadow-sm">
-                                    <img src={r.icon} alt={r.label} className="w-10 h-10 object-contain" />
-                                    <span className="font-extrabold text-xs text-[#3C3C3C] leading-tight text-center">{r.label}</span>
-                                    <span className="text-[10px] font-bold text-[#AEB7C5] text-center leading-tight">{r.desc}</span>
-                                </button>
+                    </div>
+
+                    {/* 오늘 배운 한자 카드 */}
+                    <div className="w-full flex flex-col gap-2 mt-1">
+                        <p className="text-[11px] font-black text-slate-400 text-center uppercase tracking-widest">오늘 배운 한자</p>
+                        <div className="flex gap-2 w-full">
+                            {todayHanja.filter(h => h.id).map((h, i) => (
+                                <div key={i} className="flex-1 clay-panel !rounded-[1.4rem] flex flex-col items-center justify-center py-3.5 px-2 gap-0.5 border-[3px] border-white !bg-[#F8FAF9] shadow-sm">
+                                    <span className="text-2xl font-black text-slate-700 leading-none">{h.hanja}</span>
+                                    <span className="text-xs font-black text-[#FF9B73] leading-tight">{h.sound}</span>
+                                    <span className="text-[10px] font-bold text-[#8F99AD] text-center break-keep leading-tight">{h.meaning}</span>
+                                </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* 메인으로 가기 */}
-                    <button
-                        onClick={onComplete}
-                        className="w-full py-4 rounded-[2rem] font-black text-xl text-white active:scale-95 transition-all relative z-10"
-                        style={{ backgroundColor: '#FF9B73', borderBottom: '5px solid #E0735A', boxShadow: '0 8px 24px rgba(255,155,115,0.35)' }}
-                    >
-                        메인으로 가기 →
-                    </button>
+                    {/* 오늘의 퀘스트 진행 현황 판넬 */}
+                    <div className="w-full rounded-[1.5rem] bg-[#F4F7F8]/80 border border-[#E9EDF2] p-4 flex flex-col gap-2 shadow-inner mt-1">
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col text-left">
+                                <span className="font-black text-[13px] text-slate-700 leading-none">오늘의 퀘스트 현황 🎯</span>
+                                <span className="font-bold text-[10px] text-slate-400 mt-1">남은 퀘스트 완료 시 추가 보너스 +200 XP!</span>
+                            </div>
+                            <span className={`px-2.5 py-0.5 rounded-full font-black text-[11px] ${allDone ? 'bg-[#2ED6C5] text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                                {missionDone} / {missionTotal} {allDone && '🎉'}
+                            </span>
+                        </div>
+                        <div className="w-full flex items-center gap-2 mt-1">
+                            <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden shadow-inner">
+                                <div className="h-full rounded-full transition-all duration-700"
+                                    style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #2ED6C5, #0D9488)', boxShadow: '0 0 6px rgba(46,214,197,0.3)' }} />
+                            </div>
+                            <span className="font-black text-[11px] text-[#0D9488] min-w-[28px] text-right">{Math.round(progressPct)}%</span>
+                        </div>
+                    </div>
+
+                    {/* 기로 선택 3D 버튼 영역 */}
+                    <div className="w-full flex flex-col gap-3 mt-2">
+                        {/* 기로 A: 다음 단계 계속 도전하기 */}
+                        <CtaButton theme="coral" onClick={onContinueNext}>
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                                <span className="font-black text-white text-[1.4rem] drop-shadow-md">다음 단계 계속 도전하기 ▶</span>
+                                <span className="text-[10px] text-white/90 font-bold">({dayNumber + 1}단계로 바로 넘어가서 계속 달립니다)</span>
+                            </div>
+                        </CtaButton>
+
+                        {/* 기로 B: 메인 화면으로 이동 */}
+                        <CtaButton theme="blue" onClick={onComplete}>
+                            <div className="flex flex-col items-center justify-center gap-0.5">
+                                <span className="font-black text-white text-[1.4rem] drop-shadow-md">메인 화면으로 이동 🏠</span>
+                                <span className="text-[10px] text-white/90 font-bold">(남은 미션을 풀고 추가 보너스 XP를 받으러 가기)</span>
+                            </div>
+                        </CtaButton>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -744,7 +1078,6 @@ const ResultsScreen = ({ todayHanja, correctIds, wrongIds = [], onComplete, onNa
 // ── Main Orchestrator ──────────────────────────────────────────────────────
 const DailySessionScreen = ({
     onComplete,
-    onNavigate,
     onAdvanceDay,
     currentDay,
     srsData,
@@ -757,19 +1090,17 @@ const DailySessionScreen = ({
     selectedCharacter,
     updateMissionProgress,
     addTodayStat,
-    increment,
     addBonusXp,
+    getRewardPreview,
     onHanjaAcquired,
     userXp,
+    missions,
+    doneCount,
 }) => {
-    // dayNumber를 마운트 시점의 값으로 고정 (advanceDay 후 currentDay가 증가해도 현재 세션 스테이지 번호 유지)
-    const [dayNumber] = useState(() => currentDay || getTodayDayNumber());
+    const [dayNumber, setDayNumber] = useState(() => currentDay || getTodayDayNumber());
     const dayData = DAILY_CURRICULUM[dayNumber - 1] || DAILY_CURRICULUM[0];
     const todayHanja = dayData.hanja.filter(h => h.id !== null);
 
-    const todayIds = useMemo(() => todayHanja.map(h => h.id), [dayNumber]);
-
-    // 이전 스테이지 한자 ID (SRS 복습 후보)
     const pastHanjaIds = useMemo(() => {
         const result = [];
         for (let d = 0; d < dayNumber - 1 && d < DAILY_CURRICULUM.length; d++) {
@@ -778,331 +1109,268 @@ const DailySessionScreen = ({
         return result;
     }, [dayNumber]);
 
-    // 오늘(70%) + SRS 과거(30%) 통합 풀
-    const contentPool = useMemo(() =>
-        buildUnifiedPool(todayIds, HANJA_DATA, srsData, masteryData, pastHanjaIds),
-        [todayIds, srsData, masteryData, pastHanjaIds]
-    );
+    const contentPool = useMemo(() => {
+        const ids = (DAILY_CURRICULUM[dayNumber - 1]?.hanja || []).map(h => h.id).filter(Boolean);
+        return buildUnifiedPool(ids, HANJA_DATA, srsData, masteryData, pastHanjaIds);
+    }, [dayNumber, srsData, masteryData, pastHanjaIds]);
 
-    const [activity, setActivity] = useState(null); // null = map view
-    const [done, setDone] = useState(new Set());
+    const sessionQueueRef = useRef({ wordIds: [], wordIdx: 0 });
+    useEffect(() => {
+        if (!contentPool) { sessionQueueRef.current = { wordIds: [], wordIdx: 0 }; return; }
+        const sh = (a) => [...a].sort(() => Math.random() - 0.5);
+        sessionQueueRef.current = { wordIds: sh([...(contentPool.main?.wordIds || [])]), wordIdx: 0 };
+    }, [contentPool]);
+
+    const getNextWordIds = useCallback((n) => {
+        const q = sessionQueueRef.current;
+        if (!q.wordIds.length) return [];
+        let { wordIds, wordIdx } = q;
+        const result = [];
+        while (result.length < n) {
+            if (wordIdx >= wordIds.length) { wordIds = [...wordIds].sort(() => Math.random() - 0.5); wordIdx = 0; }
+            result.push(wordIds[wordIdx++]);
+        }
+        sessionQueueRef.current = { ...q, wordIds, wordIdx };
+        return result;
+    }, []);
+
+    // step: 'intro' | 'flashcard' | 'sentenceQuiz' | 'dice' | 'shoot' | 'match' | 'results'
+    const [step, setStep] = useState('intro');
+    const [resumeStep, setResumeStep] = useState('flashcard');
     const [chosenGame, setChosenGame] = useState(null);
     const [chosenQuiz, setChosenQuiz] = useState(null);
     const [seenHanjaIds, setSeenHanjaIds] = useState([]);
     const [seenWordIds, setSeenWordIds] = useState([]);
 
-    const markHanjaSeen = useCallback((ids) => {
+    const markHanjaSeen = (ids) => {
         if (!ids?.length) return;
-        setSeenHanjaIds(prev => {
-            const s = new Set(prev);
-            ids.forEach(id => { if (id != null) s.add(id); });
-            return prev.length === s.size ? prev : [...s];
-        });
-    }, []);
-
-    const markWordSeen = useCallback((ids) => {
+        setSeenHanjaIds(prev => { const s = new Set(prev); ids.forEach(id => { if (id != null) s.add(id); }); return prev.length === s.size ? prev : [...s]; });
+    };
+    const markWordSeen = (ids) => {
         if (!ids?.length) return;
-        setSeenWordIds(prev => {
-            const s = new Set(prev);
-            ids.forEach(id => { if (id != null) s.add(id); });
-            return prev.length === s.size ? prev : [...s];
-        });
-    }, []);
-    const [writingIdx, setWritingIdx] = useState(0);
-    const [correctIds, setCorrectIds] = useState([]);
-    const [wrongIds, setWrongIds] = useState([]);
-    const [wrongWordIds, setWrongWordIds] = useState([]);
-    const [showResults, setShowResults] = useState(false);
-    const mapRestoredRef = useRef(false);
-
-    // 이전 진행 상황 복원 (같은 day이고 writing 미완료인 경우만)
-    useEffect(() => {
-        try {
-            const saved = JSON.parse(localStorage.getItem(MAP_PROGRESS_KEY) || '{}');
-            if (saved.day === dayNumber && saved.done?.length > 0) {
-                if (saved.done.includes('writing')) {
-                    // writing까지 완료된 오래된 데이터 — 삭제 후 복원하지 않음
-                    clearMapProgress();
-                } else {
-                    setDone(new Set(saved.done));
-                    if (saved.chosenGame) setChosenGame(saved.chosenGame);
-                    if (saved.chosenQuiz) setChosenQuiz(saved.chosenQuiz);
-                }
-            }
-        } catch {}
-        mapRestoredRef.current = true;
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // done/chosenGame/chosenQuiz 변경 시 localStorage에 저장 (writing 완료 후에는 저장 안 함)
-    useEffect(() => {
-        if (!mapRestoredRef.current) return;
-        if (done.size === 0) return;
-        if (done.has('writing')) return;
-        try {
-            localStorage.setItem(MAP_PROGRESS_KEY, JSON.stringify({
-                day: dayNumber,
-                done: [...done],
-                chosenGame,
-                chosenQuiz,
-            }));
-        } catch {}
-    }, [done, chosenGame, chosenQuiz, dayNumber]);
-
-    const addCorrect = (id) => {
-        if (!id || !todayIds.includes(id)) return;
-        setCorrectIds(prev => prev.includes(id) ? prev : [...prev, id]);
-        setWrongIds(prev => prev.filter(w => w !== id));
-        try {
-            const h = HANJA_DATA.find(x => x.id === id);
-            if (h && h.words) {
-                const wIds = h.words.map(w => w.id).filter(Boolean);
-                if (wIds.length > 0) {
-                    setWrongWordIds(prev => prev.filter(wId => !wIds.includes(wId)));
-                }
-            }
-        } catch (e) {}
+        setSeenWordIds(prev => { const s = new Set(prev); ids.forEach(id => { if (id != null) s.add(id); }); return prev.length === s.size ? prev : [...s]; });
     };
 
-    const addWrong = (id) => {
-        if (!id || !todayIds.includes(id)) return;
-        setWrongIds(prev => prev.includes(id) ? prev : [...prev, id]);
-        setCorrectIds(prev => prev.filter(c => c !== id));
+    const finishSession = () => { clearMapProgress(); markSessionDone(); setStep('results'); };
+
+    const todayFullHanja = todayHanja.map(h => HANJA_DATA.find(d => d.id === h.id)).filter(Boolean);
+
+    const renderMiniMap = (currentStepIndex) => {
+        const quizLabel = chosenQuiz === 'wordQuiz' ? '단어 퀴즈' : (chosenQuiz === 'sentenceQuiz' ? '문장 퀴즈' : '오늘의 퀴즈');
+        const quizIcon  = chosenQuiz === 'wordQuiz' ? '/assets/images/icons/words.png' : (chosenQuiz === 'sentenceQuiz' ? '/assets/images/icons/sentence.png' : '/assets/images/icons/words.png');
+        const gameLabel = chosenGame === 'shoot' ? '몬스터 슈팅' : (chosenGame === 'matchGame' ? '메모리 게임' : '오늘의 게임');
+        const gameIcon  = chosenGame === 'shoot' ? '/assets/images/icons/monster.png' : (chosenGame === 'matchGame' ? '/assets/images/icons/matching.png' : '/assets/images/icons/monster.png');
+        const mapSteps = [
+            { label: '한자 카드', icon: '/assets/images/icons/study.png', color: '#7C83FF' },
+            { label: quizLabel,  icon: quizIcon,  color: '#FF9B73' },
+            { label: gameLabel,  icon: gameIcon,  color: '#2ED6C5' },
+        ];
+        return (
+            <div className="w-full relative z-10 mt-4 px-1 mb-6">
+                <div className="flex items-start justify-between w-full">
+                    {mapSteps.flatMap((s, i) => {
+                        const isDone = i <= currentStepIndex;
+                        const els = [
+                            <div key={`step-${i}`} className={`flex flex-col items-center gap-2 ${isDone ? '' : 'opacity-50 grayscale'}`}>
+                                <div className="relative w-[72px] h-[72px] rounded-[1.3rem] flex items-center justify-center shadow-lg border-[3px] border-white"
+                                    style={{ background: isDone ? s.color + '22' : '#f1f5f9' }}>
+                                    <img src={s.icon} className="w-10 h-10 object-contain" alt={s.label} />
+                                    {isDone && (
+                                        <div className="absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-black shadow-md border-2 border-white"
+                                            style={{ background: '#FF9B73' }}>✓</div>
+                                    )}
+                                </div>
+                                <span className="text-[11px] font-black text-[#5B677A] text-center leading-tight max-w-[72px]">{s.label}</span>
+                            </div>,
+                        ];
+                        if (i < mapSteps.length - 1) {
+                            const connColor = isDone ? s.color : '#e2e8f0';
+                            const nextColor = (i + 1) <= currentStepIndex ? mapSteps[i+1].color : '#e2e8f0';
+                            els.push(
+                                <div key={`conn-${i}`} className="flex-1 flex items-center mx-1" style={{ marginTop: '36px' }}>
+                                    <div className="h-[3px] w-full rounded-full" style={{ background: `linear-gradient(90deg, ${connColor}, ${nextColor})`, opacity: 0.4 }} />
+                                </div>
+                            );
+                        }
+                        return els;
+                    })}
+                </div>
+            </div>
+        );
     };
 
-    const completeStep = (step, extra = {}) => {
-        setDone(prev => new Set([...prev, step]));
-        if (extra.chosenGame) setChosenGame(extra.chosenGame);
-        if (extra.chosenQuiz) setChosenQuiz(extra.chosenQuiz);
-        setActivity(null);
-    };
-
-    const handleWritingComplete = (id, score) => {
-        if (score >= 70) addCorrect(id);
-        if (id && score >= 70 && onMarkCorrect) onMarkCorrect(id);
-        if (addTodayStat) addTodayStat('writing');
-        if (increment) increment('writing');
-        if (updateMissionProgress) updateMissionProgress('writing', 1, addBonusXp);
-        const next = writingIdx + 1;
-        if (next < todayHanja.length) {
-            setWritingIdx(next);
-        } else {
-            clearMapProgress();
-            markSessionDone();
-            if (onAdvanceDay) onAdvanceDay();
-            completeStep('writing');
-        }
-    };
-
-    if (showResults) {
+    if (step === 'results') {
         return (
             <ResultsScreen
                 todayHanja={todayHanja}
-                correctIds={correctIds}
-                wrongIds={wrongIds}
-                onComplete={() => onComplete()}
-                onNavigate={(screen) => onNavigate(screen)}
+                onComplete={() => { if (onAdvanceDay) onAdvanceDay(); onComplete(); }}
+                onContinueNext={() => {
+                    if (onAdvanceDay) onAdvanceDay();
+                    setDayNumber(prev => prev + 1);
+                    setSeenHanjaIds([]);
+                    setSeenWordIds([]);
+                    setResumeStep('flashcard');
+                    setStep('intro');
+                }}
                 selectedCharacter={selectedCharacter}
-                chosenGame={chosenGame}
-                chosenQuiz={chosenQuiz}
+                dayNumber={dayNumber}
+                missions={missions}
+                doneCount={doneCount}
             />
         );
     }
 
-    if (activity === 'flashcard') {
-        const fullItems = todayHanja.map(h => HANJA_DATA.find(d => d.id === h.id)).filter(Boolean);
+    if (step === 'intro') {
+        return (
+            <IntroScreen
+                dayNumber={dayNumber}
+                theme={dayData.theme}
+                todayHanja={todayFullHanja}
+                onBack={onComplete}
+                onStart={() => setStep(resumeStep)}
+                resumeStep={resumeStep}
+            />
+        );
+    }
+
+    if (step === 'flashcard') {
         return (
             <DailyFlashcardView
-                items={fullItems}
-                charId={selectedCharacter}
-                onBack={() => setActivity(null)}
+                items={todayFullHanja}
+                getRewardPreview={getRewardPreview}
+                onBack={() => setStep('intro')}
                 onCardFlip={() => {
-                    if (updateMissionProgress) updateMissionProgress('flashcard', 1, addBonusXp);
                     if (addTodayStat) addTodayStat('flashcard');
                 }}
                 onStageClear={() => {
                     if (onHanjaAcquired) onHanjaAcquired(null, 50);
-                    if (updateMissionProgress) updateMissionProgress('flashcard', 5, addBonusXp);
-                    todayIds.forEach(id => addCorrect(id));
-                    completeStep('flashcard');
+                    setResumeStep('quizPick');
+                    setStep('quizPick');
                 }}
             />
         );
     }
 
-    // 오답이 있으면 오답 풀, 없으면 통합 풀
-    const activePool = (wrongIds.length > 0 || wrongWordIds.length > 0)
-        ? buildOopsPool(wrongIds, wrongWordIds)
-        : contentPool;
+    if (step === 'quizPick') {
+        return <QuizPickScreen onResult={(quiz) => { setChosenQuiz(quiz); setStep(quiz); }} />;
+    }
 
-    if (activity === 'shoot') {
+    if (step === 'sentenceQuiz') {
         return (
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
-            <ShootGameScreen
-                onBack={() => setActivity(null)}
-                onGameFinish={() => {
-                    if (updateMissionProgress) updateMissionProgress('shootGame', 1, addBonusXp);
-                    completeStep('game', { chosenGame: 'shoot' });
-                }}
-                contentPool={activePool}
-                selectedCharacter={selectedCharacter}
-                onWaveClear={(kills) => { if (addTodayStat) addTodayStat('shootGame'); if (increment) increment('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
-                onMarkCorrect={(id) => { addCorrect(id); onMarkCorrect(id); }}
-                onMarkWrong={(id) => { addWrong(id); onMarkWrong(id); }}
-                masteryData={masteryData}
-                srsData={srsData}
-                currentDay={dayNumber}
-                seenHanjaIds={seenHanjaIds}
-                onHanjaSeen={(ids) => markHanjaSeen(ids)}
-                seenWordIds={seenWordIds}
-                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
-                onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
-            />
+                <SentenceQuizScreen
+                    autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(1)}
+                    onBack={() => setStep('intro')}
+                    contentPool={contentPool}
+                    onGetNextWordIds={getNextWordIds}
+                    selectedCharacter={selectedCharacter}
+                    userXp={userXp}
+                    getRewardPreview={getRewardPreview}
+                    onHanjaAcquired={onHanjaAcquired}
+                    onMarkWordWrong={(wordId, hanjaId, reading, meaning, wordText) => { if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning, wordText); }}
+                    onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
+                    srsData={srsData} masteryData={masteryData}
+                    seenHanjaIds={seenHanjaIds} seenWordIds={seenWordIds}
+                    onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                    onStageClear={(correct, total, newSeenIds) => {
+                        if (newSeenIds) markHanjaSeen(newSeenIds);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 30);
+                        if (updateMissionProgress) updateMissionProgress('sentenceQuiz', 1, addBonusXp);
+                        if (addTodayStat) addTodayStat('sentenceQuiz', total || 1);
+                        setResumeStep('dice');
+                        setStep('dice');
+                    }}
+                />
             </Suspense>
         );
     }
 
-    if (activity === 'match') {
+    if (step === 'wordQuiz') {
         return (
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
-            <MatchGameScreen
-                onBack={() => setActivity(null)}
-                contentPool={activePool}
-                onStageClear={(round, elapsedSec) => {
-                    if (updateMissionProgress) updateMissionProgress('matchGame', 1, addBonusXp);
-                    if (addTodayStat) addTodayStat('matchGame');
-                    if (increment) increment('matchGame');
-                    if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec);
-                    completeStep('game', { chosenGame: 'match' });
-                }}
-                onMarkCorrect={(id) => { addCorrect(id); onMarkCorrect(id); }}
-                onMarkWrong={() => {}}
-                srsData={srsData}
-                masteryData={masteryData}
-                seenHanjaIds={seenHanjaIds}
-                onHanjaSeen={(ids) => markHanjaSeen(ids)}
-                seenWordIds={seenWordIds}
-                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
-                onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
-            />
+                <WordQuizScreen
+                    autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(1)}
+                    onBack={() => setStep('intro')}
+                    contentPool={contentPool}
+                    onGetNextWordIds={getNextWordIds}
+                    selectedCharacter={selectedCharacter}
+                    userXp={userXp}
+                    getRewardPreview={getRewardPreview}
+                    onHanjaAcquired={onHanjaAcquired}
+                    onMarkWordWrong={(wordId, hanjaId, reading, meaning, wordText) => { if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning, wordText); }}
+                    onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
+                    srsData={srsData} masteryData={masteryData}
+                    seenHanjaIds={seenHanjaIds} seenWordIds={seenWordIds}
+                    onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                    onStageClear={(correct, total) => {
+                        if (onHanjaAcquired) onHanjaAcquired(null, 30);
+                        if (updateMissionProgress) updateMissionProgress('wordQuiz', 1, addBonusXp);
+                        if (addTodayStat) addTodayStat('wordQuiz', total || 1);
+                        setResumeStep('dice');
+                        setStep('dice');
+                    }}
+                />
             </Suspense>
         );
     }
 
-    if (activity === 'word') {
+    if (step === 'dice') {
+        return <GamePickScreen onResult={(game) => { setChosenGame(game); setStep(game); }} />;
+    }
+
+    if (step === 'shoot') {
         return (
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
-            <WordQuizScreen
-                onBack={() => setActivity(null)}
-                contentPool={contentPool}
-                selectedCharacter={selectedCharacter}
-                userXp={userXp}
-                onMarkWordWrong={(wordId, hanjaId, reading, meaning, wordText) => {
-                    addWrong(hanjaId);
-                    if (wordId) {
-                        setWrongWordIds(prev => prev.includes(wordId) ? prev : [...prev, wordId]);
-                    }
-                    if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning, wordText);
-                }}
-                onWordCorrect={(wordId) => {
-                    if (wordId) {
-                        setWrongWordIds(prev => prev.filter(wId => wId !== wordId));
-                        if (onWordCorrect) onWordCorrect(wordId);
-                    }
-                }}
-                srsData={srsData}
-                masteryData={masteryData}
-                onStageClear={(correct, total, maxCombo, newSeenIds) => {
-                    if (newSeenIds) markHanjaSeen(newSeenIds);
-                    if (updateMissionProgress) updateMissionProgress('wordQuiz', 1, addBonusXp);
-                    if (addTodayStat) addTodayStat('wordQuiz');
-                    if (correct != null) updateRecord('wordBestScore', correct);
-                    if (maxCombo) updateRecord('wordMaxCombo', maxCombo);
-                    completeStep('quiz', { chosenQuiz: 'word' });
-                }}
-                seenHanjaIds={seenHanjaIds}
-                seenWordIds={seenWordIds}
-                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
-            />
+                <ShootGameScreen
+                    autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
+                    onBack={() => setStep('intro')}
+                    getRewardPreview={getRewardPreview}
+                    onHanjaAcquired={onHanjaAcquired}
+                    onGameFinish={() => { if (updateMissionProgress) updateMissionProgress('shootGame', 1, addBonusXp); finishSession(); }}
+                    contentPool={contentPool} selectedCharacter={selectedCharacter}
+                    onWaveClear={(kills) => { if (addTodayStat) addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
+                    onMarkCorrect={(id) => onMarkCorrect(id)}
+                    onMarkWrong={(id) => onMarkWrong(id)}
+                    masteryData={masteryData} srsData={srsData} currentDay={dayNumber}
+                    onHanjaSeen={(ids) => markHanjaSeen(ids)}
+                    seenWordIds={seenWordIds}
+                    onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                    onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
+                />
             </Suspense>
         );
     }
 
-    if (activity === 'sentence') {
+    if (step === 'match') {
         return (
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
-            <SentenceQuizScreen
-                onBack={() => setActivity(null)}
-                contentPool={contentPool}
-                selectedCharacter={selectedCharacter}
-                userXp={userXp}
-                onMarkWordWrong={(wordId, hanjaId, reading, meaning, wordText) => {
-                    addWrong(hanjaId);
-                    if (wordId) {
-                        setWrongWordIds(prev => prev.includes(wordId) ? prev : [...prev, wordId]);
-                    }
-                    if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning, wordText);
-                }}
-                onWordCorrect={(wordId) => {
-                    if (wordId) {
-                        setWrongWordIds(prev => prev.filter(wId => wId !== wordId));
-                        if (onWordCorrect) onWordCorrect(wordId);
-                    }
-                }}
-                srsData={srsData}
-                masteryData={masteryData}
-                seenHanjaIds={seenHanjaIds}
-                seenWordIds={seenWordIds}
-                onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
-                onStageClear={(correct, total, newSeenIds) => {
-                    if (newSeenIds) markHanjaSeen(newSeenIds);
-                    if (updateMissionProgress) updateMissionProgress('sentenceQuiz', 1, addBonusXp);
-                    if (addTodayStat) addTodayStat('sentenceQuiz');
-                    completeStep('quiz', { chosenQuiz: 'sentence' });
-                }}
-            />
+                <MatchGameScreen
+                    autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
+                    onBack={() => setStep('intro')}
+                    contentPool={contentPool}
+                    onHanjaAcquired={onHanjaAcquired}
+                    onStageClear={(round, elapsedSec) => {
+                        if (updateMissionProgress) updateMissionProgress('matchGame', 1, addBonusXp);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 20);
+                        if (addTodayStat) addTodayStat('matchGame');
+                        if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec);
+                        finishSession();
+                    }}
+                    onMarkCorrect={(id) => onMarkCorrect(id)}
+                    onMarkWrong={() => { }}
+                    srsData={srsData} masteryData={masteryData}
+                    getRewardPreview={getRewardPreview}
+                    seenHanjaIds={seenHanjaIds}
+                    onHanjaSeen={(ids) => markHanjaSeen(ids)}
+                    seenWordIds={seenWordIds}
+                    onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
+                    onWordCorrect={(wordId) => { if (onWordCorrect) onWordCorrect(wordId); }}
+                />
             </Suspense>
         );
     }
 
-    if (activity === 'writing') {
-        return (
-            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
-            <WritingScreen
-                onBack={() => setActivity(null)}
-                hanjaFilter={todayIds}
-                onWritingComplete={(id, score) => {
-                    if (score >= 70) addCorrect(id);
-                    if (id && score >= 70 && onMarkCorrect) onMarkCorrect(id);
-                    if (addTodayStat) addTodayStat('writing');
-                    if (increment) increment('writing');
-                    if (updateMissionProgress) updateMissionProgress('writing', 1, addBonusXp);
-                }}
-                onStageClear={() => {
-                    clearMapProgress();
-                    markSessionDone();
-                    if (onAdvanceDay) onAdvanceDay();
-                    completeStep('writing');
-                }}
-                userXp={getStoredXp()}
-                selectedCharacter={selectedCharacter}
-            />
-            </Suspense>
-        );
-    }
-
-    return (
-        <JourneyMap
-            dayNumber={dayNumber}
-            theme={dayData.theme}
-            charId={selectedCharacter}
-            done={done}
-            chosenGame={chosenGame}
-            chosenQuiz={chosenQuiz}
-            onTapNode={(id) => setActivity(id)}
-            onShowResults={() => setShowResults(true)}
-            onBack={onComplete}
-        />
-    );
+    return null;
 };
 
 export default DailySessionScreen;

@@ -32,6 +32,19 @@ function itemWeight(hanjaId, srsData, masteryData) {
     return 2;
 }
 
+// 단어 레벨 SRS 가중치 (wordData의 word ID 기반)
+function wordItemWeight(wordId, wordData) {
+    const card = wordData?.[String(wordId)];
+    const status = getSRSStatus(card);
+    if (status === 'overdue')          return 5;
+    if (status === 'due')              return 4;
+    if ((card?.wrongCount ?? 0) >= 2)  return 4;
+    if ((card?.wrongCount ?? 0) >= 1)  return 3;
+    if (status === 'new')              return 3;
+    if (status === 'mastered')         return 1;
+    return 2;
+}
+
 // A-Res 알고리즘: 가중치 확률 기반 샘플링 (중복 없음, 정렬)
 function weightedSort(items, getWeight) {
     return items
@@ -148,7 +161,6 @@ export function expandWrongToTen(wrongIds, hanjaData, target = 10) {
     if (!wrongIds || wrongIds.length === 0) return [];
     if (wrongIds.length >= target) return wrongIds.slice(0, target);
 
-    const wrongSet = new Set(wrongIds);
     const seenIds = new Set(wrongIds);
     const candidates = [];
 
@@ -204,22 +216,37 @@ function getWordIdsForHanja(hanjaIds, hanjaData) {
  * - pastHanjaIds가 없거나 targetReviewRatio=0이면 ratio=1.0 (오늘만)
  * - SRS 풀이 목표보다 적으면 ratio가 자동 조정됨
  */
-export function buildUnifiedPool(todayHanjaIds, hanjaData, srsData, masteryData, pastHanjaIds = [], targetReviewRatio = 0.3) {
+export function buildUnifiedPool(todayHanjaIds, hanjaData, srsData, masteryData, pastHanjaIds = [], targetReviewRatio = 0.3, wordData = {}) {
+    const todayWordIds = getWordIdsForHanja(todayHanjaIds, hanjaData);
+
     if (!pastHanjaIds.length || targetReviewRatio <= 0) {
         return {
-            main:   { hanjaIds: todayHanjaIds, wordIds: getWordIdsForHanja(todayHanjaIds, hanjaData) },
+            main:   { hanjaIds: todayHanjaIds, wordIds: todayWordIds },
             review: { hanjaIds: [], wordIds: [] },
             ratio:  1.0,
         };
     }
-    const maxReview = Math.round(todayHanjaIds.length * targetReviewRatio / (1 - targetReviewRatio));
+
+    // 한자 풀: 한자 SRS 기반 7:3
+    const maxHanjaReview = Math.round(todayHanjaIds.length * targetReviewRatio / (1 - targetReviewRatio));
     const pastObjects = pastHanjaIds.map(id => hanjaData.find(h => h.id === id)).filter(Boolean);
-    const reviewHanjas = maxReview > 0 ? getSRSWeightedPool(pastObjects, srsData, masteryData, 1, maxReview) : [];
+    const reviewHanjas = maxHanjaReview > 0 ? getSRSWeightedPool(pastObjects, srsData, masteryData, 1, maxHanjaReview) : [];
     const reviewHanjaIds = reviewHanjas.map(h => h.id);
+
+    // 단어 풀: 단어 SRS 독립 적용 7:3
+    const maxWordReview = Math.round(todayWordIds.length * targetReviewRatio / (1 - targetReviewRatio));
+    const pastWordObjects = pastHanjaIds.flatMap(id => {
+        const h = hanjaData.find(h => h.id === id);
+        return (h?.words || []).filter(w => w.id && w.word && w.meaning && w.reading);
+    });
+    const reviewWordIds = maxWordReview > 0
+        ? weightedSort(pastWordObjects, w => wordItemWeight(w.id, wordData)).slice(0, maxWordReview).map(w => w.id)
+        : [];
+
     const total = todayHanjaIds.length + reviewHanjaIds.length;
     return {
-        main:   { hanjaIds: todayHanjaIds, wordIds: getWordIdsForHanja(todayHanjaIds, hanjaData) },
-        review: { hanjaIds: reviewHanjaIds, wordIds: getWordIdsForHanja(reviewHanjaIds, hanjaData) },
+        main:   { hanjaIds: todayHanjaIds, wordIds: todayWordIds },
+        review: { hanjaIds: reviewHanjaIds, wordIds: reviewWordIds },
         ratio:  total > 0 ? todayHanjaIds.length / total : 1.0,
     };
 }
@@ -227,9 +254,10 @@ export function buildUnifiedPool(todayHanjaIds, hanjaData, srsData, masteryData,
 /**
  * 게임 스테이지용 한자 사전 선택 (ShootGame·SentenceQuiz contentPool 모드)
  * - main/review 비율에 따라 count개 한자 선택
- * - seenHanjaIds에 없는 한자를 우선 배치 (전부 봤으면 초기화)
+ * - 안 본 한자(seenHanjaIds에 없는 것) 우선 셔플 배치 → 전부 봤으면 seen 초기화 후 전체 재셔플
+ * - 2차 SRS 가중치 정렬 없음 (1차 정렬은 buildUnifiedPool에서 이미 완료)
  */
-export function buildHanjaStage(contentPool, hanjaData, srsData, masteryData, seenHanjaIds = [], count = 15) {
+export function buildHanjaStage(contentPool, hanjaData, _srsData, _masteryData, seenHanjaIds = [], count = 15) {
     if (!contentPool || !hanjaData) return [];
     const mainIds = new Set(contentPool.main?.hanjaIds || []);
     const reviewIds = new Set(contentPool.review?.hanjaIds || []);
@@ -242,13 +270,10 @@ export function buildHanjaStage(contentPool, hanjaData, srsData, masteryData, se
     const allSeen = allHanja.every(h => seenSet.has(h.id));
     const eff = allSeen ? new Set() : seenSet;
 
+    const sh = (a) => [...a].sort(() => Math.random() - 0.5);
     const pickFrom = (pool, n) => {
         if (n <= 0 || pool.length === 0) return [];
-        const u = getSRSWeightedPool(pool.filter(h => !eff.has(h.id)), srsData, masteryData, 1, n);
-        const need = n - u.length;
-        const usedIds = new Set(u.map(h => h.id));
-        const s = need > 0 ? getSRSWeightedPool(pool.filter(h => eff.has(h.id) && !usedIds.has(h.id)), srsData, masteryData, 1, need) : [];
-        return [...u, ...s];
+        return [...sh(pool.filter(h => !eff.has(h.id))), ...sh(pool.filter(h => eff.has(h.id)))].slice(0, n);
     };
 
     const ratio = contentPool.ratio ?? 1.0;

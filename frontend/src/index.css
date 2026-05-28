@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
     /* --- Typography Tokens v2.0 (Premium & High-Readability) --- */
     --text-display: clamp(4rem, 20vw, 7rem);      /* 초대형 한자 (64px ~ 112px) */
@@ -24,29 +28,21 @@
 .text-body-res, .text-body       { font-size: var(--text-body); line-height: 1.5; }
 .text-sm-res, .text-sm           { font-size: var(--text-sm); }
 .text-xs-res, .text-xs           { font-size: var(--text-xs); }
+.text-balance                    { text-wrap: balance; }
+.break-keep                      { word-break: keep-all; }
 
 body {
     font-family: 'GmarketSans', 'Outfit', 'SUIT', 'Nunito', sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    word-spacing: 0.3em;
+    font-weight: 400;
+    letter-spacing: 0;
+    word-spacing: normal;
     color: #5D544F; /* Deeper warm tone for readability */
     background-color: #F7FAF9; /* Warm light cream */
     overflow-x: hidden;
     transition: background-color 0.5s ease;
+    word-break: keep-all;
+    overflow-wrap: break-word;
 }
-
-/* =============================================
-   WARM CREAM THEME SYSTEM
-   ============================================= */
-
-/* 배경 레이어 */
-.warm-cream-bg {
-    background-color: #F7FAF9;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='paperTexture'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.03'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paperTexture)'/%3E%3C/svg%3E");
-    background-attachment: fixed;
-}
-
 
 /* (Removed neon auroras for warm cream aesthetic) */
 .space-bg {
@@ -71,80 +67,6 @@ body.dark-mode {
 }
 
 /* =============================================
-   GLASS CALENDAR CARD (학습 다이어리 전용)
-   ============================================= */
-
-.glass-calendar-card {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(25px) saturate(180%);
-    -webkit-backdrop-filter: blur(25px) saturate(180%);
-    border-radius: 32px;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 
-        0 12px 40px rgba(99, 102, 241, 0.08),
-        0 4px 12px rgba(0, 0, 0, 0.03),
-        inset 0 0 24px rgba(255, 255, 255, 0.6),
-        0 0 20px rgba(255, 255, 255, 0.4);
-    position: relative;
-    overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.glass-calendar-card::before {
-    content: '';
-    position: absolute;
-    top: -15%;
-    left: -15%;
-    width: 70%;
-    height: 70%;
-    background: radial-gradient(circle, rgba(147, 197, 253, 0.35) 0%, transparent 75%); /* soft pastel blue */
-    filter: blur(50px);
-    z-index: -1;
-    pointer-events: none;
-    animation: pulseHighlight 8s ease-in-out infinite alternate;
-}
-
-.glass-calendar-card::after {
-    content: '';
-    position: absolute;
-    bottom: -15%;
-    right: -15%;
-    width: 70%;
-    height: 70%;
-    background: radial-gradient(circle, rgba(249, 168, 212, 0.3) 0%, transparent 75%); /* soft pastel pink */
-    filter: blur(50px);
-    z-index: -1;
-    pointer-events: none;
-    animation: pulseHighlight 8s ease-in-out infinite alternate-reverse;
-}
-
-@keyframes pulseHighlight {
-    0% { transform: scale(1) translate(0, 0); opacity: 0.6; }
-    50% { transform: scale(1.1) translate(5%, 5%); opacity: 0.8; }
-    100% { transform: scale(1.2) translate(-5%, -5%); opacity: 0.6; }
-}
-
-.dark-mode .glass-calendar-card {
-    background: rgba(15, 23, 42, 0.6);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 
-        0 12px 40px rgba(0, 0, 0, 0.4),
-        inset 0 0 24px rgba(255, 255, 255, 0.05);
-}
-
-.dark-mode .glass-calendar-card::before {
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 75%);
-}
-
-.dark-mode .glass-calendar-card::after {
-    background: radial-gradient(circle, rgba(236, 72, 153, 0.12) 0%, transparent 75%);
-}
-
-/* =============================================
-   GLASSMORPHISM PANEL (메인 카드/컨테이너)
-   ============================================= */
-
-/* =============================================
    GOOGLE MINIMAL PANEL (메인 카드/컨테이너)
    ============================================= */
 
@@ -154,12 +76,11 @@ body.dark-mode {
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-radius: 28px;
     border: 1.5px solid rgba(255, 255, 255, 0.85);
-    box-shadow:
-        0 8px 32px rgba(99, 102, 241, 0.08),
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.4);
-    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 
+        0 12px 24px rgba(0, 0, 0, 0.05),
+        0 4px 8px rgba(0, 0, 0, 0.03),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
 }
@@ -192,141 +113,140 @@ body.dark-mode {
 }
 
 .clay-panel:hover, .minimal-card:hover {
-    transform: translateY(-4px);
-    box-shadow:
-        0 20px 60px rgba(99, 102, 241, 0.15),
-        0 8px 24px rgba(0, 0, 0, 0.06),
+    transform: translateY(-2px);
+    box-shadow: 
+        0 16px 32px rgba(0, 0, 0, 0.08),
+        0 6px 12px rgba(0, 0, 0, 0.05),
         inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+.clay-panel:active {
+    animation: elasticPress 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 
+        0 8px 16px rgba(0, 0, 0, 0.04),
+        0 2px 4px rgba(0, 0, 0, 0.02),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
 .premium-card-base {
-    background: #FFFFFF;
-    border-radius: 1rem;
-    border: 1.5px solid #F1F5F9;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
-}
-
-.minimal-card-premium {
-    background: #FFFFFF;
+    background: linear-gradient(145deg, #ffffff, #F7FAF9);
     border-radius: 40px;
-    border: 1.5px solid #F1F5F9;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.04);
-}
-
-
-/* =============================================
-   LAVENDER 3D TILE (오답용 조각)
-   ============================================= */
-
-.lavender-3d-tile {
-    background: linear-gradient(145deg, 
-        rgba(238, 232, 255, 0.8) 0%, 
-        rgba(216, 180, 254, 0.6) 100%);
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border-radius: 28px;
-    border: 3px solid #FFFFFF;
+    border: 4px solid #ffffff;
     box-shadow: 
-        0 10px 30px rgba(168, 85, 247, 0.18),
-        inset 0 6px 12px rgba(255, 255, 255, 0.9),
-        inset 0 -6px 15px rgba(139, 92, 246, 0.25),
-        0 4px 12px rgba(0, 0, 0, 0.04);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        10px 10px 20px rgba(93, 84, 79, 0.05),
+        -5px -5px 15px rgba(255, 255, 255, 0.8),
+        inset 4px 4px 8px rgba(255, 255, 255, 0.6);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100%;
 }
 
-.lavender-3d-tile::before {
-    content: '';
-    position: absolute;
-    top: 8%;
-    left: 12%;
-    width: 40%;
-    height: 25%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
-    border-radius: 50%;
-    filter: blur(3px);
-    pointer-events: none;
-}
-
-.lavender-3d-tile .hanja-text {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: #5b21b6;
-    text-shadow: 
-        0 2px 0 rgba(255, 255, 255, 0.8),
-        0 0 12px rgba(167, 139, 250, 0.5);
-}
-
-.dark-mode .lavender-3d-tile {
-    background: linear-gradient(145deg, 
-        rgba(46, 16, 101, 0.7) 0%, 
-        rgba(30, 41, 59, 0.6) 100%);
-    border-color: rgba(167, 139, 250, 0.3);
+.premium-card-base:hover {
+    transform: translateY(-8px) scale(1.02);
+    background: #FFFFFF;
     box-shadow: 
-        0 8px 24px rgba(0, 0, 0, 0.4),
-        inset 0 2px 4px rgba(255, 255, 255, 0.05);
+        0 30px 60px rgba(93, 84, 79, 0.12),
+        inset 0 -4px 8px rgba(0, 0, 0, 0.01),
+        inset 0 4px 8px rgba(255, 255, 255, 1);
 }
 
-.dark-mode .lavender-3d-tile .hanja-text {
-    color: #ddd6fe;
-    text-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+.premium-card-base:active {
+    transform: scale(0.96) translateY(2px);
+    box-shadow: 4px 4px 10px rgba(93, 84, 79, 0.05), inset 2px 2px 4px rgba(0,0,0,0.02);
 }
 
-.lavender-3d-tile:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 
-        0 15px 30px rgba(168, 85, 247, 0.25),
-        inset 0 4px 8px rgba(255, 255, 255, 0.9);
+.dark-mode .premium-card-base {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.05);
 }
-
-/* =============================================
-   GLOSSY 3D BUTTON
-   ============================================= */
 
 /* =============================================
    MINIMAL PILL BUTTONS
    ============================================= */
 
-.clay-button, .minimal-button {
+.clay-button {
     background: #FFFFFF;
     border-radius: 999px;
     border: 1.5px solid #EAE2D9;
     padding: 10px 24px;
     font-weight: 800;
     color: #5D544F;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-    transition: all 0.2s ease;
+    box-shadow: 
+        0 8px 16px rgba(0, 0, 0, 0.04),
+        0 2px 4px rgba(0, 0, 0, 0.02),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    position: relative;
+    overflow: hidden;
 }
 
-.clay-button:hover, .minimal-button:hover {
+.clay-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.clay-button:hover::before {
+    opacity: 1;
+}
+
+.clay-button:hover {
     background: #F7FAF9;
     border-color: #D1C4B9;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-.clay-button:active, .minimal-button:active {
+.clay-button:active {
     transform: scale(0.96);
     opacity: 0.9;
+    animation: elasticPress 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 
+        0 4px 8px rgba(0, 0, 0, 0.03),
+        0 1px 2px rgba(0, 0, 0, 0.01),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .pill-button-primary {
-    background: #FFB433;
-    color: #FFFFFF;
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 4px 14px rgba(255, 171, 145, 0.3);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #FFB393 0%, #FF6B6B 100%) !important;
+    box-shadow: 0 12px 24px rgba(255, 107, 107, 0.3), inset 0 -4px 0 rgba(0,0,0,0.1) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 1.5rem !important;
+    transition: all 0.3s ease-in-out !important;
+    padding: 18px 24px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 1;
 }
 
-.pill-button-primary:hover {
-    background: #E09B2A;
-    box-shadow: 0 6px 20px rgba(255, 171, 145, 0.4);
+.pill-button-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 45%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1.3rem 1.3rem 0 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.pill-button-primary:active {
+    transform: scale(0.97) translateY(4px) !important;
+    box-shadow: 0 6px 12px rgba(255, 107, 107, 0.2), inset 0 -2px 0 rgba(0,0,0,0.1) !important;
 }
 
 
@@ -353,66 +273,6 @@ body.dark-mode {
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* =============================================
-   GLOSSY CRYSTAL CARD (한자 학습 카드)
-   ============================================= */
-
-.crystal-card {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.9) 0%,
-        rgba(240, 245, 255, 0.85) 50%,
-        rgba(255, 255, 255, 0.9) 100%);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
-    border-radius: 24px;
-    border: 2px solid rgba(255, 255, 255, 0.95);
-    box-shadow:
-        0 8px 32px rgba(99, 102, 241, 0.12),
-        0 2px 8px rgba(0, 0, 0, 0.05),
-        inset 0 2px 0 rgba(255, 255, 255, 1),
-        inset 0 -2px 4px rgba(148, 163, 184, 0.08);
-    position: relative;
-    overflow: hidden;
-}
-
-.crystal-card::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 60%;
-    background: linear-gradient(
-        135deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.4) 40%,
-        rgba(255, 255, 255, 0.6) 50%,
-        rgba(255, 255, 255, 0.4) 60%,
-        transparent 100%
-    );
-    transform: rotate(-45deg);
-    pointer-events: none;
-    animation: crystalShimmer 4s ease-in-out infinite;
-}
-
-@keyframes crystalShimmer {
-    0% { transform: rotate(-45deg) translateX(-100%); opacity: 0; }
-    30% { opacity: 1; }
-    60% { opacity: 1; }
-    100% { transform: rotate(-45deg) translateX(100%); opacity: 0; }
-}
-
-.dark-mode .crystal-card {
-    background: linear-gradient(135deg,
-        rgba(30, 41, 59, 0.9) 0%,
-        rgba(15, 23, 42, 0.85) 50%,
-        rgba(30, 41, 59, 0.9) 100%);
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow:
-        0 8px 32px rgba(99, 102, 241, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
 /* (Removed neon text effects for warm cream aesthetic) */
 .premium-text-shadow {
     text-shadow: 0 1px 2px rgba(93, 84, 79, 0.1);
@@ -429,15 +289,6 @@ body.dark-mode {
 }
 .animate-float { animation: float 4s ease-in-out infinite; }
 
-@keyframes floatUpFade {
-    0% { transform: translateY(0) scale(0.5); opacity: 0; }
-    20% { transform: translateY(-20px) scale(1.2); opacity: 1; }
-    100% { transform: translateY(-100px) scale(1); opacity: 0; }
-}
-.animate-float-up-fade {
-    animation: floatUpFade 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-5px); }
@@ -446,26 +297,6 @@ body.dark-mode {
     80% { transform: translateX(4px); }
 }
 .animate-shake { animation: shake 0.3s ease-in-out; }
-
-@keyframes popJelly {
-    0% { transform: scale(1); opacity: 1; }
-    40% { transform: scale(1.15) rotate(4deg); opacity: 1; }
-    100% { transform: scale(0) rotate(-10deg); opacity: 0; }
-}
-.card-matched { animation: popJelly 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: none; }
-
-/* 글로시 펄스 */
-@keyframes glossyPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-    50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.1); }
-}
-.animate-glossy-pulse { animation: glossyPulse 2s ease-in-out infinite; }
-
-@keyframes journeyGlow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0), 0 4px 16px rgba(251,191,36,0.2); }
-    50% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.3), 0 4px 24px rgba(251,191,36,0.4); }
-}
-.animate-journey-glow { animation: journeyGlow 1.6s ease-in-out infinite; }
 
 /* 크리스탈 스파클 */
 @keyframes sparkle {
@@ -510,7 +341,6 @@ body.dark-mode {
 
 .flashcard-perspective { perspective: 1200px; }
 .flashcard-preserve-3d { transform-style: preserve-3d; }
-.flashcard-backface-hidden { backface-visibility: hidden; }
 
 .flashcard-face-front,
 .flashcard-face-back {
@@ -530,38 +360,8 @@ body.dark-mode {
    BACKUP UI REPLICATION (HANJA CARD)
    ============================================= */
 
-@property --pill-angle {
-    syntax: '<angle>';
-    initial-value: 0deg;
-    inherits: false;
-}
-
-@keyframes pillRedSpin {
-    from { --pill-angle: 0deg; }
-    to   { --pill-angle: 360deg; }
-}
-
-.pill-red-ring {
-    --pill-angle: 0deg;
-    animation: pillRedSpin 1s linear infinite !important;
-}
-
 .rotate-y-180 {
     transform: rotateY(180deg);
-}
-
-.perspective-1200 {
-    perspective: 1200px;
-}
-
-@keyframes popIn {
-    0% { transform: scale(0.9); opacity: 0; }
-    70% { transform: scale(1.05); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-.animate-pop-in {
-    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 @keyframes fadeIn {
@@ -573,388 +373,11 @@ body.dark-mode {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-@keyframes blinkRed {
-    0%, 100% { border-color: transparent; box-shadow: none; }
-    50% { border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
-}
-
-.animate-blink-red {
-    animation: blinkRed 0.7s ease-in-out infinite;
-}
-
 /* =============================================
    SAFE AREA UTILITIES
    ============================================= */
 
 .safe-top { padding-top: max(1rem, env(safe-area-inset-top)); }
-.safe-top-sm { padding-top: max(0.5rem, env(safe-area-inset-top)); }
-
-/* =============================================
-   AESTHETIC BACKGROUND (레거시 호환)
-   ============================================= */
-
-.aesthetic-space-bg {
-    background:
-        radial-gradient(circle at 45% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 40%),
-        radial-gradient(ellipse at 20% 30%, rgba(199, 210, 254, 0.6) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 60%, rgba(251, 207, 232, 0.5) 0%, transparent 60%),
-        radial-gradient(ellipse at 30% 80%, rgba(167, 243, 208, 0.4) 0%, transparent 60%),
-        #f0f4ff;
-    background-size: 150% 150%;
-    animation: auroraShift 20s ease-in-out infinite alternate;
-    overflow: hidden;
-}
-
-/* =============================================
-   GLOSSY BADGE SYSTEM
-   ============================================= */
-
-/* 잠긴 뱃지 - 반투명 유리 실루엣 */
-.badge-locked {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(8px);
-    border: 1.5px solid rgba(255, 255, 255, 0.5);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    filter: grayscale(100%);
-    opacity: 0.5;
-}
-
-/* 진행 중 뱃지 - 액체 차오름 컨테이너 */
-.badge-filling {
-    background: rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(12px);
-    border: 2px solid rgba(255, 255, 255, 0.7);
-    box-shadow:
-        0 4px 16px rgba(99, 102, 241, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    overflow: hidden;
-    position: relative;
-}
-
-/* 액체 차오름 애니메이션 */
-.badge-liquid-fill {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(180deg,
-        rgba(99, 102, 241, 0.6) 0%,
-        rgba(139, 92, 246, 0.7) 50%,
-        rgba(99, 102, 241, 0.8) 100%);
-    transition: height 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    animation: liquidWave 2s ease-in-out infinite;
-}
-
-@keyframes liquidWave {
-    0%, 100% { clip-path: polygon(0% 5%, 15% 0%, 30% 5%, 45% 0%, 60% 5%, 75% 0%, 90% 5%, 100% 0%, 100% 100%, 0% 100%); }
-    50% { clip-path: polygon(0% 0%, 15% 5%, 30% 0%, 45% 5%, 60% 0%, 75% 5%, 90% 0%, 100% 5%, 100% 100%, 0% 100%); }
-}
-
-/* 80% 달성 - 빛나기 시작 */
-.badge-glowing {
-    animation: badgeGlow 1.5s ease-in-out infinite;
-}
-
-@keyframes badgeGlow {
-    0%, 100% {
-        box-shadow:
-            0 0 8px rgba(99, 102, 241, 0.3),
-            0 0 16px rgba(139, 92, 246, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    }
-    50% {
-        box-shadow:
-            0 0 16px rgba(99, 102, 241, 0.6),
-            0 0 32px rgba(139, 92, 246, 0.4),
-            0 0 48px rgba(236, 72, 153, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-}
-
-/* 100% 달성 - 크리스탈 3D 뱃지 */
-.badge-crystal {
-    background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.95) 0%,
-        rgba(199, 210, 254, 0.9) 25%,
-        rgba(255, 255, 255, 0.95) 50%,
-        rgba(251, 207, 232, 0.9) 75%,
-        rgba(255, 255, 255, 0.95) 100%);
-    border: 2px solid rgba(255, 255, 255, 1);
-    box-shadow:
-        0 8px 32px rgba(99, 102, 241, 0.25),
-        0 4px 16px rgba(139, 92, 246, 0.2),
-        inset 0 2px 0 rgba(255, 255, 255, 1),
-        inset 0 -2px 4px rgba(99, 102, 241, 0.1);
-    animation: crystalRotateGlow 3s ease-in-out infinite;
-    position: relative;
-    overflow: hidden;
-}
-
-.badge-crystal::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-        transparent 0deg,
-        rgba(255, 255, 255, 0.4) 60deg,
-        transparent 120deg,
-        rgba(255, 255, 255, 0.2) 180deg,
-        transparent 240deg,
-        rgba(255, 255, 255, 0.3) 300deg,
-        transparent 360deg
-    );
-    animation: crystalSpin 4s linear infinite;
-    pointer-events: none;
-}
-
-@keyframes crystalSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-@keyframes crystalRotateGlow {
-    0%, 100% {
-        box-shadow:
-            0 8px 32px rgba(99, 102, 241, 0.3),
-            0 4px 16px rgba(139, 92, 246, 0.25),
-            inset 0 2px 0 rgba(255, 255, 255, 1);
-    }
-    33% {
-        box-shadow:
-            0 8px 32px rgba(236, 72, 153, 0.3),
-            0 4px 16px rgba(251, 191, 36, 0.25),
-            inset 0 2px 0 rgba(255, 255, 255, 1);
-    }
-    66% {
-        box-shadow:
-            0 8px 32px rgba(16, 185, 129, 0.3),
-            0 4px 16px rgba(99, 102, 241, 0.25),
-            inset 0 2px 0 rgba(255, 255, 255, 1);
-    }
-}
-
-/* =============================================
-   SRS 복습 카드 스타일
-   ============================================= */
-
-/* 긴급 복습 카드 */
-.srs-urgent {
-    border-left: 4px solid #ef4444;
-    background: linear-gradient(135deg,
-        rgba(255, 241, 242, 0.9) 0%,
-        rgba(255, 255, 255, 0.85) 100%);
-}
-
-.dark-mode .srs-urgent {
-    background: linear-gradient(135deg,
-        rgba(69, 10, 10, 0.8) 0%,
-        rgba(15, 23, 42, 0.85) 100%);
-}
-
-/* 복습 예정 카드 */
-.srs-due {
-    border-left: 4px solid #FFB433;
-    background: linear-gradient(135deg,
-        rgba(255, 251, 235, 0.9) 0%,
-        rgba(255, 255, 255, 0.85) 100%);
-}
-
-/* 학습 완료 카드 */
-.srs-mastered {
-    border-left: 4px solid #10b981;
-    background: linear-gradient(135deg,
-        rgba(236, 253, 245, 0.9) 0%,
-        rgba(255, 255, 255, 0.85) 100%);
-}
-
-/* =============================================
-   NAVIGATION BAR (글래스 내비게이션)
-   ============================================= */
-
-.glass-nav {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border-top: 1.5px solid rgba(255, 255, 255, 0.9);
-    box-shadow:
-        0 -4px 24px rgba(99, 102, 241, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.dark-mode .glass-nav {
-    background: rgba(10, 10, 26, 0.8);
-    border-top-color: rgba(99, 102, 241, 0.2);
-    box-shadow:
-        0 -4px 24px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-/* =============================================
-   DIAMOND PATTERN (레거시 호환)
-   ============================================= */
-
-.diamond-pattern {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 L22 12 L12 22 L2 12 Z' fill='none' stroke='rgba(148,163,184,0.05)' stroke-width='1'/%3E%3C/svg%3E");
-    background-size: 24px 24px;
-}
-
-/* =============================================
-   MENU BUTTON - GLASSMORPHISM + GLOSSY ICONS
-   ============================================= */
-
-.menu-button-glass {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(15px) saturate(180%);
-    -webkit-backdrop-filter: blur(15px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    border-radius: 24px;
-    box-shadow:
-        0 8px 32px rgba(99, 102, 241, 0.1),
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.menu-button-glass:hover:not(:disabled) {
-    transform: translateY(-8px);
-    box-shadow:
-        0 16px 48px rgba(99, 102, 241, 0.2),
-        0 4px 12px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    background: rgba(255, 255, 255, 0.75);
-}
-
-.menu-button-glass:active:not(:disabled) {
-    transform: scale(0.95);
-    box-shadow:
-        0 4px 16px rgba(99, 102, 241, 0.12),
-        0 2px 6px rgba(0, 0, 0, 0.06),
-        inset 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-/* 글래스 버튼 상단 하이라이트 */
-.menu-button-glass::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 100%);
-    border-radius: 24px 24px 0 0;
-    pointer-events: none;
-    z-index: 0;
-}
-
-/* 다크모드 글래스 버튼 */
-.dark-mode .menu-button-glass {
-    background: rgba(30, 41, 59, 0.6);
-    border-color: rgba(99, 102, 241, 0.2);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        0 2px 8px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.dark-mode .menu-button-glass:hover:not(:disabled) {
-    background: rgba(30, 41, 59, 0.8);
-    box-shadow:
-        0 16px 48px rgba(0, 0, 0, 0.4),
-        0 4px 12px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.dark-mode .menu-button-glass::before {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
-}
-
-/* 잠금 상태: 탁한 유리 + 자물쇠 */
-.menu-button-glass.locked {
-    opacity: 0.45;
-    cursor: not-allowed;
-    pointer-events: none;
-    background: rgba(255, 255, 255, 0.35);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.dark-mode .menu-button-glass.locked {
-    background: rgba(30, 41, 59, 0.35);
-}
-
-/* 하이라이트 상태: 미션 연동 글로우 */
-.menu-button-glass.highlighted {
-    animation: menuGlowPulse 2s ease-in-out infinite;
-    box-shadow:
-        0 0 0 3px rgba(251, 191, 36, 0.4),
-        0 0 20px rgba(251, 191, 36, 0.5),
-        0 8px 32px rgba(251, 191, 36, 0.3),
-        0 2px 8px rgba(0, 0, 0, 0.04),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95);
-}
-
-@keyframes menuGlowPulse {
-    0%, 100% {
-        box-shadow:
-            0 0 0 3px rgba(251, 191, 36, 0.3),
-            0 0 15px rgba(251, 191, 36, 0.4),
-            0 8px 32px rgba(251, 191, 36, 0.2),
-            0 2px 8px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-    50% {
-        box-shadow:
-            0 0 0 3px rgba(251, 191, 36, 0.5),
-            0 0 30px rgba(251, 191, 36, 0.6),
-            0 12px 40px rgba(251, 191, 36, 0.4),
-            0 2px 8px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-}
-
-/* 글로시 아이콘 컨테이너 */
-.glossy-icon-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.menu-button-glass:hover:not(:disabled) .glossy-icon-container {
-    filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.15));
-    transform: scale(1.08);
-}
-
-/* 글로시 아이콘 이미지 */
-.glossy-icon {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    filter: brightness(1.05) saturate(1.1);
-    transition: all 0.3s ease;
-}
-
-.menu-button-glass:hover:not(:disabled) .glossy-icon {
-    filter: brightness(1.15) saturate(1.2) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
-}
-
-/* 자물쇠 아이콘 (잠금 상태) */
-.lock-icon {
-    position: absolute;
-    font-size: 2rem;
-    opacity: 0.5;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 
 /* =============================================
    ENHANCED MICRO-INTERACTIONS
@@ -971,106 +394,6 @@ body.dark-mode {
     100% {
         transform: scale(1);
     }
-}
-
-/* 소프트 섀도우 개선 */
-.clay-panel {
-    box-shadow: 
-        0 12px 24px rgba(0, 0, 0, 0.05),
-        0 4px 8px rgba(0, 0, 0, 0.03),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.clay-panel:hover {
-    box-shadow: 
-        0 16px 32px rgba(0, 0, 0, 0.08),
-        0 6px 12px rgba(0, 0, 0, 0.05),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    transform: translateY(-2px);
-}
-
-.clay-panel:active {
-    animation: elasticPress 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 
-        0 8px 16px rgba(0, 0, 0, 0.04),
-        0 2px 4px rgba(0, 0, 0, 0.02),
-        inset 0 1px 0 rgba(255, 255, 255, 0.85);
-}
-
-/* 글래스 버튼 고도화 */
-.clay-button {
-    box-shadow: 
-        0 8px 16px rgba(0, 0, 0, 0.04),
-        0 2px 4px rgba(0, 0, 0, 0.02),
-        inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.clay-button::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, transparent 50%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.clay-button:hover::before {
-    opacity: 1;
-}
-
-.clay-button:active {
-    animation: elasticPress 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 
-        0 4px 8px rgba(0, 0, 0, 0.03),
-        0 1px 2px rgba(0, 0, 0, 0.01),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-/* 글로우 애니메이션 (미션 하이라이트) */
-@keyframes glowPulse {
-    0%, 100% {
-        box-shadow:
-            0 0 0 2px rgba(251, 191, 36, 0.2),
-            0 0 12px rgba(251, 191, 36, 0.3),
-            0 8px 24px rgba(251, 191, 36, 0.15),
-            0 2px 8px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-    50% {
-        box-shadow:
-            0 0 0 3px rgba(251, 191, 36, 0.3),
-            0 0 20px rgba(251, 191, 36, 0.4),
-            0 12px 32px rgba(251, 191, 36, 0.2),
-            0 2px 8px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-}
-
-.highlighted {
-    animation: glowPulse 2s ease-in-out infinite;
-}
-
-/* 잠금 상태 스타일 */
-.locked {
-    opacity: 0.6;
-    filter: blur(0.5px);
-    pointer-events: none;
-}
-
-.locked::after {
-    content: '🔒';
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    opacity: 0.7;
 }
 
 /* 배경 블러 개선 */
@@ -1102,313 +425,9 @@ body.dark .clay-button {
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* 스트릭 (Sparkle) 애니메이션 - AI Studio 스타일 */
-@keyframes sparkleFloat {
-    0%, 100% {
-        transform: translateY(0) rotate(0deg);
-        filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.2));
-    }
-    50% {
-        transform: translateY(-3px) rotate(5deg);
-        filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.5));
-    }
-}
-
-.streak-badge {
-    animation: sparkleFloat 3s ease-in-out infinite;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.pastel-star-pink { color: #FFB3D9; }
-.pastel-star-indigo { color: #A5B4FC; }
-.pastel-star-amber { color: #FFB433; }
-
-/* AI Studio 스타일 유틸리티 */
-.minimal-icon-box {
-    @apply rounded-xl flex items-center justify-center transition-all duration-300;
-    aspect-ratio: 1 / 1;
-}
-
 .minimal-card-studio {
     @apply bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl;
 }
-
-.text-google-gray {
-    color: #5F6368;
-}
-
-/* 완료 상태 축하 애니메이션 */
-@keyframes celebrateFloat {
-    0%, 100% {
-        transform: translateY(0px) rotate(0deg);
-    }
-    25% {
-        transform: translateY(-4px) rotate(2deg);
-    }
-    75% {
-        transform: translateY(-4px) rotate(-2deg);
-    }
-}
-
-.celebrate {
-    animation: celebrateFloat 0.6s ease-in-out;
-}
-
-/* =============================================
-   ORANGE JELLY BUTTON (복습하기 전용)
-   ============================================= */
-
-.orange-jelly-button {
-    background: linear-gradient(135deg, #FFB433 0%, #FFB433 50%, #FFB433 100%);
-    border-radius: 28px;
-    border: none;
-    color: white;
-    font-weight: 900;
-    font-size: 1.15rem;
-    padding: 1rem 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 
-        0 8px 0 #b45309, 
-        0 12px 25px rgba(245, 158, 11, 0.4),
-        inset 0 -4px 8px rgba(0, 0, 0, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-}
-
-/* 젤리 광택 효과 (Top Gloss) */
-.orange-jelly-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 5%;
-    right: 5%;
-    height: 40%;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 100%);
-    border-radius: 28px 28px 60% 60%;
-    pointer-events: none;
-    z-index: 1;
-}
-
-/* 내부 은은한 글로우 */
-.orange-jelly-button::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(251, 191, 36, 0.4) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.orange-jelly-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 
-        0 10px 0 #b45309, 
-        0 15px 30px rgba(245, 158, 11, 0.5),
-        inset 0 -2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.orange-jelly-button:hover:not(:disabled)::after {
-    opacity: 1;
-}
-
-.orange-jelly-button:active:not(:disabled) {
-    transform: translateY(6px) scale(0.98);
-    box-shadow: 
-        0 2px 0 #b45309, 
-        0 4px 10px rgba(245, 158, 11, 0.3),
-        inset 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: all 0.1s;
-}
-
-.orange-jelly-button:disabled {
-    background: #e2e8f0;
-    box-shadow: none;
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.orange-jelly-button .count-badge {
-    background: rgba(0, 0, 0, 0.15);
-    padding: 2px 10px;
-    border-radius: 99px;
-    font-size: 0.85rem;
-    font-weight: 800;
-}
-
-/* 부드러운 페이드 인 */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in-up {
-    animation: fadeInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* =============================================
-   PREMIUM RENEWAL BOXES (Profile & Daily Quest)
-   ============================================= */
-
-.premium-card-base {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    border-radius: 48px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    /* Claymorphism Effect */
-    box-shadow: 
-        0 20px 40px rgba(93, 84, 79, 0.06),
-        inset 0 -8px 12px rgba(0, 0, 0, 0.02),
-        inset 0 8px 12px rgba(255, 255, 255, 0.9);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    width: 100%;
-}
-
-.premium-card-base:hover {
-    transform: translateY(-8px) scale(1.02);
-    background: #FFFFFF;
-    box-shadow: 
-        0 30px 60px rgba(93, 84, 79, 0.12),
-        inset 0 -4px 8px rgba(0, 0, 0, 0.01),
-        inset 0 4px 8px rgba(255, 255, 255, 1);
-}
-
-/* Floating Animation */
-@keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-    100% { transform: translateY(0px); }
-}
-
-.animate-float {
-    animation: float 4s ease-in-out infinite;
-}
-
-/* Profile ID/Level Badge */
-.profile-badge-tag {
-    background: #ff9a69;
-    color: white;
-    font-size: 10px;
-    font-weight: 900;
-    padding: 3px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    /* Soft Diffuse Shadow */
-    box-shadow: 0 6px 12px rgba(255, 154, 105, 0.25);
-    display: inline-block;
-    letter-spacing: 0.05em;
-}
-
-/* Pill Buttons (Calendar, Badge Storage) */
-.pill-button-premium {
-    padding: 6px 16px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    color: white;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 
-        0 4px 10px rgba(0, 0, 0, 0.1),
-        inset 0 1px 1px rgba(255, 255, 255, 0.2);
-}
-
-.pill-button-blue { background: #6366F1; }
-.pill-button-purple { background: #818CF8; }
-
-.pill-button-premium:active {
-    transform: scale(0.95);
-}
-
-/* XP Bar */
-.xp-bar-premium {
-    height: 14px;
-    background: #F1F5F9;
-    border-radius: 999px;
-    overflow: hidden;
-    width: 100%;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
-    border: 1px solid #EAE2D9;
-}
-
-.xp-bar-fill-premium {
-    height: 100%;
-    background: linear-gradient(90deg, #ff9a69, #ffb08a);
-    border-radius: 999px;
-    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
-    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
-}
-
-/* Glassy Shine for XP Bar */
-.xp-bar-fill-premium::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-    );
-    animation: shine 3s infinite;
-}
-
-@keyframes shine {
-    0% { left: -100%; }
-    20% { left: 100%; }
-    100% { left: 100%; }
-}
-
-/* Quest Progress Bar */
-.quest-bar-container {
-    height: 8px;
-    background: #F1F5F9;
-    border-radius: 999px;
-    overflow: hidden;
-    flex: 1;
-}
-
-.quest-bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Quest Action Buttons */
-.quest-start-btn {
-    padding: 4px 14px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 900;
-    color: white;
-    transition: all 0.2s;
-}
-
-.quest-start-btn-blue { background: #60A5FA; }
-.quest-start-btn-green { background: #34D399; }
-.quest-start-btn-red { background: #F87171; }
-
-.quest-start-btn:active { transform: scale(0.9); }
 
 /* [PREMIUM UPGRADE 1] Aurora & Diamond Pattern Base */
 @keyframes auroraShift {
@@ -1433,33 +452,6 @@ body.dark .clay-button {
     background-size: 24px 24px;
 }
 
-/* [PREMIUM UPGRADE 2] Claymorphism 2.0 */
-.premium-card-base {
-    background: linear-gradient(145deg, #ffffff, #F7FAF9);
-    border-radius: 40px;
-    border: 4px solid #ffffff;
-    box-shadow: 
-        10px 10px 20px rgba(93, 84, 79, 0.05),
-        -5px -5px 15px rgba(255, 255, 255, 0.8),
-        inset 4px 4px 8px rgba(255, 255, 255, 0.6);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.premium-card-base:active {
-    transform: scale(0.96) translateY(2px);
-    box-shadow: 4px 4px 10px rgba(93, 84, 79, 0.05), inset 2px 2px 4px rgba(0,0,0,0.02);
-}
-
-/* [PREMIUM UPGRADE 3] Jelly Animation */
-@keyframes popJelly {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.15) rotate(2deg); }
-    100% { transform: scale(1); }
-}
-.animate-jelly:active {
-    animation: popJelly 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
 /* [PREMIUM UPGRADE 4] Dark Mode Upgrade */
 .dark-mode {
     --bg-primary: #0f172a;
@@ -1475,36 +467,58 @@ body.dark .clay-button {
         #020617;
 }
 
-.dark-mode .premium-card-base {
-    background: linear-gradient(145deg, #1e293b, #0f172a);
-    border-color: rgba(255, 255, 255, 0.05);
-    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.05);
-}
-
-/* 다시 풀기 버튼 커스텀 컬러 및 그림자 스타일 */
+/* 다시 풀기 버튼 커스텀 컬러 및 그림자 스타일 (3D Claymorphism fallback) */
 .retry-quiz-button {
-    background: linear-gradient(135deg, #FF9A76 0%, #FF8A88 100%) !important;
-    box-shadow: 0 10px 24px rgba(255, 150, 120, 0.22) !important;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #9FA5FF 0%, #6168EB 100%) !important;
+    box-shadow: 0 12px 24px rgba(97, 104, 235, 0.3), inset 0 -4px 0 rgba(0,0,0,0.1) !important;
     color: #FFFFFF !important;
     border: none !important;
-    transition: all 0.2s ease-in-out !important;
+    border-radius: 1.5rem !important;
+    transition: all 0.3s ease-in-out !important;
+    padding: 18px 24px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    z-index: 1;
+}
+
+.retry-quiz-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 45%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 1.3rem 1.3rem 0 0;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .retry-quiz-button:active {
-    box-shadow: 0 4px 10px rgba(255, 140, 120, 0.18) !important;
-    transform: scale(0.95) translateY(2px) !important;
+    transform: scale(0.97) translateY(4px) !important;
+    box-shadow: 0 6px 12px rgba(97, 104, 235, 0.2), inset 0 -2px 0 rgba(0,0,0,0.1) !important;
 }
 
 /* 돌아가기 버튼 커스텀 스타일 */
 .back-quiz-button {
-    border: 2px solid #E5EAF2 !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 2px solid #E2E8F2 !important;
     color: #58627A !important;
-    background-color: #FFFFFF !important;
+    border-radius: 1.5rem !important;
+    padding: 18px 24px !important;
+    box-shadow: 0 4px 12px rgba(100, 120, 160, 0.08) !important;
     transition: all 0.2s ease-in-out !important;
+    font-size: inherit;
 }
 
 .back-quiz-button:hover, .back-quiz-button:active {
-    background-color: #F7F9FC !important;
+    background-color: #F4F7FC !important;
+    border-color: #C8D1E0 !important;
+    transform: scale(0.97);
 }
 
 /* 결과 화면 카드 컨테이너 커스텀 스타일 */

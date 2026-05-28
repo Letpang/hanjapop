@@ -1,15 +1,24 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import HANJA_DATA from '../hanja_unified.json';
-import { useLang } from '../LangContext.jsx';
+import { usePremium } from '../hooks/usePremium.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────
 const HINT_PENALTY = 10;     // 힌트 1회 = -10점
 const WRONG_PENALTY = 5;     // 획 틀릴 때마다 -5점
 const MAX_SCORE = 100;
+
+
+// HanziWriter CDN에 없는 한국식 이형자 → 표준 중국자 매핑
+// (화면 표시는 원래 글자 유지, HanziWriter 필기 데이터만 표준자 사용)
+const WRITER_CHAR_MAP = {
+    '敎': '教',  // 가르칠 교 U+654E → U+6559
+    '畵': '畫',  // 그림 화   U+7575 → U+756B
+};
 
 // 주제 목록 (중복 제거)
 const CATEGORIES = [...new Set((HANJA_DATA || []).map(h => h.category).filter(Boolean))];
@@ -30,10 +39,32 @@ const STROKE_WIDTHS = [
     { label: '굵게',   value: 34, icon: '▬' },
 ];
 
+// ─── 한자 카드 (쓰기 목록용) ────────────────────────────────────────────────
+const WritingHanjaCard = ({ item, onClick }) => {
+    return (
+        <button
+            onClick={onClick}
+            className="group relative w-full flex flex-col items-center justify-center p-5 bg-white border border-[#E9EDF2] rounded-[2rem] hover:border-[#7C83FF] hover:shadow-xl active:scale-95 transition-all duration-300 min-h-[140px] shadow-md"
+        >
+            <div
+                className="leading-none drop-shadow-sm text-[#3C3C3C]"
+                style={{ fontSize: 'clamp(2.8rem, 9vw, 4rem)', fontFamily: "'Ma Shan Zheng', 'Nanum Myeongjo', serif" }}
+            >
+                {item.hanja}
+            </div>
+            <div className="flex items-baseline gap-2 mt-2">
+                <span className="font-bold text-[#5B677A] text-h3-res tracking-tight">{item.meaning}</span>
+                <span className="font-bold text-[#5B677A] text-h3-res tracking-tight">{item.sound}</span>
+            </div>
+        </button>
+    );
+};
+
 // ─── Result Screen ──────────────────────────────────────────────────────────
-const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter }) => {
+const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getRewardPreview }) => {
     const pct = Math.round((correct / total) * 100);
     const isClear = pct >= 70;
+    const writingXp = total * 30;
 
     return (
         <div
@@ -63,6 +94,12 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter }) =>
                             {isClear ? '참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
                     </div>
+                    <RewardBreakdown
+                        reward={getRewardPreview?.(writingXp)}
+                        correctXp={writingXp}
+                        clearXp={0}
+                        correctLabel="쓰기"
+                    />
                     <div className="w-full flex flex-col gap-3 relative z-10">
                         <button
                             onClick={onRetry}
@@ -94,24 +131,34 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
     const [mistakeOnStroke, setMistakeOnStroke] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [charData, setCharData] = useState(null);
+    const [activeStrokeIndex, setActiveStrokeIndex] = useState(0);
+
+    const scoreRef = useRef(MAX_SCORE);
+    useEffect(() => {
+        scoreRef.current = score;
+    }, [score]);
 
     const [strokeColor, setStrokeColor] = useState('#34383F');
     const [strokeWidth, setStrokeWidth] = useState(STROKE_WIDTHS[1].value);
-    const [showStrokeNumbers, setShowStrokeNumbers] = useState(true);
+    const strokeStyleRef = useRef({ color: strokeColor, width: strokeWidth });
+    useEffect(() => {
+        strokeStyleRef.current = { color: strokeColor, width: strokeWidth };
+    }, [strokeColor, strokeWidth]);
 
-    const createWriter = useCallback((color, width, showNumbers) => {
+    const createWriter = useCallback((color, width, showNumbers = true) => {
         if (!quizContainerRef.current || !window.HanziWriter) return null;
         quizContainerRef.current.innerHTML = '';
-        const containerSize = Math.min(window.innerWidth - 64, 340);
+        const containerSize = quizContainerRef.current.offsetWidth;
+        const writerChar = WRITER_CHAR_MAP[hanja.hanja] || hanja.hanja;
 
-        return window.HanziWriter.create(quizContainerRef.current, hanja.hanja, {
+        return window.HanziWriter.create(quizContainerRef.current, writerChar, {
             width: containerSize,
             height: containerSize,
             padding: containerSize * 0.08,
             showOutline: showNumbers,
             strokeColor: color,
             outlineColor: 'rgba(0,0,0,0.1)',
-            drawingColor: '#34383F',
+            drawingColor: color,
             drawingWidth: width,
             showHintAfterMisses: false,
             highlightOnComplete: true,
@@ -125,32 +172,48 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
 
     const startQuiz = useCallback((writer) => {
         if (!writer) return;
+        setActiveStrokeIndex(0);
         writer.quiz({
             onMistake: () => {
                 setScore(s => Math.max(0, s - WRONG_PENALTY));
                 setMistakeOnStroke(true);
                 setTimeout(() => setMistakeOnStroke(false), 600);
             },
-            onCorrectStroke: () => setMistakeOnStroke(false),
+            onCorrectStroke: (strokeData) => {
+                setMistakeOnStroke(false);
+                if (strokeData && typeof strokeData.strokeNum === 'number') {
+                    setActiveStrokeIndex(strokeData.strokeNum + 1);
+                } else {
+                    setActiveStrokeIndex(prev => prev + 1);
+                }
+            },
             onComplete: () => {
                 setIsComplete(true);
-                if (onWritingComplete && hanja.id) onWritingComplete(hanja.id, score);
+                if (onWritingComplete && hanja.id) onWritingComplete(hanja.id, scoreRef.current);
             }
         });
-    }, [hanja, onWritingComplete, score]);
+    }, [hanja, onWritingComplete]);
 
     useEffect(() => {
-        if (!quizContainerRef.current || !window.HanziWriter) return;
-        const writer = createWriter(strokeColor, strokeWidth, showStrokeNumbers);
-        if (!writer) return;
+        const container = quizContainerRef.current;
+        if (!container || !window.HanziWriter) return undefined;
+        const { color, width } = strokeStyleRef.current;
+        const writer = createWriter(color, width);
+        if (!writer) return undefined;
         writerRef.current = writer;
 
-        setScore(MAX_SCORE);
-        setIsComplete(false);
-        setMistakeOnStroke(false);
-        setIsAnimating(false);
+        const resetTimer = setTimeout(() => {
+            setScore(MAX_SCORE);
+            setIsComplete(false);
+            setMistakeOnStroke(false);
+            setIsAnimating(false);
+            setActiveStrokeIndex(0);
+            startQuiz(writer);
+        }, 0);
 
-        fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${hanja.hanja}.json`)
+        // HanziWriter Medians 데이터 로드 (이형자는 표준자로 대체)
+        const fetchChar = WRITER_CHAR_MAP[hanja.hanja] || hanja.hanja;
+        fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${fetchChar}.json`)
             .then(r => r.json())
             .then(data => {
                 setCharData(data);
@@ -158,14 +221,16 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
             })
             .catch(() => setIsReady(true));
 
-        startQuiz(writer);
-        return () => { if (quizContainerRef.current) quizContainerRef.current.innerHTML = ''; };
-    }, [hanja]);
+        return () => {
+            clearTimeout(resetTimer);
+            container.innerHTML = '';
+        };
+    }, [hanja, createWriter, startQuiz]);
 
     const handleColorChange = (color) => {
         if (isComplete || isAnimating) return;
         setStrokeColor(color);
-        const writer = createWriter(color, strokeWidth, showStrokeNumbers);
+        const writer = createWriter(color, strokeWidth);
         writerRef.current = writer;
         startQuiz(writer);
     };
@@ -173,16 +238,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
     const handleWidthChange = (width) => {
         if (isComplete || isAnimating) return;
         setStrokeWidth(width);
-        const writer = createWriter(strokeColor, width, showStrokeNumbers);
-        writerRef.current = writer;
-        startQuiz(writer);
-    };
-
-    const handleToggleNumbers = () => {
-        if (isComplete || isAnimating) return;
-        const next = !showStrokeNumbers;
-        setShowStrokeNumbers(next);
-        const writer = createWriter(strokeColor, strokeWidth, next);
+        const writer = createWriter(strokeColor, width);
         writerRef.current = writer;
         startQuiz(writer);
     };
@@ -190,31 +246,101 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
     useEffect(() => {
         const canvas = strokeNumberCanvasRef.current;
         if (!canvas || !charData || !charData.medians) return;
+
         const size = canvas.offsetWidth;
+        if (size === 0) return;
+
         const dpr = window.devicePixelRatio || 1;
         canvas.width = size * dpr;
         canvas.height = size * dpr;
         const ctx = canvas.getContext('2d');
         ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, size, size);
-        if (!showStrokeNumbers || isComplete) return;
+
+        if (isComplete) return;
 
         const padding = size * 0.08;
-        const scale = (size - 2 * padding) / 1024;
         const r = size * 0.035;
+        const strokeCount = charData.medians.length;
 
-        charData.medians.forEach((median, i) => {
-            if (!median || median.length === 0) return;
-            const [mx, my] = median[0];
-            const cx = padding + mx * scale;
-            const cy = padding + (1024 - my) * scale;
-            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(124,131,255,0.95)'; ctx.fill();
-            ctx.font = `bold ${Math.round(r * 1.3)}px sans-serif`;
-            ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(String(i + 1), cx, cy + 0.5);
-        });
-    }, [charData, showStrokeNumbers, isComplete]);
+        for (let i = 0; i < strokeCount; i++) {
+            const isActive = i === activeStrokeIndex;
+
+            // 이미 완성한 획순 번호는 제거
+            if (i < activeStrokeIndex) continue;
+
+            const median = charData.medians[i];
+            if (!median || median.length === 0) continue;
+            const scale = (size - 2 * padding) / 1024;
+
+            const [sx, sy] = median[0];
+            let bx = padding + sx * scale;
+            let by = padding + (1024 - sy) * scale;
+
+            // 획이 그어지는 방향 벡터 계산
+            const next = median[Math.min(1, median.length - 1)];
+            const nex = padding + next[0] * scale;
+            const ney = padding + (1024 - next[1]) * scale;
+
+            const sdx = nex - bx;
+            const sdy = ney - by;
+            const len = Math.hypot(sdx, sdy) || 1;
+
+            // 정규화된 획 진행 방향 벡터
+            const ux = sdx / len;
+            const uy = sdy / len;
+
+            // 🌟 역방향 밀어내기 적용 (진행 방향의 180도 반대편으로 기하적 배치)
+            const offsetDist = r * 1.45;
+            let cx = bx - ux * offsetDist;
+            let cy = by - uy * offsetDist;
+
+            // 캔버스 영역 내부 클램프
+            cx = Math.max(r, Math.min(size - r, cx));
+            cy = Math.max(r, Math.min(size - r, cy));
+
+            if (isActive) {
+                // 🌟 현재 활성 획: 선명한 인디고 컬러 + 은은한 글로우 그림자
+                ctx.save();
+                ctx.shadowColor = 'rgba(124, 131, 255, 0.45)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 3;
+
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(124, 131, 255, 0.95)';
+                ctx.fill();
+
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.font = `bold ${Math.round(r * 1.25)}px sans-serif`;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(i + 1), cx, cy + 0.5);
+            } else {
+                // 💤 대기 획: 아주 연한 반투명 회색 (시각 노이즈 최소화)
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(174, 183, 197, 0.12)';
+                ctx.fill();
+
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(174, 183, 197, 0.35)';
+                ctx.stroke();
+
+                ctx.font = `bold ${Math.round(r * 1.05)}px sans-serif`;
+                ctx.fillStyle = 'rgba(120, 130, 160, 0.5)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(i + 1), cx, cy + 0.5);
+            }
+        }
+    }, [charData, isComplete, activeStrokeIndex]);
 
     const handleHint = () => {
         if (!writerRef.current || isComplete || isAnimating) return;
@@ -234,23 +360,16 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
         setIsComplete(false);
         setMistakeOnStroke(false);
         setIsAnimating(false);
-        const writer = createWriter(strokeColor, strokeWidth, showStrokeNumbers);
+        const writer = createWriter(strokeColor, strokeWidth);
         writerRef.current = writer;
         startQuiz(writer);
     };
 
     return (
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto gap-6 animate-in fade-in duration-500">
-            {/* 한자 정보 카드 */}
-            <div className="w-full bg-white rounded-[2.5rem] p-3 shadow-xl border-4 border-white flex items-center justify-center gap-6">
-                <span className="font-black text-[#3C3C3C] leading-none" style={{ fontSize: 'clamp(4rem, 14vw, 6.5rem)' }}>{hanja.hanja}</span>
-                <div className="w-px h-8 bg-slate-200 shrink-0" />
-                <span className="text-h2-res font-black text-[#3C3C3C] leading-none">{hanja.meaning} {hanja.sound}</span>
-            </div>
-
             {/* 연필 설정 */}
-            <div className="w-full rounded-[2rem] px-4 py-3 flex items-center justify-between gap-2" style={{ backgroundColor: '#F0F2F5' }}>
-                {/* 색상 - 젤리 버튼 */}
+            <div className="w-full rounded-[2rem] px-4 py-3 flex items-center justify-center gap-6" style={{ backgroundColor: '#F0F2F5' }}>
+                {/* 색상 */}
                 <div className="flex items-center gap-1.5">
                     {STROKE_COLORS.map(c => (
                         <button key={c.value} onClick={() => handleColorChange(c.value)}
@@ -258,7 +377,8 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
                             style={{ backgroundColor: c.value, borderBottom: `3px solid ${c.dark}` }} />
                     ))}
                 </div>
-                {/* 굵기 - 원형 도트 버튼 */}
+                <div className="w-px h-5 rounded-full" style={{ backgroundColor: '#D8DCE3' }} />
+                {/* 굵기 */}
                 <div className="flex items-center gap-1.5">
                     {STROKE_WIDTHS.map(w => (
                         <button key={w.value} onClick={() => handleWidthChange(w.value)}
@@ -272,13 +392,6 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
                         </button>
                     ))}
                 </div>
-                {/* 획순 - 아이콘+텍스트 토글 버튼 */}
-                <button onClick={handleToggleNumbers}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full font-bold text-xs transition-all active:scale-95 active:translate-y-[1px] shrink-0 ${showStrokeNumbers ? 'bg-[#7C83FF] text-white shadow-md' : 'bg-white text-[#AEB7C5]'}`}
-                    style={{ borderBottom: showStrokeNumbers ? '3px solid #5A61D4' : '3px solid #D0D5E0' }}>
-                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black shrink-0 ${showStrokeNumbers ? 'bg-white/30 text-white' : 'bg-[#E9EDF2] text-[#AEB7C5]'}`}>①</span>
-                    획순
-                </button>
             </div>
 
             {/* 캔버스 */}
@@ -319,26 +432,40 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
 };
 
 // ─── 메인 WritingScreen ───────────────────────────────────────────────────
-const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, unlockedHanjaIds, userXp, selectedCharacter, hanjaFilter }) => {
+const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, unlockedHanjaIds, userXp, selectedCharacter, getRewardPreview, hanjaFilter, isPremium = false, contentPool = null }) => {
+    const { showPremiumGate } = usePremium();
     const [viewMode, setViewMode] = useState('grade');
-    const [gradeFilter, setGradeFilter] = useState('8급');
+    const [gradeFilter, setGradeFilter] = useState('전체');
     const [categoryFilter, setCategoryFilter] = useState(CATEGORIES[0] || '');
-    const [phase, setPhase] = useState(initialHanja || hanjaFilter ? 'quiz' : 'select');
+    const [phase, setPhase] = useState(initialHanja || hanjaFilter || contentPool ? 'list' : 'select');
     const [showExitModal, setShowExitModal] = useState(false);
-    const handleExitConfirm = () => {
-        setShowExitModal(false);
-        if (initialHanja || (hanjaFilter && hanjaFilter.length > 0)) {
-            onBack();
-        } else {
-            setPhase('select');
-        }
-    };
     const [selectedHanja, setSelectedHanja] = useState(initialHanja || null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [activeHanjaList, setActiveHanjaList] = useState(initialHanja ? [initialHanja] : []);
+
+    const handleExitConfirm = () => {
+        setShowExitModal(false);
+        if (initialHanja || (hanjaFilter && hanjaFilter.length > 0) || contentPool) {
+            onBack();
+        } else {
+            setPhase('list');
+        }
+    };
 
     const characterAvatar = useMemo(() => getRankDetails(userXp || 0, selectedCharacter).avatar, [userXp, selectedCharacter]);
 
     const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
+
+    const contentPoolIds = useMemo(() => {
+        if (!contentPool) return null;
+        return new Set([...(contentPool.main?.hanjaIds || []), ...(contentPool.review?.hanjaIds || [])]);
+    }, [contentPool]);
+
+    // 비프리미엄: contentPool 한자만, 프리미엄: 전체 unlockedIds
+    const effectiveIds = useMemo(
+        () => (!isPremium && contentPoolIds) ? contentPoolIds : unlockedIds,
+        [isPremium, contentPoolIds, unlockedIds]
+    );
 
     const hanjaList = useMemo(() => {
         if (initialHanja) return [initialHanja];
@@ -348,51 +475,78 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
         const base = viewMode === 'grade'
             ? (gradeFilter === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === gradeFilter))
             : HANJA_DATA.filter(h => h.category === categoryFilter);
-        return base.filter(h => unlockedIds.has(h.id));
-    }, [viewMode, gradeFilter, categoryFilter, initialHanja, hanjaFilter, unlockedIds]);
+        return base.filter(h => effectiveIds.has(h.id));
+    }, [viewMode, gradeFilter, categoryFilter, initialHanja, hanjaFilter, effectiveIds]);
+
+    // 목록 화면에서 표시할 한자 (해제된 것만)
+    const displayList = useMemo(() => {
+        if (initialHanja) return [initialHanja];
+        if (hanjaFilter && hanjaFilter.length > 0) return HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
+        const base = viewMode === 'grade'
+            ? (gradeFilter === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === gradeFilter))
+            : HANJA_DATA.filter(h => h.category === categoryFilter);
+        return base.filter(h => effectiveIds.has(h.id));
+    }, [viewMode, gradeFilter, categoryFilter, initialHanja, hanjaFilter, effectiveIds]);
 
     useEffect(() => {
-        if ((initialHanja || hanjaFilter) && hanjaList.length > 0) {
+        if (!(initialHanja || hanjaFilter) || hanjaList.length === 0) return undefined;
+
+        const timer = setTimeout(() => {
             setSelectedHanja(hanjaList[0]);
+            setActiveHanjaList(hanjaList);
             setCurrentIndex(0);
             setPhase('quiz');
-        }
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, [initialHanja, hanjaFilter, hanjaList]);
 
-    const startQuiz = useCallback(() => {
-        if (hanjaList.length === 0) return;
+    // 카드 클릭 시 해당 한자 1개만 쓰기 연습
+    const handleCardClick = useCallback((item) => {
+        setSelectedHanja(item);
+        setActiveHanjaList([item]);
         setCurrentIndex(0);
-        setSelectedHanja(hanjaList[0]);
         setPhase('quiz');
-    }, [hanjaList]);
+    }, []);
+
+    const startQuiz = useCallback(() => {
+        if (activeHanjaList.length === 0) return;
+        setCurrentIndex(0);
+        setSelectedHanja(activeHanjaList[0]);
+        setPhase('quiz');
+    }, [activeHanjaList]);
 
     const handleNextHanja = useCallback(() => {
         const next = currentIndex + 1;
-        if (next < hanjaList.length) {
+        if (next < activeHanjaList.length) {
             setCurrentIndex(next);
-            setSelectedHanja(hanjaList[next]);
+            setSelectedHanja(activeHanjaList[next]);
         } else {
             setPhase('result');
             if (onStageClear) onStageClear();
         }
-    }, [currentIndex, hanjaList, onStageClear]);
+    }, [currentIndex, activeHanjaList, onStageClear]);
 
     return (
         <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: phase === 'select' ? '#F7FAF9' : '#F8FAFC' }}>
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
-                    <button onClick={(phase === 'quiz') ? () => setShowExitModal(true) : onBack}
+                    <button onClick={
+                        phase === 'quiz' ? () => setShowExitModal(true) :
+                        phase === 'list' && !initialHanja && (!hanjaFilter || hanjaFilter.length === 0) && !contentPool ? () => setPhase('select') :
+                        onBack
+                    }
                         className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
-                        <span>{(phase === 'quiz') ? '✕' : '←'}</span>
+                        <span>{phase === 'quiz' ? '✕' : '←'}</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 쓰기</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순에 맞게 쓰고, 모를 땐 힌트를 참조하세요</p>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순에 맞게 쓰고,<br />모를 땐 힌트를 참조하세요</p>
                     </div>
                     <div className="flex items-center justify-end w-11">
-                        {phase === 'quiz' && (
-                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{currentIndex + 1}/{hanjaList.length}</span>
+                        {phase === 'quiz' && activeHanjaList.length > 0 && (
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{currentIndex + 1}/{activeHanjaList.length}</span>
                         )}
                     </div>
                 </div>
@@ -417,12 +571,12 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
 
                             {/* 컨텐츠 */}
                             {viewMode === 'grade' ? (
-                                <GradeGrid selected={gradeFilter} onSelect={setGradeFilter} lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))} />
+                                <GradeGrid selected={gradeFilter} onSelect={isPremium ? setGradeFilter : () => showPremiumGate()} lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))} />
                             ) : (
                                 <div className="grid grid-cols-2 gap-4 w-full">
                                     {CATEGORIES.map(cat => (
                                         <TopicCard key={cat} name={cat} imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
-                                            count={`${HANJA_DATA.filter(h => h.category === cat).length}개`} isSelected={categoryFilter === cat} onClick={() => setCategoryFilter(cat)}
+                                            count={`${HANJA_DATA.filter(h => h.category === cat).length}개`} isSelected={categoryFilter === cat} onClick={isPremium ? () => setCategoryFilter(cat) : showPremiumGate}
                                             locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))} />
                                     ))}
                                 </div>
@@ -444,22 +598,50 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
 
                             {/* 시작 버튼 */}
                             <div className="w-full max-w-sm px-4 pb-4 -mt-2.5">
-                                <button onClick={startQuiz}
-                                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
+                                <button onClick={() => setPhase('list')}
+                                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-xl flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
                                     style={{ backgroundColor: '#FF9B73', borderBottom: '6px solid #E0735A' }}>
-                                    <span>공부 시작!</span>
+                                    <span>한자 선택하기 →</span>
                                 </button>
                             </div>
                         </div>
                     )}
 
+                    {phase === 'list' && (
+                        <div className="flex flex-col w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+                            {displayList.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
+                                    {displayList.map(item => (
+                                        <WritingHanjaCard
+                                            key={item.id}
+                                            item={item}
+                                            onClick={() => handleCardClick(item)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                                    <span className="text-4xl">📚</span>
+                                    <p className="text-[#AEB7C5] font-bold text-center break-keep">이 급수의 한자를 먼저 학습해주세요!</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {phase === 'quiz' && selectedHanja && (
-                        <QuizCard key={selectedHanja.id} hanja={selectedHanja} hanjaList={hanjaList} currentIndex={currentIndex}
-                            onWritingComplete={onWritingComplete} onNextHanja={handleNextHanja} onBack={() => setPhase('select')} />
+                        <QuizCard key={selectedHanja.id} hanja={selectedHanja} hanjaList={activeHanjaList} currentIndex={currentIndex}
+                            onWritingComplete={onWritingComplete} onNextHanja={handleNextHanja} onBack={() => setPhase('list')} />
                     )}
 
                     {phase === 'result' && (
-                        <ResultScreen correct={hanjaList.length} total={hanjaList.length} onRetry={startQuiz} onBack={() => setPhase('select')} selectedCharacter={selectedCharacter} />
+                        <ResultScreen
+                            correct={activeHanjaList.length}
+                            total={activeHanjaList.length}
+                            onRetry={startQuiz}
+                            onBack={() => (initialHanja || hanjaFilter) ? onBack() : setPhase('list')}
+                            selectedCharacter={selectedCharacter}
+                            getRewardPreview={getRewardPreview}
+                        />
                     )}
                 </div>
             </div>
@@ -501,4 +683,5 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
     );
 };
 
+export { QuizCard };
 export default WritingScreen;

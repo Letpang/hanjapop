@@ -8,8 +8,7 @@ const getStoredXp = () => {
 
 const MESSAGES = {
     review_reminder: [
-        '틀렸던 한자들이 기다리고 있어요! 같이 복습해봐요 💪',
-        'Some characters still feel unfamiliar. Let\'s master them together! ✦',
+        '틀렸던 한자들이 기다리고 있어요! 같이 복습해봐요',
         '틀렸던 것들, 오늘 다시 도전해봐요! ✨',
     ],
     mission_complete: [
@@ -22,7 +21,7 @@ const MESSAGES = {
 const CharacterToast = ({ type, selectedCharacter, userXp, onDismiss, onAction }) => {
     const avatar = getRankDetails(userXp ?? getStoredXp(), selectedCharacter).avatar;
     const msgs = MESSAGES[type] || MESSAGES.review_reminder;
-    const message = msgs[Math.floor(Math.random() * msgs.length)];
+    const message = msgs[0];
     const isMission = type === 'mission_complete';
 
     useEffect(() => {
@@ -58,11 +57,11 @@ const CharacterToast = ({ type, selectedCharacter, userXp, onDismiss, onAction }
                 {isMission && <div className="text-2xl mb-1">🎉</div>}
                 <p className="text-slate-700 font-extrabold text-sm leading-snug break-keep whitespace-normal">{message}</p>
                 {isMission && (
-                    <p className="text-[#FF9B73] font-black text-xs mt-1 animate-pulse">+50 보너스 XP 획득!</p>
+                    <p className="text-[#FF9B73] font-black text-xs mt-1 animate-pulse">+200 보너스 XP 획득!</p>
                 )}
                 {!isMission && onAction && (
                     <div className="mt-2 flex flex-col gap-1.5">
-                        <p className="text-[10px] font-bold text-[#AEB7C5]">참가하면 +50 XP · 모두 클리어시 최고 +130 XP 추가획득!</p>
+                        <p className="text-[10px] font-bold text-[#AEB7C5]">오답 단어장과 퀴즈를 모두 완료하면 50 XP 획득!</p>
                         <button
                             onClick={(e) => { e.stopPropagation(); onAction(); onDismiss(); }}
                             className="px-4 py-1.5 bg-[#2ED6C5] text-white font-extrabold text-xs rounded-full active:scale-95 transition-transform self-start"
