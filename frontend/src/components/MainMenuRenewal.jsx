@@ -240,7 +240,7 @@ const MainMenuRenewal = ({
                     <div className="flex items-end justify-between mb-3 px-2">
                         <div className="flex flex-col">
                             <span className="font-black text-lg text-slate-700 tracking-tight">오늘의 퀘스트</span>
-                            <span className="font-bold text-xs mt-0.5 text-[#2ED6C5]">전부 완료하면 <span className="text-[#FF9B73]">+200XP 보너스!</span></span>
+                            <span className="font-bold text-xs mt-0.5 text-[#2ED6C5]">올클리어하면 <span className="text-[#FF9B73]">+200XP 보너스!</span></span>
                         </div>
                         <div className={`px-3 py-1 rounded-full font-black text-xs ${allDone ? 'bg-[#2ED6C5] text-white shadow-md' : 'bg-white text-slate-400 border-2 border-slate-100'}`}>
                             {missionDone} / {missionTotal} {allDone && '🎉'}

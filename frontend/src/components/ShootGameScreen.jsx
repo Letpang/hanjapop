@@ -194,7 +194,7 @@ const getGameThemeKey = (currentDay, selectedGrade) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, dailyMapNode, hideRetry }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry }) => {
     const { lang } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -310,6 +310,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const spawnedWordsSetRef = useRef(new Set());
     const onHanjaSeenRef = useRef(onHanjaSeen);
     useEffect(() => { onHanjaSeenRef.current = onHanjaSeen; });
+    const onWordSeenRef = useRef(onWordSeen);
+    useEffect(() => { onWordSeenRef.current = onWordSeen; });
     const wordChanceRef = useRef(0.83);
     const gameWrongHanjasRef = useRef(new Set());
     const gameWrongWordsRef = useRef(new Map()); // wordId → { hanjaId, reading, meaning }
@@ -392,11 +394,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         spawnedWordsSetRef.current = new Set();
         refillWordQueue(flatWordPoolRef.current);
 
-        // wordChance: 단어풀이 너무 적으면 비율 낮춰서 한자 스폰이 막히지 않게
+        // contentPool 모드는 단어 복습 체감이 중요해서 단어가 있으면 최소 등장 비율을 보장한다.
         const totalWords = flatWordPoolRef.current.length;
         const totalHanja = stage.length;
+        const baseWordChance = totalWords / Math.max(totalWords + totalHanja, 1);
         wordChanceRef.current = totalWords > 0
-            ? Math.min(0.75, totalWords / Math.max(totalWords + totalHanja, 1))
+            ? Math.min(0.75, contentPool ? Math.max(0.45, baseWordChance) : baseWordChance)
             : 0;
 
         setWave(1);
@@ -423,12 +426,17 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     useEffect(() => { startGameRef.current = startGame; });
 
     // contentPool이 prop 참조 변경(hanjaData 업데이트)으로 매번 새 객체가 되므로,
-    // 실제 hanjaIds 내용이 바뀔 때만 auto-start하도록 키로 비교한다.
+    // 실제 출제 대상 ID 내용이 바뀔 때만 auto-start하도록 키로 비교한다.
     const lastContentKeyRef = useRef(null);
     useEffect(() => {
         if (contentPool == null) return;
-        // main.hanjaIds 기준으로만 비교 (review는 랜덤 선택이라 제외)
-        const key = JSON.stringify([...(contentPool.main?.hanjaIds || [])].sort());
+        const normalizeIds = (ids) => [...(ids || [])].map(Number).sort((a, b) => a - b);
+        const key = JSON.stringify({
+            mainHanja: normalizeIds(contentPool.main?.hanjaIds),
+            reviewHanja: normalizeIds(contentPool.review?.hanjaIds),
+            mainWords: normalizeIds(contentPool.main?.wordIds),
+            reviewWords: normalizeIds(contentPool.review?.wordIds),
+        });
         if (key !== lastContentKeyRef.current) {
             lastContentKeyRef.current = key;
             const timer = setTimeout(() => startGameRef.current?.(), 0);
@@ -572,6 +580,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 if (fallingHanjas.has(nextItem.hanja)) return prev;
                 if (isWord && nextItem.hanja) {
                     spawnedWordsSetRef.current.add(nextItem.hanja);
+                    if (nextItem.wordId != null) onWordSeenRef.current?.(nextItem.wordId);
                 }
 
                 effectIdRef.current += 1;
@@ -660,7 +669,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 gameWrongWordsRef.current.set(target.wordId, {
                     hanjaId: target.pairId || null,
                     reading: target.sound || '',
-                    meaning: target.hanja || '',
+                    meaning: target.meaning || '',
                 });
             }
             
@@ -735,7 +744,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                         <button onClick={onBack}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-bold text-[#AEB7C5]">
+                            className="hp-nav-button">
                             <span>←</span>
                         </button>
                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
@@ -997,7 +1006,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     {/* 4. 종료 */}
                     <button 
                         onClick={() => setShowExitModal(true)} 
-                        className="w-9 h-9 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white shadow-lg active:scale-95 transition-all shrink-0"
+                        className="hp-nav-button hp-nav-button--compact shrink-0"
                     >
                         <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-slate-400 stroke-[3]">
                             <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
@@ -1209,10 +1218,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         />
                         <div className="text-center flex flex-col gap-2 mb-6">
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
-                                정말 게임을 중단할까요? 🥺
+                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요? 🥺'}
                             </h2>
                             <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?
+                                {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}
                             </p>
                         </div>
                         <div className="w-full flex flex-col gap-3">
@@ -1226,7 +1235,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                 onClick={handleExitConfirm}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                             >
-                                그만하고 나가기
+                                {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
                             </button>
                         </div>
                     </div>

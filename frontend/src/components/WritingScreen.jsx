@@ -537,7 +537,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                         phase === 'list' && !initialHanja && (!hanjaFilter || hanjaFilter.length === 0) && !contentPool ? () => setPhase('select') :
                         onBack
                     }
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                        className="hp-nav-button">
                         <span>{phase === 'quiz' ? '✕' : '←'}</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">

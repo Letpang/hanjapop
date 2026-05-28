@@ -238,7 +238,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
             {/* 헤더 */}
             <div className="w-full px-4 shrink-0 relative z-50" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '4px' }}>
                 <div className="minimal-card-studio w-full flex justify-between items-center p-4 px-6 bg-white border-[#E9EDF2] shadow-xl !rounded-[3rem] min-h-[72px]">
-                    <button onClick={onBack} className="w-11 h-11 rounded-2xl bg-white border-2 border-[#E9EDF2] flex items-center justify-center font-bold text-body-lg active:scale-90 text-[#AEB7C5] shadow-sm">
+                    <button onClick={onBack} className="hp-nav-button">
                         ←
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
@@ -584,7 +584,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                                 ? () => setPhase('select')          // 목록 → 선택 화면
                                 : onBack                             // 그 외 → 뒤로가기
                     }
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                        className="hp-nav-button">
                         <span>{studyItem ? '✕' : '←'}</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">

@@ -208,7 +208,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                         <button onClick={onBack}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                            className="hp-nav-button">
                             <span>✕</span>
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
@@ -451,7 +451,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
             <div className="absolute -bottom-24 right-0 w-96 h-96 rounded-full bg-[#FF9B73] blur-[100px] opacity-15 pointer-events-none" />
 
             <button onClick={onBack}
-                className="absolute left-5 top-12 w-11 h-11 rounded-2xl bg-white/60 backdrop-blur-xl shadow-md border-2 border-white/80 flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">
+                className="hp-nav-button absolute left-5 top-12 z-10">
                 ←
             </button>
 
@@ -823,7 +823,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
 
             {/* Header */}
             <div className="w-full shrink-0 flex flex-col items-center px-4 pt-12 pb-4 relative z-10">
-                <button onClick={onBack} className="absolute left-4 top-12 w-11 h-11 rounded-2xl bg-white/60 backdrop-blur-xl shadow-[0_8px_16px_rgba(0,0,0,0.06)] border-2 border-white/80 flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">←</button>
+                <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10">←</button>
 
                 {/* 제목 + 한자카드 통합 패널 */}
                 <div className="w-full max-w-sm mt-1 rounded-[2rem] px-4 pt-5 pb-5 border border-white/60"
@@ -975,6 +975,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
 // ── Results Screen (3D Style - Premium Crossroads) ───────────────────────────
 const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, dayNumber, missions, doneCount }) => {
     const charImg = getCharacterImage(selectedCharacter, 'success');
+    const isFinalDay = dayNumber >= DAILY_CURRICULUM.length;
 
     const missionTotal = missions?.length || 6;
     const missionDone = doneCount || 0;
@@ -1012,7 +1013,7 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                             와우! 참 잘했어요!
                         </h1>
                         <p className="font-extrabold text-sm tracking-tight mt-1 text-[#8F99AD]">
-                            데일리 세션 보너스 <span className="text-[#FF9B73] font-black">+200 XP</span> 획득! 🌟
+                            학습 지도 완주 보너스 <span className="text-[#FF9B73] font-black">+200 XP</span> 획득! 🌟
                         </p>
                     </div>
 
@@ -1035,7 +1036,7 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col text-left">
                                 <span className="font-black text-[13px] text-slate-700 leading-none">오늘의 퀘스트 현황 🎯</span>
-                                <span className="font-bold text-[10px] text-slate-400 mt-1">남은 퀘스트 완료 시 추가 보너스 +200 XP!</span>
+                                <span className="font-bold text-[10px] text-slate-400 mt-1">오늘의 퀘스트 올클리어 시 +200 XP!</span>
                             </div>
                             <span className={`px-2.5 py-0.5 rounded-full font-black text-[11px] ${allDone ? 'bg-[#2ED6C5] text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
                                 {missionDone} / {missionTotal} {allDone && '🎉'}
@@ -1053,18 +1054,20 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                     {/* 기로 선택 3D 버튼 영역 */}
                     <div className="w-full flex flex-col gap-3 mt-2">
                         {/* 기로 A: 다음 단계 계속 도전하기 */}
-                        <CtaButton theme="coral" onClick={onContinueNext}>
-                            <div className="flex flex-col items-center justify-center gap-0.5">
-                                <span className="font-black text-white text-[1.4rem] drop-shadow-md">다음 단계 계속 도전하기 ▶</span>
-                                <span className="text-[10px] text-white/90 font-bold">({dayNumber + 1}단계로 바로 넘어가서 계속 달립니다)</span>
-                            </div>
-                        </CtaButton>
+                        {!isFinalDay && (
+                            <CtaButton theme="coral" onClick={onContinueNext}>
+                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                    <span className="font-black text-white text-[1.4rem] drop-shadow-md">다음 단계 계속 도전하기 ▶</span>
+                                    <span className="text-[10px] text-white/90 font-bold">({dayNumber + 1}단계로 바로 넘어가서 계속 달립니다)</span>
+                                </div>
+                            </CtaButton>
+                        )}
 
                         {/* 기로 B: 메인 화면으로 이동 */}
                         <CtaButton theme="blue" onClick={onComplete}>
                             <div className="flex flex-col items-center justify-center gap-0.5">
                                 <span className="font-black text-white text-[1.4rem] drop-shadow-md">메인 화면으로 이동 🏠</span>
-                                <span className="text-[10px] text-white/90 font-bold">(남은 미션을 풀고 추가 보너스 XP를 받으러 가기)</span>
+                                <span className="text-[10px] text-white/90 font-bold">(남은 퀘스트를 채우고 올클리어 보너스 받기)</span>
                             </div>
                         </CtaButton>
                     </div>
@@ -1099,7 +1102,7 @@ const DailySessionScreen = ({
 }) => {
     const [dayNumber, setDayNumber] = useState(() => currentDay || getTodayDayNumber());
     const dayData = DAILY_CURRICULUM[dayNumber - 1] || DAILY_CURRICULUM[0];
-    const todayHanja = dayData.hanja.filter(h => h.id !== null);
+    const rawTodayHanja = useMemo(() => (dayData.hanja || []).filter(h => h.id !== null), [dayData]);
 
     const pastHanjaIds = useMemo(() => {
         const result = [];
@@ -1109,10 +1112,22 @@ const DailySessionScreen = ({
         return result;
     }, [dayNumber]);
 
+    const fallbackReviewIds = useMemo(() => {
+        return [...new Set(pastHanjaIds)].slice(-3);
+    }, [pastHanjaIds]);
+
+    const todayHanja = useMemo(() => {
+        if (rawTodayHanja.length > 0) return rawTodayHanja;
+        return fallbackReviewIds
+            .map(id => HANJA_DATA.find(h => h.id === id))
+            .filter(Boolean)
+            .map(({ id, hanja, sound, meaning }) => ({ id, hanja, sound, meaning }));
+    }, [rawTodayHanja, fallbackReviewIds]);
+
     const contentPool = useMemo(() => {
-        const ids = (DAILY_CURRICULUM[dayNumber - 1]?.hanja || []).map(h => h.id).filter(Boolean);
+        const ids = todayHanja.map(h => h.id).filter(Boolean);
         return buildUnifiedPool(ids, HANJA_DATA, srsData, masteryData, pastHanjaIds);
-    }, [dayNumber, srsData, masteryData, pastHanjaIds]);
+    }, [todayHanja, srsData, masteryData, pastHanjaIds]);
 
     const sessionQueueRef = useRef({ wordIds: [], wordIdx: 0 });
     useEffect(() => {

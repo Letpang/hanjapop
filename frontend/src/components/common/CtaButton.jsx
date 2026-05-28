@@ -39,7 +39,7 @@ const CtaButton = ({
         <button 
             onClick={onClick}
             disabled={disabled}
-            className={`w-full h-fit relative overflow-hidden transition-all duration-300 rounded-[1.8rem] p-[3px] 
+            className={`w-full min-h-16 h-fit relative overflow-hidden transition-all duration-300 rounded-[1.8rem] p-[3px] 
                 ${disabled ? 'opacity-50 cursor-not-allowed grayscale-[30%]' : 'active:scale-[0.97] active:translate-y-1'} 
                 ${className}`}
             style={{ 
@@ -51,7 +51,7 @@ const CtaButton = ({
             <div className="absolute top-0 inset-x-0 h-[45%] bg-white/20 pointer-events-none rounded-t-[1.6rem]" />
             
             {/* Inner Content Padding & Background */}
-            <div className={`${t.innerBg} rounded-[1.6rem] px-5 py-4 ${t.textColor}`}>
+            <div className={`${t.innerBg} rounded-[1.6rem] px-5 py-4 min-h-[58px] flex items-center justify-center ${t.textColor}`}>
                 {children}
             </div>
         </button>

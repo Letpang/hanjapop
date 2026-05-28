@@ -561,7 +561,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                         <button onClick={started ? () => setShowExitModal(true) : onBack}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-black text-[#5B677A]">
+                            className="hp-nav-button">
                             <span>{started ? '✕' : '←'}</span>
                         </button>
                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
@@ -763,10 +763,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             />
                             <div className="text-center flex flex-col gap-2 mb-6">
                                 <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
-                                    정말 퀴즈를 중단할까요? 🥺
+                                    {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
                                 </h2>
                                 <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                    지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?
+                                    {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}
                                 </p>
                             </div>
                             <div className="w-full flex flex-col gap-3">
@@ -780,7 +780,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     onClick={handleExitConfirm}
                                     className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                                 >
-                                    그만하고 나가기
+                                    {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
                                 </button>
                             </div>
                         </div>
@@ -797,7 +797,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                     <button onClick={onBack}
-                        className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all w-11 h-11 font-bold text-[#AEB7C5]">
+                        className="hp-nav-button">
                         <span>←</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
@@ -894,10 +894,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         />
                         <div className="text-center flex flex-col gap-2 mb-6">
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
-                                정말 퀴즈를 중단할까요? 🥺
+                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
                             </h2>
                             <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?
+                                {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}
                             </p>
                         </div>
                         <div className="w-full flex flex-col gap-3">
@@ -911,7 +911,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 onClick={handleExitConfirm}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                             >
-                                그만하고 나가기
+                                {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
                             </button>
                         </div>
                     </div>

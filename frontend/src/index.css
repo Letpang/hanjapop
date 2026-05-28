@@ -17,6 +17,11 @@
     --primary-warm: #5D544F;
     --bg-warm: #F7FAF9;
     --line-height-standard: 1.5;
+    --hp-btn-radius: 1.8rem;
+    --hp-btn-inner-radius: 1.6rem;
+    --hp-btn-pad-y: 1rem;
+    --hp-btn-pad-x: 1.25rem;
+    --hp-btn-font: 1.25rem;
 }
 
 /* Typography Utilities (Responsive & Standard Names) */
@@ -221,13 +226,17 @@ body.dark-mode {
     box-shadow: 0 12px 24px rgba(255, 107, 107, 0.3), inset 0 -4px 0 rgba(0,0,0,0.1) !important;
     color: #FFFFFF !important;
     border: none !important;
-    border-radius: 1.5rem !important;
+    border-radius: var(--hp-btn-radius) !important;
     transition: all 0.3s ease-in-out !important;
-    padding: 18px 24px !important;
+    padding: var(--hp-btn-pad-y) var(--hp-btn-pad-x) !important;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    min-height: 64px;
+    font-size: var(--hp-btn-font) !important;
+    font-weight: 900 !important;
+    line-height: 1.2;
     z-index: 1;
 }
 
@@ -239,7 +248,7 @@ body.dark-mode {
     right: 0;
     height: 45%;
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 1.3rem 1.3rem 0 0;
+    border-radius: var(--hp-btn-inner-radius) var(--hp-btn-inner-radius) 0 0;
     pointer-events: none;
     z-index: -1;
 }
@@ -475,13 +484,17 @@ body.dark .clay-button {
     box-shadow: 0 12px 24px rgba(97, 104, 235, 0.3), inset 0 -4px 0 rgba(0,0,0,0.1) !important;
     color: #FFFFFF !important;
     border: none !important;
-    border-radius: 1.5rem !important;
+    border-radius: var(--hp-btn-radius) !important;
     transition: all 0.3s ease-in-out !important;
-    padding: 18px 24px !important;
+    padding: var(--hp-btn-pad-y) var(--hp-btn-pad-x) !important;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    min-height: 64px;
+    font-size: var(--hp-btn-font) !important;
+    font-weight: 900 !important;
+    line-height: 1.2;
     z-index: 1;
 }
 
@@ -493,7 +506,7 @@ body.dark .clay-button {
     right: 0;
     height: 45%;
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 1.3rem 1.3rem 0 0;
+    border-radius: var(--hp-btn-inner-radius) var(--hp-btn-inner-radius) 0 0;
     pointer-events: none;
     z-index: -1;
 }
@@ -508,17 +521,51 @@ body.dark .clay-button {
     background: rgba(255, 255, 255, 0.85) !important;
     border: 2px solid #E2E8F2 !important;
     color: #58627A !important;
-    border-radius: 1.5rem !important;
-    padding: 18px 24px !important;
+    border-radius: var(--hp-btn-radius) !important;
+    padding: var(--hp-btn-pad-y) var(--hp-btn-pad-x) !important;
     box-shadow: 0 4px 12px rgba(100, 120, 160, 0.08) !important;
     transition: all 0.2s ease-in-out !important;
-    font-size: inherit;
+    min-height: 64px;
+    font-size: var(--hp-btn-font) !important;
+    font-weight: 900 !important;
+    line-height: 1.2;
 }
 
 .back-quiz-button:hover, .back-quiz-button:active {
     background-color: #F4F7FC !important;
     border-color: #C8D1E0 !important;
     transform: scale(0.97);
+}
+
+.hp-nav-button {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 16px rgba(80, 96, 120, 0.1);
+    color: #5B677A;
+    font-size: 1.25rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.hp-nav-button:active {
+    transform: scale(0.94);
+    background: #F8FAF9;
+    border-color: #E9EDF2;
+}
+
+.hp-nav-button--compact {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.9rem;
+    font-size: 1rem;
 }
 
 /* 결과 화면 카드 컨테이너 커스텀 스타일 */

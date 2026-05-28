@@ -460,7 +460,7 @@ const App = () => {
                     onMarkWrong={(id) => markWrong(id)}
                     onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                     onWordCorrect={(wordId) => logCorrectWord(wordId)}
-                    onWordWrong={(wordId) => { logWrongWord(wordId); markWordWrong(wordId); }}
+                    onWordWrong={(wordId, hanjaId, reading, meaning) => { logWrongWord(wordId); markWordWrong(wordId, hanjaId, reading, meaning); }}
                     masteryData={hanjaData}
                     srsData={hanjaData}
                     userLevel={currentLevel}

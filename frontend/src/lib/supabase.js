@@ -224,7 +224,7 @@ export const fetchUserProfile = async () => {
 
 /**
  * 현재 유저의 구매 팩 조회
- * unlocked_pack: 0=free, 1=pack1(21~60), 2=pack2(61~124), 3=fullpack(1~124)
+ * unlocked_pack: 0=free, 1=pack1(18~51), 2=pack2(52~124), 3=fullpack(18~124)
  * 하위 호환: is_premium=true → pack 3
  */
 export const fetchUnlockedPack = async () => {
