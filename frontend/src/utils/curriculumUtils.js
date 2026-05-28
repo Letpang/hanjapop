@@ -13,11 +13,11 @@ export const getClearedHanjaIds = (completedDay) => {
 };
 
 /**
- * 특정 day가 복습 게이트 or 보스전인지
+ * 특정 day가 복습 게이트인지
  */
 export const isGateDay = (dayIndex) => {
     const entry = DAILY_CURRICULUM[dayIndex];
-    return entry ? (!!entry.reviewGate || !!entry.boss) : false;
+    return entry ? !!entry.reviewGate : false;
 };
 
 export { DAILY_CURRICULUM };

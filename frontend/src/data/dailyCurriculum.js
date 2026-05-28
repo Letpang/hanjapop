@@ -150,8 +150,6 @@ const DAILY_CURRICULUM = [
       { id: 112, hanja: "南", sound: "남", meaning: "남녘" },
       { id: 113, hanja: "北", sound: "북", meaning: "북녘" },
     ],
-    boss: true,
-    bossGrade: "8급",
   },
   {
     day: 17,
@@ -161,8 +159,6 @@ const DAILY_CURRICULUM = [
       { id: 278, hanja: "韓", sound: "한", meaning: "한국" },
     ],
     gradeTestAlert: "8급",
-    boss: true,
-    bossGrade: "8급",
   },
   {
     day: 18,
@@ -462,8 +458,6 @@ const DAILY_CURRICULUM = [
       { id: 67, hanja: "色", sound: "색", meaning: "빛" },
     ],
     reviewGate: true,
-    boss: true,
-    bossGrade: "7급",
   },
   {
     day: 50,
@@ -473,8 +467,6 @@ const DAILY_CURRICULUM = [
       { id: 87, hanja: "主", sound: "주", meaning: "주인" },
       { id: 296, hanja: "休", sound: "휴", meaning: "쉴" },
     ],
-    boss: true,
-    bossGrade: "7급",
   },
   {
     day: 51,
@@ -762,8 +754,6 @@ const DAILY_CURRICULUM = [
       { id: 37, hanja: "朝", sound: "조", meaning: "아침" },
       { id: 38, hanja: "晝", sound: "주", meaning: "낮" },
     ],
-    boss: true,
-    bossGrade: "6급Ⅱ",
   },
   {
     day: 82,
@@ -773,8 +763,6 @@ const DAILY_CURRICULUM = [
       { id: 78, hanja: "孫", sound: "손", meaning: "손자" },
       { id: 352, hanja: "李", sound: "리", meaning: "오얏/성(姓)" },
     ],
-    boss: true,
-    bossGrade: "6급Ⅱ",
   },
   {
     day: 83,
@@ -906,8 +894,6 @@ const DAILY_CURRICULUM = [
       { id: 342, hanja: "太", sound: "태", meaning: "클" },
       { id: 343, hanja: "失", sound: "실", meaning: "잃을" },
     ],
-    boss: true,
-    bossGrade: "6급",
   },
   {
     day: 97,
@@ -917,8 +903,6 @@ const DAILY_CURRICULUM = [
       { id: 344, hanja: "定", sound: "정", meaning: "정할" },
       { id: 346, hanja: "式", sound: "식", meaning: "법" },
     ],
-    boss: true,
-    bossGrade: "6급",
   },
   {
     day: 98,
