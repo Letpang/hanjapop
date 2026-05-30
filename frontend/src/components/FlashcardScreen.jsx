@@ -188,6 +188,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const [quizDone, setQuizDone] = useState(false);
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
+    const completionLabel = isSequence ? (isLast ? '전체 학습 완료하기' : '다음 한자로 이동') : '학습지 완료하기';
 
     const handleWritingComplete = useCallback((hanjaId, score) => {
         if (onHanjaAcquired) onHanjaAcquired(hanjaId, Math.round(score / 10));
@@ -367,6 +368,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 onWritingComplete={handleWritingComplete}
                                 onNextHanja={handleWritingNext}
                                 onBack={handleWritingNext}
+                                nextLabel={completionLabel}
                             />
                         </div>
 
@@ -410,14 +412,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                                 onClick={() => { onStudySheetComplete?.(item.id); onNext(); }}
                                                 className="w-full py-5 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-body-lg shadow-xl shadow-[#C3C6FF] active:scale-95 transition-all border-b-4 border-[#4A51D4]"
                                             >
-                                                {isLast ? '전체 학습 완료! →' : '다음 한자로 →'}
+                                                {isLast ? '전체 학습 완료하기' : '다음 한자로 이동'}
                                             </button>
                                         )}
                                         <button
                                             onClick={() => { onStudySheetComplete?.(item.id); onBack(); }}
                                             className="w-full py-5 rounded-[2rem] bg-[#F8FAF9] text-[#AEB7C5] font-extrabold text-body-lg active:scale-95 transition-all border-b-4 border-[#E9EDF2]"
                                         >
-                                            학습 종료하기
+                                            {isSequence ? '학습 지도로 돌아가기' : '완료하고 돌아가기'}
                                         </button>
                                     </div>
                                 </div>
@@ -441,7 +443,7 @@ const GRADE_BAR_COLOR = {
 };
 
 // ─── 한자 카드 (그리드용) — 메인 메뉴 카드 스타일 ──────────────────────────
-const HanjaCard = ({ item, isLocked, onClick }) => {
+const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
     const barColor = GRADE_BAR_COLOR[item.grade] || '#E2E8F0';
 
     if (isLocked) {
@@ -459,6 +461,11 @@ const HanjaCard = ({ item, isLocked, onClick }) => {
             onClick={onClick}
             className="minimal-card-studio !rounded-3xl group relative w-full flex flex-col items-center justify-center p-5 bg-white border-[#E9EDF2] hover:border-[#7C83FF] hover:shadow-xl hover:shadow-[#C3C6FF]/40 active:scale-95 transition-all duration-300 !min-h-[200px]"
         >
+            {isCompleted && (
+                <div className="absolute top-3 right-3 z-30 rounded-full bg-[#2ED6C5] px-2.5 py-1 text-xs font-black text-white shadow-md">
+                    완료
+                </div>
+            )}
             <div className="w-24 h-24 mb-3 flex items-center justify-center relative z-10 group-hover:scale-110 transition-transform duration-500">
                 <div 
                   className="absolute inset-0 rounded-[2.5rem] opacity-5 group-hover:opacity-10 transition-opacity"
@@ -491,6 +498,8 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     const [phase, setPhase] = useState(hanjaFilter || contentPool ? 'list' : 'select');
     const [studyItem, setStudyItem] = useState(null); // 학습지 열린 한자
     const [showExitModal, setShowExitModal] = useState(false);
+    const [completedStudyIds, setCompletedStudyIds] = useState(() => new Set());
+    const stageClearFiredRef = useRef(false);
     
     // 백업 스타일 싱글 카드 모드용 상태
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -549,6 +558,23 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
         setStudyItem(item);
     };
 
+    const handleStudySheetComplete = useCallback((id) => {
+        if (id == null) return;
+        onStudySheetComplete?.(id);
+        setCompletedStudyIds(prev => {
+            const next = new Set(prev);
+            next.add(id);
+
+            const allDone = currentItems.length > 0 && currentItems.every(h => next.has(h.id));
+            if (contentPool && allDone && !stageClearFiredRef.current) {
+                stageClearFiredRef.current = true;
+                onStageClear?.();
+            }
+
+            return next;
+        });
+    }, [contentPool, currentItems, onStageClear, onStudySheetComplete]);
+
     const handleNext = () => {
         if (currentIndex < currentItems.length - 1) {
             setCurrentIndex(prev => prev + 1);
@@ -569,7 +595,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 onMarkWrong={onMarkWrong}
                 onMarkWordWrong={onMarkWordWrong}
                 onHanjaAcquired={onHanjaAcquired}
-                onStudySheetComplete={onStudySheetComplete}
+                onStudySheetComplete={handleStudySheetComplete}
                 selectedCharacter={selectedCharacter}
                 getRewardPreview={getRewardPreview}
             />
@@ -613,7 +639,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             isSequence={true}
                             onNext={handleNext}
                             isLast={currentIndex === currentItems.length - 1}
-                            onStudySheetComplete={onStudySheetComplete}
+                            onStudySheetComplete={handleStudySheetComplete}
                             selectedCharacter={selectedCharacter}
                             getRewardPreview={getRewardPreview}
                         />
@@ -676,7 +702,13 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                         {phase === 'list' && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 {currentItems.map(item => (
-                                    <HanjaCard key={item.id} item={item} isLocked={!isUnlocked(item)} onClick={() => handleCardClick(item)} />
+                                    <HanjaCard
+                                        key={item.id}
+                                        item={item}
+                                        isLocked={!isUnlocked(item)}
+                                        isCompleted={completedStudyIds.has(item.id)}
+                                        onClick={() => handleCardClick(item)}
+                                    />
                                 ))}
                             </div>
                         )}

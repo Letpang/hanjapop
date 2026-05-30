@@ -121,7 +121,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
 };
 
 // ─── Quiz Card (Writing) ────────────────────────────────────────────────────
-const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHanja, onBack }) => {
+const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHanja, onBack, nextLabel = '다음 ›' }) => {
     const quizContainerRef = useRef(null);
     const strokeNumberCanvasRef = useRef(null);
     const writerRef = useRef(null);
@@ -419,7 +419,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
                 <div className="w-full flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-500">
                     <button onClick={onNextHanja}
                         className="w-full py-5 rounded-[2rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2">
-                        다음 ›
+                        {nextLabel}
                     </button>
                     <button onClick={handleRetry}
                         className="w-full py-4 text-[#8C97A8] font-bold text-h3-res">

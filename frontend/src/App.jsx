@@ -528,7 +528,7 @@ const App = () => {
                     onBack={() => setCurrentScreen('main')}
                     onStageClear={(correct, total, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
-                        handleHanjaAcquired(null, 30);
+                        handleHanjaAcquired(null, 20);
                         updateMissionProgress('sentenceQuiz', 1, addBonusXp);
                         addTodayStat('sentenceQuiz', total || 1);
                     }}
@@ -548,13 +548,15 @@ const App = () => {
                     currentDayHanjaIds={currentDayHanjaIds}
                     contentPool={effectivePool}
                     onGetNextWordIds={getNextWordIds}
+                    quizCount={5}
+                    clearXp={20}
                 />;
             case 'wordQuiz':
                 return <WordQuizScreen
                     onBack={() => setCurrentScreen('main')}
                     onStageClear={(correct, total, maxCombo, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
-                        handleHanjaAcquired(null, 30);
+                        handleHanjaAcquired(null, 20);
                         updateMissionProgress('wordQuiz', 1, addBonusXp);
                         addTodayStat('wordQuiz', total || 1);
                         updateRecord('wordBestScore', correct);
@@ -575,6 +577,8 @@ const App = () => {
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     contentPool={effectivePool}
                     onGetNextWordIds={getNextWordIds}
+                    quizCount={6}
+                    clearXp={20}
                 />;
             case 'gradeTest':
                 return <GradeTestScreen

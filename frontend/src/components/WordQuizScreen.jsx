@@ -37,7 +37,8 @@ const WORD_POOL = buildWordPool();
 const ALL_MEANINGS = [...new Set(WORD_POOL.map(w => w.meaning))];
 const CATEGORIES = [...new Set((HANJA_DATA || []).map(h => h.category).filter(Boolean))];
 
-const QUIZ_COUNT = 10;
+const DEFAULT_QUIZ_COUNT = 6;
+const DEFAULT_CLEAR_XP = 20;
 
 const shuffle = (arr) => {
     const a = [...arr];
@@ -53,22 +54,15 @@ const pickDistractors = (correctMeaning, count = 3) => {
     return shuffle(others).slice(0, count);
 };
 
-const fillToQuizCount = (items, sourcePool) => {
-    if (items.length >= QUIZ_COUNT || sourcePool.length === 0) return items.slice(0, QUIZ_COUNT);
-    const filled = [...items];
-    let i = 0;
-    while (filled.length < QUIZ_COUNT) {
-        filled.push(sourcePool[i % sourcePool.length]);
-        i += 1;
-    }
-    return filled;
+const capQuizCount = (items, quizCount) => {
+    return items.slice(0, quizCount);
 };
 
 const REVIEW_SLOTS = 3; // 복습 단어 고정 슬롯
 
-// contentPool 기반 퀴즈: main(오늘) + review(SRS) 비율로 10문제 선택
+// contentPool 기반 퀴즈: main(오늘) + review(SRS) 비율로 짧은 세트 선택
 // seenWordIds: 오늘 이미 본 단어 ID 목록 → 안 본 것 먼저, 다 봤으면 전체 초기화
-const buildQuizFromPool = (contentPool, srsData, masteryData, userLevel, seenWordIds = []) => {
+const buildQuizFromPool = (contentPool, srsData, masteryData, userLevel, seenWordIds = [], quizCount = DEFAULT_QUIZ_COUNT) => {
     const mainIdSet = new Set(contentPool.main?.wordIds || []);
     const reviewIdSet = new Set(contentPool.review?.wordIds || []);
     const mainWords = WORD_POOL.filter(w => mainIdSet.has(w.id));
@@ -90,16 +84,15 @@ const buildQuizFromPool = (contentPool, srsData, masteryData, userLevel, seenWor
     };
 
     const ratio = contentPool.ratio ?? 1.0;
-    const targetMain = Math.min(Math.round(QUIZ_COUNT * ratio), mainWords.length);
-    const targetReview = Math.min(QUIZ_COUNT - targetMain, reviewWords.length);
+    const targetMain = Math.min(Math.round(quizCount * ratio), mainWords.length);
+    const targetReview = Math.min(quizCount - targetMain, reviewWords.length);
     const mainPicked = pickFrom(mainWords, targetMain);
     const reviewPicked = pickFrom(reviewWords, targetReview);
     // 빈 자리: main 나머지로 채움
     const usedIds = new Set([...mainPicked, ...reviewPicked].map(w => w.id));
-    const shortfall = QUIZ_COUNT - mainPicked.length - reviewPicked.length;
+    const shortfall = quizCount - mainPicked.length - reviewPicked.length;
     const fillPicked = shortfall > 0 ? pickFrom(mainWords.filter(w => !usedIds.has(w.id)), shortfall) : [];
-    const sourcePool = [...mainWords, ...reviewWords];
-    const picked = shuffle(fillToQuizCount([...mainPicked, ...reviewPicked, ...fillPicked], sourcePool));
+    const picked = shuffle(capQuizCount([...mainPicked, ...reviewPicked, ...fillPicked], quizCount));
     return picked.map(item => {
         const distractors = pickDistractors(item.meaning);
         const choices = shuffle([item.meaning, ...distractors]);
@@ -107,7 +100,7 @@ const buildQuizFromPool = (contentPool, srsData, masteryData, userLevel, seenWor
     });
 };
 
-const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedIds = null) => {
+const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedIds = null, quizCount = DEFAULT_QUIZ_COUNT) => {
     let pool;
     if (filterType === 'topic') {
         pool = WORD_POOL.filter(w => w.category === filter);
@@ -117,7 +110,7 @@ const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedI
     if (allowedIds) pool = pool.filter(w => allowedIds.has(w.hanja_id));
     if (pool.length < 4) pool = allowedIds ? WORD_POOL.filter(w => allowedIds.has(w.hanja_id)) : WORD_POOL;
 
-    const picked = fillToQuizCount(getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, QUIZ_COUNT), pool);
+    const picked = capQuizCount(getWordSRSWeightedPool(pool, srsData, masteryData, userLevel, quizCount), quizCount);
     return picked.map(item => {
         const distractors = pickDistractors(item.meaning);
         const choices = shuffle([item.meaning, ...distractors]);
@@ -126,11 +119,11 @@ const buildQuiz = (filter, filterType, srsData, masteryData, userLevel, allowedI
 };
 
 // ─── Result Screen ──────────────────────────────────────────────────────────
-const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedCharacter, dailyMapNode, hideRetry, getRewardPreview }) => {
+const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedCharacter, dailyMapNode, hideRetry, getRewardPreview, clearXp = DEFAULT_CLEAR_XP }) => {
     const pct = Math.round((correct / total) * 100);
     const isClear = pct >= 70;
     const correctXp = correct * 5;
-    const reward = getRewardPreview?.(correctXp + 30);
+    const reward = getRewardPreview?.(correctXp + clearXp);
 
     if (dailyMapNode) {
         return (
@@ -591,7 +584,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
 };
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
-const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, seenWordIds, dailyMapNode, hideRetry }) => {
+const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, seenWordIds, dailyMapNode, hideRetry, quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP }) => {
     const [viewMode, setViewMode] = useState('grade');
     const [gradeFilter, setGradeFilter] = useState('전체');
     const [categoryFilter, setCategoryFilter] = useState(CATEGORIES[0] || '');
@@ -617,11 +610,11 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
 
     const startQuiz = useCallback((overrideFilter, overrideViewMode) => {
         if (contentPool) {
-            setQuestions(buildQuizFromPool(contentPool, srsData, masteryData, userLevel, seenWordIds || []));
+            setQuestions(buildQuizFromPool(contentPool, srsData, masteryData, userLevel, seenWordIds || [], quizCount));
         } else {
             const effectiveViewMode = overrideViewMode || viewMode;
             const filter = overrideFilter != null ? overrideFilter : (effectiveViewMode === 'topic' ? categoryFilter : gradeFilter);
-            setQuestions(buildQuiz(filter, effectiveViewMode, srsData, masteryData, userLevel, unlockedIds));
+            setQuestions(buildQuiz(filter, effectiveViewMode, srsData, masteryData, userLevel, unlockedIds, quizCount));
         }
         setCurrentIdx(0);
         setCorrectCount(0);
@@ -631,7 +624,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
         setMaxCombo(0);
         maxComboRef.current = 0;
         setPhase('quiz');
-    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, contentPool, unlockedIds, seenWordIds]);
+    }, [viewMode, gradeFilter, categoryFilter, srsData, masteryData, userLevel, contentPool, unlockedIds, seenWordIds, quizCount]);
 
     const startQuizRef = useRef(null);
     useEffect(() => { startQuizRef.current = startQuiz; });
@@ -830,6 +823,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                             dailyMapNode={dailyMapNode}
                             hideRetry={hideRetry}
                             getRewardPreview={getRewardPreview}
+                            clearXp={clearXp}
                         />
                     )}
                 </div>

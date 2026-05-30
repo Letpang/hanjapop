@@ -18,6 +18,9 @@ const CELEB_MESSAGES = [
     "한자 마스터의 감각!"
 ];
 
+const DEFAULT_QUIZ_COUNT = 5;
+const DEFAULT_CLEAR_XP = 20;
+
 const wordReadingMap = {};
 HANJA_DATA.forEach(h => {
     (h.words || []).forEach(w => {
@@ -56,7 +59,7 @@ const speakKorean = (text, onEnd) => {
     });
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds, dailyMapNode, hideRetry }) => {
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds, dailyMapNode, hideRetry, quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP }) => {
     // ── 선택 상태 ──────────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
@@ -135,24 +138,26 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         // 큐는 여기서 초기화하지 않음 — srsData/masteryData 변경마다 리셋되는 버그 방지
     }, [activeHanjaSet, srsData, masteryData, contentPool, currentDayHanjaIds, seenHanjaIds]);
 
-    // 메인화면 모드: 미출제 오늘 한자 7개 + SRS 복습 3개 = 10문제 고정 큐
-    const buildMainQueue10 = useCallback(() => {
+    // 메인화면 모드: 오늘 한자 중심 + SRS 복습을 섞은 짧은 세트 큐
+    const buildMainQueue = useCallback(() => {
         if (!currentDayHanjaIds?.length) return null;
         const seenSet = new Set(mainSeenHanjaIds || []);
         const todaySet = new Set(currentDayHanjaIds);
         const srsSeenIds = new Set(Object.keys(srsData || {}).map(Number));
         const withWords = activeHanjaSet.filter(h => h.words?.length > 0);
+        const todaySlots = Math.max(1, Math.ceil(quizCount * 0.7));
+        const reviewSlots = Math.max(0, quizCount - todaySlots);
 
         const todayHanja = withWords.filter(h => todaySet.has(h.id));
         const unseenToday = todayHanja.filter(h => !seenSet.has(h.id)).sort(() => Math.random() - 0.5);
         const seenToday = todayHanja.filter(h => seenSet.has(h.id)).sort(() => Math.random() - 0.5);
-        const todayPicked = [...unseenToday, ...seenToday].slice(0, 7);
+        const todayPicked = [...unseenToday, ...seenToday].slice(0, todaySlots);
 
         const srsHanja = withWords.filter(h => srsSeenIds.has(h.id) && !todaySet.has(h.id));
-        const srsPicked = getSRSWeightedPool(srsHanja, srsData, masteryData, userLevel, 3);
+        const srsPicked = getSRSWeightedPool(srsHanja, srsData, masteryData, userLevel, reviewSlots);
 
         return [...todayPicked, ...srsPicked];
-    }, [activeHanjaSet, currentDayHanjaIds, mainSeenHanjaIds, masteryData, srsData, userLevel]);
+    }, [activeHanjaSet, currentDayHanjaIds, mainSeenHanjaIds, masteryData, quizCount, srsData, userLevel]);
 
     const initQueues = useCallback((overridePlan) => {
         const plan = overridePlan || sessionPlan;
@@ -240,19 +245,12 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         if (!plan) {
             if (contentPool) {
                 const base = activeHanjaSet.filter(h => h.words?.length > 0);
-                const stage = buildHanjaStage(contentPool, base, srsData, masteryData, seenHanjaIds || [], 10);
+                const stage = buildHanjaStage(contentPool, base, srsData, masteryData, seenHanjaIds || [], quizCount);
                 if (stage.length > 0) {
-                    // stage가 10개 미만이면 normalPool에 재활용 아이템으로 채워 항상 10문제 보장
-                    const extras = [];
-                    let i = 0;
-                    while (stage.length + extras.length < 10) {
-                        extras.push(stage[i % stage.length]);
-                        i++;
-                    }
-                    plan = { reviewQueue: [...stage], normalPool: extras };
+                    plan = { reviewQueue: [...stage], normalPool: [] };
                 }
             } else if (currentDayHanjaIds?.length > 0) {
-                const queue = buildMainQueue10();
+                const queue = buildMainQueue();
                 if (queue?.length > 0) plan = { reviewQueue: queue, normalPool: [] };
             }
         }
@@ -353,7 +351,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         setIsWordCardFlipped(false);
         setIsSpeaking(false);
         const poolExhausted = reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0;
-        if (totalAnsweredRef.current >= 10 || poolExhausted) {
+        if (totalAnsweredRef.current >= quizCount || poolExhausted) {
             stageClearArgsRef.current = [scoreRef.current, totalAnsweredRef.current, [...shownWordsRef.current]];
             setGameState('result');
         } else {
@@ -376,9 +374,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     // ── 결과 화면 ──────────────────────────────────────────────────────────
     if (started && gameState === 'result') {
-        const isClear = score >= 10 * 0.7;
+        const resultTotal = Math.max(totalAnswered, 1);
+        const isClear = score >= resultTotal * 0.7;
         const correctXp = score * 10;
-        const reward = getRewardPreview?.(correctXp + 30);
+        const reward = getRewardPreview?.(correctXp + clearXp);
 
         // 데일리 세션 모드: 지도 + 단일 버튼 (WordQuizScreen과 동일한 패턴)
         if (dailyMapNode) {
@@ -398,7 +397,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 </h1>
                                 <p className="text-xs-res font-bold leading-relaxed break-keep mt-2" style={{ color: '#A5AFBF' }}>
                                     {isClear
-                                        ? <>총 10문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
+                                        ? <>총 {resultTotal}문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
                                         : '조금만 더 노력하면 성공할 수 있어요!'}
                                 </p>
                             </div>
@@ -462,7 +461,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             </h1>
                             <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
                                 {isClear
-                                    ? <>총 10문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
+                                    ? <>총 {resultTotal}문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
                                     : '조금만 더 노력하면 성공할 수 있어요!'}
                             </p>
                         </div>
@@ -604,13 +603,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 한자를 선택하세요</p>
                         </div>
                         <div className="flex items-center justify-end w-11">
-                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, 10)}/10</span>
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, quizCount)}/{quizCount}</span>
                         </div>
                     </div>
                     <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
                         <div
                             className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
-                            style={{ width: `${(Math.min(totalAnswered + 1, 10) / 10) * 100}%` }}
+                            style={{ width: `${(Math.min(totalAnswered + 1, quizCount) / quizCount) * 100}%` }}
                         >
                             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
                                 <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
@@ -782,7 +781,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     onClick={handleNext}
                                     className="flex-[2] py-3 rounded-[1.8rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
-                                    {totalAnswered >= 10 ? '결과 보기 ›' : '다음 ›'}
+                                    {totalAnswered >= quizCount ? '결과 보기 ›' : '다음 ›'}
                                 </button>
                             </div>
                         )}

@@ -1288,12 +1288,14 @@ const DailySessionScreen = ({
                     onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
                     onStageClear={(correct, total, newSeenIds) => {
                         if (newSeenIds) markHanjaSeen(newSeenIds);
-                        if (onHanjaAcquired) onHanjaAcquired(null, 30);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 20);
                         if (updateMissionProgress) updateMissionProgress('sentenceQuiz', 1, addBonusXp);
                         if (addTodayStat) addTodayStat('sentenceQuiz', total || 1);
                         setResumeStep('dice');
                         setStep('dice');
                     }}
+                    quizCount={4}
+                    clearXp={20}
                 />
             </Suspense>
         );
@@ -1317,12 +1319,14 @@ const DailySessionScreen = ({
                     seenHanjaIds={seenHanjaIds} seenWordIds={seenWordIds}
                     onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
                     onStageClear={(correct, total) => {
-                        if (onHanjaAcquired) onHanjaAcquired(null, 30);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 20);
                         if (updateMissionProgress) updateMissionProgress('wordQuiz', 1, addBonusXp);
                         if (addTodayStat) addTodayStat('wordQuiz', total || 1);
                         setResumeStep('dice');
                         setStep('dice');
                     }}
+                    quizCount={5}
+                    clearXp={20}
                 />
             </Suspense>
         );
