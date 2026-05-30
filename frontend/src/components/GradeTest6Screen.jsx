@@ -1,161 +1,136 @@
 import { useState } from 'react';
 import { SK } from '../constants/storageKeys.js';
+import { playSound } from '../utils/playSound.js';
+import GradeTestIntro from './common/GradeTestIntro.jsx';
+import GradeTestResult from './common/GradeTestResult.jsx';
 
-// ─── 6급 기출 기반 문제 (111회·112회) — hanja_unified.json 검증 완료 ─────────
+// ─── 6급 기출 기반 문제 (111회·112회) — 90문항 ───────────────────────────────
 const QUESTIONS = [
-  // ── 한자어 독음 (6급 한자 포함 단어) ──
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '勝利',
-    choices: ['승리', '패배', '승부', '승점'],
-    answer: '승리',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '太陽',
-    choices: ['태양', '달빛', '태반', '일광'],
-    answer: '태양',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '溫度',
-    choices: ['온도', '온천', '습도', '기온'],
-    answer: '온도',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '感情',
-    choices: ['감정', '감사', '정보', '감각'],
-    answer: '감정',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '開放',
-    choices: ['개방', '개인', '방면', '개시'],
-    answer: '개방',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '急速',
-    choices: ['급속', '급행', '속도', '급변'],
-    answer: '급속',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '衣服',
-    choices: ['의복', '의원', '복장', '의류'],
-    answer: '의복',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 漢字語의 읽는 소리는?',
-    hanja: '幸運',
-    choices: ['행운', '행복', '운명', '행사'],
-    answer: '행운',
-  },
+  // ── [1-33] 독음: 문장 속 한자어 읽기 ──
+  { type: 'sound_sentence', sentence: '(勝利) 의 기쁨을 나눠요.', hanja: '勝利', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['승리', '패배', '승부', '승점'], answer: '승리' },
+  { type: 'sound_sentence', sentence: '(太陽) 이 뜨겁게 내리쬐어요.', hanja: '太陽', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['태양', '달빛', '태반', '일광'], answer: '태양' },
+  { type: 'sound_sentence', sentence: '(溫度) 가 많이 올랐어요.', hanja: '溫度', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['온도', '온천', '습도', '기온'], answer: '온도' },
+  { type: 'sound_sentence', sentence: '(感情) 을 솔직하게 표현해요.', hanja: '感情', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['감정', '감사', '정보', '감각'], answer: '감정' },
+  { type: 'sound_sentence', sentence: '(開放) 적인 태도가 중요해요.', hanja: '開放', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['개방', '개인', '방면', '개시'], answer: '개방' },
+  { type: 'sound_sentence', sentence: '(衣服) 을 깨끗이 입어요.', hanja: '衣服', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['의복', '의원', '복장', '의류'], answer: '의복' },
+  { type: 'sound_sentence', sentence: '(愛情) 이 가득한 가족이에요.', hanja: '愛情', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['애정', '애국', '정애', '사랑정'], answer: '애정' },
+  { type: 'sound_sentence', sentence: '(美術) 관람을 즐겨요.', hanja: '美術', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['미술', '술미', '미용', '예술'], answer: '미술' },
+  { type: 'sound_sentence', sentence: '(朝食) 을 꼭 먹어요.', hanja: '朝食', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['조식', '조석', '석조', '아침식'], answer: '조식' },
+  { type: 'sound_sentence', sentence: '(死亡) 소식을 들었어요.', hanja: '死亡', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['사망', '망사', '사건', '생사'], answer: '사망' },
+  { type: 'sound_sentence', sentence: '(民族) 정신을 이어받아요.', hanja: '民族', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['민족', '족민', '민심', '겨레족'], answer: '민족' },
+  { type: 'sound_sentence', sentence: '(遠近) 을 조절해요.', hanja: '遠近', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['원근', '근원', '원거', '거리근'], answer: '원근' },
+  { type: 'sound_sentence', sentence: '(石油) 가격이 올랐어요.', hanja: '石油', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['석유', '유석', '석탄', '기름석'], answer: '석유' },
+  { type: 'sound_sentence', sentence: '(洋食) 을 좋아해요.', hanja: '洋食', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['양식', '식양', '양념', '서양식'], answer: '양식' },
+  { type: 'sound_sentence', sentence: '(集中) 해서 공부해요.', hanja: '集中', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['집중', '중집', '집합', '중심집'], answer: '집중' },
+  { type: 'sound_sentence', sentence: '(正義) 를 위해 싸워요.', hanja: '正義', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['정의', '의정', '정당', '올바름'], answer: '정의' },
+  { type: 'sound_sentence', sentence: '(廣場) 에 사람들이 모였어요.', hanja: '廣場', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['광장', '장광', '광야', '넓은장'], answer: '광장' },
+  { type: 'sound_sentence', sentence: '(平和) 가 찾아왔어요.', hanja: '平和', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['평화', '화평', '평온', '화목평'], answer: '평화' },
+  { type: 'sound_sentence', sentence: '(利用) 해서 만들었어요.', hanja: '利用', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['이용', '용이', '이익', '사용이'], answer: '이용' },
+  { type: 'sound_sentence', sentence: '(共同) 으로 작업해요.', hanja: '共同', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['공동', '동공', '공통', '함께동'], answer: '공동' },
+  { type: 'sound_sentence', sentence: '(待機) 하고 있어요.', hanja: '待機', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['대기', '기대', '대기권', '기다림기'], answer: '대기' },
+  { type: 'sound_sentence', sentence: '(定期) 적으로 검사해요.', hanja: '定期', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['정기', '기정', '정확기', '기간정'], answer: '정기' },
+  { type: 'sound_sentence', sentence: '(式場) 에 많은 사람이 왔어요.', hanja: '式場', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['식장', '장식', '식순', '예식장'], answer: '식장' },
+  { type: 'sound_sentence', sentence: '(現代) 사회는 변화가 빨라요.', hanja: '現代', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['현대', '대현', '현재대', '현실'], answer: '현대' },
+  { type: 'sound_sentence', sentence: '(勇氣) 를 내세요.', hanja: '勇氣', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['용기', '기용', '용사기', '씩씩기'], answer: '용기' },
+  { type: 'sound_sentence', sentence: '(油田) 에서 석유를 채굴해요.', hanja: '油田', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['유전', '전유', '유정', '기름전'], answer: '유전' },
+  { type: 'sound_sentence', sentence: '(洋服) 차림으로 나갔어요.', hanja: '洋服', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['양복', '복양', '서양복', '양식복'], answer: '양복' },
+  { type: 'sound_sentence', sentence: '(米穀) 상점에서 쌀을 샀어요.', hanja: '米穀', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['미곡', '곡미', '미식', '쌀곡'], answer: '미곡' },
+  { type: 'sound_sentence', sentence: '(牛乳) 를 매일 마셔요.', hanja: '牛乳', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['우유', '유우', '우소', '소유'], answer: '우유' },
+  { type: 'sound_sentence', sentence: '(利益) 을 나누어요.', hanja: '利益', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['이익', '익이', '이득', '득이'], answer: '이익' },
+  { type: 'sound_sentence', sentence: '(集合) 시간이 됐어요.', hanja: '集合', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['집합', '합집', '집결', '모임합'], answer: '집합' },
+  { type: 'sound_sentence', sentence: '(石炭) 을 연료로 쓰던 시대예요.', hanja: '石炭', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['석탄', '탄석', '석유탄', '숯석'], answer: '석탄' },
+  { type: 'sound_sentence', sentence: '(廣告) 를 보고 샀어요.', hanja: '廣告', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['광고', '고광', '광보', '알림고'], answer: '광고' },
 
-  // ── 한자 → 뜻 (6급 한자) ──
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '朝',
-    choices: ['저녁', '아침', '낮', '새벽'],
-    answer: '아침',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '愛',
-    choices: ['미움', '슬픔', '기쁨', '사랑'],
-    answer: '사랑',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '遠',
-    choices: ['가까울', '높을', '멀', '낮을'],
-    answer: '멀',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '死',
-    choices: ['살', '죽을', '낳을', '없을'],
-    answer: '죽을',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '美',
-    choices: ['추할', '슬플', '아름다울', '기쁠'],
-    answer: '아름다울',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '族',
-    choices: ['나라', '군대', '겨레', '마을'],
-    answer: '겨레',
-  },
+  // ── [34-55] 한자 → 훈+음 ──
+  { type: 'meaning_sound', hanja: '勝', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['이길 승', '질 승', '이길 패', '싸울 승'], answer: '이길 승' },
+  { type: 'meaning_sound', hanja: '太', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['클 태', '작을 태', '클 대', '넓을 태'], answer: '클 태' },
+  { type: 'meaning_sound', hanja: '溫', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['따뜻할 온', '차가울 온', '따뜻할 냉', '더울 온'], answer: '따뜻할 온' },
+  { type: 'meaning_sound', hanja: '愛', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['사랑 애', '미움 애', '사랑 정', '기쁠 애'], answer: '사랑 애' },
+  { type: 'meaning_sound', hanja: '美', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['아름다울 미', '추할 미', '아름다울 추', '예쁠 미'], answer: '아름다울 미' },
+  { type: 'meaning_sound', hanja: '朝', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['아침 조', '저녁 조', '아침 석', '낮 조'], answer: '아침 조' },
+  { type: 'meaning_sound', hanja: '死', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['죽을 사', '살 사', '죽을 생', '없을 사'], answer: '죽을 사' },
+  { type: 'meaning_sound', hanja: '族', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['겨레 족', '혼자 족', '겨레 민', '집 족'], answer: '겨레 족' },
+  { type: 'meaning_sound', hanja: '遠', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['멀 원', '가까울 원', '멀 근', '높을 원'], answer: '멀 원' },
+  { type: 'meaning_sound', hanja: '油', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['기름 유', '물 유', '기름 수', '불 유'], answer: '기름 유' },
+  { type: 'meaning_sound', hanja: '洋', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['바다 양', '강 양', '바다 해', '땅 양'], answer: '바다 양' },
+  { type: 'meaning_sound', hanja: '集', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['모을 집', '흩을 집', '모을 산', '둘 집'], answer: '모을 집' },
+  { type: 'meaning_sound', hanja: '正', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['바를 정', '굽을 정', '바를 사', '틀릴 정'], answer: '바를 정' },
+  { type: 'meaning_sound', hanja: '廣', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['넓을 광', '좁을 광', '넓을 협', '클 광'], answer: '넓을 광' },
+  { type: 'meaning_sound', hanja: '平', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['평평할 평', '굽을 평', '평평할 정', '높을 평'], answer: '평평할 평' },
+  { type: 'meaning_sound', hanja: '利', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['이로울 리', '해로울 리', '이로울 해', '얻을 리'], answer: '이로울 리' },
+  { type: 'meaning_sound', hanja: '共', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['한가지 공', '다를 공', '한가지 동', '혼자 공'], answer: '한가지 공' },
+  { type: 'meaning_sound', hanja: '待', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['기다릴 대', '갈 대', '기다릴 행', '맞을 대'], answer: '기다릴 대' },
+  { type: 'meaning_sound', hanja: '定', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['정할 정', '어긋날 정', '정할 변', '세울 정'], answer: '정할 정' },
+  { type: 'meaning_sound', hanja: '勇', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['날랠 용', '겁쟁이 용', '날랠 겁', '힘 용'], answer: '날랠 용' },
+  { type: 'meaning_sound', hanja: '石', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['돌 석', '흙 석', '돌 토', '산 석'], answer: '돌 석' },
+  { type: 'meaning_sound', hanja: '米', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['쌀 미', '보리 미', '쌀 보', '벼 미'], answer: '쌀 미' },
 
-  // ── 뜻 → 한자 (6급 한자) ──
-  {
-    type: 'hanja',
-    prompt: '"사랑"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['愛', '感', '情', '別'],
-    answer: '愛',
-  },
-  {
-    type: 'hanja',
-    prompt: '"이길"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['勝', '戰', '兵', '反'],
-    answer: '勝',
-  },
-  {
-    type: 'hanja',
-    prompt: '"기름"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['油', '米', '牛', '洋'],
-    answer: '油',
-  },
-  {
-    type: 'hanja',
-    prompt: '"겨레"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['族', '待', '式', '定'],
-    answer: '族',
-  },
+  // ── [56-58] 반대어 ──
+  { type: 'opposite', hanja: '勝', prompt: '다음 한자의 대응어(반대어)는?', choices: ['敗', '戰', '强', '弱'], answer: '敗' },
+  { type: 'opposite', hanja: '愛', prompt: '다음 한자의 대응어(반대어)는?', choices: ['憎', '美', '善', '信'], answer: '憎' },
+  { type: 'opposite', hanja: '遠', prompt: '다음 한자의 대응어(반대어)는?', choices: ['近', '高', '大', '長'], answer: '近' },
 
-  // ── 반의어 (기출 56~58번 유형) ──
-  {
-    type: 'hanja',
-    prompt: "'死(죽을)'의 반대 뜻을 가진 한자는?",
-    hanja: null,
-    choices: ['活', '使', '在', '感'],
-    answer: '活',
-  },
-  {
-    type: 'hanja',
-    prompt: "'古(예)'의 반대 뜻을 가진 한자는?",
-    hanja: null,
-    choices: ['今', '共', '幸', '始'],
-    answer: '今',
-  },
+  // ── [59-60] 유사어 ──
+  { type: 'similar', hanja: '美', prompt: '다음 한자와 가장 비슷한 뜻의 한자는?', choices: ['麗', '醜', '老', '動'], answer: '麗' },
+  { type: 'similar', hanja: '利', prompt: '다음 한자와 가장 비슷한 뜻의 한자는?', choices: ['益', '損', '害', '弱'], answer: '益' },
+
+  // ── [61-62] 동음이의어 ──
+  { type: 'homo_meaning', prompt: '"기사(記事)"와 같은 소리이지만 다른 뜻인 漢字語는?', choices: ['騎士', '記事', '記者', '機士'], answer: '騎士' },
+  { type: 'homo_meaning', prompt: '"정의(正義)"와 같은 소리이지만 다른 뜻인 漢字語는?', choices: ['定義', '正義', '正意', '征義'], answer: '定義' },
+
+  // ── [63-65] 사자성어 ──
+  { type: 'idiom', prompt: '"一□一失"의 □에 들어갈 한자는?', choices: ['得', '大', '百', '全'], answer: '得' },
+  { type: 'idiom', prompt: '"百□百中"의 □에 들어갈 한자는?', choices: ['發', '年', '勝', '倍'], answer: '發' },
+  { type: 'idiom', prompt: '"大□小異"의 □에 들어갈 한자는?', choices: ['同', '中', '全', '一'], answer: '同' },
+
+  // ── [66-67] 뜻 → 한자어 ──
+  { type: 'meaning_to_word', prompt: '"이기고 지는 일"을 뜻하는 漢字語는?', choices: ['勝敗', '勝利', '成功', '勝負'], answer: '勝負' },
+  { type: 'meaning_to_word', prompt: '"아침에 먹는 음식"을 뜻하는 漢字語는?', choices: ['朝食', '食事', '朝夕', '間食'], answer: '朝食' },
+
+  // ── [68-87] 밑줄 친 말 → 漢字語 ──
+  { type: 'underline', sentence: '태양이 밝게 빛나요.', underline: '태양', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['太陽', '太陽光', '日光', '太光'], answer: '太陽' },
+  { type: 'underline', sentence: '감정을 솔직하게 표현해요.', underline: '감정', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['感情', '感動', '感謝', '情感'], answer: '感情' },
+  { type: 'underline', sentence: '민족의 전통을 지켜요.', underline: '민족', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['民族', '民主', '民俗', '族民'], answer: '民族' },
+  { type: 'underline', sentence: '미술 작품을 감상해요.', underline: '미술', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['美術', '美容', '藝術', '美化'], answer: '美術' },
+  { type: 'underline', sentence: '온도가 많이 올랐어요.', underline: '온도', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['溫度', '溫泉', '氣溫', '體溫'], answer: '溫度' },
+  { type: 'underline', sentence: '평화로운 세상을 꿈꿔요.', underline: '평화', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['平和', '平安', '平等', '和平'], answer: '平和' },
+  { type: 'underline', sentence: '용기 있는 행동이에요.', underline: '용기', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['勇氣', '用器', '勇士', '氣勇'], answer: '勇氣' },
+  { type: 'underline', sentence: '이익을 나누어요.', underline: '이익', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['利益', '利用', '利子', '益利'], answer: '利益' },
+  { type: 'underline', sentence: '석유가 중요한 자원이에요.', underline: '석유', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['石油', '石炭', '石材', '油石'], answer: '石油' },
+  { type: 'underline', sentence: '집중해서 읽어요.', underline: '집중', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['集中', '集合', '集積', '中集'], answer: '集中' },
+  { type: 'underline', sentence: '공동으로 결정해요.', underline: '공동', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['共同', '共通', '公同', '同共'], answer: '共同' },
+  { type: 'underline', sentence: '광고를 보고 구매했어요.', underline: '광고', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['廣告', '廣場', '告知', '廣報'], answer: '廣告' },
+  { type: 'underline', sentence: '현대 기술이 놀라워요.', underline: '현대', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['現代', '現在', '現場', '代現'], answer: '現代' },
+  { type: 'underline', sentence: '우유를 매일 마셔요.', underline: '우유', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['牛乳', '牛肉', '乳牛', '牛馬'], answer: '牛乳' },
+  { type: 'underline', sentence: '이용 가능한 방법을 찾아요.', underline: '이용', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['利用', '利益', '用利', '使用'], answer: '利用' },
+  { type: 'underline', sentence: '정의 실현을 위해 노력해요.', underline: '정의', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['正義', '定義', '正意', '正直'], answer: '正義' },
+  { type: 'underline', sentence: '양식 요리를 즐겨요.', underline: '양식', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['洋食', '洋服', '洋式', '食洋'], answer: '洋食' },
+  { type: 'underline', sentence: '승리를 기원해요.', underline: '승리', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['勝利', '勝負', '利勝', '勝敗'], answer: '勝利' },
+  { type: 'underline', sentence: '애정 어린 마음으로 돌봐요.', underline: '애정', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['愛情', '愛國', '情愛', '愛心'], answer: '愛情' },
+  { type: 'underline', sentence: '집합 장소로 모여요.', underline: '집합', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['集合', '集中', '合集', '集結'], answer: '集合' },
+
+  // ── [88-90] 필순 ──
+  { type: 'stroke', hanja: '勝', prompt: '다음 한자의 총 획수는?', choices: ['12획', '10획', '11획', '13획'], answer: '12획' },
+  { type: 'stroke', hanja: '愛', prompt: '다음 한자의 총 획수는?', choices: ['13획', '11획', '12획', '14획'], answer: '13획' },
+  { type: 'stroke', hanja: '溫', prompt: '다음 한자의 총 획수는?', choices: ['13획', '11획', '12획', '14획'], answer: '13획' },
 ];
 
-const PASS_COUNT = 14;
+const PASS_COUNT = 63;
+
+const TYPE_LABELS = {
+  sound_sentence: '독음 (읽는 소리)',
+  meaning_sound: '한자 → 훈+음',
+  opposite: '반대어 (대응어)',
+  similar: '유사어 (비슷한 말)',
+  homo_meaning: '동음이의어',
+  idiom: '사자성어',
+  meaning_to_word: '뜻 → 한자어',
+  underline: '밑줄 → 한자어',
+  stroke: '필순 (획수)',
+};
 
 const getUnlockedGrade = () => {
-  try { return localStorage.getItem(SK.UNLOCKED_GRADE) || '8급'; } catch { return '8급'; }
+  try { return localStorage.getItem(SK.UNLOCKED_GRADE); } catch { return null; }
 };
 
 const shuffle = (arr) => {
@@ -167,11 +142,35 @@ const shuffle = (arr) => {
   return a;
 };
 
-// ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const GradeTest6Screen = ({ onBack, onComplete }) => {
+const renderSentence = (sentence, hanja, underline) => {
+  if (underline) {
+    const idx = sentence.indexOf(underline);
+    if (idx === -1) return <span>{sentence}</span>;
+    return (
+      <>
+        {sentence.slice(0, idx)}
+        <span className="font-black underline decoration-2 underline-offset-2">{underline}</span>
+        {sentence.slice(idx + underline.length)}
+      </>
+    );
+  }
+  if (hanja) {
+    const parts = sentence.split(`(${hanja})`);
+    return parts.reduce((acc, part, i) => {
+      if (i < parts.length - 1) {
+        return [...acc, part, <span key={i} className="inline-block bg-[#EEF1FF] text-[#6D6FF2] font-black px-1.5 py-0 rounded-lg mx-0.5">{hanja}</span>];
+      }
+      return [...acc, part];
+    }, []);
+  }
+  return sentence;
+};
+
+// ─── 메인 컴포넌트 ───────────────────────────────────────────────────────────
+const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const currentGrade = getUnlockedGrade();
-  const alreadyUnlocked = currentGrade === '6급완료';
-  const hasPrereq = currentGrade === '6급' || alreadyUnlocked;
+  const alreadyUnlocked = currentGrade === '6급';
+  const hasPrereq = currentGrade === '6급II' || alreadyUnlocked;
 
   const [questions] = useState(() =>
     shuffle(QUESTIONS).map(q => ({ ...q, choices: shuffle(q.choices) }))
@@ -184,15 +183,21 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
 
   const q = questions[qIndex];
   const progress = (qIndex / questions.length) * 100;
-  const isChoiceLarge = q?.type === 'hanja';
   const isCompound = q?.hanja && q.hanja.length > 1;
+  const isChoiceLarge = q?.type === 'opposite' || q?.type === 'similar' || q?.type === 'idiom';
+  const isChoiceMediumHanja = q?.type === 'underline' || q?.type === 'meaning_to_word' || q?.type === 'homo_meaning';
 
   const handleSelect = (choice) => {
     if (revealed) return;
     const isCorrect = choice === q.answer;
     setSelected(choice);
     setRevealed(true);
-    if (isCorrect) setCorrect(c => c + 1);
+    if (isCorrect) {
+      setCorrect(c => c + 1);
+      playSound('match');
+    } else {
+      playSound('mismatch');
+    }
   };
 
   const handleNext = () => {
@@ -208,87 +213,30 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
   const handleFinish = () => {
     const passed = correct >= PASS_COUNT;
     if (passed && !alreadyUnlocked) {
-      localStorage.setItem(SK.UNLOCKED_GRADE, '6급완료');
+      localStorage.setItem(SK.UNLOCKED_GRADE, '6급');
     }
     if (onComplete) onComplete({ correct, total: questions.length, passed });
     onBack();
   };
 
-  // ── 인트로 ──
   if (phase === 'intro') {
     return (
-      <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
-        <div className="w-full shrink-0 flex items-center justify-between px-5 pt-8 pb-4 relative">
-          <button onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-white/80 backdrop-blur-md shadow-lg border-2 border-white flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">
-            ←
-          </button>
-          <h2 className="text-h3 font-black text-[#3D4B4A] absolute left-1/2 -translate-x-1/2">6급 인증 시험</h2>
-          <div className="w-10" />
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 pb-10">
-          <div className="w-full max-w-md bg-white/90 backdrop-blur-md rounded-[2.5rem] border-4 border-white shadow-[0_16px_40px_rgba(120,130,160,0.12)] p-6 flex flex-col items-center gap-5 text-center">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center border-4 border-white" style={{ backgroundColor: '#FFF5E8', boxShadow: '0 0 24px rgba(255,210,120,0.25), inset 0 2px 4px rgba(255,255,255,0.8)' }}>
-              <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-12 h-12 object-contain" />
-            </div>
-            <div>
-              <h3 className="text-h2 font-black text-[#3C3C3C]">6급Ⅱ → 6급 인증 시험</h3>
-              <p className="text-body font-bold text-[#AEB7C5] mt-1">전국한자능력검정시험 6급 기출 기반</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3.5 w-full">
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 flex flex-col items-center border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-                <img src="/assets/images/icons/icon_flashcard_glossy.webp" alt="Questions" className="w-9 h-9 object-contain mb-1" />
-                <span className="text-xs text-[#AEB7C5] font-black uppercase tracking-widest">문제 수</span>
-                <span className="text-body-lg font-black text-[#334155] mt-0.5">20문항</span>
-              </div>
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 flex flex-col items-center border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-                <img src="/assets/images/icons/icon_rank_glossy.webp" alt="Criteria" className="w-9 h-9 object-contain mb-1" />
-                <span className="text-xs text-[#AEB7C5] font-black uppercase tracking-widest">합격 기준</span>
-                <span className="text-body-lg font-black text-[#334155] mt-0.5">14개 이상</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 w-full text-left">
-              <div className="flex items-center gap-3 bg-white/40 rounded-2xl px-4 py-3 border border-white/60">
-                <span className="text-[#334155] text-lg leading-none">✦</span>
-                <p className="text-body font-bold text-[#334155]">한자어 독음 · 훈 찾기 · 한자 찾기 · 반의어 혼합</p>
-              </div>
-              {!hasPrereq && (
-                <div className="flex items-center gap-3 bg-[#FFB433]/10 rounded-2xl px-4 py-3 border border-[#FFB433]/20">
-                  
-                  <p className="text-body font-bold text-[#FFB433]">6급Ⅱ 인증 시험을 먼저 통과하면 좋아요!</p>
-                </div>
-              )}
-              {alreadyUnlocked && (
-                <div className="flex items-center gap-3 bg-[#FF9B73]/10 rounded-2xl px-4 py-3 border border-[#FF9B73]/20">
-                  <span className="text-[#FF9B73] text-lg leading-none">✓</span>
-                  <p className="text-body font-bold text-[#FF9B73]">이미 6급 인증이 완료되었어요!</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setPhase('quiz')}
-            className="w-full max-w-md py-4 rounded-3xl font-black text-white active:scale-95 transition-transform"
-            style={{ background: 'linear-gradient(to right, #FFC13D, #FFB027)', boxShadow: '0 10px 24px rgba(255,180,50,0.28)' }}
-          >
-            시험 시작
-          </button>
-          <button
-            onClick={onBack}
-            className="w-full max-w-md py-4 rounded-3xl font-black text-[#5B677A] active:scale-95 transition-all border-2 border-[#E9EDF2] shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-white"
-          >
-            돌아가기
-          </button>
-        </div>
-      </div>
+      <GradeTestIntro
+        title="6급 인증 시험"
+        subtitle="전국한자능력검정시험 6급 기출 기반"
+        total={questions.length}
+        passCount={PASS_COUNT}
+        focusText="독음 · 한자→훈+음 · 반대어 · 유사어 · 동음이의어 · 사자성어 · 뜻→한자어 · 밑줄 · 필순"
+        hasPrereq={hasPrereq}
+        prereqText="6급Ⅱ 인증 시험을 먼저 통과하면 좋아요!"
+        alreadyUnlocked={alreadyUnlocked}
+        alreadyUnlockedText="이미 6급 인증이 완료되었어요!"
+        onBack={onBack}
+        onStart={() => setPhase('quiz')}
+      />
     );
   }
 
-  // ── 퀴즈 ──
   if (phase === 'quiz') {
     return (
       <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
@@ -304,32 +252,30 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
               <div className="w-full rounded-full overflow-hidden" style={{ height: '11px', backgroundColor: '#E9EDF5' }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }}
-                />
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }} />
               </div>
             </div>
-            <span className="text-sm font-extrabold text-[#FFB433] shrink-0">{correct}점</span>
+            <span className="text-sm font-extrabold text-[#4A51D4] shrink-0">{correct}점</span>
           </div>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
           <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
-            <div className="w-full bg-white rounded-[2rem] border-4 border-white p-4 flex flex-col items-center gap-2" style={{ boxShadow: '0 16px 40px rgba(120,130,160,0.10)' }}>
-              <span className="font-bold text-center" style={{ fontSize: '15px', color: '#9AA4B8', lineHeight: 1.4 }}>
-                전국한자능력검정시험 · 6급 기출 기반
-              </span>
+            <div className="w-full bg-white rounded-[2rem] border-4 border-white p-4 flex flex-col items-center gap-3" style={{ boxShadow: '0 16px 40px rgba(120,130,160,0.10)' }}>
               <span className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-widest">
-                {q.type === 'sound' ? '독음 (읽는 소리)' : q.type === 'hanja' ? '훈음 → 한자' : '한자 → 뜻'}
+                {TYPE_LABELS[q.type] || ''}
               </span>
               <p className="text-h3 text-center" style={{ color: '#2F3545', fontWeight: 800, lineHeight: 1.18 }}>{q.prompt}</p>
-              {q.hanja && (
+
+              {(q.type === 'sound_sentence' || q.type === 'underline') && (
+                <p className="text-body font-bold text-center text-[#3C3C3C] leading-relaxed bg-[#F8FAFC] rounded-2xl px-4 py-3 w-full">
+                  {renderSentence(q.sentence, q.type === 'sound_sentence' ? q.hanja : null, q.underline)}
+                </p>
+              )}
+
+              {q.hanja && q.type !== 'sound_sentence' && (
                 <div className={`bg-[#F8FAF9] rounded-[1.5rem] border border-[#E9EDF2] flex items-center justify-center shadow-inner ${isCompound ? 'w-40 h-20' : 'w-24 h-24'}`}>
-                  <span
-                    className="font-bold text-[#3C3C3C]"
-                    style={{ fontSize: isCompound ? '2.5rem' : '3.5rem', fontFamily: 'serif' }}
-                  >
+                  <span className="font-bold text-[#3C3C3C]" style={{ fontSize: isCompound ? '2.5rem' : '3.5rem', fontFamily: 'serif' }}>
                     {q.hanja}
                   </span>
                 </div>
@@ -360,7 +306,13 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
                     key={choice}
                     onClick={() => handleSelect(choice)}
                     className={cls}
-                    style={isChoiceLarge ? { ...btnStyle, fontSize: '1.75rem', fontFamily: 'serif' } : { ...btnStyle, fontSize: '1.05rem' }}
+                    style={
+                      isChoiceLarge
+                        ? { ...btnStyle, fontSize: '1.75rem', fontFamily: 'serif' }
+                        : isChoiceMediumHanja
+                        ? { ...btnStyle, fontSize: '1.25rem', fontFamily: 'serif' }
+                        : { ...btnStyle, fontSize: '1.05rem' }
+                    }
                   >
                     {choice}
                   </button>
@@ -391,57 +343,20 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
     );
   }
 
-  // ── 결과 ──
   const passed = correct >= PASS_COUNT;
   return (
-    <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-[#F7FAF9] px-5 pb-10 gap-6">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] border-4 border-white shadow-2xl p-6 flex flex-col items-center gap-5 text-center">
-        <div className="text-5xl">{passed ? '🎉' : ''}</div>
-        <div>
-          <h3 className="text-xl font-extrabold text-[#3C3C3C]">
-            {passed ? '합격! 6급 인증 완료!' : '아쉽게 불합격'}
-          </h3>
-          <p className="text-sm font-bold text-[#AEB7C5] mt-1">
-            {passed ? '6급 마스터 달성!' : '다시 도전해 보세요!'}
-          </p>
-        </div>
-
-        <div className="w-full bg-[#F8FAF9] rounded-2xl p-4 border border-[#E9EDF2]">
-          <p className="text-4xl font-extrabold text-[#FFB433] mb-1">{correct} / {questions.length}</p>
-          <p className="text-xs font-extrabold text-[#AEB7C5]">합격 기준: {PASS_COUNT}개 이상</p>
-          <div className="w-full h-3 bg-slate-200 rounded-full mt-3 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${passed ? 'bg-gradient-to-r from-[#FFB433] to-[#FFB027]' : 'bg-gradient-to-r from-rose-300 to-rose-400'}`}
-              style={{ width: `${(correct / questions.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {passed && !alreadyUnlocked && (
-          <div className="w-full bg-[#FFB433]/10 rounded-2xl px-4 py-3 border border-[#FFB433]/25 flex items-center gap-3">
-            
-            <p className="text-sm font-extrabold text-[#FFB433] text-left">전체 6급 한자를 마스터했습니다!</p>
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-md flex flex-col gap-3">
-        {!passed && (
-          <button
-            onClick={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
-            className="pill-button-primary w-full py-4 text-lg font-extrabold active:scale-95 transition-transform"
-          >
-            다시 도전
-          </button>
-        )}
-        <button
-          onClick={handleFinish}
-          className="w-full py-3.5 rounded-2xl font-extrabold text-[#5B677A] active:scale-95 transition-all border-2 border-[#E9EDF2] border-b-4 active:border-b-2 active:translate-y-[2px] shadow-sm bg-white"
-        >
-          {passed ? '완료' : '돌아가기'}
-        </button>
-      </div>
-    </div>
+    <GradeTestResult
+      passed={passed}
+      correct={correct}
+      total={questions.length}
+      passCount={PASS_COUNT}
+      grade="6급"
+      nextGrade={null}
+      alreadyUnlocked={alreadyUnlocked}
+      selectedCharacter={selectedCharacter}
+      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
+      onFinish={handleFinish}
+    />
   );
 };
 
