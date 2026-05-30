@@ -393,7 +393,7 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
   return (
     <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-[#F7FAF9] px-5 pb-10 gap-6">
       <div className="w-full max-w-md bg-white rounded-[2.5rem] border-4 border-white shadow-2xl p-6 flex flex-col items-center gap-5 text-center">
-        <div className="text-5xl">{passed ? '🎉' : '😢'}</div>
+        <div className="text-5xl">{passed ? '🎉' : ''}</div>
         <div>
           <h3 className="text-xl font-extrabold text-[#3C3C3C]">
             {passed ? '합격! 8급 인증 완료!' : '아쉽게 불합격'}

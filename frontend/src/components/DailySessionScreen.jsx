@@ -699,7 +699,6 @@ const MapNode = ({ label, icon, isLeft, activeColor, status, charImg, onTap }) =
                     {isDone && (
                         <>
                             <img src="/assets/images/icons/clay_star.png" alt="star" className="absolute -top-4 -right-4 w-8 h-8 object-contain animate-pulse drop-shadow-[0_4px_8px_rgba(255,211,182,0.6)]" style={{ animationDelay: '0.2s' }} />
-                            <div className="absolute -bottom-2 -left-3 text-xl animate-pulse" style={{ animationDelay: '0.7s', filter: 'drop-shadow(0 0 4px #FFD3B6)' }}>🌟</div>
                         </>
                     )}
                 </div>
@@ -1007,13 +1006,13 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
 
                     {/* 타이틀 */}
                     <div className="text-center flex flex-col gap-1 -mt-2">
-                        <span className="text-xs font-extrabold text-[#AEB7C5] tracking-tight">오늘의 {dayNumber}단계 탐험 완료! 🏆</span>
+                        <span className="text-xs font-extrabold text-[#AEB7C5] tracking-tight">오늘의 {dayNumber}단계 탐험 완료!</span>
                         <h1 className="text-[1.85rem] font-black leading-tight tracking-tight"
                             style={{ color: '#FF9B73', textShadow: '0 2px 10px rgba(255,160,120,0.12)' }}>
                             와우! 참 잘했어요!
                         </h1>
                         <p className="font-extrabold text-sm tracking-tight mt-1 text-[#8F99AD]">
-                            학습 지도 완주 보너스 <span className="text-[#FF9B73] font-black">+200 XP</span> 획득! 🌟
+                            학습 지도 완주 보너스 <span className="text-[#FF9B73] font-black">+200 XP</span> 획득!
                         </p>
                     </div>
 
@@ -1066,7 +1065,7 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                         {/* 기로 B: 메인 화면으로 이동 */}
                         <CtaButton theme="blue" onClick={onComplete}>
                             <div className="flex flex-col items-center justify-center gap-0.5">
-                                <span className="font-black text-white text-[1.4rem] drop-shadow-md">메인 화면으로 이동 🏠</span>
+                                <span className="font-black text-white text-[1.4rem] drop-shadow-md">메인 화면으로 이동</span>
                                 <span className="text-[10px] text-white/90 font-bold">(남은 퀘스트를 채우고 올클리어 보너스 받기)</span>
                             </div>
                         </CtaButton>

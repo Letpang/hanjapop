@@ -256,7 +256,7 @@ const GradeTest7Screen = ({ onBack, onComplete }) => {
               </div>
               {!hasPrereq && (
                 <div className="flex items-center gap-3 bg-[#FFB433]/10/60 rounded-2xl px-4 py-3 border border-[#FFB433]/15/60">
-                  <span className="text-[#FFB433] text-lg leading-none">⚠️</span>
+                  
                   <p className="text-body font-bold text-[#FFB433]">7급Ⅱ 인증 시험을 먼저 통과하면 좋아요!</p>
                 </div>
               )}
@@ -395,7 +395,7 @@ const GradeTest7Screen = ({ onBack, onComplete }) => {
   return (
     <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-[#F7FAF9] px-5 pb-10 gap-6">
       <div className="w-full max-w-md bg-white rounded-[2.5rem] border-4 border-white shadow-2xl p-6 flex flex-col items-center gap-5 text-center">
-        <div className="text-5xl">{passed ? '🎉' : '😢'}</div>
+        <div className="text-5xl">{passed ? '🎉' : ''}</div>
         <div>
           <h3 className="text-xl font-extrabold text-[#3C3C3C]">
             {passed ? '합격! 7급 인증 완료!' : '아쉽게 불합격'}

@@ -19,7 +19,7 @@ const CHARACTERS = [
         finalImage: '/assets/images/characters/jeolmi/rank_5.webp',
         color: '#FFDAC1',
         glow: 'rgba(255,160,80,0.55)',
-        desc: '다정하고 호기심이 많아요 — 반짝이는 스티커를 좋아해요! 🌸',
+        desc: '다정하고 호기심이 많아요 — 반짝이는 스티커를 좋아해요!',
         imageScale: 1,
         translateY: '25px'
     },
@@ -30,7 +30,7 @@ const CHARACTERS = [
         finalImage: '/assets/images/characters/chapssal/rank_5.webp',
         color: '#CAFFBF',
         glow: 'rgba(100,200,80,0.55)',
-        desc: '목표를 세우면 멈추지 않아요! 🌿',
+        desc: '목표를 세우면 멈추지 않아요!',
         imageScale: 1.45,
         translateY: '10px'
     },
@@ -41,7 +41,7 @@ const CHARACTERS = [
         finalImage: '/assets/images/characters/muzi/rank_5.webp',
         color: '#E0BBE4',
         glow: 'rgba(180,120,200,0.55)',
-        desc: '무지개처럼 다양한 매력을 가졌어요! 🌈',
+        desc: '무지개처럼 다양한 매력을 가졌어요!',
         imageScale: 1.1,
         translateY: '15px'
     },

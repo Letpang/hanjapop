@@ -208,7 +208,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                         {/* 헤더: 트로피 축소 및 타이틀 결합 */}
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-20 h-20 bg-[#FFB433]/10 dark:bg-[#FFB433]/20 rounded-full flex items-center justify-center border-4 border-[#FFB433]/15 dark:border-[#8B5E00] mb-2">
-                                <span className="text-h1-res">🏆</span>
+                                
                             </div>
                             <h2 className="text-h2-res font-extrabold text-slate-700 dark:text-white premium-text-shadow">레벨 테스트</h2>
                             <p className="text-sm font-bold text-[#AEB7C5]">학습한 내용을 확인하고 다음 단계로!</p>
@@ -240,7 +240,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
 
                         {unlockedHanja.length < 3 && (
                             <p className="text-red-500 font-extrabold text-sm bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-xl border border-red-100 dark:border-red-800 w-full">
-                                ⚠️ 학습지를 3개 이상 완료해야 합니다.
+                                학습지를 3개 이상 완료해야 합니다.
                             </p>
                         )}
                     </div>

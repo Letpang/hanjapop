@@ -194,7 +194,7 @@ const getGameThemeKey = (currentDay, selectedGrade) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart }) => {
     const { lang } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -220,7 +220,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         return 'normal';
     });
 
-    const [status, setStatus] = useState(contentPool ? 'loading' : 'idle');
+    const [status, setStatus] = useState((contentPool || autoStart) ? 'loading' : 'idle');
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
@@ -429,20 +429,25 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     // 실제 출제 대상 ID 내용이 바뀔 때만 auto-start하도록 키로 비교한다.
     const lastContentKeyRef = useRef(null);
     useEffect(() => {
-        if (contentPool == null) return;
+        if (contentPool == null && !autoStart) return undefined;
         const normalizeIds = (ids) => [...(ids || [])].map(Number).sort((a, b) => a - b);
         const key = JSON.stringify({
-            mainHanja: normalizeIds(contentPool.main?.hanjaIds),
-            reviewHanja: normalizeIds(contentPool.review?.hanjaIds),
-            mainWords: normalizeIds(contentPool.main?.wordIds),
-            reviewWords: normalizeIds(contentPool.review?.wordIds),
+            mainHanja: normalizeIds(contentPool?.main?.hanjaIds),
+            reviewHanja: normalizeIds(contentPool?.review?.hanjaIds),
+            mainWords: normalizeIds(contentPool?.main?.wordIds),
+            reviewWords: normalizeIds(contentPool?.review?.wordIds),
         });
         if (key !== lastContentKeyRef.current) {
             lastContentKeyRef.current = key;
             const timer = setTimeout(() => startGameRef.current?.(), 0);
             return () => clearTimeout(timer);
         }
-    }, [contentPool]);
+        if (status === 'loading') {
+            const timer = setTimeout(() => startGameRef.current?.(), 0);
+            return () => clearTimeout(timer);
+        }
+        return undefined;
+    }, [contentPool, autoStart, status]);
 
     // 현재 웨이브 기반 속도/간격 계산
     const getDropSpeed = useCallback((currentWave) => {
@@ -735,7 +740,19 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     // ─────────────────────────────────────────
     // IDLE 화면
     // ─────────────────────────────────────────
-    if (status === 'loading') return null;
+    if (status === 'loading') {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F7FAF9] px-8">
+                <div className="flex flex-col items-center gap-4 text-center">
+                    <div
+                        className="h-16 w-16 rounded-[1.4rem] border-4 border-white shadow-lg animate-pulse"
+                        style={{ backgroundColor: themeConfig.accentColor }}
+                    />
+                    <p className="text-body-lg font-black text-[#5B677A] break-keep">몬스터를 불러오는 중...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (status === 'idle') {
         return (

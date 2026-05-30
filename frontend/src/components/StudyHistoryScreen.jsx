@@ -130,7 +130,7 @@ const StackedBar = ({ item, max }) => {
         {item.wordQuiz > 0 && <span className="w-full bg-[#7C83FF]" style={{ height: `${word}%` }} />}
         {item.sentenceQuiz > 0 && <span className="w-full bg-[#FF9B73]" style={{ height: `${sentence}%` }} />}
       </div>
-      <span className="text-[9px] font-black text-[#AEB7C5]">{item.shortLabel}</span>
+      <span className="block h-4 text-[9px] font-black leading-4 text-[#AEB7C5]">{item.shortLabel}</span>
     </div>
   );
 };
@@ -143,7 +143,7 @@ const SimpleBars = ({ items, valueKey, color, max }) => (
       return (
         <div key={item.date} className="flex min-w-0 flex-col items-center justify-end gap-1">
           <div className="w-[68%] max-w-[18px] rounded-t-xl rounded-b-md" style={{ height, background: value ? color : '#EDF2F7' }} />
-          <span className="text-[9px] font-black text-[#AEB7C5]">{item.shortLabel}</span>
+          <span className="block h-4 text-[9px] font-black leading-4 text-[#AEB7C5]">{item.shortLabel}</span>
         </div>
       );
     })}
@@ -161,7 +161,7 @@ const DoubleBars = ({ items, max }) => (
             <div className="w-1.5 rounded-t-lg rounded-b-sm bg-[#2ED6C5]" style={{ height: hanjaHeight, opacity: item.hanja ? 1 : 0.16 }} />
             <div className="w-1.5 rounded-t-lg rounded-b-sm bg-[#7C83FF]" style={{ height: wordHeight, opacity: item.words ? 1 : 0.16 }} />
           </div>
-          <span className="text-[9px] font-black text-[#AEB7C5]">{item.shortLabel}</span>
+          <span className="block h-4 text-[9px] font-black leading-4 text-[#AEB7C5]">{item.shortLabel}</span>
         </div>
       );
     })}

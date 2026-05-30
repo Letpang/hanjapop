@@ -289,6 +289,19 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
     const [isFlipped, setIsFlipped] = useState(false);
     const [celebrationMsg, setCelebrationMsg] = useState('');
     const celebrationIndexRef = useRef(0);
+    const flipTimerRef = useRef(null);
+    const flipSeqRef = useRef(0);
+
+    useEffect(() => {
+        return () => {
+            if (flipTimerRef.current) {
+                clearTimeout(flipTimerRef.current);
+                flipTimerRef.current = null;
+            }
+            flipSeqRef.current += 1;
+            window.speechSynthesis?.cancel();
+        };
+    }, []);
 
     const handleSelect = (choice) => {
         if (isCorrectSelected || wrongChoices.includes(choice)) return;
@@ -297,8 +310,13 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
             const nextMsg = CELEB_MESSAGES[celebrationIndexRef.current % CELEB_MESSAGES.length];
             celebrationIndexRef.current += 1;
             setCelebrationMsg(nextMsg);
-            setTimeout(() => {
+            if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
+            const flipSeq = flipSeqRef.current + 1;
+            flipSeqRef.current = flipSeq;
+            flipTimerRef.current = setTimeout(() => {
+                if (flipSeqRef.current !== flipSeq) return;
                 setIsFlipped(true);
+                flipTimerRef.current = null;
                 handleSpeak();
             }, 1500);
             if (!suppressXp) {
@@ -314,6 +332,13 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
 
     const handleNext = () => {
         window.speechSynthesis?.cancel();
+        if (flipTimerRef.current) {
+            clearTimeout(flipTimerRef.current);
+            flipTimerRef.current = null;
+        }
+        flipSeqRef.current += 1;
+        setIsFlipped(false);
+        setIsSpeaking(false);
         onAnswer(wrongChoices.length === 0);
         if (onNext) onNext();
     };
@@ -438,10 +463,11 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                         </div>
 
                         {/* 카드 뒷면: 정답 및 예문 */}
-                        <div 
+                        {isCorrectSelected && (
+                        <div
                             className="absolute inset-0 bg-white rounded-[4rem] border-[10px] border-white flex flex-col items-center justify-between px-6 py-8 shadow-xl"
-                            style={{ 
-                                backfaceVisibility: 'hidden', 
+                            style={{
+                                backfaceVisibility: 'hidden',
                                 WebkitBackfaceVisibility: 'hidden',
                                 transform: 'rotateY(180deg)',
                                 zIndex: isFlipped ? 1 : 0
@@ -479,6 +505,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                                 </p>
                             </div>
                         </div>
+                        )}
                     </div>
                 </div>
 

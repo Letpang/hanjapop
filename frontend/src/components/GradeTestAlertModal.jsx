@@ -1,11 +1,11 @@
 import React from 'react';
 
 const GRADE_INFO = {
-    '8급':  { screen: 'gradeTest',   emoji: '🏅', color: '#7C83FF', bg: '#F5F5FF' },
-    '7급Ⅱ': { screen: 'gradeTest72', emoji: '⚔️', color: '#FF9B73', bg: '#FFF7F3' },
-    '7급':  { screen: 'gradeTest7',  emoji: '🌟', color: '#F59E0B', bg: '#FFFBEB' },
+    '8급':  { screen: 'gradeTest',   emoji: '', color: '#7C83FF', bg: '#F5F5FF' },
+    '7급Ⅱ': { screen: 'gradeTest72', emoji: '', color: '#FF9B73', bg: '#FFF7F3' },
+    '7급':  { screen: 'gradeTest7',  emoji: '', color: '#F59E0B', bg: '#FFFBEB' },
     '6급Ⅱ': { screen: 'gradeTest62', emoji: '🔥', color: '#EF4444', bg: '#FEF2F2' },
-    '6급':  { screen: 'gradeTest6',  emoji: '👑', color: '#2ED6C5', bg: '#F0FEFA' },
+    '6급':  { screen: 'gradeTest6',  emoji: '', color: '#2ED6C5', bg: '#F0FEFA' },
 };
 
 export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {

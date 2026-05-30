@@ -404,7 +404,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                         ? 'bg-slate-700 text-slate-300' 
                         : 'bg-[#F0F3F5] text-[#5A6E85] group-hover:bg-[#E2E6E9] group-hover:text-[#3C4A5A]'
                   }`}>
-                    Lv.{stage} {stage === 5 && '🏆'}
+                    Lv.{stage} {false}
                   </div>
                 </button>
               );
@@ -605,7 +605,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               <span className="text-[#AEB7C5] font-bold text-xs mt-0.5">모든 급수의 인증을 마쳤어요 🎉</span>
             </div>
             <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center shrink-0">
-              <span className="text-2xl">🏅</span>
+              
             </div>
           </div>
         )}
@@ -684,7 +684,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                     <div className={`rounded-2xl p-4 border border-amber-200/50 flex flex-col items-center gap-1.5 bg-gradient-to-r from-amber-50/50 to-orange-50/30 text-center ${
                       isDarkMode ? 'from-amber-950/20 to-orange-950/10 border-amber-900/30' : ''
                     }`}>
-                      <span className="text-amber-500 text-2xl">🏆</span>
+                      
                       <span className={`font-black text-sm break-keep ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
                         축하합니다! 최고 등급을 완수했습니다.
                       </span>

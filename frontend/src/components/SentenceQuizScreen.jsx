@@ -94,8 +94,21 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [celebrationMsg, setCelebrationMsg] = useState('');
     const celebrationIndexRef = useRef(0);
+    const flipTimerRef = useRef(null);
+    const flipSeqRef = useRef(0);
     const stageClearArgsRef = useRef(null); // 결과 화면 표시 후 "돌아가기" 시점에 onStageClear로 전달할 데이터
     const shownWordsRef = useRef([]); // 이번 세션에서 출제된 단어 목록
+
+    useEffect(() => {
+        return () => {
+            if (flipTimerRef.current) {
+                clearTimeout(flipTimerRef.current);
+                flipTimerRef.current = null;
+            }
+            flipSeqRef.current += 1;
+            window.speechSynthesis?.cancel();
+        };
+    }, []);
 
     // ── 현재 선택된 한자 풀 ────────────────────────────────────────────────
     const activeHanjaSet = useMemo(() => {
@@ -162,6 +175,18 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     // ── 문제 생성 ──────────────────────────────────────────────────────────
     const generateQuiz = useCallback(() => {
         if (activeHanjaSet.length === 0) return;
+        if (flipTimerRef.current) {
+            clearTimeout(flipTimerRef.current);
+            flipTimerRef.current = null;
+        }
+        flipSeqRef.current += 1;
+        window.speechSynthesis?.cancel();
+        setIsWordCardFlipped(false);
+        setIsSpeaking(false);
+        setWrongAttempts([]);
+        setIsCorrectSelected(false);
+        setFeedback(null);
+        setCelebrationMsg('');
 
         const hasWordPool = sessionPlan.normalPool.length > 0 || reviewQueueRef.current.length > 0;
 
@@ -273,8 +298,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             setCelebrationMsg(nextMsg);
             setFeedback({ isCorrect: true, selected });
             if (currentQuiz?.type === 'sentence') {
-                setTimeout(() => {
+                if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
+                const flipSeq = flipSeqRef.current + 1;
+                flipSeqRef.current = flipSeq;
+                flipTimerRef.current = setTimeout(() => {
+                    if (flipSeqRef.current !== flipSeq) return;
                     setIsWordCardFlipped(true);
+                    flipTimerRef.current = null;
                     handleSpeak();
                 }, 1500);
             }
@@ -315,6 +345,11 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     const handleNext = () => {
         window.speechSynthesis?.cancel();
+        if (flipTimerRef.current) {
+            clearTimeout(flipTimerRef.current);
+            flipTimerRef.current = null;
+        }
+        flipSeqRef.current += 1;
         setIsWordCardFlipped(false);
         setIsSpeaking(false);
         const poolExhausted = reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0;
@@ -644,6 +679,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 </div>
 
                                 {/* 뒷면: 단어 정보 */}
+                                {isCorrectSelected && currentQuiz?.type === 'sentence' && (
                                 <div
                                     className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-between px-8 py-6 shadow-xl"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', zIndex: isWordCardFlipped ? 1 : 0 }}
@@ -673,6 +709,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         </p>
                                     </div>
                                 </div>
+                                )}
                             </div>
                         </div>
 

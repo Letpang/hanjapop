@@ -163,7 +163,7 @@ const MainMenuRenewal = ({
                                     <div className="w-full mt-3">
                                         <div className="flex justify-between items-end mb-1 px-0.5">
                                             <span className="text-[10px] font-bold text-[#8f99ad]">
-                                                {xpToNext != null ? `다음 랭크까지 ${xpToNext.toLocaleString()} XP` : '🏆 최고 랭크 달성!'}
+                                                {xpToNext != null ? `다음 랭크까지 ${xpToNext.toLocaleString()} XP` : '최고 랭크 달성!'}
                                             </span>
                                         </div>
                                         <div className="w-full h-[6px] rounded-full bg-slate-200 overflow-hidden shadow-inner">

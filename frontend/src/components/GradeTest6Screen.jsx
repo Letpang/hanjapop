@@ -257,7 +257,7 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
               </div>
               {!hasPrereq && (
                 <div className="flex items-center gap-3 bg-[#FFB433]/10 rounded-2xl px-4 py-3 border border-[#FFB433]/20">
-                  <span className="text-[#FFB433] text-lg leading-none">⚠️</span>
+                  
                   <p className="text-body font-bold text-[#FFB433]">6급Ⅱ 인증 시험을 먼저 통과하면 좋아요!</p>
                 </div>
               )}
@@ -396,7 +396,7 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
   return (
     <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-[#F7FAF9] px-5 pb-10 gap-6">
       <div className="w-full max-w-md bg-white rounded-[2.5rem] border-4 border-white shadow-2xl p-6 flex flex-col items-center gap-5 text-center">
-        <div className="text-5xl">{passed ? '🎉' : '😢'}</div>
+        <div className="text-5xl">{passed ? '🎉' : ''}</div>
         <div>
           <h3 className="text-xl font-extrabold text-[#3C3C3C]">
             {passed ? '합격! 6급 인증 완료!' : '아쉽게 불합격'}
@@ -419,7 +419,7 @@ const GradeTest6Screen = ({ onBack, onComplete }) => {
 
         {passed && !alreadyUnlocked && (
           <div className="w-full bg-[#FFB433]/10 rounded-2xl px-4 py-3 border border-[#FFB433]/25 flex items-center gap-3">
-            <span className="text-2xl">🏆</span>
+            
             <p className="text-sm font-extrabold text-[#FFB433] text-left">전체 6급 한자를 마스터했습니다!</p>
           </div>
         )}
