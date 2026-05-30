@@ -68,7 +68,8 @@ const playCardSound = (item, onEnd) => {
 
 // 4지선다 오답 보기 생성
 const pickDistractors = (correctId, field, count = 3) => {
-    const pool = HANJA_DATA.filter(h => h.id !== correctId && h[field]);
+    const correctValue = HANJA_DATA.find(h => h.id === correctId)?.[field];
+    const pool = HANJA_DATA.filter(h => h.id !== correctId && h[field] && h[field] !== correctValue);
     return shuffle(pool).slice(0, count).map(h => h[field]);
 };
 
@@ -96,34 +97,20 @@ const buildWorksheetQuiz = (item) => {
         answer: item.sound,
     });
 
-    // Q3~Q5: 단어 뜻 맞추기 (최대 3개)
+    // Q3~Q5: 역방향 — 뜻 보고 한자어 고르기 (단어마다 1개, 최대 3개)
     const wordPool = (item.words || []).filter(w => w.word && w.meaning);
-    const pickedWords = shuffle(wordPool).slice(0, 3);
-    pickedWords.forEach((w, i) => {
-        const wDistractors = shuffle(HANJA_DATA.flatMap(h => h.words || []).filter(x => x.meaning && x.meaning !== w.meaning)).slice(0, 3).map(x => x.meaning);
+    const allWords = HANJA_DATA.flatMap(h => h.words || []);
+    shuffle(wordPool).slice(0, 3).forEach((w, i) => {
+        const revDistractors = shuffle(allWords.filter(x => x.word && x.word !== w.word)).slice(0, 3).map(x => x.word);
         questions.push({
-            id: `q_word_${i}`,
+            id: `q_reverse_${i}`,
             type: 'choice',
-            prompt: `${w.word}(${w.reading})의 뜻은?`,
-            choices: shuffle([w.meaning, ...wDistractors]),
-            answer: w.meaning,
+            prompt: `"${w.meaning}"을 뜻하는 한자어는?`,
+            choices: shuffle([w.word, ...revDistractors]),
+            answer: w.word,
             word: w.word, reading: w.reading, meaning: w.meaning,
         });
     });
-
-    // Q_last: 역방향 — 뜻 보고 한자 고르기
-    if (wordPool.length > 0) {
-        const target = wordPool[0];
-        const revDistractors = shuffle(HANJA_DATA.flatMap(h => h.words || []).filter(x => x.word && x.word !== target.word)).slice(0, 3).map(x => x.word);
-        questions.push({
-            id: 'q_reverse',
-            type: 'choice',
-            prompt: `"${target.meaning}"을 뜻하는 한자어는?`,
-            choices: shuffle([target.word, ...revDistractors]),
-            answer: target.word,
-            word: target.word, reading: target.reading, meaning: target.meaning,
-        });
-    }
 
     return questions;
 };
