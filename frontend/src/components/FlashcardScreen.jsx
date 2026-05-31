@@ -393,8 +393,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 {relatedIdioms.length > 0 && (
                     <div ref={refIdioms} className="flex flex-col gap-5">
                         <div className="flex items-center gap-3 px-1">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#F4F3FF' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#7C83FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="4" y="3" width="16" height="18" rx="3" />
                                     <line x1="8" y1="8" x2="16" y2="8" />
                                     <line x1="8" y1="12" x2="14" y2="12" />
@@ -421,8 +421,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 {hasSynAnt && (
                     <div ref={refSynAnt} className="flex flex-col gap-5">
                         <div className="flex items-center gap-3 px-1">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#F0EEFF' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#7C83FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="4" y="3" width="16" height="18" rx="3" />
                                     <line x1="8" y1="8" x2="16" y2="8" />
                                     <line x1="8" y1="12" x2="14" y2="12" />
@@ -474,8 +474,10 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M9 11l3 3L22 4" />
-                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                                    <rect x="4" y="3" width="16" height="18" rx="3" />
+                                    <line x1="8" y1="8" x2="16" y2="8" />
+                                    <line x1="8" y1="12" x2="14" y2="12" />
+                                    <line x1="8" y1="16" x2="12" y2="16" />
                                 </svg>
                             </div>
                             <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>연습 문제</span>
