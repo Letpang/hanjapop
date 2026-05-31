@@ -80,7 +80,7 @@ const collectVocabulary = () => {
 const FILTERS = [
   { id: 'all', label: '전체' },
   { id: 'wrong', label: '오답' },
-  { id: 'due', label: '복습 예정' },
+  { id: 'correct', label: '정답' },
 ];
 
 const VocabularyScreen = ({
@@ -101,6 +101,7 @@ const VocabularyScreen = ({
   const filteredWords = useMemo(() => {
     return words.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
+      if (filter === 'correct' && item.correctCount <= 0) return false;
       if (!normalizedQuery) return true;
       return [item.word, item.reading, item.meaning, item.hanja]
         .filter(Boolean)
@@ -120,7 +121,7 @@ const VocabularyScreen = ({
   const filteredIdioms = useMemo(() => {
     return idioms.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'due') return false;
+      if (filter === 'correct') return false;
       if (!normalizedQuery) return true;
       return [item.hanja, item.reading, item.meaning, item.grade]
         .filter(Boolean)
@@ -130,7 +131,7 @@ const VocabularyScreen = ({
 
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
   const idiomWrongCount = idioms.filter(w => w.wrongCount > 0).length;
-  const dueCount = words.filter(w => w.isDue).length;
+  const correctCount = words.filter(w => w.correctCount > 0).length;
 
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#334155]'}`}>
@@ -162,8 +163,8 @@ const VocabularyScreen = ({
               <p className="mt-0.5 text-xl font-black text-[#334155]">{wrongCount + idiomWrongCount}</p>
             </div>
             <div className="rounded-2xl bg-[#F5F3FF] px-3 py-3">
-              <p className="text-[11px] font-black text-[#7C83FF]">복습</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{dueCount}</p>
+              <p className="text-[11px] font-black text-[#7C83FF]">정답</p>
+              <p className="mt-0.5 text-xl font-black text-[#334155]">{correctCount}</p>
             </div>
           </div>
         </section>
