@@ -3,6 +3,7 @@ import { QuizCard } from './WritingScreen.jsx';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
+import IDIOMS from '../data/idioms.js';
 import { usePremium } from '../hooks/usePremium.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
@@ -219,11 +220,19 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const questions = useMemo(() => buildWorksheetQuiz(item), [item]);
     const [answers, setAnswers] = useState({});
     const refWords   = useRef(null);
+    const refIdioms  = useRef(null);
     const refSynAnt  = useRef(null);
     const refQuiz    = useRef(null);
     const refWriting = useRef(null);
     const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const hasSynAnt = (item.syn && item.syn.length > 0) || (item.ant && item.ant.length > 0);
+
+    const relatedIdioms = useMemo(() => {
+        return (item.words || [])
+            .filter(w => w.type === 'idiom')
+            .map(w => IDIOMS.find(x => x.hanja === w.word))
+            .filter(Boolean);
+    }, [item]);
     const [quizDone, setQuizDone] = useState(false);
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const completionAwardedRef = useRef(false);
@@ -311,6 +320,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
             <div className="w-full px-5 pt-4 pb-2 flex items-center justify-center gap-2 flex-wrap">
                 {[
                     { label: '관련 단어', ref: refWords, theme: 'warm', show: true },
+                    { label: '사자성어', ref: refIdioms, theme: 'purple', show: relatedIdioms.length > 0 },
                     { label: '유사어·반대어', ref: refSynAnt, theme: 'purple', show: hasSynAnt },
                     { label: '문제', ref: refQuiz, theme: 'blue', show: true },
                 ].filter(s => s.show).map(({ label, ref, theme }) => (
@@ -379,7 +389,31 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </div>
                 )}
 
-                {/* ── 섹션 3-2: 유사어 · 반대어 ── */}
+                {/* ── 섹션 3-2: 사자성어 ── */}
+                {relatedIdioms.length > 0 && (
+                    <div ref={refIdioms} className="flex flex-col gap-5">
+                        <div className="flex items-center gap-3 px-1">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#F4F3FF' }}>
+                                <span className="font-black text-base" style={{ color: '#7C83FF', fontFamily: "'Nanum Myeongjo', serif" }}>成</span>
+                            </div>
+                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>사자성어</span>
+                        </div>
+                        <div className="flex flex-col gap-4">
+                            {relatedIdioms.map((idiom, i) => (
+                                <div key={i} className="flex flex-col" style={{ backgroundColor: '#F8F7FF', border: '1.5px solid #C3C6FF', borderRadius: '28px', padding: '20px 24px' }}>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F', fontFamily: "'Nanum Myeongjo', serif" }}>{idiom.hanja}</span>
+                                        <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-black ml-auto" style={{ background: '#E8E7FF', color: '#5B5ECC' }}>{idiom.grade}</span>
+                                    </div>
+                                    <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{idiom.meaning}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── 섹션 3-3: 유사어 · 반대어 ── */}
                 {hasSynAnt && (
                     <div ref={refSynAnt} className="flex flex-col gap-5">
                         <div className="flex items-center gap-3 px-1">
