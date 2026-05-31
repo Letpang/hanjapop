@@ -503,11 +503,12 @@ const GAMES = [
     { id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png', theme: 'mint', color: '#2ED6C5', bg: '#F0FDFB' },
 ];
 
-const GamePickScreen = ({ onResult }) => {
+const GamePickScreen = ({ onResult, onBack }) => {
     const game = useMemo(() => pickDailyOption(GAMES, 'game'), []);
 
     return (
         <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-6">
+            <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10 !text-slate-400">←</button>
             <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#2ED6C5] blur-[100px] opacity-10 pointer-events-none" />
             <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
 
@@ -543,11 +544,12 @@ const pickDailyOption = (options, salt = '') => {
     return options[hash % options.length];
 };
 
-const QuizPickScreen = ({ onResult }) => {
+const QuizPickScreen = ({ onResult, onBack }) => {
     const quiz = useMemo(() => pickDailyOption(QUIZZES, 'quiz'), []);
 
     return (
         <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-6">
+            <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10 !text-slate-400">←</button>
             <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#7C83FF] blur-[100px] opacity-10 pointer-events-none" />
             <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
 
@@ -940,7 +942,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         {/* 04. 한자 쓰기 */}
                         <div className="mt-[30px]">
                             <MapNode
-                                stepNum="04" label="한자 쓰기"
+                                stepNum="04" label="한자 획순"
                                 icon="/assets/images/icons/writing.png"
                                 isLeft={false} activeColor="#FFD3B6" textColor="text-orange-600"
                                 status={done.has('writing') ? 'done' : done.has('game') ? 'active' : 'locked'}
@@ -1292,7 +1294,7 @@ const DailySessionScreen = ({
     }
 
     if (step === 'quizPick') {
-        return <QuizPickScreen onResult={(quiz) => { setChosenQuiz(quiz); setStep(quiz); }} />;
+        return <QuizPickScreen onResult={(quiz) => { setChosenQuiz(quiz); setStep(quiz); }} onBack={() => setStep('intro')} />;
     }
 
     if (step === 'sentenceQuiz') {
@@ -1300,7 +1302,7 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
                 <SentenceQuizScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(1)}
-                    onBack={() => setStep('intro')}
+                    onBack={() => setStep('quizPick')}
                     contentPool={contentPool}
                     onGetNextWordIds={getNextWordIds}
                     selectedCharacter={selectedCharacter}
@@ -1333,7 +1335,7 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
                 <WordQuizScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(1)}
-                    onBack={() => setStep('intro')}
+                    onBack={() => setStep('quizPick')}
                     contentPool={contentPool}
                     onGetNextWordIds={getNextWordIds}
                     selectedCharacter={selectedCharacter}
@@ -1361,7 +1363,7 @@ const DailySessionScreen = ({
     }
 
     if (step === 'dice') {
-        return <GamePickScreen onResult={(game) => { setChosenGame(game); setStep(game); }} />;
+        return <GamePickScreen onResult={(game) => { setChosenGame(game); setStep(game); }} onBack={() => setStep('intro')} />;
     }
 
     if (step === 'shoot') {
@@ -1369,7 +1371,7 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
                 <ShootGameScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
-                    onBack={() => setStep('intro')}
+                    onBack={() => setStep('dice')}
                     getRewardPreview={getRewardPreview}
                     onHanjaAcquired={onHanjaAcquired}
                     onGameFinish={() => { trackMission('shootGame', 1, addBonusXp); finishSession(); }}
@@ -1392,7 +1394,7 @@ const DailySessionScreen = ({
             <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
                 <MatchGameScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
-                    onBack={() => setStep('intro')}
+                    onBack={() => setStep('dice')}
                     contentPool={contentPool}
                     onHanjaAcquired={onHanjaAcquired}
                     onStageClear={(round, elapsedSec) => {

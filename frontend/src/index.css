@@ -22,6 +22,10 @@
     --hp-btn-pad-y: 1rem;
     --hp-btn-pad-x: 1.25rem;
     --hp-btn-font: 1.25rem;
+    --hp-cta-radius: 1.5rem;
+    --hp-cta-pad-y: 1rem;
+    --hp-cta-pad-x: 1.25rem;
+    --hp-cta-min-height: 64px;
 }
 
 /* Typography Utilities (Responsive & Standard Names) */
@@ -258,6 +262,226 @@ body.dark-mode {
     box-shadow: 0 6px 12px rgba(255, 107, 107, 0.2), inset 0 -2px 0 rgba(0,0,0,0.1) !important;
 }
 
+.hp-cta-button {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    min-height: var(--hp-cta-min-height);
+    padding: var(--hp-cta-pad-y) var(--hp-cta-pad-x);
+    border: 0;
+    border-radius: var(--hp-cta-radius);
+    color: #FFFFFF;
+    font-weight: 900;
+    font-size: var(--hp-btn-font);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.hp-cta-button::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0));
+    pointer-events: none;
+}
+
+.hp-cta-button:active {
+    transform: scale(0.97) translateY(4px);
+}
+
+.hp-cta-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.25);
+}
+
+.hp-cta-button--coral {
+    background: linear-gradient(135deg, #FFB393 0%, #FF6B6B 100%);
+}
+
+.hp-cta-button--coral:active {
+    box-shadow: 0 6px 12px rgba(255, 107, 107, 0.2), inset 0 -2px 0 rgba(134, 42, 42, 0.18);
+}
+
+.hp-cta-button--cream {
+    color: #5B677A;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%);
+}
+
+.hp-cta-button--cream::before {
+    background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0));
+}
+
+.hp-cta-button--cream:active {
+    box-shadow: 0 6px 12px rgba(148, 163, 184, 0.12), inset 0 -2px 0 rgba(203, 213, 225, 0.32);
+}
+
+.hp-cta-button--blue {
+    background: linear-gradient(135deg, #5AC5FF 0%, #1976D2 100%);
+    box-shadow: 0 12px 24px rgba(25, 118, 210, 0.3), inset 0 -5px 0 rgba(13, 60, 141, 0.22);
+}
+
+.hp-cta-button--blue:active {
+    box-shadow: 0 6px 12px rgba(25, 118, 210, 0.2), inset 0 -2px 0 rgba(13, 60, 141, 0.2);
+}
+
+.hp-cta-button--mint {
+    background: linear-gradient(135deg, #7DD9CC 0%, #0D9488 100%);
+    box-shadow: 0 12px 24px rgba(46, 214, 197, 0.3), inset 0 -5px 0 rgba(13, 84, 79, 0.2);
+}
+
+.hp-cta-button--mint:active {
+    box-shadow: 0 6px 12px rgba(46, 214, 197, 0.2), inset 0 -2px 0 rgba(13, 84, 79, 0.18);
+}
+
+.hp-cta-button--indigo {
+    background: linear-gradient(135deg, #9B9FF7 0%, #7278F2 100%);
+}
+
+.hp-cta-button--indigo:active {
+    box-shadow: 0 6px 12px rgba(114, 120, 242, 0.2), inset 0 -2px 0 rgba(72, 78, 200, 0.2);
+}
+
+/* ── Quiz Choice Button System ──────────────────────────────── */
+.quiz-choice-btn {
+    width: 100%;
+    padding: 0.625rem 1.5rem;
+    border-radius: 1.6rem;
+    font-weight: 700;
+    font-size: var(--text-h3);
+    border: 2px solid #E9EDF2;
+    border-bottom: 4px solid #CBD5E1;
+    background: #FFFFFF;
+    color: #5D544F;
+    transform: translateY(-4px);
+    box-shadow: 0 10px 16px rgba(120, 130, 160, 0.10);
+    transition: all 0.15s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    word-break: keep-all;
+    position: relative;
+    text-align: left;
+}
+
+.quiz-choice-btn:hover:not(:disabled):not(.quiz-choice-btn--correct):not(.quiz-choice-btn--wrong):not(.quiz-choice-btn--dimmed) {
+    border-color: #7C83FF;
+    border-bottom-color: #7C83FF;
+}
+
+.quiz-choice-btn:active {
+    transform: translateY(4px);
+    border-bottom-width: 0;
+}
+
+.quiz-choice-btn--correct {
+    background: #F2F3FF;
+    border-color: #7C83FF;
+    border-bottom-color: #7C83FF;
+    color: #4F56D9;
+}
+
+.quiz-choice-btn--wrong {
+    border-color: #FFA88D;
+    border-bottom-color: #FFA88D;
+    color: #FF8D72;
+}
+
+.quiz-choice-btn--dimmed {
+    border-bottom-width: 2px;
+    border-bottom-color: #E9EDF2;
+    color: #AEB7C5;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+.quiz-choice-btn--center {
+    justify-content: center;
+    text-align: center;
+}
+
+.quiz-choice-btn--large {
+    font-size: clamp(1.45rem, 5vw, 1.85rem);
+    font-family: serif;
+    line-height: 1.15;
+}
+
+.quiz-choice-btn--hanja {
+    font-size: clamp(1.15rem, 4vw, 1.35rem);
+    font-family: serif;
+}
+
+.hp-section-shortcut {
+    position: relative;
+    overflow: hidden;
+    min-height: 48px;
+    padding: 0.75rem clamp(0.8rem, 3.2vw, 1.1rem);
+    border: 0;
+    border-radius: 1.45rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--shortcut-text, #5B677A);
+    background: var(--shortcut-bg, #FFFFFF);
+    box-shadow:
+        0 10px 18px rgba(80, 96, 120, 0.10),
+        inset 0 -4px 0 var(--shortcut-shadow, rgba(80, 96, 120, 0.12));
+    font-size: clamp(0.95rem, 3.4vw, 1.08rem);
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.hp-section-shortcut::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0));
+    pointer-events: none;
+}
+
+.hp-section-shortcut:active {
+    transform: scale(0.96) translateY(3px);
+    box-shadow:
+        0 5px 10px rgba(80, 96, 120, 0.08),
+        inset 0 -2px 0 var(--shortcut-shadow, rgba(80, 96, 120, 0.12));
+}
+
+.hp-section-shortcut--warm {
+    --shortcut-bg: linear-gradient(135deg, #FFF8EE 0%, #FFE9C8 100%);
+    --shortcut-text: #A87F50;
+    --shortcut-shadow: rgba(174, 133, 83, 0.20);
+}
+
+.hp-section-shortcut--blue {
+    --shortcut-bg: linear-gradient(135deg, #F7F7FF 0%, #E4E6FF 100%);
+    --shortcut-text: #6970F0;
+    --shortcut-shadow: rgba(105, 112, 240, 0.22);
+}
+
+.hp-section-shortcut--purple {
+    --shortcut-bg: linear-gradient(135deg, #F4F3FF 0%, #E0DEFF 100%);
+    --shortcut-text: #7C83FF;
+    --shortcut-shadow: rgba(124, 131, 255, 0.22);
+}
+
+@media (max-width: 380px) {
+    .hp-section-shortcut {
+        min-height: 44px;
+        padding-inline: 0.72rem;
+        font-size: 0.9rem;
+        border-radius: 1.25rem;
+    }
+}
+
 
 /* =============================================
    GLASS PANEL (보조 카드)
@@ -481,7 +705,7 @@ body.dark .clay-button {
     position: relative;
     overflow: hidden;
     background: linear-gradient(135deg, #9FA5FF 0%, #6168EB 100%) !important;
-    box-shadow: 0 12px 24px rgba(97, 104, 235, 0.3), inset 0 -4px 0 rgba(0,0,0,0.1) !important;
+    box-shadow: none !important;
     color: #FFFFFF !important;
     border: none !important;
     border-radius: var(--hp-btn-radius) !important;
@@ -513,7 +737,7 @@ body.dark .clay-button {
 
 .retry-quiz-button:active {
     transform: scale(0.97) translateY(4px) !important;
-    box-shadow: 0 6px 12px rgba(97, 104, 235, 0.2), inset 0 -2px 0 rgba(0,0,0,0.1) !important;
+    box-shadow: none !important;
 }
 
 /* 돌아가기 버튼 커스텀 스타일 */

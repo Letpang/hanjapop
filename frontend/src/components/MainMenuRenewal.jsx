@@ -3,6 +3,7 @@ import { usePremium } from '../hooks/usePremium.js';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import { getRankDetails } from '../utils/rankUtils.js';
 import CtaButton from './common/CtaButton.jsx';
+import IDIOMS from '../data/idioms.js';
 
 const TOTAL_STAGES = 124;
 
@@ -25,6 +26,16 @@ const FLOAT_CSS = `
     50%  { transform: translateY(-6px); }
     100% { transform: translateY(0px); }
 }
+@keyframes mm-sparkle {
+    0%, 100% { opacity: 0.45; transform: scale(0.9) rotate(0deg); }
+    50%      { opacity: 1; transform: scale(1.1) rotate(8deg); }
+}
+@keyframes mm-cta-shine {
+    0%   { transform: translateX(-130%) skewX(-14deg); opacity: 0; }
+    18%  { opacity: 0.75; }
+    42%  { opacity: 0.25; }
+    100% { transform: translateX(170%) skewX(-14deg); opacity: 0; }
+}
 `;
 
 const MISSION_META = {
@@ -33,7 +44,7 @@ const MISSION_META = {
     sentenceQuiz: { label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.png', nav: 'sentenceQuiz' },
     shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame'    },
     matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame'    },
-    writing:      { label: '한자 쓰기',   icon: '/assets/images/icons/writing.png',  nav: 'writing'      },
+    writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing'      },
 };
 
 const MainMenuRenewal = ({
@@ -68,6 +79,7 @@ const MainMenuRenewal = ({
     const missionTotal = missions?.length || 6;
     const missionDone  = doneCount || 0;
     const allDone      = missionDone >= missionTotal;
+    const isDailyComplete = allDone && !selectedPastStage && !selectedGrade;
     const up = (d = 0) => ({
         opacity:   mounted ? 1 : 0,
         transform: mounted ? 'translateY(0)' : 'translateY(18px)',
@@ -131,7 +143,7 @@ const MainMenuRenewal = ({
                         return (
                             <button 
                                 onClick={() => onNavigate('mypage')}
-                                className="relative w-full text-left rounded-[2rem] p-5 shadow-xl overflow-hidden flex items-center gap-4 border-[6px] border-white active:scale-[0.98] hover:shadow-2xl transition-all group"
+                                className="relative w-full text-left rounded-[1.5rem] p-5 shadow-xl overflow-hidden flex items-center gap-4 active:scale-[0.98] hover:shadow-2xl transition-all group"
                                 style={{ background: 'linear-gradient(135deg, #ffffff 0%, #F4F7F8 100%)' }}>
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#2ED6C5] rounded-full blur-[50px] opacity-10 group-hover:opacity-20 transition-opacity" />
 
@@ -166,7 +178,7 @@ const MainMenuRenewal = ({
                                                 {xpToNext != null ? `다음 랭크까지 ${xpToNext.toLocaleString()} XP` : '최고 랭크 달성!'}
                                             </span>
                                         </div>
-                                        <div className="w-full h-[6px] rounded-full bg-slate-200 overflow-hidden shadow-inner">
+                                        <div className="w-full h-[10px] rounded-full bg-slate-200 overflow-hidden shadow-inner">
                                             <div className="h-full rounded-full transition-all duration-700"
                                                 style={{ width: `${rank.progress}%`, background: 'linear-gradient(90deg, #2ED6C5, #0D9488)' }} />
                                         </div>
@@ -188,62 +200,151 @@ const MainMenuRenewal = ({
                 <div className="w-full max-w-md" style={up(0.05)}>
                     <button
                         onClick={() => setShowModal(true)}
-                        className="w-full flex items-center gap-3 px-5 py-4 rounded-[1.5rem] active:scale-[0.98] transition-all bg-white/70 backdrop-blur-md shadow-sm border-2 border-white"
+                        className="w-full flex items-center gap-3 px-5 py-4 rounded-[1.5rem] active:scale-[0.98] transition-all bg-white/70 backdrop-blur-md shadow-sm"
                     >
                         <span className="font-bold text-xs shrink-0 text-[#8f99ad]">진행도</span>
                         <div className="flex-1 flex items-center gap-2 min-w-0">
                             <div className="flex-1 rounded-full overflow-hidden h-[10px] bg-slate-100 shadow-inner">
                                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#2ED6C5,#0D9488)', boxShadow: '0 0 8px rgba(46,214,197,0.4)' }} />
                             </div>
-                            <span className="font-black text-sm shrink-0" style={{ color: '#0D9488' }}>
-                                {completedDay}/{TOTAL_STAGES} <span style={{ fontSize: 10, opacity: 0.65 }}>▾</span>
-                            </span>
+                            <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-teal-50/80 border border-teal-100/60 shadow-sm shrink-0">
+                                <span className="font-black text-[14px]" style={{ color: '#0D9488', letterSpacing: '-0.3px' }}>
+                                    {completedDay}/{TOTAL_STAGES}
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-teal-600/80" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </div>
                         </div>
                     </button>
                 </div>
 
                 {/* 3 ── 탐험 지도로 돌아가기 CTA ── */}
                 <div className="w-full max-w-md relative mt-3 mb-2" style={up(0.10)}>
-                    {/* 빼꼼 튀어나온 귀여운 몬스터 복구 (버튼 뒤로 숨김) */}
-                    <img
-                        src="/assets/images/icons/monster_new_new.png"
-                        alt="monster"
-                        className="absolute pointer-events-none object-contain z-0"
-                        style={{ width: 84, height: 84, right: 16, top: -33, filter: 'drop-shadow(0 -8px 16px rgba(16,185,129,0.35))', animation: 'mm-float 4s ease-in-out infinite' }}
-                        onError={(e) => { e.target.style.display='none'; }}
-                    />
-                    <CtaButton theme="coral" onClick={onStartNextStage} className="relative z-10">
-                        <div className="flex items-center justify-between gap-3 w-full">
-                            <div className="flex items-center gap-4">
-                                <div className="text-left">
-                                    <div className="font-black text-white leading-tight drop-shadow-md" style={{ fontSize: '1.65rem', letterSpacing: '-0.02em' }}>
-                                        {selectedPastStage
-                                            ? `${selectedPastStage}단계 복습하기`
-                                            : selectedGrade
-                                            ? `${selectedGrade} 전체 연습하기`
-                                            : `오늘의 탐험 떠나기`}
+                    {selectedGrade ? (
+                        <div className="flex flex-col gap-3">
+                            <div className="w-full rounded-[1.5rem] bg-indigo-50/80 p-5 border border-indigo-100 shadow-sm relative overflow-hidden">
+                                <div className="relative z-10 flex flex-col items-center text-center gap-1.5">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 mb-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                            <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                        </svg>
                                     </div>
-                                    <div className="mt-0.5 font-bold text-white opacity-95" style={{ fontSize: '1rem' }}>
-                                        탐험 지도로 이동합니다
-                                    </div>
+                                    <h4 className="font-black text-indigo-900 text-[17px] tracking-tight">{selectedGrade} 복습 모드</h4>
+                                    <p className="text-[13px] font-bold text-indigo-700/80 leading-snug break-keep">
+                                        전체 {selectedGrade} 한자 중 완료한 단계의 한자가<br/>아래 퀘스트에 출제됩니다.
+                                    </p>
                                 </div>
                             </div>
-                            <div className="shrink-0 flex items-center justify-center rounded-full w-10 h-10 bg-white text-[#FF6B6B] shadow-md">
-                                <span style={{ fontSize: 18, fontWeight: 900, marginLeft: 2 }}>▶</span>
-                            </div>
+                            <button
+                                onClick={() => onSelectGrade(null)}
+                                className="w-full py-4 rounded-[1.5rem] bg-white border-2 border-slate-200 text-slate-500 font-bold text-[15px] active:scale-95 transition-all shadow-sm flex justify-center items-center gap-2"
+                            >
+                                원래 단계로 돌아가기
+                            </button>
                         </div>
-                    </CtaButton>
+                    ) : (
+                        <>
+                            {/* 빼꼼 튀어나온 귀여운 몬스터 복구 (버튼 뒤로 숨김) */}
+                            <img
+                                src={isDailyComplete ? '/assets/images/icons/monster_remove.png' : '/assets/images/icons/monster_new_new.png'}
+                                alt="monster"
+                                className={`absolute pointer-events-none object-contain ${isDailyComplete ? 'z-30' : 'z-0'}`}
+                                style={{
+                                    width: isDailyComplete ? 112 : 84,
+                                    height: isDailyComplete ? 112 : 84,
+                                    right: isDailyComplete ? 40 : 16,
+                                    top: isDailyComplete ? -48 : -33,
+                                    filter: isDailyComplete ? 'none' : 'drop-shadow(0 -8px 16px rgba(16,185,129,0.35))',
+                                    animation: 'mm-float 4s ease-in-out infinite',
+                                }}
+                                onError={(e) => { e.target.style.display='none'; }}
+                            />
+                            {isDailyComplete && (
+                                <div
+                                    className="absolute z-30 rounded-[1.25rem] bg-white px-3.5 py-2.5 border border-[#FFE0D4] shadow-lg"
+                                    style={{
+                                        right: 150,
+                                        top: -34,
+                                        maxWidth: 190,
+                                        boxShadow: '0 10px 22px rgba(255, 107, 107, 0.16), 0 4px 10px rgba(15, 23, 42, 0.04)',
+                                    }}
+                                >
+                                    <p className="text-[12px] font-black leading-snug text-[#FF6B6B] break-keep relative z-10">
+                                        {currentDay}단계 퀘스트 완료! 고생했어요.
+                                    </p>
+                                    <svg className="absolute top-1/2 -translate-y-1/2 w-[9px] h-[16px]" style={{ right: '-8px' }} viewBox="0 0 9 16" fill="none">
+                                        <path d="M-1 1 L7 8 L-1 15" fill="white" stroke="#FFE0D4" strokeWidth="1" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
+                            )}
+                            <CtaButton
+                                theme={(selectedPastStage || isDailyComplete) ? 'coral' : 'cream'}
+                                onClick={onStartNextStage}
+                                className="relative z-10 overflow-hidden"
+                            >
+                                {isDailyComplete && (
+                                    <span
+                                        className="absolute inset-y-0 left-0 w-24 bg-white/45 blur-sm pointer-events-none"
+                                        style={{ animation: 'mm-cta-shine 2.6s ease-in-out infinite' }}
+                                    />
+                                )}
+                                {isDailyComplete && (
+                                    <>
+                                        <span className="absolute right-[5.5rem] top-5 text-[#FFE7A8] text-[18px] pointer-events-none" style={{ animation: 'mm-sparkle 1.8s ease-in-out infinite' }}>✦</span>
+                                        <span className="absolute right-[7.2rem] bottom-5 text-[#FFE7A8] text-[13px] pointer-events-none" style={{ animation: 'mm-sparkle 2.2s ease-in-out infinite 0.2s' }}>✦</span>
+                                    </>
+                                )}
+                                <div className="flex items-center justify-between gap-3 w-full">
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-left">
+                                            <div
+                                                className={`font-black leading-tight ${selectedPastStage || isDailyComplete ? 'text-white drop-shadow-md' : 'text-[#5B677A]'}`}
+                                                style={{ fontSize: '1.65rem', letterSpacing: '-0.02em' }}
+                                            >
+                                                {selectedPastStage
+                                                    ? `${selectedPastStage}단계 복습하기`
+                                                    : isDailyComplete
+                                                    ? `다음 탐험으로 가기`
+                                                    : `오늘의 탐험 떠나기`}
+                                            </div>
+                                            <div
+                                                className={`mt-0.5 font-bold ${selectedPastStage || isDailyComplete ? 'text-white opacity-95' : 'text-[#FF9B73]'}`}
+                                                style={{ fontSize: '1rem' }}
+                                            >
+                                                {isDailyComplete
+                                                    ? '다음 탐험으로 가볼까요?'
+                                                    : '탐험 지도로 이동합니다'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        className={`shrink-0 flex items-center justify-center rounded-full w-10 h-10 shadow-md relative ${selectedPastStage || isDailyComplete ? 'bg-white text-[#FF6B6B]' : 'bg-[#FF9B73] text-white'}`}
+                                        style={isDailyComplete ? { boxShadow: '0 8px 18px rgba(255,255,255,0.35), 0 0 0 6px rgba(255,255,255,0.16)' } : undefined}
+                                    >
+                                        <span style={{ fontSize: 18, fontWeight: 900, marginLeft: 2 }}>▶</span>
+                                    </div>
+                                </div>
+                            </CtaButton>
+                        </>
+                    )}
                 </div>
 
                 {/* 4 ── 오늘의 퀘스트 보드 (미션) ── */}
                 <div className="w-full max-w-md relative" style={up(0.15)}>
-                    <div className="flex items-end justify-between mb-3 px-2">
+                    <div className="flex flex-wrap items-end justify-between gap-2 mb-3 px-2">
                         <div className="flex flex-col">
                             <span className="font-black text-lg text-slate-700 tracking-tight">오늘의 퀘스트</span>
-                            <span className="font-bold text-xs mt-0.5 text-[#2ED6C5]">올클리어하면 <span className="text-[#FF9B73]">+200XP 보너스!</span></span>
+                            {!allDone && (
+                                <span className="font-bold text-xs mt-0.5 text-[#2ED6C5]">
+                                    올클리어하면 <span className="text-[#FF9B73]">+200XP 보너스!</span>
+                                </span>
+                            )}
                         </div>
-                        <div className={`px-3 py-1 rounded-full font-black text-xs ${allDone ? 'bg-[#2ED6C5] text-white shadow-md' : 'bg-white text-slate-400 border-2 border-slate-100'}`}>
-                            {missionDone} / {missionTotal} {allDone && '🎉'}
+                        <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded-full font-black text-xs ${allDone ? 'bg-[#2ED6C5] text-white shadow-md' : 'bg-white text-slate-400 border-2 border-slate-100'}`}>
+                                {missionDone} / {missionTotal}
+                            </div>
                         </div>
                     </div>
                     
@@ -259,7 +360,7 @@ const MainMenuRenewal = ({
                                 <button
                                     key={m.id}
                                     onClick={() => meta.nav && onNavigate(meta.nav)}
-                                    className="w-full flex items-center gap-3 py-3.5 px-4 rounded-[1.5rem] active:scale-[0.97] transition-all border-2 bg-white border-[#E9EDF2] shadow-sm relative overflow-hidden"
+                                    className="w-full flex items-center gap-3 py-3.5 px-4 rounded-[1.5rem] active:scale-[0.97] transition-all bg-white relative overflow-hidden"
                                 >
                                     <div className="flex-1 flex items-center justify-between min-w-0 relative z-10">
                                         <div className="flex items-center gap-2 min-w-0">
@@ -270,8 +371,8 @@ const MainMenuRenewal = ({
                                             {!m.done && isRecommended && <span className="bg-[#FFFBEB] text-[#D97706] text-[11px] font-black px-1.5 py-0.5 rounded-md shrink-0">추천</span>}
                                             {!m.done && isCorал && <span className="bg-[#FFF0EB] text-[#FF6B6B] text-[11px] font-black px-1.5 py-0.5 rounded-md shrink-0">고XP</span>}
                                         </div>
-                                        <span className={`font-bold text-sm shrink-0 ml-2 ${m.done ? 'text-slate-300' : 'text-[#FF9B73]'}`}>
-                                            +{m.xp} XP
+                                        <span className={`font-black text-xs shrink-0 ml-2 ${m.done ? 'text-slate-300' : 'text-[#FF9B73]'}`}>
+                                            미션 +{m.xp}XP
                                         </span>
                                     </div>
 
@@ -284,12 +385,55 @@ const MainMenuRenewal = ({
                     </div>
                 </div>
 
-                {/* 5 ── 기억의 보관소 (지나간 단계 복습) ── */}
+                {/* 5 ── 한자 급수시험 준비 ── */}
+                <div className="w-full max-w-md" style={up(0.18)}>
+                    <div className="flex items-center justify-between mb-3 px-2">
+                        <div className="flex flex-col">
+                            <span className="font-black text-lg text-slate-700 tracking-tight">한자 급수시험 준비</span>
+                            <span className="font-bold text-xs mt-0.5" style={{ color: '#7C83FF' }}>사자성어 · 급수별 시험문제</span>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        {/* 사자성어 */}
+                        <button
+                            onClick={() => onNavigate('idiom')}
+                            className="flex flex-col items-start gap-2 px-4 py-4 rounded-[1.5rem] active:scale-[0.97] transition-all relative overflow-hidden"
+                            style={{ background: 'linear-gradient(135deg, #F4F3FF 0%, #E8E6FF 100%)', border: '1.5px solid #C3C6FF' }}
+                        >
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'rgba(124,131,255,0.15)' }}>
+                                📜
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="font-black text-[0.95rem]" style={{ color: '#4F56D9' }}>사자성어</span>
+                                <span className="font-bold text-[0.7rem]" style={{ color: '#9AA4B5' }}>4자 성어 학습 · 퀴즈</span>
+                            </div>
+                            <span className="text-xs font-black" style={{ color: '#7C83FF' }}>{`${IDIOMS.length}개 →`}</span>
+                        </button>
+
+                        {/* 급수시험문제 */}
+                        <button
+                            onClick={() => onNavigate('gradeExamSelect')}
+                            className="flex flex-col items-start gap-2 px-4 py-4 rounded-[1.5rem] active:scale-[0.97] transition-all relative overflow-hidden"
+                            style={{ background: 'linear-gradient(135deg, #FFF8EE 0%, #FFE9C8 100%)', border: '1.5px solid #FFD6A5' }}
+                        >
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'rgba(255,155,115,0.15)' }}>
+                                📝
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <span className="font-black text-[0.95rem]" style={{ color: '#C07000' }}>급수시험문제</span>
+                                <span className="font-bold text-[0.7rem]" style={{ color: '#9AA4B5' }}>8급 ~ 6급 모의시험</span>
+                            </div>
+                            <span className="text-xs font-black" style={{ color: '#FF9B73' }}>바로가기 →</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* 6 ── 기억의 보관소 (지나간 단계 복습) ── */}
                 {completedDay > 1 && (
                     <div className="w-full max-w-md mt-4" style={up(0.20)}>
                         <button
                             onClick={() => setShowModal(true)}
-                            className="w-full relative overflow-hidden flex items-center gap-4 px-5 py-4 rounded-[1.5rem] active:scale-[0.98] transition-all bg-white/80 backdrop-blur-md shadow-sm border-2 border-[#E9EDF2]"
+                            className="w-full relative overflow-hidden flex items-center gap-4 px-5 py-4 rounded-[1.5rem] active:scale-[0.98] transition-all bg-white/80 backdrop-blur-md"
                         >
                             <div className="shrink-0 w-12 h-12 rounded-[1rem] flex items-center justify-center bg-[#7C83FF]/10 border border-[#7C83FF]/20 shadow-inner">
                                 <span className="text-2xl drop-shadow-sm">🔮</span>

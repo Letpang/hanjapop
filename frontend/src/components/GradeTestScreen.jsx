@@ -1,157 +1,86 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SK } from '../constants/storageKeys.js';
-import { playSound } from '../utils/playSound.js';
+import GradeTestIntro from './common/GradeTestIntro.jsx';
+import GradeTestResult from './common/GradeTestResult.jsx';
 
-// ─── 8급 기출 기반 문제 (111회 · 112회) ──────────────────────────────────────
+// ─── 8급 기출 기반 문제 (111회 · 112회) ─────────────────────────────────────
 const QUESTIONS = [
-  // ── 독음: 한자 보고 음 고르기 ──
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '八',
-    choices: ['팔', '칠', '육', '구'],
-    answer: '팔',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '月',
-    choices: ['일', '월', '화', '수'],
-    answer: '월',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '大',
-    choices: ['소', '중', '대', '장'],
-    answer: '대',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '韓',
-    choices: ['민', '국', '한', '왕'],
-    answer: '한',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '先',
-    choices: ['생', '학', '교', '선'],
-    answer: '선',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '北',
-    choices: ['동', '서', '남', '북'],
-    answer: '북',
-  },
-  {
-    type: 'sound',
-    prompt: '다음 한자의 읽는 소리는?',
-    hanja: '室',
-    choices: ['문', '실', '군', '촌'],
-    answer: '실',
-  },
+  // ── [1-10] 독음: 문장 속 한자 읽기 ──
+  { type: 'sound_sentence', sentence: '올해는 (八)월입니다.', hanja: '八', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['팔', '칠', '구', '육'], answer: '팔' },
+  { type: 'sound_sentence', sentence: '(月)요일에 학교에 갑니다.', hanja: '月', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['월', '화', '수', '목'], answer: '월' },
+  { type: 'sound_sentence', sentence: '(十)월에 단풍이 아름다워요.', hanja: '十', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['십', '백', '천', '만'], answer: '십' },
+  { type: 'sound_sentence', sentence: '(五)월 오일은 어린이날입니다.', hanja: '五', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['오', '사', '육', '칠'], answer: '오' },
+  { type: 'sound_sentence', sentence: '(日)요일은 쉬는 날입니다.', hanja: '日', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['일', '월', '화', '토'], answer: '일' },
+  { type: 'sound_sentence', sentence: '(大)한민국 만세!', hanja: '大', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['대', '소', '중', '장'], answer: '대' },
+  { type: 'sound_sentence', sentence: '(韓)국은 아름다운 나라입니다.', hanja: '韓', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['한', '민', '국', '왕'], answer: '한' },
+  { type: 'sound_sentence', sentence: '(民)주주의 나라입니다.', hanja: '民', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['민', '국', '왕', '군'], answer: '민' },
+  { type: 'sound_sentence', sentence: '(國)어를 열심히 공부합니다.', hanja: '國', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['국', '한', '군', '민'], answer: '국' },
+  { type: 'sound_sentence', sentence: '(山)에 올라가면 경치가 좋아요.', hanja: '山', prompt: '다음 문장의 한자를 읽는 소리는?', choices: ['산', '천', '남', '북'], answer: '산' },
 
-  // ── 훈음 → 한자 고르기 ──
-  {
-    type: 'hanja',
-    prompt: '"나무"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['木', '水', '火', '土'],
-    answer: '木',
-  },
-  {
-    type: 'hanja',
-    prompt: '"임금"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['大', '民', '王', '父'],
-    answer: '王',
-  },
-  {
-    type: 'hanja',
-    prompt: '"작을"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['大', '長', '中', '小'],
-    answer: '小',
-  },
-  {
-    type: 'hanja',
-    prompt: '"동녘"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['西', '南', '東', '北'],
-    answer: '東',
-  },
-  {
-    type: 'hanja',
-    prompt: '"배울"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['校', '學', '先', '生'],
-    answer: '學',
-  },
-  {
-    type: 'hanja',
-    prompt: '"나라"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['韓', '民', '國', '王'],
-    answer: '國',
-  },
-  {
-    type: 'hanja',
-    prompt: '"흙"에 해당하는 한자는?',
-    hanja: null,
-    choices: ['水', '火', '金', '土'],
-    answer: '土',
-  },
+  // ── [11-20] 훈/음 → 한자 고르기 ──
+  { type: 'hanja', prompt: '"왕"에 해당하는 한자는?', hanja: null, choices: ['王', '大', '民', '父'], answer: '王' },
+  { type: 'hanja', prompt: '"쇠/성"에 해당하는 한자는?', hanja: null, choices: ['金', '木', '水', '火'], answer: '金' },
+  { type: 'hanja', prompt: '"나무"에 해당하는 한자는?', hanja: null, choices: ['木', '水', '火', '土'], answer: '木' },
+  { type: 'hanja', prompt: '"두 이"에 해당하는 한자는?', hanja: null, choices: ['二', '一', '三', '四'], answer: '二' },
+  { type: 'hanja', prompt: '"작을"에 해당하는 한자는?', hanja: null, choices: ['小', '大', '中', '上'], answer: '小' },
+  { type: 'hanja', prompt: '"사람"에 해당하는 한자는?', hanja: null, choices: ['人', '父', '母', '兄'], answer: '人' },
+  { type: 'hanja', prompt: '"석 삼"에 해당하는 한자는?', hanja: null, choices: ['三', '一', '二', '四'], answer: '三' },
+  { type: 'hanja', prompt: '"흙"에 해당하는 한자는?', hanja: null, choices: ['土', '水', '火', '金'], answer: '土' },
+  { type: 'hanja', prompt: '"물"에 해당하는 한자는?', hanja: null, choices: ['水', '木', '火', '金'], answer: '水' },
+  { type: 'hanja', prompt: '"흰"에 해당하는 한자는?', hanja: null, choices: ['白', '靑', '大', '小'], answer: '白' },
 
-  // ── 한자 → 훈(뜻) 고르기 ──
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '母',
-    choices: ['아버지', '어미', '형', '아우'],
-    answer: '어미',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '門',
-    choices: ['방', '집', '문', '창'],
-    answer: '문',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '靑',
-    choices: ['흰', '붉을', '푸를', '검을'],
-    answer: '푸를',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '軍',
-    choices: ['나라', '백성', '임금', '군사'],
-    answer: '군사',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '外',
-    choices: ['안', '위', '아래', '바깥'],
-    answer: '바깥',
-  },
-  {
-    type: 'meaning',
-    prompt: '다음 한자의 뜻은?',
-    hanja: '弟',
-    choices: ['형', '아우', '누나', '언니'],
-    answer: '아우',
-  },
+  // ── [21-30] 밑줄 친 말 → 한자 고르기 ──
+  { type: 'underline', sentence: '나무 한 그루를 심었습니다.', underline: '나무', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['木', '火', '水', '土'], answer: '木' },
+  { type: 'underline', sentence: '나와 형은 아버지를 닮았습니다.', underline: '형', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['兄', '弟', '父', '母'], answer: '兄' },
+  { type: 'underline', sentence: '아이들이 학교 밖에서 놀고 있습니다.', underline: '밖', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['外', '門', '室', '上'], answer: '外' },
+  { type: 'underline', sentence: '물이 아래로 흐릅니다.', underline: '아래', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['下', '上', '左', '右'], answer: '下' },
+  { type: 'underline', sentence: '강 가운데 배가 떠 있습니다.', underline: '가운데', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['中', '大', '小', '上'], answer: '中' },
+  { type: 'underline', sentence: '구미호는 꼬리가 아홉 달린 여우입니다.', underline: '아홉', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['九', '八', '七', '六'], answer: '九' },
+  { type: 'underline', sentence: '장작이 불을 탑니다.', underline: '불', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['火', '水', '木', '土'], answer: '火' },
+  { type: 'underline', sentence: '버드나무의 푸른 잎이 흔들립니다.', underline: '푸른', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['靑', '白', '大', '小'], answer: '靑' },
+  { type: 'underline', sentence: '하나의 마음으로 힘을 모읍시다.', underline: '하나', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['一', '二', '三', '十'], answer: '一' },
+  { type: 'underline', sentence: '동생과 함께 뛰어놀았습니다.', underline: '동생', prompt: '밑줄 친 말에 해당하는 한자는?', choices: ['弟', '兄', '男', '女'], answer: '弟' },
+
+  // ── [31-40] 한자 → 훈+음 ──
+  { type: 'meaning_sound', hanja: '校', prompt: '이 한자의 훈과 음은?', choices: ['학교 교', '배울 학', '먼저 선', '날 생'], answer: '학교 교' },
+  { type: 'meaning_sound', hanja: '母', prompt: '이 한자의 훈과 음은?', choices: ['어미 모', '아비 부', '형 형', '계집 녀'], answer: '어미 모' },
+  { type: 'meaning_sound', hanja: '弟', prompt: '이 한자의 훈과 음은?', choices: ['아우 제', '형 형', '사내 남', '계집 녀'], answer: '아우 제' },
+  { type: 'meaning_sound', hanja: '六', prompt: '이 한자의 훈과 음은?', choices: ['여섯 육', '일곱 칠', '다섯 오', '여덟 팔'], answer: '여섯 육' },
+  { type: 'meaning_sound', hanja: '先', prompt: '이 한자의 훈과 음은?', choices: ['먼저 선', '날 생', '배울 학', '아비 부'], answer: '먼저 선' },
+  { type: 'meaning_sound', hanja: '四', prompt: '이 한자의 훈과 음은?', choices: ['넉 사', '석 삼', '다섯 오', '여섯 육'], answer: '넉 사' },
+  { type: 'meaning_sound', hanja: '七', prompt: '이 한자의 훈과 음은?', choices: ['일곱 칠', '여섯 육', '여덟 팔', '다섯 오'], answer: '일곱 칠' },
+  { type: 'meaning_sound', hanja: '門', prompt: '이 한자의 훈과 음은?', choices: ['문 문', '바깥 외', '큰 대', '메 산'], answer: '문 문' },
+  { type: 'meaning_sound', hanja: '女', prompt: '이 한자의 훈과 음은?', choices: ['계집 녀', '사내 남', '어미 모', '아들 자'], answer: '계집 녀' },
+  { type: 'meaning_sound', hanja: '外', prompt: '이 한자의 훈과 음은?', choices: ['바깥 외', '가운데 중', '위 상', '아래 하'], answer: '바깥 외' },
+
+  // ── [41-44] 한자 → 훈(뜻) ──
+  { type: 'meaning', prompt: '이 한자의 뜻은?', hanja: '父', choices: ['아비', '어미', '형', '아우'], answer: '아비' },
+  { type: 'meaning', prompt: '이 한자의 뜻은?', hanja: '北', choices: ['북녘', '동녘', '서녘', '남녘'], answer: '북녘' },
+  { type: 'meaning', prompt: '이 한자의 뜻은?', hanja: '寸', choices: ['마디', '아비', '동녘', '북녘'], answer: '마디' },
+  { type: 'meaning', prompt: '이 한자의 뜻은?', hanja: '東', choices: ['동녘', '서녘', '남녘', '마디'], answer: '동녘' },
+
+  // ── [45-48] 한자 → 음(소리) ──
+  { type: 'sound', prompt: '이 한자의 읽는 소리는?', hanja: '西', choices: ['서', '동', '남', '북'], answer: '서' },
+  { type: 'sound', prompt: '이 한자의 읽는 소리는?', hanja: '南', choices: ['남', '산', '군', '실'], answer: '남' },
+  { type: 'sound', prompt: '이 한자의 읽는 소리는?', hanja: '室', choices: ['실', '남', '산', '군'], answer: '실' },
+  { type: 'sound', prompt: '이 한자의 읽는 소리는?', hanja: '軍', choices: ['군', '남', '산', '실'], answer: '군' },
+
+  // ── [49-50] 필순 ──
+  { type: 'stroke', prompt: '이 한자의 총 획수는?', hanja: '門', choices: ['8획', '6획', '7획', '9획'], answer: '8획' },
+  { type: 'stroke', prompt: '이 한자의 총 획수는?', hanja: '王', choices: ['4획', '2획', '3획', '5획'], answer: '4획' },
 ];
 
-const PASS_COUNT = 14; // 20문제 중 14개 (70%)
+const PASS_COUNT = 35; // 50문제 중 35개 (70%)
+
+const TYPE_LABELS = {
+  sound: '독음 (읽는 소리)',
+  sound_sentence: '독음 (읽는 소리)',
+  hanja: '훈음 → 한자',
+  underline: '밑줄 → 한자',
+  meaning: '한자 → 뜻',
+  meaning_sound: '한자 → 훈+음',
+  stroke: '필순 (획수)',
+};
 
 const getUnlockedGrade = () => {
   try { return localStorage.getItem(SK.UNLOCKED_GRADE); } catch { return null; }
@@ -166,15 +95,39 @@ const shuffle = (arr) => {
   return a;
 };
 
-// ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const GradeTestScreen = ({ onBack, onComplete }) => {
+const renderSentence = (sentence, hanja, underline) => {
+  if (underline) {
+    const idx = sentence.indexOf(underline);
+    if (idx === -1) return <span>{sentence}</span>;
+    return (
+      <>
+        {sentence.slice(0, idx)}
+        <span className="font-black underline decoration-2 underline-offset-2">{underline}</span>
+        {sentence.slice(idx + underline.length)}
+      </>
+    );
+  }
+  if (hanja) {
+    const parts = sentence.split(`(${hanja})`);
+    return parts.reduce((acc, part, i) => {
+      if (i < parts.length - 1) {
+        return [...acc, part, <span key={i} className="inline-block bg-[#EEF1FF] text-[#6D6FF2] font-black px-1.5 py-0 rounded-lg mx-0.5">{hanja}</span>];
+      }
+      return [...acc, part];
+    }, []);
+  }
+  return sentence;
+};
+
+// ─── 메인 컴포넌트 ───────────────────────────────────────────────────────────
+const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
   const currentGrade = getUnlockedGrade();
   const alreadyUnlocked = ['8급', '7급II', '7급', '6급II', '6급'].includes(currentGrade);
 
   const [questions] = useState(() =>
     shuffle(QUESTIONS).map(q => ({ ...q, choices: shuffle(q.choices) }))
   );
-  const [phase, setPhase] = useState('intro'); // intro | quiz | result
+  const [phase, setPhase] = useState('intro');
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
@@ -182,18 +135,17 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
 
   const q = questions[qIndex];
   const progress = (qIndex / questions.length) * 100;
-  const isChoiceLarge = q?.type === 'hanja';
+  const isChoiceLarge = q?.type === 'hanja' || q?.type === 'underline';
 
   const handleSelect = (choice) => {
-    if (revealed) return;
+    if (selected !== null) return;
     const isCorrect = choice === q.answer;
     setSelected(choice);
-    setRevealed(true);
     if (isCorrect) {
       setCorrect(c => c + 1);
-      playSound('match');
+      setRevealed(true);
     } else {
-      playSound('mismatch');
+      autoAdvanceTimerRef.current = setTimeout(handleNext, 500);
     }
   };
 
@@ -207,6 +159,13 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
     }
   };
 
+  const autoAdvanceTimerRef = useRef(null);
+  useEffect(() => {
+    if (!revealed) return;
+    autoAdvanceTimerRef.current = setTimeout(handleNext, 1200);
+    return () => clearTimeout(autoAdvanceTimerRef.current);
+  }, [revealed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleFinish = () => {
     const passed = correct >= PASS_COUNT;
     if (passed && !alreadyUnlocked) {
@@ -219,69 +178,17 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
   // ── 인트로 ──
   if (phase === 'intro') {
     return (
-      <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
-        {/* Transparent Header */}
-        <div className="w-full shrink-0 flex items-center justify-between px-5 pt-8 pb-4 relative">
-          <button onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-white/80 backdrop-blur-md shadow-lg border-2 border-white flex items-center justify-center text-[#3C3C3C] font-extrabold text-xl active:scale-90 transition-all z-10">
-            ←
-          </button>
-          <h2 className="text-h3 font-black text-[#3D4B4A] absolute left-1/2 -translate-x-1/2">8급 인증 시험</h2>
-          <div className="w-10" />
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 pb-10">
-          <div className="w-full max-w-md bg-white/90 backdrop-blur-md rounded-[2.5rem] border-4 border-white shadow-[0_16px_40px_rgba(120,130,160,0.12)] p-6 flex flex-col items-center gap-5 text-center">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center border-4 border-white" style={{ backgroundColor: '#FFF5E8', boxShadow: '0 0 24px rgba(255,210,120,0.25), inset 0 2px 4px rgba(255,255,255,0.8)' }}>
-              <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-12 h-12 object-contain" />
-            </div>
-            <div>
-              <h3 className="text-h2 font-black text-[#3C3C3C]">8급 인증 시험</h3>
-              <p className="text-body font-bold text-[#AEB7C5] mt-1">전국한자능력검정시험 8급 기출 기반</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3.5 w-full">
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 flex flex-col items-center border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-                <img src="/assets/images/icons/icon_flashcard_glossy.webp" alt="Questions" className="w-9 h-9 object-contain mb-1" />
-                <span className="text-xs text-[#AEB7C5] font-black uppercase tracking-widest">문제 수</span>
-                <span className="text-body-lg font-black text-[#334155] mt-0.5">20문항</span>
-              </div>
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 flex flex-col items-center border border-white/80 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-                <img src="/assets/images/icons/icon_rank_glossy.webp" alt="Criteria" className="w-9 h-9 object-contain mb-1" />
-                <span className="text-xs text-[#AEB7C5] font-black uppercase tracking-widest">합격 기준</span>
-                <span className="text-body-lg font-black text-[#334155] mt-0.5">14개 이상</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 w-full text-left">
-              <div className="flex items-center gap-3 bg-white/40 rounded-2xl px-4 py-3 border border-white/60">
-                <span className="text-[#334155] text-lg leading-none">✦</span>
-                <p className="text-body font-bold text-[#334155]">독음 · 훈음 찾기 · 뜻 찾기 혼합</p>
-              </div>
-              {alreadyUnlocked && (
-                <div className="flex items-center gap-3 bg-[#FF9B73]/10/60 rounded-2xl px-4 py-3 border border-[#FF9B73]/20/60">
-                  <span className="text-[#FF9B73] text-lg leading-none">✓</span>
-                  <p className="text-body font-bold text-[#FF9B73]">이미 인증 완료된 급수예요!</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setPhase('quiz')}
-            className="w-full max-w-md py-4 rounded-3xl font-black text-white active:scale-95 transition-transform"
-            style={{ background: 'linear-gradient(to right, #FFC13D, #FFB027)', boxShadow: '0 10px 24px rgba(255,180,50,0.28)' }}
-          >
-            시험 시작
-          </button>
-          <button
-            onClick={onBack}
-            className="w-full max-w-md py-4 rounded-3xl font-black text-[#5B677A] active:scale-95 transition-all border-2 border-[#E9EDF2] shadow-[0_4px_12px_rgba(0,0,0,0.03)] bg-white"
-          >
-            돌아가기
-          </button>
-        </div>
-      </div>
+      <GradeTestIntro
+        title="8급 인증 시험"
+        subtitle={<>전국한자능력검정시험<br/>8급 기출 기반</>}
+        total={questions.length}
+        passCount={PASS_COUNT}
+        focusText="독음 · 훈음 · 밑줄 · 훈+음 · 필순 혼합"
+        alreadyUnlocked={alreadyUnlocked}
+        alreadyUnlockedText="이미 인증 완료된 급수예요!"
+        onBack={onBack}
+        onStart={() => setPhase('quiz')}
+      />
     );
   }
 
@@ -316,15 +223,21 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
         <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
           <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
             {/* 문제 카드 */}
-            <div className="w-full bg-white rounded-[2rem] border-4 border-white p-4 flex flex-col items-center gap-2" style={{ boxShadow: '0 16px_40px rgba(120,130,160,0.10)' }}>
-              <span className="font-bold text-center" style={{ fontSize: '15px', color: '#9AA4B8', lineHeight: 1.4 }}>
-                전국한자능력검정시험 · 8급 기출 기반
-              </span>
+            <div className="w-full bg-white rounded-[2rem] border-4 border-white p-4 flex flex-col items-center gap-3" style={{ boxShadow: '0 16px 40px rgba(120,130,160,0.10)' }}>
               <span className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-widest">
-                {q.type === 'sound' ? '독음 (읽는 소리)' : q.type === 'hanja' ? '훈음 → 한자' : '한자 → 뜻'}
+                {TYPE_LABELS[q.type] || ''}
               </span>
-              <p className="text-h3 text-center" style={{ color: '#2F3545', fontWeight: 800, lineHeight: 1.18 }}>{q.prompt}</p>
-              {q.hanja && (
+              <p className="text-h2 text-center font-black" style={{ color: '#2F3545', lineHeight: 1.15 }}>{q.prompt}</p>
+
+              {/* 문장형 (독음/밑줄) */}
+              {(q.type === 'sound_sentence' || q.type === 'underline') && (
+                <p className="text-body font-bold text-center text-[#3C3C3C] leading-relaxed bg-[#F8FAFC] rounded-2xl px-4 py-3 w-full">
+                  {renderSentence(q.sentence, q.type === 'sound_sentence' ? q.hanja : null, q.underline)}
+                </p>
+              )}
+
+              {/* 한자 박스 (독음/뜻/음/필순/훈+음) */}
+              {q.hanja && q.type !== 'sound_sentence' && (
                 <div className="w-24 h-24 bg-[#F8FAF9] rounded-[1.5rem] border border-[#E9EDF2] flex items-center justify-center shadow-inner">
                   <span className="text-6xl font-bold text-[#3C3C3C]" style={{ fontFamily: 'serif' }}>{q.hanja}</span>
                 </div>
@@ -336,27 +249,27 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
               {q.choices.map((choice) => {
                 const isSelected = selected === choice;
                 const isAnswer = choice === q.answer;
-                let cls = 'w-full py-4 font-extrabold border-2 transition-all text-center rounded-[1.625rem] ';
-                let btnStyle = {};
-                if (!revealed) {
-                  cls += 'bg-white text-[#2F3545] active:bg-[#EEF1FF] active:border-[#6D6FF2]';
-                  btnStyle = { borderColor: '#E7EBF3', boxShadow: '0 6px 16px rgba(120,130,160,0.08)' };
-                } else if (isAnswer) {
-                  cls += 'text-[#2A7A50]';
-                  btnStyle = { backgroundColor: '#EAFBF0', borderColor: '#4CCB7F', boxShadow: '0 4px 12px rgba(76,203,127,0.15)' };
-                } else if (isSelected) {
-                  cls += 'text-[#CC3333]';
-                  btnStyle = { backgroundColor: '#FFF1F1', borderColor: '#FF7A7A' };
-                } else {
-                  cls += 'bg-white text-[#AEB7C5]';
-                  btnStyle = { borderColor: '#E7EBF3', boxShadow: '0 6px 16px rgba(120,130,160,0.08)' };
+                let stateClass = '';
+                if (revealed) {
+                  if (isAnswer) {
+                    stateClass = 'quiz-choice-btn--correct';
+                  } else if (isSelected) {
+                    stateClass = 'quiz-choice-btn--wrong';
+                  } else {
+                    stateClass = 'quiz-choice-btn--dimmed';
+                  }
+                } else if (selected !== null) {
+                  if (isSelected) {
+                    stateClass = 'quiz-choice-btn--wrong';
+                  } else {
+                    stateClass = 'quiz-choice-btn--dimmed';
+                  }
                 }
                 return (
                   <button
                     key={choice}
                     onClick={() => handleSelect(choice)}
-                    className={cls}
-                    style={isChoiceLarge ? { ...btnStyle, fontSize: '1.75rem', fontFamily: 'serif' } : { ...btnStyle, fontSize: '1.05rem' }}
+                    className={`quiz-choice-btn quiz-choice-btn--center ${isChoiceLarge ? 'quiz-choice-btn--large' : ''} ${stateClass}`}
                   >
                     {choice}
                   </button>
@@ -366,7 +279,7 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
 
             {/* 정오 표시 */}
             {revealed && (
-              <div className={`w-full rounded-2xl px-5 py-3 text-center font-extrabold text-sm`}
+              <div className="w-full rounded-2xl px-5 py-3 text-center font-extrabold text-sm"
                 style={selected === q.answer
                   ? { backgroundColor: '#EAFBF0', color: '#2A7A50', border: '1px solid #4CCB7F' }
                   : { backgroundColor: '#FFF1F1', color: '#CC3333', border: '1px solid #FF7A7A' }}>
@@ -375,14 +288,6 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
             )}
           </div>
 
-          {revealed && (
-            <button
-              onClick={handleNext}
-              className="pill-button-primary w-full max-w-md py-4 text-lg font-extrabold active:scale-95 transition-transform mt-4"
-            >
-              {qIndex + 1 >= questions.length ? '결과 보기' : '다음 문제'}
-            </button>
-          )}
         </div>
       </div>
     );
@@ -391,54 +296,18 @@ const GradeTestScreen = ({ onBack, onComplete }) => {
   // ── 결과 ──
   const passed = correct >= PASS_COUNT;
   return (
-    <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-[#F7FAF9] px-5 pb-10 gap-6">
-      <div className="w-full max-w-md bg-white rounded-[2.5rem] border-4 border-white shadow-2xl p-6 flex flex-col items-center gap-5 text-center">
-        <div className="text-5xl">{passed ? '🎉' : ''}</div>
-        <div>
-          <h3 className="text-xl font-extrabold text-[#3C3C3C]">
-            {passed ? '합격! 8급 인증 완료!' : '아쉽게 불합격'}
-          </h3>
-          <p className="text-sm font-bold text-[#AEB7C5] mt-1">
-            {passed ? '7급Ⅱ 시험에 도전할 수 있어요' : '다시 도전해 보세요!'}
-          </p>
-        </div>
-
-        <div className="w-full bg-[#F8FAF9] rounded-2xl p-4 border border-[#E9EDF2]">
-          <p className="text-4xl font-extrabold text-teal-600 mb-1">{correct} / {questions.length}</p>
-          <p className="text-xs font-extrabold text-[#AEB7C5]">합격 기준: {PASS_COUNT}개 이상</p>
-          <div className="w-full h-3 bg-slate-200 rounded-full mt-3 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all ${passed ? 'bg-gradient-to-r from-[#FF9B73] to-[#FF6B6B]' : 'bg-gradient-to-r from-rose-300 to-rose-400'}`}
-              style={{ width: `${(correct / questions.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {passed && !alreadyUnlocked && (
-          <div className="w-full bg-teal-50 rounded-2xl px-4 py-3 border border-teal-200 flex items-center gap-3">
-            <span className="text-2xl">🔓</span>
-            <p className="text-sm font-extrabold text-teal-700 text-left">8급 인증 완료! 7급Ⅱ 시험에 도전하세요!</p>
-          </div>
-        )}
-      </div>
-
-      <div className="w-full max-w-md flex flex-col gap-3">
-        {!passed && (
-          <button
-            onClick={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
-            className="pill-button-primary w-full py-4 text-lg font-extrabold active:scale-95 transition-transform"
-          >
-            다시 도전
-          </button>
-        )}
-        <button
-          onClick={handleFinish}
-          className="w-full py-3.5 rounded-2xl font-extrabold text-[#5B677A] active:scale-95 transition-all border-2 border-[#E9EDF2] border-b-4 active:border-b-2 active:translate-y-[2px] shadow-sm bg-white"
-        >
-          {passed ? '완료' : '돌아가기'}
-        </button>
-      </div>
-    </div>
+    <GradeTestResult
+      passed={passed}
+      correct={correct}
+      total={questions.length}
+      passCount={PASS_COUNT}
+      grade="8급"
+      nextGrade="7급Ⅱ"
+      alreadyUnlocked={alreadyUnlocked}
+      selectedCharacter={selectedCharacter}
+      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
+      onFinish={handleFinish}
+    />
   );
 };
 

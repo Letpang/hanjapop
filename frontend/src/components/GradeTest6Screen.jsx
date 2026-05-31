@@ -1,82 +1,81 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SK } from '../constants/storageKeys.js';
-import { playSound } from '../utils/playSound.js';
 import GradeTestIntro from './common/GradeTestIntro.jsx';
 import GradeTestResult from './common/GradeTestResult.jsx';
 
 // ─── 6급 기출 기반 문제 (111회·112회) — 90문항 ───────────────────────────────
 const QUESTIONS = [
   // ── [1-33] 독음: 문장 속 한자어 읽기 ──
-  { type: 'sound_sentence', sentence: '(勝利) 의 기쁨을 나눠요.', hanja: '勝利', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['승리', '패배', '승부', '승점'], answer: '승리' },
-  { type: 'sound_sentence', sentence: '(太陽) 이 뜨겁게 내리쬐어요.', hanja: '太陽', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['태양', '달빛', '태반', '일광'], answer: '태양' },
-  { type: 'sound_sentence', sentence: '(溫度) 가 많이 올랐어요.', hanja: '溫度', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['온도', '온천', '습도', '기온'], answer: '온도' },
-  { type: 'sound_sentence', sentence: '(感情) 을 솔직하게 표현해요.', hanja: '感情', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['감정', '감사', '정보', '감각'], answer: '감정' },
-  { type: 'sound_sentence', sentence: '(開放) 적인 태도가 중요해요.', hanja: '開放', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['개방', '개인', '방면', '개시'], answer: '개방' },
-  { type: 'sound_sentence', sentence: '(衣服) 을 깨끗이 입어요.', hanja: '衣服', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['의복', '의원', '복장', '의류'], answer: '의복' },
-  { type: 'sound_sentence', sentence: '(愛情) 이 가득한 가족이에요.', hanja: '愛情', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['애정', '애국', '정애', '사랑정'], answer: '애정' },
-  { type: 'sound_sentence', sentence: '(美術) 관람을 즐겨요.', hanja: '美術', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['미술', '술미', '미용', '예술'], answer: '미술' },
-  { type: 'sound_sentence', sentence: '(朝食) 을 꼭 먹어요.', hanja: '朝食', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['조식', '조석', '석조', '아침식'], answer: '조식' },
-  { type: 'sound_sentence', sentence: '(死亡) 소식을 들었어요.', hanja: '死亡', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['사망', '망사', '사건', '생사'], answer: '사망' },
-  { type: 'sound_sentence', sentence: '(民族) 정신을 이어받아요.', hanja: '民族', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['민족', '족민', '민심', '겨레족'], answer: '민족' },
-  { type: 'sound_sentence', sentence: '(遠近) 을 조절해요.', hanja: '遠近', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['원근', '근원', '원거', '거리근'], answer: '원근' },
-  { type: 'sound_sentence', sentence: '(石油) 가격이 올랐어요.', hanja: '石油', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['석유', '유석', '석탄', '기름석'], answer: '석유' },
-  { type: 'sound_sentence', sentence: '(洋食) 을 좋아해요.', hanja: '洋食', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['양식', '식양', '양념', '서양식'], answer: '양식' },
-  { type: 'sound_sentence', sentence: '(集中) 해서 공부해요.', hanja: '集中', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['집중', '중집', '집합', '중심집'], answer: '집중' },
-  { type: 'sound_sentence', sentence: '(正義) 를 위해 싸워요.', hanja: '正義', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['정의', '의정', '정당', '올바름'], answer: '정의' },
-  { type: 'sound_sentence', sentence: '(廣場) 에 사람들이 모였어요.', hanja: '廣場', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['광장', '장광', '광야', '넓은장'], answer: '광장' },
-  { type: 'sound_sentence', sentence: '(平和) 가 찾아왔어요.', hanja: '平和', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['평화', '화평', '평온', '화목평'], answer: '평화' },
-  { type: 'sound_sentence', sentence: '(利用) 해서 만들었어요.', hanja: '利用', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['이용', '용이', '이익', '사용이'], answer: '이용' },
-  { type: 'sound_sentence', sentence: '(共同) 으로 작업해요.', hanja: '共同', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['공동', '동공', '공통', '함께동'], answer: '공동' },
-  { type: 'sound_sentence', sentence: '(待機) 하고 있어요.', hanja: '待機', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['대기', '기대', '대기권', '기다림기'], answer: '대기' },
-  { type: 'sound_sentence', sentence: '(定期) 적으로 검사해요.', hanja: '定期', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['정기', '기정', '정확기', '기간정'], answer: '정기' },
-  { type: 'sound_sentence', sentence: '(式場) 에 많은 사람이 왔어요.', hanja: '式場', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['식장', '장식', '식순', '예식장'], answer: '식장' },
-  { type: 'sound_sentence', sentence: '(現代) 사회는 변화가 빨라요.', hanja: '現代', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['현대', '대현', '현재대', '현실'], answer: '현대' },
-  { type: 'sound_sentence', sentence: '(勇氣) 를 내세요.', hanja: '勇氣', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['용기', '기용', '용사기', '씩씩기'], answer: '용기' },
-  { type: 'sound_sentence', sentence: '(油田) 에서 석유를 채굴해요.', hanja: '油田', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['유전', '전유', '유정', '기름전'], answer: '유전' },
-  { type: 'sound_sentence', sentence: '(洋服) 차림으로 나갔어요.', hanja: '洋服', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['양복', '복양', '서양복', '양식복'], answer: '양복' },
-  { type: 'sound_sentence', sentence: '(米穀) 상점에서 쌀을 샀어요.', hanja: '米穀', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['미곡', '곡미', '미식', '쌀곡'], answer: '미곡' },
-  { type: 'sound_sentence', sentence: '(牛乳) 를 매일 마셔요.', hanja: '牛乳', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['우유', '유우', '우소', '소유'], answer: '우유' },
-  { type: 'sound_sentence', sentence: '(利益) 을 나누어요.', hanja: '利益', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['이익', '익이', '이득', '득이'], answer: '이익' },
-  { type: 'sound_sentence', sentence: '(集合) 시간이 됐어요.', hanja: '集合', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['집합', '합집', '집결', '모임합'], answer: '집합' },
-  { type: 'sound_sentence', sentence: '(石炭) 을 연료로 쓰던 시대예요.', hanja: '石炭', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['석탄', '탄석', '석유탄', '숯석'], answer: '석탄' },
-  { type: 'sound_sentence', sentence: '(廣告) 를 보고 샀어요.', hanja: '廣告', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['광고', '고광', '광보', '알림고'], answer: '광고' },
+  { type: 'sound_sentence', sentence: '(勝利) 의 기쁨을 나눠요.', hanja: '勝利', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['승리', '패배', '승부', '승점'], answer: '승리' },
+  { type: 'sound_sentence', sentence: '(太陽) 이 뜨겁게 내리쬐어요.', hanja: '太陽', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['태양', '양광', '태반', '일광'], answer: '태양' },
+  { type: 'sound_sentence', sentence: '(溫度) 가 많이 올랐어요.', hanja: '溫度', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['온도', '온천', '습도', '기온'], answer: '온도' },
+  { type: 'sound_sentence', sentence: '(感情) 을 솔직하게 표현해요.', hanja: '感情', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['감정', '감사', '정보', '감각'], answer: '감정' },
+  { type: 'sound_sentence', sentence: '(開放) 적인 태도가 중요해요.', hanja: '開放', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['개방', '개인', '방면', '개시'], answer: '개방' },
+  { type: 'sound_sentence', sentence: '(衣服) 을 깨끗이 입어요.', hanja: '衣服', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['의복', '의원', '복장', '의류'], answer: '의복' },
+  { type: 'sound_sentence', sentence: '(愛情) 이 가득한 가족이에요.', hanja: '愛情', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['애정', '애국', '정애', '정열'], answer: '애정' },
+  { type: 'sound_sentence', sentence: '(美術) 관람을 즐겨요.', hanja: '美術', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['미술', '미화', '미용', '예술'], answer: '미술' },
+  { type: 'sound_sentence', sentence: '(朝食) 을 꼭 먹어요.', hanja: '朝食', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['조식', '조석', '석식', '조반'], answer: '조식' },
+  { type: 'sound_sentence', sentence: '(死亡) 소식을 들었어요.', hanja: '死亡', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['사망', '망사', '사건', '생사'], answer: '사망' },
+  { type: 'sound_sentence', sentence: '(民族) 정신을 이어받아요.', hanja: '民族', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['민족', '민속', '민심', '씨족'], answer: '민족' },
+  { type: 'sound_sentence', sentence: '(遠近) 을 조절해요.', hanja: '遠近', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['원근', '근원', '원거', '원방'], answer: '원근' },
+  { type: 'sound_sentence', sentence: '(石油) 가격이 올랐어요.', hanja: '石油', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['석유', '원유', '석탄', '석재'], answer: '석유' },
+  { type: 'sound_sentence', sentence: '(洋食) 을 좋아해요.', hanja: '洋食', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['양식', '한식', '중식', '일식'], answer: '양식' },
+  { type: 'sound_sentence', sentence: '(集中) 해서 공부해요.', hanja: '集中', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['집중', '집약', '집합', '집성'], answer: '집중' },
+  { type: 'sound_sentence', sentence: '(正義) 를 위해 싸워요.', hanja: '正義', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정의', '의정', '정당', '의리'], answer: '정의' },
+  { type: 'sound_sentence', sentence: '(廣場) 에 사람들이 모였어요.', hanja: '廣場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['광장', '장소', '광야', '광역'], answer: '광장' },
+  { type: 'sound_sentence', sentence: '(平和) 가 찾아왔어요.', hanja: '平和', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['평화', '화평', '평온', '화합'], answer: '평화' },
+  { type: 'sound_sentence', sentence: '(利用) 해서 만들었어요.', hanja: '利用', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['이용', '용이', '이익', '활용'], answer: '이용' },
+  { type: 'sound_sentence', sentence: '(共同) 으로 작업해요.', hanja: '共同', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['공동', '동공', '공통', '공유'], answer: '공동' },
+  { type: 'sound_sentence', sentence: '(待機) 하고 있어요.', hanja: '待機', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['대기', '기대', '대비', '대령'], answer: '대기' },
+  { type: 'sound_sentence', sentence: '(定期) 적으로 검사해요.', hanja: '定期', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정기', '기정', '정시', '기한'], answer: '정기' },
+  { type: 'sound_sentence', sentence: '(式場) 에 많은 사람이 왔어요.', hanja: '式場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['식장', '장식', '식순', '식전'], answer: '식장' },
+  { type: 'sound_sentence', sentence: '(現代) 사회는 변화가 빨라요.', hanja: '現代', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['현대', '현황', '근대', '현실'], answer: '현대' },
+  { type: 'sound_sentence', sentence: '(勇氣) 를 내세요.', hanja: '勇氣', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['용기', '기용', '용감', '기개'], answer: '용기' },
+  { type: 'sound_sentence', sentence: '(油田) 에서 석유를 채굴해요.', hanja: '油田', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['유전', '전유', '유정', '유류'], answer: '유전' },
+  { type: 'sound_sentence', sentence: '(洋服) 차림으로 나갔어요.', hanja: '洋服', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['양복', '한복', '교복', '양장'], answer: '양복' },
+  { type: 'sound_sentence', sentence: '(米穀) 상점에서 쌀을 샀어요.', hanja: '米穀', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['미곡', '곡류', '미식', '미음'], answer: '미곡' },
+  { type: 'sound_sentence', sentence: '(牛乳) 를 매일 마셔요.', hanja: '牛乳', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['우유', '유우', '유제', '소유'], answer: '우유' },
+  { type: 'sound_sentence', sentence: '(利益) 을 나누어요.', hanja: '利益', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['이익', '이윤', '이득', '이자'], answer: '이익' },
+  { type: 'sound_sentence', sentence: '(集合) 시간이 됐어요.', hanja: '集合', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['집합', '합창', '집결', '집산'], answer: '집합' },
+  { type: 'sound_sentence', sentence: '(石炭) 을 연료로 쓰던 시대예요.', hanja: '石炭', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['석탄', '탄광', '연탄', '목탄'], answer: '석탄' },
+  { type: 'sound_sentence', sentence: '(廣告) 를 보고 샀어요.', hanja: '廣告', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['광고', '고지', '광보', '선전'], answer: '광고' },
 
   // ── [34-55] 한자 → 훈+음 ──
-  { type: 'meaning_sound', hanja: '勝', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['이길 승', '질 승', '이길 패', '싸울 승'], answer: '이길 승' },
-  { type: 'meaning_sound', hanja: '太', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['클 태', '작을 태', '클 대', '넓을 태'], answer: '클 태' },
-  { type: 'meaning_sound', hanja: '溫', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['따뜻할 온', '차가울 온', '따뜻할 냉', '더울 온'], answer: '따뜻할 온' },
-  { type: 'meaning_sound', hanja: '愛', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['사랑 애', '미움 애', '사랑 정', '기쁠 애'], answer: '사랑 애' },
-  { type: 'meaning_sound', hanja: '美', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['아름다울 미', '추할 미', '아름다울 추', '예쁠 미'], answer: '아름다울 미' },
-  { type: 'meaning_sound', hanja: '朝', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['아침 조', '저녁 조', '아침 석', '낮 조'], answer: '아침 조' },
-  { type: 'meaning_sound', hanja: '死', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['죽을 사', '살 사', '죽을 생', '없을 사'], answer: '죽을 사' },
-  { type: 'meaning_sound', hanja: '族', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['겨레 족', '혼자 족', '겨레 민', '집 족'], answer: '겨레 족' },
-  { type: 'meaning_sound', hanja: '遠', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['멀 원', '가까울 원', '멀 근', '높을 원'], answer: '멀 원' },
-  { type: 'meaning_sound', hanja: '油', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['기름 유', '물 유', '기름 수', '불 유'], answer: '기름 유' },
-  { type: 'meaning_sound', hanja: '洋', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['바다 양', '강 양', '바다 해', '땅 양'], answer: '바다 양' },
-  { type: 'meaning_sound', hanja: '集', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['모을 집', '흩을 집', '모을 산', '둘 집'], answer: '모을 집' },
-  { type: 'meaning_sound', hanja: '正', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['바를 정', '굽을 정', '바를 사', '틀릴 정'], answer: '바를 정' },
-  { type: 'meaning_sound', hanja: '廣', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['넓을 광', '좁을 광', '넓을 협', '클 광'], answer: '넓을 광' },
-  { type: 'meaning_sound', hanja: '平', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['평평할 평', '굽을 평', '평평할 정', '높을 평'], answer: '평평할 평' },
-  { type: 'meaning_sound', hanja: '利', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['이로울 리', '해로울 리', '이로울 해', '얻을 리'], answer: '이로울 리' },
-  { type: 'meaning_sound', hanja: '共', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['한가지 공', '다를 공', '한가지 동', '혼자 공'], answer: '한가지 공' },
-  { type: 'meaning_sound', hanja: '待', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['기다릴 대', '갈 대', '기다릴 행', '맞을 대'], answer: '기다릴 대' },
-  { type: 'meaning_sound', hanja: '定', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['정할 정', '어긋날 정', '정할 변', '세울 정'], answer: '정할 정' },
-  { type: 'meaning_sound', hanja: '勇', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['날랠 용', '겁쟁이 용', '날랠 겁', '힘 용'], answer: '날랠 용' },
-  { type: 'meaning_sound', hanja: '石', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['돌 석', '흙 석', '돌 토', '산 석'], answer: '돌 석' },
-  { type: 'meaning_sound', hanja: '米', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['쌀 미', '보리 미', '쌀 보', '벼 미'], answer: '쌀 미' },
+  { type: 'meaning_sound', hanja: '勝', prompt: '이 한자의 훈과 음은?', choices: ['이길 승', '아름다울 미', '날랠 용', '이로울 리'], answer: '이길 승' },
+  { type: 'meaning_sound', hanja: '太', prompt: '이 한자의 훈과 음은?', choices: ['클 태', '클 대', '넓을 광', '따뜻할 온'], answer: '클 태' },
+  { type: 'meaning_sound', hanja: '溫', prompt: '이 한자의 훈과 음은?', choices: ['따뜻할 온', '찰 냉', '기름 유', '바다 양'], answer: '따뜻할 온' },
+  { type: 'meaning_sound', hanja: '愛', prompt: '이 한자의 훈과 음은?', choices: ['사랑 애', '뜻 정', '이로울 리', '날랠 용'], answer: '사랑 애' },
+  { type: 'meaning_sound', hanja: '美', prompt: '이 한자의 훈과 음은?', choices: ['아름다울 미', '쌀 미', '이로울 리', '이길 승'], answer: '아름다울 미' },
+  { type: 'meaning_sound', hanja: '朝', prompt: '이 한자의 훈과 음은?', choices: ['아침 조', '저녁 석', '겨레 족', '모을 집'], answer: '아침 조' },
+  { type: 'meaning_sound', hanja: '死', prompt: '이 한자의 훈과 음은?', choices: ['죽을 사', '날 생', '살 활', '일 사'], answer: '죽을 사' },
+  { type: 'meaning_sound', hanja: '族', prompt: '이 한자의 훈과 음은?', choices: ['겨레 족', '백성 민', '발 족', '모을 집'], answer: '겨레 족' },
+  { type: 'meaning_sound', hanja: '遠', prompt: '이 한자의 훈과 음은?', choices: ['멀 원', '동산 원', '으뜸 원', '가까울 근'], answer: '멀 원' },
+  { type: 'meaning_sound', hanja: '油', prompt: '이 한자의 훈과 음은?', choices: ['기름 유', '바다 양', '따뜻할 온', '모을 집'], answer: '기름 유' },
+  { type: 'meaning_sound', hanja: '洋', prompt: '이 한자의 훈과 음은?', choices: ['바다 양', '기름 유', '따뜻할 온', '겨레 족'], answer: '바다 양' },
+  { type: 'meaning_sound', hanja: '集', prompt: '이 한자의 훈과 음은?', choices: ['모을 집', '넓을 광', '정할 정', '한가지 공'], answer: '모을 집' },
+  { type: 'meaning_sound', hanja: '合', prompt: '이 한자의 훈과 음은?', choices: ['합할 합', '한가지 공', '모을 집', '한가지 동'], answer: '합할 합' },
+  { type: 'meaning_sound', hanja: '交', prompt: '이 한자의 훈과 음은?', choices: ['사귈 교', '학교 교', '가르칠 교', '길 도'], answer: '사귈 교' },
+  { type: 'meaning_sound', hanja: '平', prompt: '이 한자의 훈과 음은?', choices: ['평평할 평', '넓을 광', '정할 정', '한가지 공'], answer: '평평할 평' },
+  { type: 'meaning_sound', hanja: '利', prompt: '이 한자의 훈과 음은?', choices: ['이로울 리', '아름다울 미', '이길 승', '날랠 용'], answer: '이로울 리' },
+  { type: 'meaning_sound', hanja: '共', prompt: '이 한자의 훈과 음은?', choices: ['한가지 공', '공 공', '빌 공', '모을 집'], answer: '한가지 공' },
+  { type: 'meaning_sound', hanja: '待', prompt: '이 한자의 훈과 음은?', choices: ['기다릴 대', '큰 대', '정할 정', '멀 원'], answer: '기다릴 대' },
+  { type: 'meaning_sound', hanja: '定', prompt: '이 한자의 훈과 음은?', choices: ['정할 정', '뜻 정', '평평할 평', '모을 집'], answer: '정할 정' },
+  { type: 'meaning_sound', hanja: '勇', prompt: '이 한자의 훈과 음은?', choices: ['날랠 용', '이길 승', '이로울 리', '한가지 공'], answer: '날랠 용' },
+  { type: 'meaning_sound', hanja: '石', prompt: '이 한자의 훈과 음은?', choices: ['돌 석', '저녁 석', '자리 석', '쌀 미'], answer: '돌 석' },
+  { type: 'meaning_sound', hanja: '米', prompt: '이 한자의 훈과 음은?', choices: ['쌀 미', '아름다울 미', '돌 석', '기름 유'], answer: '쌀 미' },
 
   // ── [56-58] 반대어 ──
-  { type: 'opposite', hanja: '勝', prompt: '다음 한자의 대응어(반대어)는?', choices: ['敗', '戰', '强', '弱'], answer: '敗' },
-  { type: 'opposite', hanja: '愛', prompt: '다음 한자의 대응어(반대어)는?', choices: ['憎', '美', '善', '信'], answer: '憎' },
-  { type: 'opposite', hanja: '遠', prompt: '다음 한자의 대응어(반대어)는?', choices: ['近', '高', '大', '長'], answer: '近' },
+  { type: 'opposite', hanja: '多', prompt: '뜻이 반대되는 한자는?', choices: ['少', '大', '弱', '老'], answer: '少' },
+  { type: 'opposite', hanja: '朝', prompt: '뜻이 반대되는 한자는?', choices: ['夕', '少', '弱', '大'], answer: '夕' },
+  { type: 'opposite', hanja: '老', prompt: '뜻이 반대되는 한자는?', choices: ['少', '弱', '大', '多'], answer: '少' },
 
   // ── [59-60] 유사어 ──
-  { type: 'similar', hanja: '美', prompt: '다음 한자와 가장 비슷한 뜻의 한자는?', choices: ['麗', '醜', '老', '動'], answer: '麗' },
-  { type: 'similar', hanja: '利', prompt: '다음 한자와 가장 비슷한 뜻의 한자는?', choices: ['益', '損', '害', '弱'], answer: '益' },
+  { type: 'similar', hanja: '海', prompt: '뜻이 비슷한 한자는?', choices: ['洋', '江', '水', '川'], answer: '洋' },
+  { type: 'similar', hanja: '道', prompt: '뜻이 비슷한 한자는?', choices: ['路', '里', '村', '川'], answer: '路' },
 
   // ── [61-62] 동음이의어 ──
-  { type: 'homo_meaning', prompt: '"기사(記事)"와 같은 소리이지만 다른 뜻인 漢字語는?', choices: ['騎士', '記事', '記者', '機士'], answer: '騎士' },
-  { type: 'homo_meaning', prompt: '"정의(正義)"와 같은 소리이지만 다른 뜻인 漢字語는?', choices: ['定義', '正義', '正意', '征義'], answer: '定義' },
+  { type: 'homo_meaning', prompt: '"기사"와 같은 소리이지만 다른 뜻인 한자어는?', choices: ['騎士', '記事', '記者', '機士'], answer: '騎士' },
+  { type: 'homo_meaning', prompt: '"정의"와 같은 소리이지만 다른 뜻인 한자어는?', choices: ['定義', '正義', '正意', '征義'], answer: '定義' },
 
   // ── [63-65] 사자성어 ──
   { type: 'idiom', prompt: '"一□一失"의 □에 들어갈 한자는?', choices: ['得', '大', '百', '全'], answer: '得' },
@@ -84,35 +83,35 @@ const QUESTIONS = [
   { type: 'idiom', prompt: '"大□小異"의 □에 들어갈 한자는?', choices: ['同', '中', '全', '一'], answer: '同' },
 
   // ── [66-67] 뜻 → 한자어 ──
-  { type: 'meaning_to_word', prompt: '"이기고 지는 일"을 뜻하는 漢字語는?', choices: ['勝敗', '勝利', '成功', '勝負'], answer: '勝負' },
-  { type: 'meaning_to_word', prompt: '"아침에 먹는 음식"을 뜻하는 漢字語는?', choices: ['朝食', '食事', '朝夕', '間食'], answer: '朝食' },
+  { type: 'meaning_to_word', prompt: '"이기고 지는 일"을 뜻하는 한자어는?', choices: ['勝敗', '勝利', '成功', '勝負'], answer: '勝負' },
+  { type: 'meaning_to_word', prompt: '"아침에 먹는 음식"을 뜻하는 한자어는?', choices: ['朝食', '食事', '朝夕', '間食'], answer: '朝食' },
 
-  // ── [68-87] 밑줄 친 말 → 漢字語 ──
-  { type: 'underline', sentence: '태양이 밝게 빛나요.', underline: '태양', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['太陽', '太陽光', '日光', '太光'], answer: '太陽' },
-  { type: 'underline', sentence: '감정을 솔직하게 표현해요.', underline: '감정', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['感情', '感動', '感謝', '情感'], answer: '感情' },
-  { type: 'underline', sentence: '민족의 전통을 지켜요.', underline: '민족', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['民族', '民主', '民俗', '族民'], answer: '民族' },
-  { type: 'underline', sentence: '미술 작품을 감상해요.', underline: '미술', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['美術', '美容', '藝術', '美化'], answer: '美術' },
-  { type: 'underline', sentence: '온도가 많이 올랐어요.', underline: '온도', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['溫度', '溫泉', '氣溫', '體溫'], answer: '溫度' },
-  { type: 'underline', sentence: '평화로운 세상을 꿈꿔요.', underline: '평화', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['平和', '平安', '平等', '和平'], answer: '平和' },
-  { type: 'underline', sentence: '용기 있는 행동이에요.', underline: '용기', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['勇氣', '用器', '勇士', '氣勇'], answer: '勇氣' },
-  { type: 'underline', sentence: '이익을 나누어요.', underline: '이익', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['利益', '利用', '利子', '益利'], answer: '利益' },
-  { type: 'underline', sentence: '석유가 중요한 자원이에요.', underline: '석유', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['石油', '石炭', '石材', '油石'], answer: '石油' },
-  { type: 'underline', sentence: '집중해서 읽어요.', underline: '집중', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['集中', '集合', '集積', '中集'], answer: '集中' },
-  { type: 'underline', sentence: '공동으로 결정해요.', underline: '공동', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['共同', '共通', '公同', '同共'], answer: '共同' },
-  { type: 'underline', sentence: '광고를 보고 구매했어요.', underline: '광고', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['廣告', '廣場', '告知', '廣報'], answer: '廣告' },
-  { type: 'underline', sentence: '현대 기술이 놀라워요.', underline: '현대', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['現代', '現在', '現場', '代現'], answer: '現代' },
-  { type: 'underline', sentence: '우유를 매일 마셔요.', underline: '우유', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['牛乳', '牛肉', '乳牛', '牛馬'], answer: '牛乳' },
-  { type: 'underline', sentence: '이용 가능한 방법을 찾아요.', underline: '이용', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['利用', '利益', '用利', '使用'], answer: '利用' },
-  { type: 'underline', sentence: '정의 실현을 위해 노력해요.', underline: '정의', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['正義', '定義', '正意', '正直'], answer: '正義' },
-  { type: 'underline', sentence: '양식 요리를 즐겨요.', underline: '양식', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['洋食', '洋服', '洋式', '食洋'], answer: '洋食' },
-  { type: 'underline', sentence: '승리를 기원해요.', underline: '승리', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['勝利', '勝負', '利勝', '勝敗'], answer: '勝利' },
-  { type: 'underline', sentence: '애정 어린 마음으로 돌봐요.', underline: '애정', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['愛情', '愛國', '情愛', '愛心'], answer: '愛情' },
-  { type: 'underline', sentence: '집합 장소로 모여요.', underline: '집합', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['集合', '集中', '合集', '集結'], answer: '集合' },
+  // ── [68-87] 밑줄 친 말 → 한자어 ──
+  { type: 'underline', sentence: '태양이 밝게 빛나요.', underline: '태양', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['太陽', '太陽光', '日光', '太光'], answer: '太陽' },
+  { type: 'underline', sentence: '감정을 솔직하게 표현해요.', underline: '감정', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['感情', '感動', '感謝', '情感'], answer: '感情' },
+  { type: 'underline', sentence: '민족의 전통을 지켜요.', underline: '민족', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['民族', '民主', '民俗', '族民'], answer: '民族' },
+  { type: 'underline', sentence: '미술 작품을 감상해요.', underline: '미술', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['美術', '美容', '藝術', '美化'], answer: '美術' },
+  { type: 'underline', sentence: '온도가 많이 올랐어요.', underline: '온도', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['溫度', '溫泉', '氣溫', '體溫'], answer: '溫度' },
+  { type: 'underline', sentence: '평화로운 세상을 꿈꿔요.', underline: '평화', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['平和', '平安', '平等', '和平'], answer: '平和' },
+  { type: 'underline', sentence: '용기 있는 행동이에요.', underline: '용기', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['勇氣', '用器', '勇士', '氣勇'], answer: '勇氣' },
+  { type: 'underline', sentence: '이익을 나누어요.', underline: '이익', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['利益', '利用', '利子', '益利'], answer: '利益' },
+  { type: 'underline', sentence: '석유가 중요한 자원이에요.', underline: '석유', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['石油', '石炭', '石材', '油石'], answer: '石油' },
+  { type: 'underline', sentence: '집중해서 읽어요.', underline: '집중', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['集中', '集合', '集積', '中集'], answer: '集中' },
+  { type: 'underline', sentence: '공동으로 결정해요.', underline: '공동', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['共同', '共通', '公同', '同共'], answer: '共同' },
+  { type: 'underline', sentence: '광고를 보고 구매했어요.', underline: '광고', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['廣告', '廣場', '告知', '廣報'], answer: '廣告' },
+  { type: 'underline', sentence: '현대 기술이 놀라워요.', underline: '현대', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['現代', '現在', '現場', '代現'], answer: '現代' },
+  { type: 'underline', sentence: '우유를 매일 마셔요.', underline: '우유', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['牛乳', '牛肉', '乳牛', '牛馬'], answer: '牛乳' },
+  { type: 'underline', sentence: '이용 가능한 방법을 찾아요.', underline: '이용', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['利用', '利益', '用利', '使用'], answer: '利用' },
+  { type: 'underline', sentence: '정의 실현을 위해 노력해요.', underline: '정의', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['正義', '定義', '正意', '正直'], answer: '正義' },
+  { type: 'underline', sentence: '양식 요리를 즐겨요.', underline: '양식', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['洋食', '洋服', '洋式', '食洋'], answer: '洋食' },
+  { type: 'underline', sentence: '승리를 기원해요.', underline: '승리', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['勝利', '勝負', '利勝', '勝敗'], answer: '勝利' },
+  { type: 'underline', sentence: '애정 어린 마음으로 돌봐요.', underline: '애정', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['愛情', '愛國', '情愛', '愛心'], answer: '愛情' },
+  { type: 'underline', sentence: '집합 장소로 모여요.', underline: '집합', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['集合', '集中', '合集', '集結'], answer: '集合' },
 
   // ── [88-90] 필순 ──
-  { type: 'stroke', hanja: '勝', prompt: '다음 한자의 총 획수는?', choices: ['12획', '10획', '11획', '13획'], answer: '12획' },
-  { type: 'stroke', hanja: '愛', prompt: '다음 한자의 총 획수는?', choices: ['13획', '11획', '12획', '14획'], answer: '13획' },
-  { type: 'stroke', hanja: '溫', prompt: '다음 한자의 총 획수는?', choices: ['13획', '11획', '12획', '14획'], answer: '13획' },
+  { type: 'stroke', hanja: '現', prompt: '다음 한자의 총 획수는?', choices: ['11획', '9획', '10획', '12획'], answer: '11획' },
+  { type: 'stroke', hanja: '開', prompt: '다음 한자의 총 획수는?', choices: ['12획', '10획', '11획', '13획'], answer: '12획' },
+  { type: 'stroke', hanja: '感', prompt: '다음 한자의 총 획수는?', choices: ['13획', '11획', '12획', '14획'], answer: '13획' },
 ];
 
 const PASS_COUNT = 63;
@@ -188,15 +187,14 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const isChoiceMediumHanja = q?.type === 'underline' || q?.type === 'meaning_to_word' || q?.type === 'homo_meaning';
 
   const handleSelect = (choice) => {
-    if (revealed) return;
+    if (selected !== null) return;
     const isCorrect = choice === q.answer;
     setSelected(choice);
-    setRevealed(true);
     if (isCorrect) {
       setCorrect(c => c + 1);
-      playSound('match');
+      setRevealed(true);
     } else {
-      playSound('mismatch');
+      autoAdvanceTimerRef.current = setTimeout(handleNext, 500);
     }
   };
 
@@ -209,6 +207,13 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
       setRevealed(false);
     }
   };
+
+  const autoAdvanceTimerRef = useRef(null);
+  useEffect(() => {
+    if (!revealed) return;
+    autoAdvanceTimerRef.current = setTimeout(handleNext, 1200);
+    return () => clearTimeout(autoAdvanceTimerRef.current);
+  }, [revealed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFinish = () => {
     const passed = correct >= PASS_COUNT;
@@ -223,7 +228,7 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
     return (
       <GradeTestIntro
         title="6급 인증 시험"
-        subtitle="전국한자능력검정시험 6급 기출 기반"
+        subtitle={<>전국한자능력검정시험<br/>6급 기출 기반</>}
         total={questions.length}
         passCount={PASS_COUNT}
         focusText="독음 · 한자→훈+음 · 반대어 · 유사어 · 동음이의어 · 사자성어 · 뜻→한자어 · 밑줄 · 필순"
@@ -265,7 +270,7 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
               <span className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-widest">
                 {TYPE_LABELS[q.type] || ''}
               </span>
-              <p className="text-h3 text-center" style={{ color: '#2F3545', fontWeight: 800, lineHeight: 1.18 }}>{q.prompt}</p>
+              <p className="text-h2 text-center font-black" style={{ color: '#2F3545', lineHeight: 1.15 }}>{q.prompt}</p>
 
               {(q.type === 'sound_sentence' || q.type === 'underline') && (
                 <p className="text-body font-bold text-center text-[#3C3C3C] leading-relaxed bg-[#F8FAFC] rounded-2xl px-4 py-3 w-full">
@@ -286,33 +291,27 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
               {q.choices.map((choice) => {
                 const isSelected = selected === choice;
                 const isAnswer = choice === q.answer;
-                let cls = 'w-full py-4 font-extrabold border-2 transition-all text-center rounded-[1.625rem] ';
-                let btnStyle = {};
-                if (!revealed) {
-                  cls += 'bg-white text-[#2F3545] active:bg-[#EEF1FF] active:border-[#6D6FF2]';
-                  btnStyle = { borderColor: '#E7EBF3', boxShadow: '0 6px 16px rgba(120,130,160,0.08)' };
-                } else if (isAnswer) {
-                  cls += 'text-[#2A7A50]';
-                  btnStyle = { backgroundColor: '#EAFBF0', borderColor: '#4CCB7F', boxShadow: '0 4px 12px rgba(76,203,127,0.15)' };
-                } else if (isSelected) {
-                  cls += 'text-[#CC3333]';
-                  btnStyle = { backgroundColor: '#FFF1F1', borderColor: '#FF7A7A' };
-                } else {
-                  cls += 'bg-white text-[#AEB7C5]';
-                  btnStyle = { borderColor: '#E7EBF3', boxShadow: '0 6px 16px rgba(120,130,160,0.08)' };
+                let stateClass = '';
+                if (revealed) {
+                  if (isAnswer) {
+                    stateClass = 'quiz-choice-btn--correct';
+                  } else if (isSelected) {
+                    stateClass = 'quiz-choice-btn--wrong';
+                  } else {
+                    stateClass = 'quiz-choice-btn--dimmed';
+                  }
+                } else if (selected !== null) {
+                  if (isSelected) {
+                    stateClass = 'quiz-choice-btn--wrong';
+                  } else {
+                    stateClass = 'quiz-choice-btn--dimmed';
+                  }
                 }
                 return (
                   <button
                     key={choice}
                     onClick={() => handleSelect(choice)}
-                    className={cls}
-                    style={
-                      isChoiceLarge
-                        ? { ...btnStyle, fontSize: '1.75rem', fontFamily: 'serif' }
-                        : isChoiceMediumHanja
-                        ? { ...btnStyle, fontSize: '1.25rem', fontFamily: 'serif' }
-                        : { ...btnStyle, fontSize: '1.05rem' }
-                    }
+                    className={`quiz-choice-btn quiz-choice-btn--center ${isChoiceLarge ? 'quiz-choice-btn--large' : isChoiceMediumHanja ? 'quiz-choice-btn--hanja' : ''} ${stateClass}`}
                   >
                     {choice}
                   </button>
@@ -330,14 +329,6 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
             )}
           </div>
 
-          {revealed && (
-            <button
-              onClick={handleNext}
-              className="pill-button-primary w-full max-w-md py-4 text-lg font-extrabold active:scale-95 transition-transform mt-4"
-            >
-              {qIndex + 1 >= questions.length ? '결과 보기' : '다음 문제'}
-            </button>
-          )}
         </div>
       </div>
     );

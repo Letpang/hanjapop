@@ -16,7 +16,7 @@ const activityLabels = {
   sentenceQuiz: '문장 퀴즈',
   matchGame: '메모리 게임',
   shootGame: '몬스터 슈팅',
-  writing: '한자 쓰기',
+  writing: '한자 획순',
 };
 
 const graphTabs = [

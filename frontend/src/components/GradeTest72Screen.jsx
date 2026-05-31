@@ -1,60 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SK } from '../constants/storageKeys.js';
-import { playSound } from '../utils/playSound.js';
 import GradeTestIntro from './common/GradeTestIntro.jsx';
 import GradeTestResult from './common/GradeTestResult.jsx';
 
 // ─── 7급II 기출 기반 문제 (111회·112회) — 60문항 ─────────────────────────────
 const QUESTIONS = [
   // ── [1-22] 독음: 문장 속 한자어 읽기 ──
-  { type: 'sound_sentence', sentence: '(食事) 시간이 됐어요.', hanja: '食事', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['식사', '간식', '식당', '사식'], answer: '식사' },
-  { type: 'sound_sentence', sentence: '(電氣) 요금이 청구됐어요.', hanja: '電氣', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['전기', '전화', '기전', '전등'], answer: '전기' },
-  { type: 'sound_sentence', sentence: '(活動) 시간에 운동을 했어요.', hanja: '活動', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['활동', '행동', '활발', '동작'], answer: '활동' },
-  { type: 'sound_sentence', sentence: '(間食) 으로 과일을 먹었어요.', hanja: '間食', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['간식', '식사', '간격', '조식'], answer: '간식' },
-  { type: 'sound_sentence', sentence: '(正直) 한 사람이 되어야 해요.', hanja: '正直', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['정직', '직선', '정확', '직업'], answer: '정직' },
-  { type: 'sound_sentence', sentence: '(安全) 하게 길을 건너세요.', hanja: '安全', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['안전', '완전', '안보', '전안'], answer: '안전' },
-  { type: 'sound_sentence', sentence: '(農場) 에서 채소를 키워요.', hanja: '農場', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['농장', '농업', '장소', '농사'], answer: '농장' },
-  { type: 'sound_sentence', sentence: '(自動) 으로 문이 열렸어요.', hanja: '自動', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['자동', '수동', '자연', '동자'], answer: '자동' },
-  { type: 'sound_sentence', sentence: '(道路) 공사로 길이 막혔어요.', hanja: '道路', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['도로', '철로', '경로', '노선'], answer: '도로' },
-  { type: 'sound_sentence', sentence: '(空氣) 가 맑아서 기분이 좋아요.', hanja: '空氣', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['공기', '기후', '공중', '날씨'], answer: '공기' },
-  { type: 'sound_sentence', sentence: '(記念) 사진을 찍었어요.', hanja: '記念', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['기념', '추억', '기억', '기간'], answer: '기념' },
-  { type: 'sound_sentence', sentence: '(江山) 이 아름다워요.', hanja: '江山', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['강산', '산천', '강물', '산강'], answer: '강산' },
-  { type: 'sound_sentence', sentence: '(同門) 이라 반가웠어요.', hanja: '同門', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['동문', '교문', '동창', '동행'], answer: '동문' },
-  { type: 'sound_sentence', sentence: '(話題) 가 풍성했어요.', hanja: '話題', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['화제', '주제', '화백', '논제'], answer: '화제' },
-  { type: 'sound_sentence', sentence: '(農夫) 가 밭을 갈고 있어요.', hanja: '農夫', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['농부', '어부', '농민', '부농'], answer: '농부' },
-  { type: 'sound_sentence', sentence: '(手動) 으로 조작해야 해요.', hanja: '手動', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['수동', '자동', '수화', '동수'], answer: '수동' },
-  { type: 'sound_sentence', sentence: '(力士) 가 무거운 돌을 들었어요.', hanja: '力士', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['역사', '역도', '역전', '사력'], answer: '역사' },
-  { type: 'sound_sentence', sentence: '(動力) 이 강한 엔진이에요.', hanja: '動力', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['동력', '전력', '동작', '원동'], answer: '동력' },
-  { type: 'sound_sentence', sentence: '(空白) 에 이름을 써 넣으세요.', hanja: '空白', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['공백', '여백', '공간', '백지'], answer: '공백' },
-  { type: 'sound_sentence', sentence: '(氣力) 이 넘치는 청년이에요.', hanja: '氣力', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['기력', '기운', '기세', '역기'], answer: '기력' },
-  { type: 'sound_sentence', sentence: '(正答) 을 골라보세요.', hanja: '正答', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['정답', '오답', '정확', '답변'], answer: '정답' },
-  { type: 'sound_sentence', sentence: '(安心) 하고 다녀오세요.', hanja: '安心', prompt: '다음 문장 속 漢字語의 읽는 소리는?', choices: ['안심', '안도', '안전', '심안'], answer: '안심' },
+  { type: 'sound_sentence', sentence: '(食事) 시간이 됐어요.', hanja: '食事', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['식사', '간식', '식당', '식후'], answer: '식사' },
+  { type: 'sound_sentence', sentence: '(電氣) 요금이 청구됐어요.', hanja: '電氣', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['전기', '전화', '전선', '전등'], answer: '전기' },
+  { type: 'sound_sentence', sentence: '(活動) 시간에 운동을 했어요.', hanja: '活動', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['활동', '행동', '활발', '동작'], answer: '활동' },
+  { type: 'sound_sentence', sentence: '(間食) 으로 과일을 먹었어요.', hanja: '間食', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['간식', '식사', '간격', '조식'], answer: '간식' },
+  { type: 'sound_sentence', sentence: '(正直) 한 사람이 되어야 해요.', hanja: '正直', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정직', '직선', '정확', '직업'], answer: '정직' },
+  { type: 'sound_sentence', sentence: '(安全) 하게 길을 건너세요.', hanja: '安全', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['안전', '완전', '안보', '안정'], answer: '안전' },
+  { type: 'sound_sentence', sentence: '(農場) 에서 채소를 키워요.', hanja: '農場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['농장', '농업', '장소', '농사'], answer: '농장' },
+  { type: 'sound_sentence', sentence: '(自動) 으로 문이 열렸어요.', hanja: '自動', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['자동', '수동', '자연', '자립'], answer: '자동' },
+  { type: 'sound_sentence', sentence: '(道路) 공사로 길이 막혔어요.', hanja: '道路', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['도로', '철로', '경로', '노선'], answer: '도로' },
+  { type: 'sound_sentence', sentence: '(空氣) 가 맑아서 기분이 좋아요.', hanja: '空氣', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['공기', '기후', '공중', '날씨'], answer: '공기' },
+  { type: 'sound_sentence', sentence: '(記念) 사진을 찍었어요.', hanja: '記念', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['기념', '추억', '기억', '기간'], answer: '기념' },
+  { type: 'sound_sentence', sentence: '(江山) 이 아름다워요.', hanja: '江山', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['강산', '산천', '강변', '산하'], answer: '강산' },
+  { type: 'sound_sentence', sentence: '(同門) 이라 반가웠어요.', hanja: '同門', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['동문', '교문', '동창', '동행'], answer: '동문' },
+  { type: 'sound_sentence', sentence: '(話題) 가 풍성했어요.', hanja: '話題', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['화제', '주제', '화백', '논제'], answer: '화제' },
+  { type: 'sound_sentence', sentence: '(農夫) 가 밭을 갈고 있어요.', hanja: '農夫', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['농부', '어부', '농민', '부농'], answer: '농부' },
+  { type: 'sound_sentence', sentence: '(手動) 으로 조작해야 해요.', hanja: '手動', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['수동', '자동', '수화', '수공'], answer: '수동' },
+  { type: 'sound_sentence', sentence: '(全力) 을 다해 달렸어요.', hanja: '全力', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['전력', '전기', '전진', '전심'], answer: '전력' },
+  { type: 'sound_sentence', sentence: '(動力) 이 강한 엔진이에요.', hanja: '動力', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['동력', '전력', '동작', '원동'], answer: '동력' },
+  { type: 'sound_sentence', sentence: '(空白) 에 이름을 써 넣으세요.', hanja: '空白', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['공백', '여백', '공간', '백지'], answer: '공백' },
+  { type: 'sound_sentence', sentence: '(氣力) 이 넘치는 청년이에요.', hanja: '氣力', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['기력', '기운', '기세', '역기'], answer: '기력' },
+  { type: 'sound_sentence', sentence: '(正答) 을 골라보세요.', hanja: '正答', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정답', '오답', '정확', '답변'], answer: '정답' },
+  { type: 'sound_sentence', sentence: '(安心) 하고 다녀오세요.', hanja: '安心', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['안심', '안도', '안전', '심정'], answer: '안심' },
 
   // ── [23-42] 한자 → 훈+음 ──
-  { type: 'meaning_sound', hanja: '江', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['강 강', '바다 강', '강 하', '호수 강'], answer: '강 강' },
-  { type: 'meaning_sound', hanja: '農', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['농사 농', '들 농', '농사 업', '밭 농'], answer: '농사 농' },
-  { type: 'meaning_sound', hanja: '答', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['대답 답', '물음 답', '대답 문', '대답 태'], answer: '대답 답' },
-  { type: 'meaning_sound', hanja: '道', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['길 도', '집 도', '길 로', '마당 도'], answer: '길 도' },
-  { type: 'meaning_sound', hanja: '動', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['움직일 동', '고요할 동', '움직일 정', '힘 동'], answer: '움직일 동' },
-  { type: 'meaning_sound', hanja: '力', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['힘 력', '손 력', '발 력', '마음 력'], answer: '힘 력' },
-  { type: 'meaning_sound', hanja: '空', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['빌 공', '찰 공', '하늘 공', '땅 공'], answer: '빌 공' },
-  { type: 'meaning_sound', hanja: '記', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['기록할 기', '말할 기', '읽을 기', '볼 기'], answer: '기록할 기' },
-  { type: 'meaning_sound', hanja: '氣', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['기운 기', '힘 기', '바람 기', '기억 기'], answer: '기운 기' },
-  { type: 'meaning_sound', hanja: '名', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['이름 명', '높을 명', '자리 명', '이름 모'], answer: '이름 명' },
-  { type: 'meaning_sound', hanja: '話', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['말씀 화', '들을 화', '소리 화', '말씀 구'], answer: '말씀 화' },
-  { type: 'meaning_sound', hanja: '自', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['스스로 자', '자연 자', '스스로 기', '혼자 자'], answer: '스스로 자' },
-  { type: 'meaning_sound', hanja: '手', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['손 수', '발 수', '눈 수', '귀 수'], answer: '손 수' },
-  { type: 'meaning_sound', hanja: '安', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['편안할 안', '기쁠 안', '편안할 락', '슬플 안'], answer: '편안할 안' },
-  { type: 'meaning_sound', hanja: '食', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['밥 식', '물 식', '쌀 식', '집 식'], answer: '밥 식' },
-  { type: 'meaning_sound', hanja: '電', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['번개 전', '바람 전', '비 전', '구름 전'], answer: '번개 전' },
-  { type: 'meaning_sound', hanja: '活', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['살 활', '죽을 활', '살 사', '다닐 활'], answer: '살 활' },
-  { type: 'meaning_sound', hanja: '間', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['사이 간', '문 간', '집 간', '사이 방'], answer: '사이 간' },
-  { type: 'meaning_sound', hanja: '正', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['바를 정', '굽을 정', '바를 사', '틀릴 정'], answer: '바를 정' },
-  { type: 'meaning_sound', hanja: '右', prompt: '다음 한자의 훈(뜻)과 음(소리)은?', choices: ['오른 우', '왼 우', '위 우', '아래 우'], answer: '오른 우' },
+  { type: 'meaning_sound', hanja: '江', prompt: '이 한자의 훈과 음은?', choices: ['강 강', '내 천', '바다 해', '메 산'], answer: '강 강' },
+  { type: 'meaning_sound', hanja: '農', prompt: '이 한자의 훈과 음은?', choices: ['농사 농', '밭 전', '수풀 림', '메 산'], answer: '농사 농' },
+  { type: 'meaning_sound', hanja: '答', prompt: '이 한자의 훈과 음은?', choices: ['대답 답', '물을 문', '말씀 화', '글 문'], answer: '대답 답' },
+  { type: 'meaning_sound', hanja: '道', prompt: '이 한자의 훈과 음은?', choices: ['길 도', '길 로', '마을 리', '문 문'], answer: '길 도' },
+  { type: 'meaning_sound', hanja: '動', prompt: '이 한자의 훈과 음은?', choices: ['움직일 동', '힘 력', '살 활', '다닐 행'], answer: '움직일 동' },
+  { type: 'meaning_sound', hanja: '力', prompt: '이 한자의 훈과 음은?', choices: ['힘 력', '손 수', '마음 심', '발 족'], answer: '힘 력' },
+  { type: 'meaning_sound', hanja: '空', prompt: '이 한자의 훈과 음은?', choices: ['빌 공', '하늘 천', '땅 지', '흰 백'], answer: '빌 공' },
+  { type: 'meaning_sound', hanja: '記', prompt: '이 한자의 훈과 음은?', choices: ['기록할 기', '말씀 화', '글 문', '기운 기'], answer: '기록할 기' },
+  { type: 'meaning_sound', hanja: '氣', prompt: '이 한자의 훈과 음은?', choices: ['기운 기', '기록할 기', '힘 력', '마음 심'], answer: '기운 기' },
+  { type: 'meaning_sound', hanja: '名', prompt: '이 한자의 훈과 음은?', choices: ['이름 명', '목숨 명', '밝을 명', '백성 민'], answer: '이름 명' },
+  { type: 'meaning_sound', hanja: '話', prompt: '이 한자의 훈과 음은?', choices: ['말씀 화', '물을 문', '대답 답', '기록할 기'], answer: '말씀 화' },
+  { type: 'meaning_sound', hanja: '自', prompt: '이 한자의 훈과 음은?', choices: ['스스로 자', '글자 자', '아들 자', '농사 농'], answer: '스스로 자' },
+  { type: 'meaning_sound', hanja: '手', prompt: '이 한자의 훈과 음은?', choices: ['손 수', '발 족', '눈 목', '귀 이'], answer: '손 수' },
+  { type: 'meaning_sound', hanja: '安', prompt: '이 한자의 훈과 음은?', choices: ['편안할 안', '즐거울 락', '이름 명', '기운 기'], answer: '편안할 안' },
+  { type: 'meaning_sound', hanja: '食', prompt: '이 한자의 훈과 음은?', choices: ['밥 식', '마실 음', '쌀 미', '물 수'], answer: '밥 식' },
+  { type: 'meaning_sound', hanja: '電', prompt: '이 한자의 훈과 음은?', choices: ['번개 전', '비 우', '바람 풍', '구름 운'], answer: '번개 전' },
+  { type: 'meaning_sound', hanja: '活', prompt: '이 한자의 훈과 음은?', choices: ['살 활', '죽을 사', '날 생', '움직일 동'], answer: '살 활' },
+  { type: 'meaning_sound', hanja: '間', prompt: '이 한자의 훈과 음은?', choices: ['사이 간', '때 시', '문 문', '가운데 중'], answer: '사이 간' },
+  { type: 'meaning_sound', hanja: '正', prompt: '이 한자의 훈과 음은?', choices: ['바를 정', '정할 정', '기운 기', '이름 명'], answer: '바를 정' },
+  { type: 'meaning_sound', hanja: '右', prompt: '이 한자의 훈과 음은?', choices: ['오른 우', '왼 좌', '위 상', '아래 하'], answer: '오른 우' },
 
-  // ── [43-44] 밑줄 친 말 → 漢字語 ──
-  { type: 'underline', sentence: '방학 때 활동을 많이 했어요.', underline: '활동', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['活動', '行動', '活力', '動力'], answer: '活動' },
-  { type: 'underline', sentence: '문이 자동으로 열렸습니다.', underline: '자동', prompt: '밑줄 친 말에 해당하는 漢字語는?', choices: ['自動', '自然', '手動', '動力'], answer: '自動' },
+  // ── [43-44] 밑줄 친 말 → 한자어 ──
+  { type: 'underline', sentence: '방학 때 활동을 많이 했어요.', underline: '활동', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['活動', '行動', '活力', '動力'], answer: '活動' },
+  { type: 'underline', sentence: '문이 자동으로 열렸습니다.', underline: '자동', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['自動', '自然', '手動', '動力'], answer: '自動' },
 
   // ── [45-54] 훈음 → 한자 ──
   { type: 'hanja', prompt: '"강 강"에 해당하는 한자는?', hanja: null, choices: ['江', '河', '川', '海'], answer: '江' },
@@ -69,16 +68,16 @@ const QUESTIONS = [
   { type: 'hanja', prompt: '"농사 농"에 해당하는 한자는?', hanja: null, choices: ['農', '場', '田', '林'], answer: '農' },
 
   // ── [55-56] 반대어 ──
-  { type: 'opposite', hanja: '前', prompt: '다음 한자의 대응어(반대어)는?', choices: ['後', '先', '左', '右'], answer: '後' },
-  { type: 'opposite', hanja: '右', prompt: '다음 한자의 대응어(반대어)는?', choices: ['左', '上', '下', '北'], answer: '左' },
+  { type: 'opposite', hanja: '前', prompt: '뜻이 반대되는 한자는?', choices: ['後', '先', '左', '右'], answer: '後' },
+  { type: 'opposite', hanja: '男', prompt: '뜻이 반대되는 한자는?', choices: ['女', '少', '弱', '下'], answer: '女' },
 
   // ── [57-58] 뜻 → 한자어 ──
-  { type: 'meaning_to_word', prompt: '"음식을 먹는 일"을 뜻하는 漢字語는?', choices: ['食事', '食堂', '食口', '間食'], answer: '食事' },
-  { type: 'meaning_to_word', prompt: '"스스로 움직임"을 뜻하는 漢字語는?', choices: ['自動', '活動', '動力', '手動'], answer: '自動' },
+  { type: 'meaning_to_word', prompt: '"음식을 먹는 일"을 뜻하는 한자어는?', choices: ['食事', '食堂', '食口', '間食'], answer: '食事' },
+  { type: 'meaning_to_word', prompt: '"저절로 작동함"을 뜻하는 한자어는?', choices: ['自動', '活動', '動力', '手動'], answer: '自動' },
 
   // ── [59-60] 필순 ──
-  { type: 'stroke', hanja: '活', prompt: '다음 한자의 총 획수는?', choices: ['9획', '7획', '8획', '10획'], answer: '9획' },
-  { type: 'stroke', hanja: '空', prompt: '다음 한자의 총 획수는?', choices: ['8획', '6획', '7획', '9획'], answer: '8획' },
+  { type: 'stroke', hanja: '活', prompt: '이 한자의 총 획수는?', choices: ['9획', '7획', '8획', '10획'], answer: '9획' },
+  { type: 'stroke', hanja: '空', prompt: '이 한자의 총 획수는?', choices: ['8획', '6획', '7획', '9획'], answer: '8획' },
 ];
 
 const PASS_COUNT = 42;
@@ -152,15 +151,14 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const isChoiceMediumHanja = q?.type === 'underline' || q?.type === 'meaning_to_word';
 
   const handleSelect = (choice) => {
-    if (revealed) return;
+    if (selected !== null) return;
     const isCorrect = choice === q.answer;
     setSelected(choice);
-    setRevealed(true);
     if (isCorrect) {
       setCorrect(c => c + 1);
-      playSound('match');
+      setRevealed(true);
     } else {
-      playSound('mismatch');
+      autoAdvanceTimerRef.current = setTimeout(handleNext, 500);
     }
   };
 
@@ -173,6 +171,13 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
       setRevealed(false);
     }
   };
+
+  const autoAdvanceTimerRef = useRef(null);
+  useEffect(() => {
+    if (!revealed) return;
+    autoAdvanceTimerRef.current = setTimeout(handleNext, 1200);
+    return () => clearTimeout(autoAdvanceTimerRef.current);
+  }, [revealed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFinish = () => {
     const passed = correct >= PASS_COUNT;
@@ -187,7 +192,7 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
     return (
       <GradeTestIntro
         title="7급Ⅱ 인증 시험"
-        subtitle="전국한자능력검정시험 7급Ⅱ 기출 기반"
+        subtitle={<>전국한자능력검정시험<br/>7급Ⅱ 기출 기반</>}
         total={questions.length}
         passCount={PASS_COUNT}
         focusText="독음 · 한자→훈+음 · 훈음→한자 · 반대어 · 뜻→한자어 · 필순"
@@ -229,7 +234,7 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
               <span className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-widest">
                 {TYPE_LABELS[q.type] || ''}
               </span>
-              <p className="text-h3 text-center" style={{ color: '#2F3545', fontWeight: 800, lineHeight: 1.18 }}>{q.prompt}</p>
+              <p className="text-h2 text-center font-black" style={{ color: '#2F3545', lineHeight: 1.15 }}>{q.prompt}</p>
 
               {(q.type === 'sound_sentence' || q.type === 'underline') && (
                 <p className="text-body font-bold text-center text-[#3C3C3C] leading-relaxed bg-[#F8FAFC] rounded-2xl px-4 py-3 w-full">
@@ -250,33 +255,27 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
               {q.choices.map((choice) => {
                 const isSelected = selected === choice;
                 const isAnswer = choice === q.answer;
-                let cls = 'w-full py-4 font-extrabold border-2 transition-all text-center rounded-[1.625rem] ';
-                let btnStyle = {};
-                if (!revealed) {
-                  cls += 'bg-white text-[#2F3545] active:bg-[#EEF1FF] active:border-[#6D6FF2]';
-                  btnStyle = { borderColor: '#E7EBF3', boxShadow: '0 6px 16px rgba(120,130,160,0.08)' };
-                } else if (isAnswer) {
-                  cls += 'text-[#2A7A50]';
-                  btnStyle = { backgroundColor: '#EAFBF0', borderColor: '#4CCB7F', boxShadow: '0 4px 12px rgba(76,203,127,0.15)' };
-                } else if (isSelected) {
-                  cls += 'text-[#CC3333]';
-                  btnStyle = { backgroundColor: '#FFF1F1', borderColor: '#FF7A7A' };
-                } else {
-                  cls += 'bg-white text-[#AEB7C5]';
-                  btnStyle = { borderColor: '#E7EBF3', boxShadow: '0 6px 16px rgba(120,130,160,0.08)' };
+                let stateClass = '';
+                if (revealed) {
+                  if (isAnswer) {
+                    stateClass = 'quiz-choice-btn--correct';
+                  } else if (isSelected) {
+                    stateClass = 'quiz-choice-btn--wrong';
+                  } else {
+                    stateClass = 'quiz-choice-btn--dimmed';
+                  }
+                } else if (selected !== null) {
+                  if (isSelected) {
+                    stateClass = 'quiz-choice-btn--wrong';
+                  } else {
+                    stateClass = 'quiz-choice-btn--dimmed';
+                  }
                 }
                 return (
                   <button
                     key={choice}
                     onClick={() => handleSelect(choice)}
-                    className={cls}
-                    style={
-                      isChoiceLarge
-                        ? { ...btnStyle, fontSize: '1.75rem', fontFamily: 'serif' }
-                        : isChoiceMediumHanja
-                        ? { ...btnStyle, fontSize: '1.25rem', fontFamily: 'serif' }
-                        : { ...btnStyle, fontSize: '1.05rem' }
-                    }
+                    className={`quiz-choice-btn quiz-choice-btn--center ${isChoiceLarge ? 'quiz-choice-btn--large' : isChoiceMediumHanja ? 'quiz-choice-btn--hanja' : ''} ${stateClass}`}
                   >
                     {choice}
                   </button>
@@ -294,14 +293,6 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
             )}
           </div>
 
-          {revealed && (
-            <button
-              onClick={handleNext}
-              className="pill-button-primary w-full max-w-md py-4 text-lg font-extrabold active:scale-95 transition-transform mt-4"
-            >
-              {qIndex + 1 >= questions.length ? '결과 보기' : '다음 문제'}
-            </button>
-          )}
         </div>
       </div>
     );

@@ -6,11 +6,13 @@ import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
+import CtaButton from './common/CtaButton.jsx';
 
 // ─── 상수 ─────────────────────────────────────────────────────────────────
 const HINT_PENALTY = 10;     // 힌트 1회 = -10점
 const WRONG_PENALTY = 5;     // 획 틀릴 때마다 -5점
 const MAX_SCORE = 100;
+const WRITING_XP_PER_CHAR = 10;
 
 
 // HanziWriter CDN에 없는 한국식 이형자 → 표준 중국자 매핑
@@ -44,27 +46,32 @@ const WritingHanjaCard = ({ item, onClick }) => {
     return (
         <button
             onClick={onClick}
-            className="group relative w-full flex flex-col items-center justify-center p-5 bg-white border border-[#E9EDF2] rounded-[2rem] hover:border-[#7C83FF] hover:shadow-xl active:scale-95 transition-all duration-300 min-h-[140px] shadow-md"
+            className="group relative w-full flex flex-col items-center justify-center pt-4 pb-4 px-3 bg-white border border-[#E9EDF2] rounded-[2rem] hover:border-[#7C83FF] hover:shadow-xl active:scale-95 transition-all duration-300 min-h-[160px] shadow-md overflow-hidden"
         >
             <div
-                className="leading-none drop-shadow-sm text-[#3C3C3C]"
-                style={{ fontSize: 'clamp(2.8rem, 9vw, 4rem)', fontFamily: "'Ma Shan Zheng', 'Nanum Myeongjo', serif" }}
+                className="leading-none drop-shadow-sm text-[#3C3C3C] flex items-center justify-center mb-2"
+                style={{ fontSize: 'clamp(3.5rem, 12vw, 5.5rem)', fontFamily: "'Nanum Myeongjo', serif" }}
             >
                 {item.hanja}
             </div>
-            <div className="flex items-baseline gap-2 mt-2">
-                <span className="font-bold text-[#5B677A] text-h3-res tracking-tight">{item.meaning}</span>
-                <span className="font-bold text-[#5B677A] text-h3-res tracking-tight">{item.sound}</span>
+            <div className="w-full pt-1 flex items-center justify-center">
+                <div className="text-center text-[#5B677A] text-h3-res tracking-tight leading-snug break-keep">
+                    <span className="font-bold">{item.meaning}</span>
+                    <span className="font-bold text-[#7C83FF] ml-1.5">{item.sound}</span>
+                </div>
             </div>
         </button>
     );
 };
 
 // ─── Result Screen ──────────────────────────────────────────────────────────
-const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getRewardPreview }) => {
+const WRITING_CLEAR_XP = 30;
+
+const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getRewardPreview, missionXp = 0 }) => {
     const pct = Math.round((correct / total) * 100);
     const isClear = pct >= 70;
-    const writingXp = total * 30;
+    const writingXp = total * WRITING_XP_PER_CHAR;
+    const clearXp = isClear ? WRITING_CLEAR_XP : 0;
 
     return (
         <div
@@ -86,7 +93,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                         <span className="text-xs-res font-extrabold text-[#AEB7C5]">
                             {isClear ? '완벽하게 써냈어요!' : '조금 더 연습해볼까요?'}
                         </span>
-                        <h1 className="text-h2-res font-black leading-snug" style={{ 
+                        <h1 className="text-h2-res font-black leading-snug" style={{
                             color: isClear ? '#FF9B73' : '#FF6B6B',
                             letterSpacing: '-0.5px',
                             textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
@@ -95,18 +102,17 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                         </h1>
                     </div>
                     <RewardBreakdown
-                        reward={getRewardPreview?.(writingXp)}
+                        reward={getRewardPreview?.(writingXp + clearXp)}
                         correctXp={writingXp}
-                        clearXp={0}
+                        clearXp={clearXp}
                         correctLabel="쓰기"
+                        detailText={`${total}글자 x ${WRITING_XP_PER_CHAR}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
+                        missionXp={missionXp}
                     />
                     <div className="w-full flex flex-col gap-3 relative z-10">
-                        <button
-                            onClick={onRetry}
-                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                        >
-                            다시 하기
-                        </button>
+                        <CtaButton theme="indigo" onClick={onRetry}>
+                            <span className="font-black text-white text-[1.5rem] drop-shadow-md">다시 하기</span>
+                        </CtaButton>
                         <button
                             onClick={onBack}
                             className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
@@ -132,6 +138,9 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
     const [isAnimating, setIsAnimating] = useState(false);
     const [charData, setCharData] = useState(null);
     const [activeStrokeIndex, setActiveStrokeIndex] = useState(0);
+    const completionReportedRef = useRef(false);
+    const charDataRef = useRef(null);
+    const activeStrokeIndexRef = useRef(0);
 
     const scoreRef = useRef(MAX_SCORE);
     useEffect(() => {
@@ -144,6 +153,18 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
     useEffect(() => {
         strokeStyleRef.current = { color: strokeColor, width: strokeWidth };
     }, [strokeColor, strokeWidth]);
+
+    const markComplete = useCallback(() => {
+        if (completionReportedRef.current) return;
+        completionReportedRef.current = true;
+        setIsComplete(true);
+        if (onWritingComplete && hanja.id) onWritingComplete(hanja.id, scoreRef.current);
+    }, [hanja.id, onWritingComplete]);
+
+    const checkStrokeCompletion = useCallback((nextStrokeIndex) => {
+        const strokeCount = charDataRef.current?.medians?.length || 0;
+        if (strokeCount > 0 && nextStrokeIndex >= strokeCount) markComplete();
+    }, [markComplete]);
 
     const createWriter = useCallback((color, width, showNumbers = true) => {
         if (!quizContainerRef.current || !window.HanziWriter) return null;
@@ -182,17 +203,24 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
             onCorrectStroke: (strokeData) => {
                 setMistakeOnStroke(false);
                 if (strokeData && typeof strokeData.strokeNum === 'number') {
-                    setActiveStrokeIndex(strokeData.strokeNum + 1);
+                    const nextStrokeIndex = strokeData.strokeNum + 1;
+                    activeStrokeIndexRef.current = nextStrokeIndex;
+                    setActiveStrokeIndex(nextStrokeIndex);
+                    checkStrokeCompletion(nextStrokeIndex);
                 } else {
-                    setActiveStrokeIndex(prev => prev + 1);
+                    setActiveStrokeIndex(prev => {
+                        const nextStrokeIndex = prev + 1;
+                        activeStrokeIndexRef.current = nextStrokeIndex;
+                        checkStrokeCompletion(nextStrokeIndex);
+                        return nextStrokeIndex;
+                    });
                 }
             },
             onComplete: () => {
-                setIsComplete(true);
-                if (onWritingComplete && hanja.id) onWritingComplete(hanja.id, scoreRef.current);
+                markComplete();
             }
         });
-    }, [hanja, onWritingComplete]);
+    }, [checkStrokeCompletion, markComplete]);
 
     useEffect(() => {
         const container = quizContainerRef.current;
@@ -205,19 +233,25 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
         const resetTimer = setTimeout(() => {
             setScore(MAX_SCORE);
             setIsComplete(false);
+            completionReportedRef.current = false;
             setMistakeOnStroke(false);
             setIsAnimating(false);
             setActiveStrokeIndex(0);
+            activeStrokeIndexRef.current = 0;
             startQuiz(writer);
         }, 0);
 
         // HanziWriter Medians 데이터 로드 (이형자는 표준자로 대체)
         const fetchChar = WRITER_CHAR_MAP[hanja.hanja] || hanja.hanja;
+        charDataRef.current = null;
         fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0/${fetchChar}.json`)
             .then(r => r.json())
             .then(data => {
+                charDataRef.current = data;
                 setCharData(data);
                 setIsReady(true);
+                const strokeCount = data?.medians?.length || 0;
+                if (strokeCount > 0 && activeStrokeIndexRef.current >= strokeCount) markComplete();
             })
             .catch(() => setIsReady(true));
 
@@ -225,7 +259,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
             clearTimeout(resetTimer);
             container.innerHTML = '';
         };
-    }, [hanja, createWriter, startQuiz]);
+    }, [hanja, createWriter, markComplete, startQuiz]);
 
     const handleColorChange = (color) => {
         if (isComplete || isAnimating) return;
@@ -358,44 +392,72 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
     const handleRetry = () => {
         setScore(MAX_SCORE);
         setIsComplete(false);
+        completionReportedRef.current = false;
         setMistakeOnStroke(false);
         setIsAnimating(false);
+        activeStrokeIndexRef.current = 0;
         const writer = createWriter(strokeColor, strokeWidth);
         writerRef.current = writer;
         startQuiz(writer);
     };
 
+    const handleManualComplete = () => {
+        markComplete();
+        onNextHanja?.();
+    };
+
     return (
-        <div className="flex flex-col items-center w-full max-w-2xl mx-auto gap-6 animate-in fade-in duration-500">
+        <div className="flex flex-col items-center w-full max-w-2xl mx-auto gap-3 sm:gap-4 animate-in fade-in duration-500">
+            {/* 한자 및 훈음 표시 */}
+            <div className="flex flex-row items-center justify-center gap-3 w-full">
+                <span className="text-[3.5rem] sm:text-[4rem] font-black text-[#34383F] leading-none drop-shadow-sm">
+                    {hanja.hanja}
+                </span>
+                <span className="text-[1.1rem] sm:text-[1.25rem] font-extrabold text-[#7C83FF] tracking-wider bg-[#F2F3FF] px-5 py-1.5 rounded-full shadow-sm whitespace-nowrap">
+                    {hanja.meaning} {hanja.sound}
+                </span>
+            </div>
+
             {/* 연필 설정 */}
-            <div className="w-full rounded-[2rem] px-4 py-3 flex items-center justify-center gap-6" style={{ backgroundColor: '#F0F2F5' }}>
+            <div className="w-full rounded-[2rem] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-center gap-4 sm:gap-6" style={{ backgroundColor: '#F0F2F5' }}>
                 {/* 색상 */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                     {STROKE_COLORS.map(c => (
                         <button key={c.value} onClick={() => handleColorChange(c.value)}
-                            className={`w-5 h-5 rounded-full transition-all active:scale-90 active:translate-y-[2px] shrink-0 ${strokeColor === c.value ? 'scale-110 ring-2 ring-white ring-offset-1 shadow-lg' : 'opacity-40 hover:opacity-75'}`}
+                            aria-label={`${c.label} 색상`}
+                            className={`w-[22px] h-[22px] sm:w-6 sm:h-6 rounded-full transition-all active:scale-90 active:translate-y-[2px] shrink-0 ${strokeColor === c.value ? 'scale-110 ring-[3px] ring-white ring-offset-1 shadow-lg opacity-100' : 'opacity-45 hover:opacity-75'}`}
                             style={{ backgroundColor: c.value, borderBottom: `3px solid ${c.dark}` }} />
                     ))}
                 </div>
-                <div className="w-px h-5 rounded-full" style={{ backgroundColor: '#D8DCE3' }} />
+                <div className="w-px h-8 rounded-full" style={{ backgroundColor: '#D8DCE3' }} />
                 {/* 굵기 */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                     {STROKE_WIDTHS.map(w => (
-                        <button key={w.value} onClick={() => handleWidthChange(w.value)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 active:translate-y-[2px] shrink-0 ${strokeWidth === w.value ? 'bg-[#7C83FF] shadow-md' : 'bg-white'}`}
-                            style={{ borderBottom: strokeWidth === w.value ? '3px solid #5A61D4' : '3px solid #D0D5E0' }}>
-                            <div className="rounded-full" style={{
-                                width: w.value === 12 ? '4px' : w.value === 22 ? '8px' : '12px',
-                                height: w.value === 12 ? '4px' : w.value === 22 ? '8px' : '12px',
-                                backgroundColor: strokeWidth === w.value ? 'white' : '#AEB7C5',
-                            }} />
+                        <button
+                            key={w.value}
+                            onClick={() => handleWidthChange(w.value)}
+                            aria-label={`${w.label} 굵기`}
+                            className={`w-9 h-8 sm:w-11 sm:h-9 rounded-full flex items-center justify-center transition-all active:scale-90 active:translate-y-[2px] shrink-0 ${
+                                strokeWidth === w.value
+                                    ? 'bg-[#7C83FF] shadow-lg ring-[3px] ring-white ring-offset-1'
+                                    : 'bg-white opacity-75 hover:opacity-100 shadow-sm'
+                            }`}
+                            style={{ borderBottom: strokeWidth === w.value ? '4px solid #5A61D4' : '4px solid #D0D5E0' }}
+                        >
+                            <span
+                                className="block w-[18px] sm:w-[22px] rounded-full"
+                                style={{
+                                    height: w.value === 12 ? '3px' : w.value === 22 ? '6px' : '9px',
+                                    backgroundColor: strokeWidth === w.value ? 'white' : '#AEB7C5',
+                                }}
+                            />
                         </button>
                     ))}
                 </div>
             </div>
 
             {/* 캔버스 */}
-            <div className={`relative w-full aspect-square max-w-[380px] rounded-[4rem] overflow-hidden transition-all duration-500 shadow-2xl mt-2 ${
+            <div className={`relative w-full aspect-square max-w-[320px] sm:max-w-[380px] rounded-[3rem] sm:rounded-[4rem] overflow-hidden transition-all duration-500 shadow-2xl ${
                 isComplete ? 'border-[8px] border-[#F5A58A] scale-[1.02]' :
                 mistakeOnStroke ? 'bg-rose-50 border-[8px] border-rose-100' : 'bg-white border-[8px] border-[#E9EDF2]'
             }`}>
@@ -411,18 +473,24 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
 
             {/* 네비게이션 */}
             {!isComplete ? (
-                <button onClick={handleHint} disabled={isAnimating}
-                    className="w-full py-5 rounded-[2rem] bg-white font-black text-xl text-[#AEB7C5] border-b-4 border-[#E9EDF2] shadow-lg active:translate-y-1 active:border-b-0 transition-all disabled:opacity-50">
-                    {isAnimating ? '획순 재생 중...' : 'HINT'}
-                </button>
+                <div className="w-full flex flex-col gap-2 sm:gap-3">
+                    <button onClick={handleManualComplete}
+                        className="hp-cta-button hp-cta-button--indigo !py-3.5 sm:!py-4">
+                        {nextLabel}
+                    </button>
+                    <button onClick={handleHint} disabled={isAnimating}
+                        className="w-full back-quiz-button disabled:opacity-50 !py-2.5 sm:!py-3">
+                        {isAnimating ? '획순 재생 중...' : '획순 동영상 보기'}
+                    </button>
+                </div>
             ) : (
-                <div className="w-full flex flex-col gap-3 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="w-full flex flex-col gap-2 sm:gap-3 animate-in slide-in-from-bottom-4 duration-500">
                     <button onClick={onNextHanja}
-                        className="w-full py-5 rounded-[2rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2">
+                        className="hp-cta-button hp-cta-button--indigo !py-3.5 sm:!py-4">
                         {nextLabel}
                     </button>
                     <button onClick={handleRetry}
-                        className="w-full py-4 text-[#8C97A8] font-bold text-h3-res">
+                        className="w-full py-3 text-[#8C97A8] font-bold text-h3-res">
                         다시 쓰기
                     </button>
                 </div>
@@ -442,6 +510,8 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
     const [selectedHanja, setSelectedHanja] = useState(initialHanja || null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [activeHanjaList, setActiveHanjaList] = useState(initialHanja ? [initialHanja] : []);
+    const [completedCount, setCompletedCount] = useState(0);
+    const clearCountRef = useRef(0);
 
     const handleExitConfirm = () => {
         setShowExitModal(false);
@@ -461,11 +531,11 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
         return new Set([...(contentPool.main?.hanjaIds || []), ...(contentPool.review?.hanjaIds || [])]);
     }, [contentPool]);
 
-    // 비프리미엄: contentPool 한자만, 프리미엄: 전체 unlockedIds
-    const effectiveIds = useMemo(
-        () => (!isPremium && contentPoolIds) ? contentPoolIds : unlockedIds,
-        [isPremium, contentPoolIds, unlockedIds]
-    );
+    // 무조건 이번 스테이지 한자(contentPoolIds)만 보여줍니다. (사전 모드 제거됨)
+    const effectiveIds = useMemo(() => {
+        if (contentPoolIds) return contentPoolIds;
+        return unlockedIds;
+    }, [contentPoolIds, unlockedIds]);
 
     const hanjaList = useMemo(() => {
         if (initialHanja) return [initialHanja];
@@ -495,37 +565,45 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
             setSelectedHanja(hanjaList[0]);
             setActiveHanjaList(hanjaList);
             setCurrentIndex(0);
+            setCompletedCount(0);
             setPhase('quiz');
         }, 0);
 
         return () => clearTimeout(timer);
     }, [initialHanja, hanjaFilter, hanjaList]);
 
-    // 카드 클릭 시 해당 한자 1개만 쓰기 연습
+    // 카드 클릭 시 해당 한자부터 이어서 쓰기 연습
     const handleCardClick = useCallback((item) => {
+        const startIndex = displayList.findIndex(h => h.id === item.id);
         setSelectedHanja(item);
-        setActiveHanjaList([item]);
-        setCurrentIndex(0);
+        setActiveHanjaList(displayList);
+        setCurrentIndex(startIndex !== -1 ? startIndex : 0);
+        setCompletedCount(0);
         setPhase('quiz');
-    }, []);
+    }, [displayList]);
 
     const startQuiz = useCallback(() => {
         if (activeHanjaList.length === 0) return;
         setCurrentIndex(0);
         setSelectedHanja(activeHanjaList[0]);
+        setCompletedCount(0);
         setPhase('quiz');
     }, [activeHanjaList]);
 
     const handleNextHanja = useCallback(() => {
-        const next = currentIndex + 1;
-        if (next < activeHanjaList.length) {
-            setCurrentIndex(next);
-            setSelectedHanja(activeHanjaList[next]);
+        const nextCount = completedCount + 1;
+        if (nextCount < activeHanjaList.length) {
+            const nextIndex = (currentIndex + 1) % activeHanjaList.length;
+            setCompletedCount(nextCount);
+            setCurrentIndex(nextIndex);
+            setSelectedHanja(activeHanjaList[nextIndex]);
         } else {
+            setCompletedCount(nextCount);
+            clearCountRef.current += 1;
             setPhase('result');
             if (onStageClear) onStageClear();
         }
-    }, [currentIndex, activeHanjaList, onStageClear]);
+    }, [currentIndex, activeHanjaList, completedCount, onStageClear]);
 
     return (
         <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: phase === 'select' ? '#F7FAF9' : '#F8FAFC' }}>
@@ -541,8 +619,8 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                         <span>{phase === 'quiz' ? '✕' : '←'}</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 쓰기</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순에 맞게 쓰고,<br />모를 땐 힌트를 참조하세요</p>
+                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 획순</h2>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순에 맞게 써보세요</p>
                     </div>
                     <div className="flex items-center justify-end w-11">
                         {phase === 'quiz' && activeHanjaList.length > 0 && (
@@ -638,9 +716,10 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                             correct={activeHanjaList.length}
                             total={activeHanjaList.length}
                             onRetry={startQuiz}
-                            onBack={() => (initialHanja || hanjaFilter) ? onBack() : setPhase('list')}
+                            onBack={() => (initialHanja || hanjaFilter || contentPool) ? onBack() : setPhase('list')}
                             selectedCharacter={selectedCharacter}
                             getRewardPreview={getRewardPreview}
+                            missionXp={(clearCountRef.current === 1) ? 30 : 0}
                         />
                     )}
                 </div>
@@ -663,12 +742,9 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                             </p>
                         </div>
                         <div className="w-full flex flex-col gap-3">
-                            <button
-                                onClick={() => setShowExitModal(false)}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                            >
-                                계속 쓰기 연습
-                            </button>
+                            <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
+                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 쓰기 연습</span>
+                            </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"

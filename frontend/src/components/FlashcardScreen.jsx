@@ -47,6 +47,8 @@ const shuffle = (arr) => {
     return a;
 };
 
+const HANJA_MAP = Object.fromEntries(HANJA_DATA.map(h => [h.hanja, h]));
+
 const speakKorean = (text, onEnd) => {
     if (!text || !window.speechSynthesis) {
         if (onEnd) onEnd();
@@ -132,6 +134,42 @@ const buildWorksheetQuiz = (item) => {
         });
     });
 
+    // 유사어 문제
+    const synList = (item.syn || []).filter(h => HANJA_MAP[h]);
+    if (synList.length > 0) {
+        const correct = synList[Math.floor(Math.random() * synList.length)];
+        const correctData = HANJA_MAP[correct];
+        const correctLabel = `${correct}(${correctData.meaning} ${correctData.sound})`;
+        const excludeSet = new Set([item.hanja, ...(item.syn || []), ...(item.ant || [])]);
+        const distractors = shuffle(HANJA_DATA.filter(h => !excludeSet.has(h.hanja)))
+            .slice(0, 3).map(h => `${h.hanja}(${h.meaning} ${h.sound})`);
+        questions.push({
+            id: 'q_syn',
+            type: 'choice',
+            prompt: `${item.hanja}(${item.meaning} ${item.sound})의 유사어는?`,
+            choices: shuffle([correctLabel, ...distractors]),
+            answer: correctLabel,
+        });
+    }
+
+    // 반대어 문제
+    const antList = (item.ant || []).filter(h => HANJA_MAP[h]);
+    if (antList.length > 0) {
+        const correct = antList[Math.floor(Math.random() * antList.length)];
+        const correctData = HANJA_MAP[correct];
+        const correctLabel = `${correct}(${correctData.meaning} ${correctData.sound})`;
+        const excludeSet = new Set([item.hanja, ...(item.syn || []), ...(item.ant || [])]);
+        const distractors = shuffle(HANJA_DATA.filter(h => !excludeSet.has(h.hanja)))
+            .slice(0, 3).map(h => `${h.hanja}(${h.meaning} ${h.sound})`);
+        questions.push({
+            id: 'q_ant',
+            type: 'choice',
+            prompt: `${item.hanja}(${item.meaning} ${item.sound})의 반대어는?`,
+            choices: shuffle([correctLabel, ...distractors]),
+            answer: correctLabel,
+        });
+    }
+
     return questions;
 };
 
@@ -177,13 +215,15 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
 };
 
 // ─── 풀 학습지 화면 ──────────────────────────────────────────────────────
-const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, isAlreadyCompleted = false, onStudySheetComplete, selectedCharacter, getRewardPreview }) => {
+const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, isAlreadyCompleted = false, onStudySheetComplete, onQuizXp, selectedCharacter, getRewardPreview }) => {
     const questions = useMemo(() => buildWorksheetQuiz(item), [item]);
     const [answers, setAnswers] = useState({});
     const refWords   = useRef(null);
+    const refSynAnt  = useRef(null);
     const refQuiz    = useRef(null);
     const refWriting = useRef(null);
     const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const hasSynAnt = (item.syn && item.syn.length > 0) || (item.ant && item.ant.length > 0);
     const [quizDone, setQuizDone] = useState(false);
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const completionAwardedRef = useRef(false);
@@ -221,15 +261,15 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
         });
     };
 
-    const clearXp = 0;
     const finishStudySheet = useCallback((afterComplete) => {
         if (!completionAwardedRef.current) {
             completionAwardedRef.current = true;
-            if (!isAlreadyCompleted) onHanjaAcquired?.(null, clearXp);
+            const questionXp = Object.values(answers).filter(Boolean).length * 5;
+            onQuizXp?.(questionXp);
         }
         onStudySheetComplete?.(item.id);
         afterComplete?.();
-    }, [clearXp, isAlreadyCompleted, item.id, onHanjaAcquired, onStudySheetComplete]);
+    }, [answers, isAlreadyCompleted, item.id, onHanjaAcquired, onStudySheetComplete, onQuizXp]);
 
     const handleWritingNext = useCallback(() => {
         if (isSequence && isLast) {
@@ -268,11 +308,12 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
             </div>
 
             {/* ── 섹션 바로가기 ── */}
-            <div className="w-full px-5 pt-4 pb-2 flex items-center justify-center gap-2">
+            <div className="w-full px-5 pt-4 pb-2 flex items-center justify-center gap-2 flex-wrap">
                 {[
-                    { label: '관련 단어', ref: refWords, theme: 'warm' },
-                    { label: '문제', ref: refQuiz, theme: 'blue' },
-                ].map(({ label, ref, theme }) => (
+                    { label: '관련 단어', ref: refWords, theme: 'warm', show: true },
+                    { label: '유사어·반대어', ref: refSynAnt, theme: 'purple', show: hasSynAnt },
+                    { label: '문제', ref: refQuiz, theme: 'blue', show: true },
+                ].filter(s => s.show).map(({ label, ref, theme }) => (
                     <button
                         key={label}
                         onClick={() => scrollTo(ref)}
@@ -338,6 +379,55 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </div>
                 )}
 
+                {/* ── 섹션 3-2: 유사어 · 반대어 ── */}
+                {hasSynAnt && (
+                    <div ref={refSynAnt} className="flex flex-col gap-5">
+                        <div className="flex items-center gap-3 px-1">
+                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#F0EEFF' }}>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#7C83FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                                    <path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+                                </svg>
+                            </div>
+                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>유사어 · 반대어</span>
+                        </div>
+
+                        {item.syn && item.syn.length > 0 && (
+                            <div className="flex flex-col gap-3">
+                                <span className="font-bold text-sm px-1" style={{ color: '#7C83FF' }}>유사어 — 비슷한 뜻</span>
+                                <div className="flex flex-wrap gap-3">
+                                    {item.syn.map(h => {
+                                        const d = HANJA_MAP[h];
+                                        return d ? (
+                                            <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#F4F3FF', border: '1.5px solid #C3C6FF' }}>
+                                                <span className="font-black text-h3" style={{ color: '#7C83FF' }}>{h}</span>
+                                                <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
+                                            </div>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {item.ant && item.ant.length > 0 && (
+                            <div className="flex flex-col gap-3">
+                                <span className="font-bold text-sm px-1" style={{ color: '#FF8D72' }}>반대어 — 반대 뜻</span>
+                                <div className="flex flex-wrap gap-3">
+                                    {item.ant.map(h => {
+                                        const d = HANJA_MAP[h];
+                                        return d ? (
+                                            <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#FFF3EE', border: '1.5px solid #FFCDB8' }}>
+                                                <span className="font-black text-h3" style={{ color: '#FF8D72' }}>{h}</span>
+                                                <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
+                                            </div>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* ── 섹션 4: 연습 문제 ── */}
                 <div ref={refQuiz} className="flex flex-col gap-6">
                     <div className="flex items-center px-1">
@@ -360,7 +450,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                     idx={idx}
                                     onAnswer={handleAnswer}
                                     answered={!!answers[q.id]}
-                                    twoCol={!q.id.startsWith('q_word_')}
+                                    twoCol={!q.id.startsWith('q_word_') && q.id !== 'q_syn' && q.id !== 'q_ant'}
                                 />
                             </div>
                         ))}
@@ -397,11 +487,11 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                     </h1>
                                     
                                     <RewardBreakdown
-                                        reward={getRewardPreview?.(50)}
-                                        correctXp={50}
-                                        clearXp={0}
+                                        reward={getRewardPreview?.((Object.values(answers).filter(Boolean).length * 5) + 50)}
+                                        correctXp={Object.values(answers).filter(Boolean).length * 5}
+                                        clearXp={50}
                                         correctLabel="학습지"
-                                        detailText="전체 학습 완료 50XP"
+                                        detailText={`${Object.values(answers).filter(Boolean).length}문제 × 5XP + 완료 50XP`}
                                         missionXp={isAlreadyCompleted ? 0 : 50}
                                     />
                                 </div>
@@ -409,7 +499,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {/* 하단 버튼 */}
                                 <div className="w-full flex flex-col gap-3 mt-4">
                                     <CtaButton theme="coral" onClick={() => { setQuizDone(false); onNext(); }}>
-                                        <span className="font-black text-white text-[1.35rem] drop-shadow-md">완료하고 돌아가기</span>
+                                        <span className="font-black text-white text-[1.35rem] drop-shadow-md">돌아가기</span>
                                     </CtaButton>
                                 </div>
                             </div>
@@ -487,6 +577,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     const [showExitModal, setShowExitModal] = useState(false);
     const [showAllDoneModal, setShowAllDoneModal] = useState(false);
     const [completedStudyIds, setCompletedStudyIds] = useState(() => loadCompletedStudyIds(currentDay));
+    const [totalQuizXp, setTotalQuizXp] = useState(0);
     const stageClearFiredRef = useRef(false);
     
     // 백업 스타일 싱글 카드 모드용 상태
@@ -577,6 +668,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 onHanjaAcquired={onHanjaAcquired}
                 isAlreadyCompleted={completedStudyIds.has(studyItem.id)}
                 onStudySheetComplete={handleStudySheetComplete}
+                onQuizXp={(xp) => setTotalQuizXp(prev => prev + xp)}
                 selectedCharacter={selectedCharacter}
                 getRewardPreview={getRewardPreview}
             />
@@ -618,6 +710,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             isLast={currentIndex === currentItems.length - 1}
                             isAlreadyCompleted={completedStudyIds.has(currentItems[currentIndex]?.id)}
                             onStudySheetComplete={handleStudySheetComplete}
+                            onQuizXp={(xp) => setTotalQuizXp(prev => prev + xp)}
                             selectedCharacter={selectedCharacter}
                             getRewardPreview={getRewardPreview}
                         />
@@ -687,16 +780,16 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                                 </h1>
                             </div>
                             <RewardBreakdown
-                                reward={getRewardPreview?.(50)}
-                                correctXp={50}
-                                clearXp={0}
+                                reward={getRewardPreview?.(totalQuizXp + 50)}
+                                correctXp={totalQuizXp}
+                                clearXp={50}
                                 correctLabel="학습지"
-                                detailText="전체 학습 완료 50XP"
+                                detailText={`${Math.round(totalQuizXp / 5)}문제 × 5XP + 완료 50XP`}
                                 missionXp={50}
                             />
                             <div className="w-full flex flex-col gap-3">
                                 <CtaButton theme="coral" onClick={() => { setShowAllDoneModal(false); onBack(); }}>
-                                    <span className="font-black text-white text-[1.35rem] drop-shadow-md">완료하고 돌아가기</span>
+                                    <span className="font-black text-white text-[1.35rem] drop-shadow-md">돌아가기</span>
                                 </CtaButton>
                             </div>
                         </div>
