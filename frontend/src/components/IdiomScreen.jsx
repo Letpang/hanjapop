@@ -107,15 +107,75 @@ const IdiomCard = ({ item }) => {
     );
 };
 
-const buildQuiz = (idioms) =>
-    shuffle(idioms).map(item => ({
-        ...item,
-        correct: item.meaning,
-        choices: shuffle([
-            item.meaning,
-            ...shuffle(idioms.filter(x => x.hanja !== item.hanja)).slice(0, 3).map(x => x.meaning),
-        ]),
-    }));
+const ALL_CHARS = () => [...new Set(IDIOMS.flatMap(i => [...i.hanja]))];
+
+const buildQuiz = (idioms) => {
+    if (idioms.length === 0) return [];
+    const allChars = ALL_CHARS();
+    const questions = [];
+
+    shuffle([...idioms]).forEach((item, i) => {
+        const others = IDIOMS.filter(x => x.hanja !== item.hanja);
+        const type = i % 3;
+
+        if (type === 0) {
+            // 괄호 채우기
+            const blankIdx = Math.floor(Math.random() * 4);
+            const correct = item.hanja[blankIdx];
+            const displayHanja = [...item.hanja].map((ch, j) => j === blankIdx ? '(  )' : ch).join('');
+            const displayReading = [...item.reading].map((ch, j) => j === blankIdx ? '○' : ch).join('');
+            const distractors = shuffle(allChars.filter(c => c !== correct)).slice(0, 3);
+            questions.push({
+                ...item,
+                type: 'fill_blank',
+                typeLabel: '괄호 채우기',
+                prompt: '다음 괄호 안에 들어갈 알맞은 한자는?',
+                displayHanja,
+                displayReading,
+                choices: shuffle([correct, ...distractors]),
+                answer: correct,
+            });
+        } else if (type === 1) {
+            // 독음 읽기
+            const distractors = shuffle(others).slice(0, 3).map(x => x.reading);
+            questions.push({
+                ...item,
+                type: 'reading',
+                typeLabel: '독음 읽기',
+                prompt: '다음 사자성어의 독음(讀音)은?',
+                choices: shuffle([item.reading, ...distractors]),
+                answer: item.reading,
+            });
+        } else {
+            if (i % 6 < 3) {
+                // 뜻 찾기
+                const distractors = shuffle(others).slice(0, 3).map(x => x.meaning);
+                questions.push({
+                    ...item,
+                    type: 'meaning_from_idiom',
+                    typeLabel: '뜻 찾기',
+                    prompt: '다음 사자성어의 뜻은?',
+                    choices: shuffle([item.meaning, ...distractors]),
+                    answer: item.meaning,
+                });
+            } else {
+                // 사자성어 찾기
+                const distractors = shuffle(others).slice(0, 3).map(x => x.hanja);
+                questions.push({
+                    ...item,
+                    type: 'idiom_from_meaning',
+                    typeLabel: '사자성어 찾기',
+                    prompt: '다음 뜻에 해당하는 사자성어는?',
+                    displayMeaning: item.meaning,
+                    choices: shuffle([item.hanja, ...distractors]),
+                    answer: item.hanja,
+                });
+            }
+        }
+    });
+
+    return questions;
+};
 
 const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
@@ -129,7 +189,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
 
     const handleSelect = (choice) => {
         if (isCorrectSelected || wrongChoices.includes(choice)) return;
-        if (choice === q.correct) {
+        if (choice === q.answer) {
             setIsCorrectSelected(true);
             if (wrongChoices.length === 0) {
                 setScore(s => s + 1);
@@ -188,26 +248,58 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
             </div>
 
             <div className="idiom-quiz-question-card">
-                <span className="idiom-quiz-type-label">뜻 고르기</span>
-                <p className="idiom-quiz-prompt">다음 사자성어의 뜻은?</p>
-                <div className="idiom-quiz-hanja-box">
-                    <span>{q.hanja}</span>
-                    <small>{q.reading}</small>
-                </div>
+                <span className="idiom-quiz-type-label">{q.typeLabel}</span>
+                <p className="idiom-quiz-prompt">{q.prompt}</p>
+
+                {/* 괄호 채우기: 빈칸 포함 한자 + 독음 */}
+                {q.type === 'fill_blank' && (
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="font-black tracking-widest text-[#1A2B2A]"
+                            style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'serif' }}>
+                            {q.displayHanja}
+                        </span>
+                        <span className="font-bold text-sm" style={{ color: '#7C83FF' }}>{q.displayReading}</span>
+                    </div>
+                )}
+
+                {/* 독음 읽기: 전체 한자 박스 */}
+                {q.type === 'reading' && (
+                    <div className="idiom-quiz-hanja-box">
+                        <span>{q.hanja}</span>
+                        <small>{q.reading}</small>
+                    </div>
+                )}
+
+                {/* 뜻 찾기: 한자 + 독음 */}
+                {q.type === 'meaning_from_idiom' && (
+                    <div className="idiom-quiz-hanja-box">
+                        <span>{q.hanja}</span>
+                        <small>{q.reading}</small>
+                    </div>
+                )}
+
+                {/* 사자성어 찾기: 뜻 텍스트 */}
+                {q.type === 'idiom_from_meaning' && (
+                    <p className="text-center font-bold text-[#4B5563] text-base leading-relaxed break-keep px-2">
+                        {q.displayMeaning}
+                    </p>
+                )}
             </div>
 
-            <div className="idiom-quiz-choice-grid">
+            <div className="idiom-quiz-choice-grid"
+                style={q.type === 'meaning_from_idiom' ? { gridTemplateColumns: '1fr' } : undefined}>
                 {q.choices.map((choice, i) => {
                     const isWrong = wrongChoices.includes(choice);
-                    const isCorrect = isCorrectSelected && choice === q.correct;
+                    const isCorrect = isCorrectSelected && choice === q.answer;
                     const isDimmed = isCorrectSelected && !isCorrect;
+                    const isLarge = q.type === 'fill_blank' || q.type === 'idiom_from_meaning';
 
                     return (
                         <button
                             key={i}
                             onClick={() => handleSelect(choice)}
                             disabled={isCorrectSelected}
-                            className={`quiz-choice-btn idiom-quiz-choice ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isDimmed ? 'quiz-choice-btn--dimmed' : ''}`}
+                            className={`quiz-choice-btn idiom-quiz-choice ${isLarge ? 'quiz-choice-btn--large' : ''} ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isDimmed ? 'quiz-choice-btn--dimmed' : ''}`}
                         >
                             <span>{choice}</span>
                             {isCorrect && <span className="idiom-quiz-choice-mark">✓</span>}
