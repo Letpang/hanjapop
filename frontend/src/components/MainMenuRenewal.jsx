@@ -44,7 +44,7 @@ const MISSION_META = {
     shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame'    },
     matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame'    },
     writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing'      },
-    idiomQuiz:    { label: '한자성어',    icon: '/assets/images/icons/study.png',    nav: 'idiomQuiz'    },
+    idiom:        { label: '사자성어',     icon: null,                               nav: 'idiom'        },
 };
 
 const MainMenuRenewal = ({
@@ -360,7 +360,7 @@ const MainMenuRenewal = ({
                                 <button
                                     key={m.id}
                                     onClick={() => meta.nav && onNavigate(meta.nav)}
-                                    className="w-full flex items-center gap-3 py-3.5 px-4 rounded-[1.5rem] active:scale-[0.97] transition-all bg-white relative overflow-hidden"
+                                    className={`mm-quest-card ${m.done ? 'mm-quest-card--done' : isRecommended ? 'mm-quest-card--focus' : ''}`}
                                 >
                                     <div className="flex-1 flex items-center justify-between min-w-0 relative z-10">
                                         <div className="flex items-center gap-2 min-w-0">

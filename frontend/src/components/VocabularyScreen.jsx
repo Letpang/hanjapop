@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { wordById } from '../utils/wordUtils.js';
+import IDIOMS from '../data/idioms.js';
 
 const hanjaById = Object.fromEntries(HANJA_DATA.map(h => [h.id, h]));
+const IDIOM_WRONG_KEY = 'idiom_wrong_data';
 
 const readStudyLog = () => {
   try { return JSON.parse(localStorage.getItem(SK.STUDY_LOG) || '{}'); } catch { return {}; }
@@ -13,9 +15,14 @@ const readWordData = () => {
   try { return JSON.parse(localStorage.getItem(SK.WORD_DATA) || '{}'); } catch { return {}; }
 };
 
+const readIdiomWrongData = () => {
+  try { return JSON.parse(localStorage.getItem(IDIOM_WRONG_KEY) || '{}'); } catch { return {}; }
+};
+
 const collectVocabulary = () => {
   const log = readStudyLog();
   const wordData = readWordData();
+  const idiomWrongData = readIdiomWrongData();
   const days = log.days || {};
   const wordIds = new Set();
   const hanjaIds = new Set();
@@ -58,12 +65,22 @@ const collectVocabulary = () => {
     .filter(Boolean)
     .sort((a, b) => a.id - b.id);
 
-  return { words, hanjas };
+  const idioms = IDIOMS.map(item => {
+    const memory = idiomWrongData[item.id || item.hanja] || {};
+    return {
+      ...item,
+      wrongCount: memory.wrongCount || 0,
+      lastWrongAt: memory.lastWrongAt || null,
+    };
+  }).sort((a, b) => b.wrongCount - a.wrongCount || a.hanja.localeCompare(b.hanja, 'ko'));
+
+  return { words, hanjas, idioms };
 };
 
 const FILTERS = [
   { id: 'all', label: '전체' },
   { id: 'wrong', label: '오답' },
+  { id: 'due', label: '복습 예정' },
 ];
 
 const VocabularyScreen = ({
@@ -74,7 +91,7 @@ const VocabularyScreen = ({
   title = '단어장',
   subtitle = '학습한 단어와 오답을 모아봐요',
 }) => {
-  const { words, hanjas } = useMemo(() => collectVocabulary(), []);
+  const { words, hanjas, idioms } = useMemo(() => collectVocabulary(), []);
   const [tab, setTab] = useState(initialTab);
   const [filter, setFilter] = useState(initialFilter);
   const [query, setQuery] = useState('');
@@ -100,7 +117,20 @@ const VocabularyScreen = ({
     });
   }, [hanjas, normalizedQuery]);
 
+  const filteredIdioms = useMemo(() => {
+    return idioms.filter(item => {
+      if (filter === 'wrong' && item.wrongCount <= 0) return false;
+      if (filter === 'due') return false;
+      if (!normalizedQuery) return true;
+      return [item.hanja, item.reading, item.meaning, item.grade]
+        .filter(Boolean)
+        .some(value => String(value).toLowerCase().includes(normalizedQuery));
+    });
+  }, [idioms, filter, normalizedQuery]);
+
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
+  const idiomWrongCount = idioms.filter(w => w.wrongCount > 0).length;
+  const dueCount = words.filter(w => w.isDue).length;
 
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#334155]'}`}>
@@ -122,23 +152,28 @@ const VocabularyScreen = ({
         </header>
 
         <section className={`rounded-[2rem] border p-4 shadow-sm ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-[#E8FAF7] px-3 py-3">
               <p className="text-[11px] font-black text-[#00A994]">단어</p>
               <p className="mt-0.5 text-xl font-black text-[#334155]">{words.length}</p>
             </div>
             <div className="rounded-2xl bg-[#FFF1EE] px-3 py-3">
               <p className="text-[11px] font-black text-[#E8664F]">오답</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{wrongCount}</p>
+              <p className="mt-0.5 text-xl font-black text-[#334155]">{wrongCount + idiomWrongCount}</p>
+            </div>
+            <div className="rounded-2xl bg-[#F5F3FF] px-3 py-3">
+              <p className="text-[11px] font-black text-[#7C83FF]">복습</p>
+              <p className="mt-0.5 text-xl font-black text-[#334155]">{dueCount}</p>
             </div>
           </div>
         </section>
 
         <section className={`rounded-[2rem] border p-4 shadow-sm ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className="mb-3 grid grid-cols-2 gap-2 rounded-2xl bg-[#F4F6F8] p-1">
+          <div className="mb-3 grid grid-cols-3 gap-2 rounded-2xl bg-[#F4F6F8] p-1">
             {[
               { id: 'words', label: '단어' },
               { id: 'hanja', label: '한자' },
+              { id: 'idioms', label: '사자성어' },
             ].map(item => (
               <button
                 key={item.id}
@@ -215,6 +250,34 @@ const VocabularyScreen = ({
                       <p className="truncate text-xs font-bold text-[#94A3B8]">{item.meaning}</p>
                     </div>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'idioms' && (
+            <div className="flex flex-col gap-2">
+              {filteredIdioms.length === 0 ? (
+                <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-extrabold text-[#AEB7C5]">
+                  표시할 사자성어가 없어요
+                </div>
+              ) : filteredIdioms.map(item => (
+                <div key={item.id || item.hanja} className={`rounded-[1.5rem] border px-4 py-3 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className="text-xl font-black tracking-wider text-[#334155]" style={{ fontFamily: "'Nanum Myeongjo', serif" }}>{item.hanja}</span>
+                        <span className="text-xs font-extrabold text-[#94A3B8]">{item.reading}</span>
+                      </div>
+                      <p className="mt-1 text-sm font-bold leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>
+                    </div>
+                    <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-xs font-black text-[#334155]">{item.grade}</span>
+                  </div>
+                  {item.wrongCount > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
+                      <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
