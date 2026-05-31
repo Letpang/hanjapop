@@ -100,7 +100,7 @@ const buildQuiz = (idioms) =>
         ]),
     }));
 
-const IdiomQuiz = ({ idioms, onBack }) => {
+const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
     const [idx, setIdx] = useState(0);
     const [wrongChoices, setWrongChoices] = useState([]);
@@ -126,6 +126,7 @@ const IdiomQuiz = ({ idioms, onBack }) => {
 
     const handleNext = () => {
         if (idx + 1 >= questions.length) {
+            onComplete?.();
             setDone(true);
             return;
         }
@@ -210,9 +211,9 @@ const IdiomQuiz = ({ idioms, onBack }) => {
     );
 };
 
-const IdiomScreen = ({ onBack }) => {
+const IdiomScreen = ({ onBack, onComplete, startInQuiz, contentPool }) => {
     const [grade, setGrade] = useState('전체');
-    const [mode, setMode] = useState('browse');
+    const [mode, setMode] = useState(startInQuiz ? 'quiz' : 'browse');
 
     const filtered = useMemo(
         () => grade === '전체' ? IDIOMS : IDIOMS.filter(x => x.grade === grade),
@@ -243,7 +244,7 @@ const IdiomScreen = ({ onBack }) => {
             </div>
 
             {mode === 'quiz' ? (
-                <IdiomQuiz idioms={filtered} onBack={() => setMode('browse')} />
+                <IdiomQuiz idioms={filtered} onBack={() => setMode('browse')} onComplete={onComplete} />
             ) : (
                 <>
                     <div className="shrink-0 px-4 pt-4 pb-2">
