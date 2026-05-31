@@ -44,7 +44,7 @@ const MISSION_META = {
     shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame'    },
     matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame'    },
     writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing'      },
-    idiom:        { label: '사자성어',     icon: null,                               nav: 'idiom'        },
+    idiomQuiz:    { label: '사자성어',     icon: null,                               nav: 'idiomQuiz'    },
 };
 
 const MainMenuRenewal = ({
