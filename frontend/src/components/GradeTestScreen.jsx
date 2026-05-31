@@ -223,29 +223,29 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
         <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
           <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
             {/* 문제 카드 */}
-            <div className="w-full bg-white rounded-[2rem] border-4 border-white p-4 flex flex-col items-center gap-3" style={{ boxShadow: '0 16px 40px rgba(120,130,160,0.10)' }}>
-              <span className="text-xs font-extrabold text-[#AEB7C5] uppercase tracking-widest">
+            <div className="grade-test-question-card">
+              <span className="grade-test-type-label">
                 {TYPE_LABELS[q.type] || ''}
               </span>
-              <p className="text-h2 text-center font-black" style={{ color: '#2F3545', lineHeight: 1.15 }}>{q.prompt}</p>
+              <p className="grade-test-prompt">{q.prompt}</p>
 
               {/* 문장형 (독음/밑줄) */}
               {(q.type === 'sound_sentence' || q.type === 'underline') && (
-                <p className="text-body font-bold text-center text-[#3C3C3C] leading-relaxed bg-[#F8FAFC] rounded-2xl px-4 py-3 w-full">
+                <p className="grade-test-example">
                   {renderSentence(q.sentence, q.type === 'sound_sentence' ? q.hanja : null, q.underline)}
                 </p>
               )}
 
               {/* 한자 박스 (독음/뜻/음/필순/훈+음) */}
               {q.hanja && q.type !== 'sound_sentence' && (
-                <div className="w-24 h-24 bg-[#F8FAF9] rounded-[1.5rem] border border-[#E9EDF2] flex items-center justify-center shadow-inner">
-                  <span className="text-6xl font-bold text-[#3C3C3C]" style={{ fontFamily: 'serif' }}>{q.hanja}</span>
+                <div className="grade-test-hanja-box grade-test-hanja-box--single">
+                  <span className="grade-test-hanja-char">{q.hanja}</span>
                 </div>
               )}
             </div>
 
             {/* 보기 */}
-            <div className="w-full grid grid-cols-2 gap-3">
+            <div className="grade-test-choice-grid">
               {q.choices.map((choice) => {
                 const isSelected = selected === choice;
                 const isAnswer = choice === q.answer;

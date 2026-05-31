@@ -649,7 +649,20 @@ const App = () => {
                     onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 600); }}
                 />;
             case 'idiom':
-                return <IdiomScreen onBack={() => setCurrentScreen('main')} />;
+                return <IdiomScreen
+                    onBack={() => setCurrentScreen('main')}
+                    contentPool={effectivePool}
+                />;
+            case 'idiomQuiz':
+                return <IdiomScreen
+                    onBack={() => setCurrentScreen('main')}
+                    contentPool={effectivePool}
+                    startInQuiz
+                    onComplete={() => {
+                        handleHanjaAcquired(null, 25);
+                        updateMissionProgress('idiomQuiz', 1, addBonusXp);
+                    }}
+                />;
             case 'gradeExamSelect':
                 return <GradeExamSelectScreen
                     onBack={() => setCurrentScreen('main')}

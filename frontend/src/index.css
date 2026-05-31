@@ -417,6 +417,129 @@ body.dark-mode {
     font-family: serif;
 }
 
+/* ── Grade Test Question Layout ────────────────────────────────
+   Keeps certification exams visually aligned with word/sentence quizzes
+   while balancing the prompt and example sentence sizes. */
+.grade-test-question-card {
+    width: 100%;
+    background: #FFFFFF;
+    border: 8px solid #FFFFFF;
+    border-radius: 2.6rem;
+    padding: clamp(1.1rem, 4vw, 1.5rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.8rem, 3vw, 1.05rem);
+    box-shadow: 0 16px 40px rgba(120, 130, 160, 0.10);
+}
+
+.grade-test-type-label {
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    line-height: 1.1;
+    font-weight: 900;
+    color: #AEB7C5;
+    letter-spacing: -0.01em;
+    text-align: center;
+}
+
+.grade-test-prompt {
+    color: #2F3545;
+    font-size: clamp(1.45rem, 6vw, 2.2rem);
+    line-height: 1.2;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    text-align: center;
+    text-wrap: balance;
+    word-break: keep-all;
+}
+
+.grade-test-example {
+    width: 100%;
+    display: block;
+    background: #F8FAFC;
+    color: #4B5563;
+    border: 1px solid #EEF2F7;
+    border-radius: 1.8rem;
+    padding: clamp(0.95rem, 3.5vw, 1.2rem) clamp(1rem, 4vw, 1.4rem);
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+    line-height: 1.45;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    text-align: center;
+    box-shadow: inset 0 -2px 0 rgba(203, 213, 225, 0.35);
+}
+
+.grade-test-example .underline {
+    text-decoration-thickness: 0.14em;
+    text-underline-offset: 0.16em;
+}
+
+.grade-test-example .inline-block {
+    font-size: 1.12em;
+    padding: 0.04em 0.32em;
+    border-radius: 0.55em;
+    vertical-align: baseline;
+}
+
+.grade-test-hanja-box {
+    background: #F8FAF9;
+    border: 1px solid #E9EDF2;
+    border-radius: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 8px rgba(120, 130, 160, 0.10);
+}
+
+.grade-test-hanja-box--single {
+    width: clamp(5.5rem, 22vw, 7rem);
+    height: clamp(5.5rem, 22vw, 7rem);
+}
+
+.grade-test-hanja-box--compound {
+    width: clamp(9rem, 38vw, 11.5rem);
+    height: clamp(4.8rem, 18vw, 6rem);
+}
+
+.grade-test-hanja-char {
+    color: #3C3C3C;
+    font-family: serif;
+    font-size: clamp(3rem, 13vw, 4.6rem);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.grade-test-hanja-box--compound .grade-test-hanja-char {
+    font-size: clamp(2.35rem, 9vw, 3.35rem);
+}
+
+.grade-test-choice-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.grade-test-choice-grid .quiz-choice-btn {
+    min-height: clamp(4.25rem, 15vw, 5.25rem);
+    padding: 0.85rem 1rem;
+    border-radius: 1.8rem;
+    font-size: clamp(1.35rem, 5.3vw, 1.9rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+}
+
+@media (max-width: 380px) {
+    .grade-test-choice-grid {
+        gap: 0.65rem;
+    }
+
+    .grade-test-choice-grid .quiz-choice-btn {
+        padding-inline: 0.75rem;
+        font-size: clamp(1.2rem, 5vw, 1.55rem);
+    }
+}
+
 .hp-section-shortcut {
     position: relative;
     overflow: hidden;

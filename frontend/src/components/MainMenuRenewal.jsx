@@ -45,6 +45,7 @@ const MISSION_META = {
     shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame'    },
     matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame'    },
     writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing'      },
+    idiomQuiz:    { label: '한자성어',    icon: '/assets/images/icons/study.png',    nav: 'idiomQuiz'    },
 };
 
 const MainMenuRenewal = ({
@@ -202,16 +203,16 @@ const MainMenuRenewal = ({
                         onClick={() => setShowModal(true)}
                         className="w-full flex items-center gap-3 px-5 py-4 rounded-[1.5rem] active:scale-[0.98] transition-all bg-white/70 backdrop-blur-md shadow-sm"
                     >
-                        <span className="font-bold text-xs shrink-0 text-[#8f99ad]">진행도</span>
+                        <span className="font-bold text-xs shrink-0 text-[#8f99ad]">급수진행도</span>
                         <div className="flex-1 flex items-center gap-2 min-w-0">
                             <div className="flex-1 rounded-full overflow-hidden h-[10px] bg-slate-100 shadow-inner">
-                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#2ED6C5,#0D9488)', boxShadow: '0 0 8px rgba(46,214,197,0.4)' }} />
+                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
                             </div>
-                            <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-teal-50/80 border border-teal-100/60 shadow-sm shrink-0">
-                                <span className="font-black text-[14px]" style={{ color: '#0D9488', letterSpacing: '-0.3px' }}>
+                            <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-orange-50/80 border border-orange-100/60 shadow-sm shrink-0">
+                                <span className="font-black text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>
                                     {completedDay}/{TOTAL_STAGES}
                                 </span>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-teal-600/80" viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-400/80" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                                 </svg>
                             </div>

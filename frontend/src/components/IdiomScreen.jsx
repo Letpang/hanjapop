@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import IDIOMS from '../data/idioms.js';
+import HANJA_DATA from '../hanja_unified.json';
 import CtaButton from './common/CtaButton.jsx';
-
-const GRADE_ORDER = ['전체', '8급', '7급', '7급Ⅱ', '6급', '6급Ⅱ'];
 
 const GRADE_STYLE = {
     '8급':  { bg: '#F0FFF7', border: '#A8E6CF', text: '#2D7A5A', tag: '#A8E6CF' },
@@ -11,6 +10,7 @@ const GRADE_STYLE = {
     '6급':  { bg: '#F0FDFF', border: '#A5F3FC', text: '#0E7490', tag: '#A5F3FC' },
     '6급Ⅱ': { bg: '#F5F0FF', border: '#BDB2FF', text: '#553C9A', tag: '#BDB2FF' },
 };
+
 
 const shuffle = (arr) => {
     const a = [...arr];
@@ -21,7 +21,24 @@ const shuffle = (arr) => {
     return a;
 };
 
-// ── 카드 (탭으로 뜻 펼치기) ──────────────────────────────────────────────
+// contentPool의 hanjaIds 기반으로 관련 사자성어 수집 (다른 퀴즈와 동일한 방식)
+const collectIdioms = (hanjaIds) => {
+    const idSet = new Set(hanjaIds);
+    const seen = new Set();
+    const result = [];
+    for (const item of HANJA_DATA) {
+        if (!idSet.has(item.id)) continue;
+        for (const w of (item.words || [])) {
+            if (w.type !== 'idiom' || seen.has(w.word)) continue;
+            seen.add(w.word);
+            const meta = IDIOMS.find(x => x.hanja === w.word);
+            if (meta) result.push(meta);
+        }
+    }
+    return result;
+};
+
+// ── 목록 카드 ──────────────────────────────────────────────────────────────
 const IdiomCard = ({ item }) => {
     const [open, setOpen] = useState(false);
     const s = GRADE_STYLE[item.grade] || GRADE_STYLE['8급'];
@@ -34,38 +51,31 @@ const IdiomCard = ({ item }) => {
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
-                    <span
-                        className="font-black tracking-wider leading-tight"
-                        style={{ fontSize: '1.55rem', color: '#1A2B2A', fontFamily: "'Nanum Myeongjo', serif" }}
-                    >
+                    <span className="font-black tracking-wider leading-tight"
+                        style={{ fontSize: '1.55rem', color: '#1A2B2A', fontFamily: "'Nanum Myeongjo', serif" }}>
                         {item.hanja}
                     </span>
-                    <span className="font-bold text-sm" style={{ color: s.text }}>
-                        {item.reading}
-                    </span>
+                    <span className="font-bold text-sm" style={{ color: s.text }}>{item.reading}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 mt-0.5">
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-black" style={{ background: s.tag, color: s.text }}>
                         {item.grade}
                     </span>
-                    <span className="text-xs font-bold" style={{ color: s.text }}>
-                        {open ? '▲' : '▼'}
-                    </span>
+                    <span className="text-xs font-bold" style={{ color: s.text }}>{open ? '▲' : '▼'}</span>
                 </div>
             </div>
-            {open && (
+            {open ? (
                 <p className="text-sm font-bold leading-relaxed break-keep border-t pt-3" style={{ color: '#5B677A', borderColor: s.border }}>
                     {item.meaning}
                 </p>
-            )}
-            {!open && (
+            ) : (
                 <p className="text-xs font-bold" style={{ color: s.text }}>탭하여 뜻 보기</p>
             )}
         </button>
     );
 };
 
-// ── 퀴즈 모드 ─────────────────────────────────────────────────────────────
+// ── 퀴즈 모드 (단어 퀴즈 스타일) ──────────────────────────────────────────
 const buildQuiz = (idioms) =>
     shuffle(idioms).map(item => ({
         hanja: item.hanja,
@@ -77,24 +87,47 @@ const buildQuiz = (idioms) =>
         ]),
     }));
 
-const IdiomQuiz = ({ idioms, onBack }) => {
+const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
     const [idx, setIdx] = useState(0);
     const [selected, setSelected] = useState(null);
+    const [revealed, setRevealed] = useState(false);
     const [score, setScore] = useState(0);
     const [done, setDone] = useState(false);
+    const completedRef = useRef(false);
 
     const q = questions[idx];
+    const progress = (idx / questions.length) * 100;
 
     const handleSelect = (choice) => {
         if (selected !== null) return;
+        const isCorrect = choice === q.correct;
         setSelected(choice);
-        if (choice === q.correct) setScore(s => s + 1);
-        setTimeout(() => {
-            if (idx + 1 >= questions.length) setDone(true);
-            else { setIdx(i => i + 1); setSelected(null); }
-        }, 1000);
+        if (isCorrect) {
+            setScore(s => s + 1);
+            setRevealed(true);
+        } else {
+            setTimeout(handleNext, 700);
+        }
     };
+
+    const handleNext = () => {
+        if (idx + 1 >= questions.length) {
+            if (!completedRef.current) { completedRef.current = true; onComplete?.(); }
+            setDone(true);
+        } else {
+            setIdx(i => i + 1);
+            setSelected(null);
+            setRevealed(false);
+        }
+    };
+
+    // 정답 후 자동 진행
+    useMemo(() => {
+        if (!revealed) return;
+        const t = setTimeout(handleNext, 1200);
+        return () => clearTimeout(t);
+    }, [revealed]); // eslint-disable-line
 
     if (done) {
         const pct = Math.round((score / questions.length) * 100);
@@ -109,13 +142,11 @@ const IdiomQuiz = ({ idioms, onBack }) => {
                     </p>
                 </div>
                 <div className="w-full max-w-xs flex flex-col gap-3">
-                    <CtaButton theme="coral" onClick={() => { setIdx(0); setSelected(null); setScore(0); setDone(false); }}>
+                    <CtaButton theme="coral" onClick={() => { setIdx(0); setSelected(null); setRevealed(false); setScore(0); setDone(false); completedRef.current = false; }}>
                         <span className="font-black text-white text-lg drop-shadow-md">다시 풀기</span>
                     </CtaButton>
-                    <button
-                        onClick={onBack}
-                        className="w-full py-3.5 rounded-2xl font-extrabold text-[#9AA4B5] bg-white border border-[#E9EDF2] active:scale-95 transition-all"
-                    >
+                    <button onClick={onBack}
+                        className="w-full py-3.5 rounded-2xl font-extrabold text-[#9AA4B5] bg-white border border-[#E9EDF2] active:scale-95 transition-all">
                         목록으로 돌아가기
                     </button>
                 </div>
@@ -124,93 +155,113 @@ const IdiomQuiz = ({ idioms, onBack }) => {
     }
 
     return (
-        <div className="flex-1 flex flex-col px-5 pt-5 pb-8 gap-5 max-w-2xl w-full mx-auto">
-            {/* 진행바 */}
-            <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#E9EDF2' }}>
-                    <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(idx / questions.length) * 100}%`, background: '#7C83FF' }}
-                    />
+        <>
+            {/* 진행바 헤더 — 단어 퀴즈와 동일한 스타일 */}
+            <div className="w-full shrink-0 px-4 mb-3">
+                <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-5 shadow-md border border-white">
+                    <button onClick={onBack} className="hp-nav-button shrink-0">←</button>
+                    <div className="flex-1">
+                        <div className="flex justify-between text-xs font-extrabold text-[#AEB7C5] mb-1">
+                            <span>한자성어 퀴즈</span>
+                            <span>{idx + 1} / {questions.length}</span>
+                        </div>
+                        <div className="w-full h-[11px] rounded-full overflow-hidden" style={{ backgroundColor: '#E9EDF5' }}>
+                            <div className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${progress}%`, backgroundColor: '#7C83FF' }} />
+                        </div>
+                    </div>
+                    <span className="text-sm font-extrabold shrink-0" style={{ color: '#7C83FF' }}>{score}점</span>
                 </div>
-                <span className="text-xs font-black text-[#9AA4B5] shrink-0">{idx + 1} / {questions.length}</span>
             </div>
 
-            {/* 문제 */}
-            <div className="flex flex-col items-center gap-3 py-8 px-4 rounded-[2rem] bg-white border border-[#E9EDF2] shadow-lg">
-                <span className="text-xs font-black tracking-widest" style={{ color: '#9AA4B5' }}>이 사자성어의 뜻은?</span>
-                <span
-                    className="font-black tracking-widest text-[#1A2B2A]"
-                    style={{ fontSize: '2.2rem', fontFamily: "'Nanum Myeongjo', serif" }}
-                >
-                    {q.hanja}
-                </span>
-                <span className="font-bold text-sm" style={{ color: '#7C83FF' }}>{q.reading}</span>
+            {/* 문제 + 보기 */}
+            <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
+                <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
+                    {/* 사자성어 카드 — 단어 퀴즈 카드와 동일한 스타일 */}
+                    <div className="w-full bg-white rounded-[3rem] border-[8px] border-white flex flex-col items-center justify-center py-10 gap-2"
+                        style={{ boxShadow: '0 16px 40px rgba(120,130,160,0.12)', minHeight: 200 }}>
+                        <span className="font-black tracking-widest text-[#1e293b]"
+                            style={{ fontSize: 'clamp(2rem, 8vw, 2.8rem)', fontFamily: 'serif' }}>
+                            {q.hanja}
+                        </span>
+                        <span className="font-bold text-lg" style={{ color: '#7C83FF' }}>{q.reading}</span>
+                    </div>
+
+                    {/* 보기 — quiz-choice-btn 클래스 통일 */}
+                    <div className="w-full grid grid-cols-1 gap-3">
+                        {q.choices.map((c, i) => {
+                            const isSelected = selected === c;
+                            const isAnswer = c === q.correct;
+                            let stateClass = '';
+                            if (revealed) {
+                                stateClass = isAnswer ? 'quiz-choice-btn--correct'
+                                    : isSelected ? 'quiz-choice-btn--wrong'
+                                    : 'quiz-choice-btn--dimmed';
+                            } else if (selected !== null) {
+                                stateClass = isSelected ? 'quiz-choice-btn--wrong' : 'quiz-choice-btn--dimmed';
+                            }
+                            return (
+                                <button key={i} onClick={() => handleSelect(c)}
+                                    className={`quiz-choice-btn ${stateClass}`}>
+                                    <span className="break-keep">{c}</span>
+                                    {revealed && isAnswer && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
+                                    {!revealed && selected !== null && isSelected && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* 정오 피드백 */}
+                    {revealed && (
+                        <div className="w-full rounded-2xl px-5 py-3 text-center font-extrabold text-sm"
+                            style={{ backgroundColor: '#EAFBF0', color: '#2A7A50', border: '1px solid #4CCB7F' }}>
+                            ✓ 정답!
+                        </div>
+                    )}
+                </div>
             </div>
-
-            {/* 보기 */}
-            <div className="flex flex-col gap-3">
-                {q.choices.map((c, i) => {
-                    const isCorrect = c === q.correct;
-                    const isSelected = selected === c;
-                    const revealed = selected !== null;
-
-                    const bg = revealed && isCorrect ? '#E0FBF7'
-                        : revealed && isSelected ? '#FFF0EB'
-                        : '#F8FAF9';
-                    const border = revealed && isCorrect ? '#2ED6C5'
-                        : revealed && isSelected ? '#FF8D72'
-                        : '#E9EDF2';
-                    const color = revealed && isCorrect ? '#0D9488'
-                        : revealed && isSelected ? '#FF6B6B'
-                        : '#3C3C3C';
-
-                    return (
-                        <button
-                            key={i}
-                            onClick={() => handleSelect(c)}
-                            className="w-full text-left px-5 py-4 rounded-2xl font-bold text-sm break-keep leading-relaxed transition-all active:scale-[0.98]"
-                            style={{ background: bg, border: `1.5px solid ${border}`, color }}
-                        >
-                            {c}
-                            {revealed && isCorrect && <span className="ml-2">✓</span>}
-                            {revealed && isSelected && !isCorrect && <span className="ml-2">✕</span>}
-                        </button>
-                    );
-                })}
-            </div>
-        </div>
+        </>
     );
 };
 
 // ── 메인 화면 ──────────────────────────────────────────────────────────────
-const IdiomScreen = ({ onBack }) => {
+const IdiomScreen = ({ onBack, onComplete, contentPool, startInQuiz = false }) => {
+    const [mode, setMode] = useState(startInQuiz ? 'quiz' : 'browse');
+
+    // contentPool의 hanjaIds 기반 필터링 (다른 퀴즈와 동일)
+    const available = useMemo(() => {
+        const hanjaIds = [
+            ...(contentPool?.main?.hanjaIds || []),
+            ...(contentPool?.review?.hanjaIds || []),
+        ];
+        return collectIdioms(hanjaIds);
+    }, [contentPool]);
+
+    // 급수 탭은 available 안에서만
+    const availableGrades = useMemo(() => {
+        const s = new Set(available.map(x => x.grade));
+        return ['전체', '8급', '7급', '7급Ⅱ', '6급', '6급Ⅱ'].filter(g => g === '전체' || s.has(g));
+    }, [available]);
+
     const [grade, setGrade] = useState('전체');
-    const [mode, setMode] = useState('browse');
 
     const filtered = useMemo(
-        () => grade === '전체' ? IDIOMS : IDIOMS.filter(x => x.grade === grade),
-        [grade]
+        () => grade === '전체' ? available : available.filter(x => x.grade === grade),
+        [available, grade]
     );
 
-    const counts = useMemo(() => {
-        const m = {};
-        GRADE_ORDER.slice(1).forEach(g => { m[g] = IDIOMS.filter(x => x.grade === g).length; });
-        return m;
-    }, []);
-
     return (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
+        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
             {/* 헤더 */}
-            <div className="w-full px-4 shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '4px' }}>
-                <div className="minimal-card-studio w-full flex justify-between items-center p-4 px-6 bg-white border-[#E9EDF2] shadow-xl !rounded-[3rem] min-h-[72px]">
+            <div className="w-full shrink-0 safe-top pt-4 px-4 mb-3">
+                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                     <button onClick={mode === 'quiz' ? () => setMode('browse') : onBack} className="hp-nav-button">
-                        ←
+                        {mode === 'quiz' ? '✕' : '←'}
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">사자성어</h2>
                         <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>
-                            {mode === 'quiz' ? '사자성어를 보고 뜻을 맞혀보세요' : '급수별 4자 성어 학습'}
+                            {mode === 'quiz' ? '사자성어를 보고 뜻을 맞혀보세요' : `${available.length}개 학습 가능`}
                         </p>
                     </div>
                     <div className="w-11" />
@@ -218,55 +269,75 @@ const IdiomScreen = ({ onBack }) => {
             </div>
 
             {mode === 'quiz' ? (
-                <IdiomQuiz idioms={filtered} onBack={() => setMode('browse')} />
+                filtered.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+                        <span className="text-5xl">📖</span>
+                        <p className="font-bold text-[#9AA4B5] text-center break-keep">
+                            이 단계에는 관련 사자성어가 없어요.
+                        </p>
+                        <button onClick={() => setMode('browse')}
+                            className="px-6 py-3 rounded-2xl bg-white border border-[#E9EDF2] font-bold text-[#5B677A] active:scale-95 transition-all">
+                            돌아가기
+                        </button>
+                    </div>
+                ) : (
+                    <IdiomQuiz idioms={filtered} onBack={() => setMode('browse')} onComplete={onComplete} />
+                )
             ) : (
                 <>
                     {/* 급수 탭 */}
-                    <div className="shrink-0 px-4 pt-4 pb-2">
+                    <div className="shrink-0 px-4 pb-2">
                         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                            {GRADE_ORDER.map(g => {
+                            {availableGrades.map(g => {
+                                const cnt = g === '전체' ? available.length : available.filter(x => x.grade === g).length;
                                 const active = grade === g;
                                 return (
-                                    <button
-                                        key={g}
-                                        onClick={() => setGrade(g)}
+                                    <button key={g} onClick={() => setGrade(g)}
                                         className="shrink-0 px-4 py-2 rounded-full text-sm font-black transition-all active:scale-95"
                                         style={{
                                             background: active ? '#7C83FF' : '#fff',
                                             color: active ? '#fff' : '#9AA4B5',
                                             border: `1.5px solid ${active ? '#7C83FF' : '#E9EDF2'}`,
-                                        }}
-                                    >
-                                        {g}{g !== '전체' && counts[g] ? ` ${counts[g]}` : ''}
+                                        }}>
+                                        {g}{g !== '전체' ? ` ${cnt}` : ''}
                                     </button>
                                 );
                             })}
                         </div>
                         <p className="text-xs font-bold text-[#9AA4B5] mt-2 px-1">
-                            {filtered.length}개의 사자성어 · 탭하면 뜻이 펼쳐져요
+                            {filtered.length}개 · 탭하면 뜻이 펼쳐져요
                         </p>
                     </div>
 
                     {/* 목록 */}
                     <div className="flex-1 overflow-y-auto pb-32 px-4 pt-1 flex flex-col gap-3 max-w-2xl w-full mx-auto">
-                        {filtered.map((item, i) => (
-                            <IdiomCard key={`${item.hanja}-${i}`} item={item} />
-                        ))}
+                        {filtered.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                <span className="text-5xl">📖</span>
+                                <p className="font-bold text-[#9AA4B5] text-center break-keep">
+                                    이 단계에는 관련 사자성어가 없어요.<br/>다음 단계를 학습하면 나타납니다!
+                                </p>
+                            </div>
+                        ) : (
+                            filtered.map((item, i) => (
+                                <IdiomCard key={`${item.hanja}-${i}`} item={item} />
+                            ))
+                        )}
                     </div>
 
                     {/* 퀴즈 CTA */}
-                    <div
-                        className="fixed bottom-0 left-0 right-0 px-5 pb-8 pt-4"
-                        style={{ background: 'linear-gradient(to top, #F8FAF9 65%, transparent)' }}
-                    >
-                        <div className="max-w-2xl mx-auto">
-                            <CtaButton theme="indigo" onClick={() => setMode('quiz')}>
-                                <span className="font-black text-white text-lg drop-shadow-md">
-                                    ✏️ {filtered.length}개 퀴즈 풀기
-                                </span>
-                            </CtaButton>
+                    {filtered.length > 0 && (
+                        <div className="fixed bottom-0 left-0 right-0 px-5 pb-8 pt-4"
+                            style={{ background: 'linear-gradient(to top, #F7FAF9 65%, transparent)' }}>
+                            <div className="max-w-2xl mx-auto">
+                                <CtaButton theme="indigo" onClick={() => setMode('quiz')}>
+                                    <span className="font-black text-white text-lg drop-shadow-md">
+                                        ✏️ {filtered.length}개 퀴즈 풀기
+                                    </span>
+                                </CtaButton>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </>
             )}
         </div>

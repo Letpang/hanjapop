@@ -1,61 +1,75 @@
-const HISTORY_KEY = 'mission_history';
-const STAGE_KEY   = 'daily_missions_stage';
-const MISSION_KEY = 'daily_missions';
-
 import { useState, useEffect, useCallback } from 'react';
 import { getTodayStr, getYesterdayStr } from '../utils/sessionUtils.js';
+import { SK } from '../constants/storageKeys.js';
 
-const getCompletedDay = () => {
+const getCurrentCurriculumDay = () => {
     try {
         const saved = JSON.parse(localStorage.getItem('curriculum_progress') || '{}');
-        return String(saved.completedDay || 0);
-    } catch { return '0'; }
+        return String((saved.completedDay || 0) + 1);
+    } catch { return '1'; }
 };
 
 // ─────────────────────────────────────────────────────────────
 // 미션 정의
 // ─────────────────────────────────────────────────────────────
 const MISSION_POOL = [
-    { id: 'flashcard_1',  type: 'flashcard',    target: 1, label: '학습지 1개 완료',          xp: 50 },
-    { id: 'wordquiz_1',   type: 'wordQuiz',     target: 1, label: '단어 퀴즈 1세트 완료',     xp: 30 },
-    { id: 'quiz_1',       type: 'sentenceQuiz', target: 1, label: '문장 퀴즈 1세트 완료',     xp: 30 },
-    { id: 'shootgame_1',  type: 'shootGame',    target: 1, label: '몬스터 슈팅 1웨이브 완료', xp: 20 },
-    { id: 'match_1',      type: 'matchGame',    target: 1, label: '메모리 게임 1판 완료',     xp: 20 },
-    { id: 'writing_1',    type: 'writing',      target: 1, label: '획순 테스트 1개 완료',     xp: 30 },
+    { id: 'flashcard_1',  type: 'flashcard',    target: 1, label: '한자 학습지 1개 완료',      xp: 50 },
+    { id: 'wordquiz_1',   type: 'wordQuiz',     target: 1, label: '단어 퀴즈 1세트 완료',      xp: 30 },
+    { id: 'quiz_1',       type: 'sentenceQuiz', target: 1, label: '문장 퀴즈 1세트 완료',      xp: 30 },
+    { id: 'shootgame_1',  type: 'shootGame',    target: 1, label: '몬스터 슈팅 1웨이브 완료',  xp: 20 },
+    { id: 'match_1',      type: 'matchGame',    target: 1, label: '메모리 게임 1판 완료',      xp: 20 },
+    { id: 'writing_1',    type: 'writing',      target: 1, label: '획순 테스트 1개 완료',      xp: 30 },
+    { id: 'idiom_1',      type: 'idiomQuiz',    target: 1, label: '한자성어 퀴즈 1세트 완료',  xp: 25 },
 ];
 
 const pickFreshMissions = () => MISSION_POOL.map(m => ({ ...m, progress: 0, done: false }));
+const validMissionIds = MISSION_POOL.map(m => m.id);
+
+const hydrateMissions = (raw) => {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    const savedIds = new Set(parsed.map(m => m.id));
+    const hydrated = parsed
+        .filter(m => validMissionIds.includes(m.id))
+        .map(m => {
+            const pool = MISSION_POOL.find(p => p.id === m.id);
+            return pool ? { ...pool, ...m, xp: pool.xp, target: pool.target, label: pool.label } : m;
+        });
+    // 풀에 새로 추가된 미션은 미완료 상태로 덧붙임
+    MISSION_POOL.forEach(p => {
+        if (!savedIds.has(p.id)) hydrated.push({ ...p, progress: 0, done: false });
+    });
+    return hydrated.length > 0 ? hydrated : null;
+};
+
+const loadStageMissions = (stageMissionKey) => {
+    try {
+        const saved = localStorage.getItem(stageMissionKey);
+        if (saved) return hydrateMissions(saved) || pickFreshMissions();
+    } catch (e) {}
+    return pickFreshMissions();
+};
 
 // ─────────────────────────────────────────────────────────────
 // 훅
 // ─────────────────────────────────────────────────────────────
-export const useDailyMission = (sessionDoneToday) => {
+export const useDailyMission = (sessionDoneToday, activeStage) => {
     const today = getTodayStr();
 
-const MISSION_DATE_KEY = 'daily_missions_date';
+    // 일일 퀘스트는 전체 합산이 아니라 커리큘럼 단계별로 독립 저장한다.
+    const currentStage = String(activeStage || getCurrentCurriculumDay());
+    const stageMissionKey = `stage_missions_${currentStage}`;
 
-    // 미션 초기화 — 완료한 단계 번호와 날짜 기준으로 리셋
-    const [missions, setMissions] = useState(() => {
-        try {
-            const stageKey = getCompletedDay();
-            const savedStage = localStorage.getItem(STAGE_KEY);
-            const savedDate = localStorage.getItem(MISSION_DATE_KEY);
-            
-            if (savedStage === stageKey && savedDate === today) {
-                const saved = localStorage.getItem(MISSION_KEY);
-                if (saved) {
-                    const validIds = MISSION_POOL.map(m => m.id);
-                    const filtered = JSON.parse(saved)
-                        .filter(m => validIds.includes(m.id))
-                        .map(m => { const pool = MISSION_POOL.find(p => p.id === m.id); return pool ? { ...m, xp: pool.xp } : m; });
-                    if (filtered.length > 0) return filtered;
-                }
-            }
-        } catch (e) {}
-        return pickFreshMissions();
-    });
+    // 단계별 미션 초기화 (동기화)
+    const [currentStageKey, setCurrentStageKey] = useState(stageMissionKey);
+    const [missions, setMissions] = useState(() => loadStageMissions(stageMissionKey));
 
-    // 스트릭 초기화
+    if (stageMissionKey !== currentStageKey) {
+        setCurrentStageKey(stageMissionKey);
+        setMissions(loadStageMissions(stageMissionKey));
+    }
+
+    // 스트릭 초기화 (이건 하루 단위 유지)
     const [streak, setStreak] = useState(() => {
         try {
             const saved = localStorage.getItem('streak_data');
@@ -73,40 +87,21 @@ const MISSION_DATE_KEY = 'daily_missions_date';
         return { lastDate: null, count: 0 };
     });
 
-    // 날짜나 단계가 바뀌면 미션 리셋 — 단, 오늘 세션을 완료한 경우엔 단계 변경으로 인한 리셋은 하지 않음
-    useEffect(() => {
-        const stageKey = getCompletedDay();
-        const savedStage = localStorage.getItem(STAGE_KEY);
-        const savedDate = localStorage.getItem(MISSION_DATE_KEY);
-        
-        const isNewDay = savedDate !== today;
-        const isNewStage = savedStage !== stageKey;
+    // (Derived state 패턴을 사용하여 즉시 업데이트 하므로 useEffect 제거됨)
 
-        if (isNewDay || (isNewStage && !sessionDoneToday)) {
-            const newMissions = pickFreshMissions();
-            localStorage.setItem(MISSION_DATE_KEY, today);
-            localStorage.setItem(STAGE_KEY, stageKey);
-            localStorage.setItem(MISSION_KEY, JSON.stringify(newMissions));
-            const timer = setTimeout(() => setMissions(newMissions), 0);
-            return () => clearTimeout(timer);
-        } else if (savedStage !== stageKey) {
-            localStorage.setItem(STAGE_KEY, stageKey);
-        }
-        return undefined;
-    }, [today, sessionDoneToday]);
-
-    // 미션 저장 + 이력 기록
+    // 미션 변경 시 localStorage 및 history 에 저장
     useEffect(() => {
+        if (currentStageKey !== stageMissionKey) return; // 싱크 되기 전에 잘못된 데이터 덮어쓰기 방지
+
         try {
-            const stageKey = getCompletedDay();
-            localStorage.setItem(MISSION_DATE_KEY, today);
-            localStorage.setItem(STAGE_KEY,   stageKey);
-            localStorage.setItem(MISSION_KEY, JSON.stringify(missions));
-            const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
-            history[stageKey] = missions.filter(m => m.done).map(m => m.id);
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            localStorage.setItem(stageMissionKey, JSON.stringify(missions));
+            
+            // 기존 UI의 history 호환성을 위해 유지
+            const history = JSON.parse(localStorage.getItem(SK.MISSION_HISTORY) || '{}');
+            history[currentStage] = missions.filter(m => m.done).map(m => m.id);
+            localStorage.setItem(SK.MISSION_HISTORY, JSON.stringify(history));
         } catch (e) {}
-    }, [missions, today]);
+    }, [missions, currentStage, stageMissionKey, currentStageKey]);
 
     // 스트릭 저장
     useEffect(() => {
@@ -132,7 +127,7 @@ const MISSION_DATE_KEY = 'daily_missions_date';
             let bonusXp = 0;
             const next = prev.map(m => {
                 if (m.done || m.type !== type) return m;
-                const newProgress = m.progress + amount;
+                const newProgress = Math.min(m.target, (m.progress || 0) + amount);
                 const done = newProgress >= m.target;
                 if (done && !m.done) bonusXp += m.xp;
                 return { ...m, progress: newProgress, done };
