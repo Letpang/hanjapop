@@ -402,7 +402,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             {relatedIdioms.map((idiom, i) => (
                                 <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F', fontFamily: "'Nanum Myeongjo', serif" }}>{idiom.hanja}</span>
+                                        <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
                                         <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
                                     </div>
                                     <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{idiom.meaning}</span>
