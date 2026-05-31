@@ -12,7 +12,7 @@ const MESSAGES = {
         '틀렸던 것들, 오늘 다시 도전해봐요! ✨',
     ],
     mission_complete: [
-        '오늘 미션 완료! 대단해요, 이 기세로 계속 가봐요! 🎉',
+        '오늘 미션 완료! 대단해요, 이 기세로 계속 가봐요!',
         '모든 미션을 클리어했어요! 오늘 정말 열심히 했군요!',
         '완벽한 하루예요! 보너스 XP를 드려요! ⭐',
     ],
@@ -54,7 +54,6 @@ const CharacterToast = ({ type, selectedCharacter, userXp, onDismiss, onAction }
                         : '0 12px 30px rgba(46, 214, 197, 0.15), 0 4px 10px rgba(0, 0, 0, 0.03)',
                 }}
             >
-                {isMission && <div className="text-2xl mb-1">🎉</div>}
                 <p className="text-slate-700 font-extrabold text-sm leading-snug break-keep whitespace-normal">{message}</p>
                 {isMission && (
                     <p className="text-[#FF9B73] font-black text-xs mt-1 animate-pulse">+200 보너스 XP 획득!</p>

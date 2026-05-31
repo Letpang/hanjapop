@@ -75,17 +75,92 @@ const IdiomCard = ({ item }) => {
     );
 };
 
-// ── 퀴즈 모드 (단어 퀴즈 스타일) ──────────────────────────────────────────
-const buildQuiz = (idioms) =>
-    shuffle(idioms).map(item => ({
-        hanja: item.hanja,
-        reading: item.reading,
-        correct: item.meaning,
-        choices: shuffle([
-            item.meaning,
-            ...shuffle(idioms.filter(x => x.hanja !== item.hanja)).slice(0, 3).map(x => x.meaning),
-        ]),
-    }));
+// ── 퀴즈 빌더 — 3가지 기출 유형 ──────────────────────────────────────────
+const ALL_CHARS = () => [...new Set(IDIOMS.flatMap(i => [...i.hanja]))];
+
+const buildQuiz = (idioms) => {
+    if (idioms.length === 0) return [];
+    const allChars = ALL_CHARS();
+    // 오답 후보는 전체 IDIOMS 풀 사용 (필터된 목록이 적어도 항상 충분한 오답 확보)
+    const globalPool = IDIOMS;
+    const questions = [];
+
+    shuffle([...idioms]).forEach((item, i) => {
+        const others = globalPool.filter(x => x.hanja !== item.hanja);
+        const type = i % 3; // 0=괄호채우기, 1=독음, 2=뜻풀이
+
+        if (type === 0) {
+            // ── 유형1: 괄호 채우기 ─────────────────────────────
+            const blankIdx = Math.floor(Math.random() * 4);
+            const correct = item.hanja[blankIdx];
+            const hanjaChars = [...item.hanja];
+            const displayHanja = hanjaChars.map((ch, j) => j === blankIdx ? '(  )' : ch).join('');
+            const readingChars = Array.from(item.reading);
+            const displayReading = readingChars.map((ch, j) => j === blankIdx ? '○' : ch).join('');
+            const distractors = shuffle(allChars.filter(c => c !== correct)).slice(0, 3);
+            questions.push({
+                type: 'fill_blank',
+                typeLabel: '괄호 채우기',
+                prompt: '다음 괄호 안에 들어갈 알맞은 한자는?',
+                displayHanja,
+                displayReading,
+                choices: shuffle([correct, ...distractors]),
+                answer: correct,
+                hint: `정답: ${item.hanja} (${item.reading})`,
+            });
+        } else if (type === 1) {
+            // ── 유형2: 독음 읽기 ────────────────────────────────
+            const distractors = shuffle(others).slice(0, 3).map(x => x.reading);
+            questions.push({
+                type: 'reading',
+                typeLabel: '독음 읽기',
+                prompt: '다음 사자성어의 독음(讀音)은?',
+                displayHanja: item.hanja,
+                choices: shuffle([item.reading, ...distractors]),
+                answer: item.reading,
+                hint: `정답: ${item.reading}`,
+            });
+        } else {
+            // ── 유형3: 뜻풀이 (A·B 교대) ─────────────────────────
+            if (i % 6 < 3) {
+                // 3A: 사자성어 → 뜻 고르기
+                const distractors = shuffle(others).slice(0, 3).map(x => x.meaning);
+                questions.push({
+                    type: 'meaning_from_idiom',
+                    typeLabel: '뜻 찾기',
+                    prompt: '다음 사자성어의 뜻은?',
+                    displayHanja: item.hanja,
+                    displayReading: item.reading,
+                    choices: shuffle([item.meaning, ...distractors]),
+                    answer: item.meaning,
+                    hint: `정답: ${item.meaning}`,
+                });
+            } else {
+                // 3B: 뜻 → 사자성어 고르기
+                const distractors = shuffle(others).slice(0, 3).map(x => x.hanja);
+                questions.push({
+                    type: 'idiom_from_meaning',
+                    typeLabel: '사자성어 찾기',
+                    prompt: '다음 뜻에 해당하는 사자성어는?',
+                    displayMeaning: item.meaning,
+                    choices: shuffle([item.hanja, ...distractors]),
+                    answer: item.hanja,
+                    hint: `정답: ${item.hanja} (${item.reading})`,
+                });
+            }
+        }
+    });
+
+    return questions;
+};
+
+// ── 유형 배지 색상 ──────────────────────────────────────────────────────
+const TYPE_BADGE = {
+    fill_blank:         { bg: '#FFF0EB', text: '#FF8D72', label: '괄호 채우기' },
+    reading:            { bg: '#F0EEFF', text: '#7C83FF', label: '독음 읽기' },
+    meaning_from_idiom: { bg: '#F0FFF7', text: '#2D7A5A', label: '뜻 찾기' },
+    idiom_from_meaning: { bg: '#FFF8EE', text: '#C07000', label: '사자성어 찾기' },
+};
 
 const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
@@ -95,21 +170,11 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
     const [score, setScore] = useState(0);
     const [done, setDone] = useState(false);
     const completedRef = useRef(false);
+    const timerRef = useRef(null);
 
     const q = questions[idx];
-    const progress = (idx / questions.length) * 100;
-
-    const handleSelect = (choice) => {
-        if (selected !== null) return;
-        const isCorrect = choice === q.correct;
-        setSelected(choice);
-        if (isCorrect) {
-            setScore(s => s + 1);
-            setRevealed(true);
-        } else {
-            setTimeout(handleNext, 700);
-        }
-    };
+    const progress = questions.length > 0 ? (idx / questions.length) * 100 : 0;
+    const badge = q ? TYPE_BADGE[q.type] : null;
 
     const handleNext = () => {
         if (idx + 1 >= questions.length) {
@@ -122,12 +187,19 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
         }
     };
 
-    // 정답 후 자동 진행
-    useMemo(() => {
-        if (!revealed) return;
-        const t = setTimeout(handleNext, 1200);
-        return () => clearTimeout(t);
-    }, [revealed]); // eslint-disable-line
+    const handleSelect = (choice) => {
+        if (selected !== null) return;
+        clearTimeout(timerRef.current);
+        const isCorrect = choice === q.answer;
+        setSelected(choice);
+        if (isCorrect) {
+            setScore(s => s + 1);
+            setRevealed(true);
+            timerRef.current = setTimeout(handleNext, 1200);
+        } else {
+            timerRef.current = setTimeout(handleNext, 900);
+        }
+    };
 
     if (done) {
         const pct = Math.round((score / questions.length) * 100);
@@ -142,7 +214,10 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
                     </p>
                 </div>
                 <div className="w-full max-w-xs flex flex-col gap-3">
-                    <CtaButton theme="coral" onClick={() => { setIdx(0); setSelected(null); setRevealed(false); setScore(0); setDone(false); completedRef.current = false; }}>
+                    <CtaButton theme="coral" onClick={() => {
+                        setIdx(0); setSelected(null); setRevealed(false);
+                        setScore(0); setDone(false); completedRef.current = false;
+                    }}>
                         <span className="font-black text-white text-lg drop-shadow-md">다시 풀기</span>
                     </CtaButton>
                     <button onClick={onBack}
@@ -154,15 +229,32 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
         );
     }
 
+    if (questions.length === 0 || !q) return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
+            <span className="text-5xl">📖</span>
+            <p className="font-bold text-[#9AA4B5] text-center break-keep">
+                이 단계에는 관련 사자성어가 없어요.
+            </p>
+            <button onClick={onBack}
+                className="px-6 py-3 rounded-2xl bg-white border border-[#E9EDF2] font-bold text-[#5B677A] active:scale-95 transition-all">
+                돌아가기
+            </button>
+        </div>
+    );
+
+    // 보기 레이아웃 결정
+    const isLargeChoice = q.type === 'fill_blank' || q.type === 'idiom_from_meaning';
+    const gridCols = isLargeChoice ? 'grid-cols-2' : 'grid-cols-1';
+
     return (
         <>
-            {/* 진행바 헤더 — 단어 퀴즈와 동일한 스타일 */}
+            {/* 진행바 헤더 */}
             <div className="w-full shrink-0 px-4 mb-3">
                 <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-5 shadow-md border border-white">
                     <button onClick={onBack} className="hp-nav-button shrink-0">←</button>
                     <div className="flex-1">
                         <div className="flex justify-between text-xs font-extrabold text-[#AEB7C5] mb-1">
-                            <span>한자성어 퀴즈</span>
+                            <span>사자성어 퀴즈</span>
                             <span>{idx + 1} / {questions.length}</span>
                         </div>
                         <div className="w-full h-[11px] rounded-full overflow-hidden" style={{ backgroundColor: '#E9EDF5' }}>
@@ -174,44 +266,92 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
                 </div>
             </div>
 
-            {/* 문제 + 보기 */}
-            <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
-                <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
-                    {/* 사자성어 카드 — 단어 퀴즈 카드와 동일한 스타일 */}
-                    <div className="w-full bg-white rounded-[3rem] border-[8px] border-white flex flex-col items-center justify-center py-10 gap-2"
-                        style={{ boxShadow: '0 16px 40px rgba(120,130,160,0.12)', minHeight: 200 }}>
-                        <span className="font-black tracking-widest text-[#1e293b]"
-                            style={{ fontSize: 'clamp(2rem, 8vw, 2.8rem)', fontFamily: 'serif' }}>
-                            {q.hanja}
+            {/* 문제 영역 */}
+            <div className="flex-1 flex flex-col items-center px-5 pb-8 overflow-y-auto">
+                <div className="w-full max-w-md flex flex-col items-center gap-4 pt-2">
+
+                    {/* 유형 배지 */}
+                    <div className="flex items-center gap-2 self-start">
+                        <span className="px-3 py-1 rounded-full text-xs font-black"
+                            style={{ background: badge.bg, color: badge.text }}>
+                            {badge.label}
                         </span>
-                        <span className="font-bold text-lg" style={{ color: '#7C83FF' }}>{q.reading}</span>
                     </div>
 
-                    {/* 보기 — quiz-choice-btn 클래스 통일 */}
-                    <div className="w-full grid grid-cols-1 gap-3">
+                    {/* 문제 카드 */}
+                    <div className="grade-test-question-card">
+                        <p className="grade-test-prompt">{q.prompt}</p>
+
+                        {/* 유형1: 괄호 채우기 */}
+                        {q.type === 'fill_blank' && (
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="font-black tracking-widest"
+                                    style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'serif', color: '#1A2B2A' }}>
+                                    {q.displayHanja}
+                                </span>
+                                <span className="font-bold text-sm" style={{ color: '#7C83FF' }}>{q.displayReading}</span>
+                            </div>
+                        )}
+
+                        {/* 유형2: 독음 읽기 */}
+                        {q.type === 'reading' && (
+                            <div className="grade-test-hanja-box grade-test-hanja-box--compound" style={{ width: 'auto', padding: '0 1.5rem' }}>
+                                <span className="grade-test-hanja-char" style={{ fontSize: 'clamp(1.8rem, 7vw, 2.4rem)' }}>
+                                    {q.displayHanja}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* 유형3A: 사자성어→뜻 */}
+                        {q.type === 'meaning_from_idiom' && (
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="font-black tracking-widest"
+                                    style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'serif', color: '#1A2B2A' }}>
+                                    {q.displayHanja}
+                                </span>
+                                <span className="font-bold text-sm" style={{ color: '#7C83FF' }}>{q.displayReading}</span>
+                            </div>
+                        )}
+
+                        {/* 유형3B: 뜻→사자성어 */}
+                        {q.type === 'idiom_from_meaning' && (
+                            <p className="grade-test-example" style={{ textAlign: 'left' }}>{q.displayMeaning}</p>
+                        )}
+                    </div>
+
+                    {/* 보기 */}
+                    <div className={`w-full grid ${gridCols} gap-3`}>
                         {q.choices.map((c, i) => {
                             const isSelected = selected === c;
-                            const isAnswer = c === q.correct;
+                            const isAnswer = c === q.answer;
+                            const revealed_ = selected !== null;
                             let stateClass = '';
-                            if (revealed) {
+                            if (revealed_) {
                                 stateClass = isAnswer ? 'quiz-choice-btn--correct'
                                     : isSelected ? 'quiz-choice-btn--wrong'
                                     : 'quiz-choice-btn--dimmed';
-                            } else if (selected !== null) {
-                                stateClass = isSelected ? 'quiz-choice-btn--wrong' : 'quiz-choice-btn--dimmed';
                             }
+                            const isHanjaChoice = q.type === 'fill_blank' || q.type === 'idiom_from_meaning';
                             return (
                                 <button key={i} onClick={() => handleSelect(c)}
-                                    className={`quiz-choice-btn ${stateClass}`}>
+                                    className={`quiz-choice-btn quiz-choice-btn--center
+                                        ${isHanjaChoice ? 'quiz-choice-btn--large' : ''}
+                                        ${stateClass}`}>
                                     <span className="break-keep">{c}</span>
-                                    {revealed && isAnswer && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
-                                    {!revealed && selected !== null && isSelected && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
+                                    {revealed_ && isAnswer && <span className="shrink-0 ml-1">✓</span>}
+                                    {revealed_ && isSelected && !isAnswer && <span className="shrink-0 ml-1">✕</span>}
                                 </button>
                             );
                         })}
                     </div>
 
-                    {/* 정오 피드백 */}
+                    {/* 오답 후 정답 힌트 */}
+                    {selected !== null && selected !== q.answer && (
+                        <div className="w-full rounded-2xl px-5 py-3 text-center font-bold text-sm break-keep"
+                            style={{ backgroundColor: '#FFF1F1', color: '#CC3333', border: '1px solid #FF7A7A' }}>
+                            ✗ {q.hint}
+                        </div>
+                    )}
                     {revealed && (
                         <div className="w-full rounded-2xl px-5 py-3 text-center font-extrabold text-sm"
                             style={{ backgroundColor: '#EAFBF0', color: '#2A7A50', border: '1px solid #4CCB7F' }}>

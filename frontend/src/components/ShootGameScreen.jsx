@@ -373,6 +373,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         hpRef.current = effectiveDiff.hp;
         setWords([]);
         setTargetId(null);
+        setOptions([]);
         setShake(false);
         setClearCombo(0);
         
@@ -449,11 +450,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             }
             setSessionXp(prev => prev + xpEarned);
             if (onWaveClear) onWaveClear(waveKills);
+            setWaveTransition(true); // <-- 무한 루프 방지
+            
             if (wave >= diffConfig.wavesTotal) {
                 clearCountRef.current += 1;
                 setTimeout(() => setStatus('clear'), 1200);
             } else {
-                setWaveTransition(true);
                 setWords([]);
                 setTimeout(() => {
                     setWave(prev => prev + 1);
@@ -608,7 +610,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             // 한자 ID(숫자)로 seen 보고 — 한자 몬스터와 단어 몬스터 모두
             if (target.pairId != null) onHanjaSeenRef.current?.([target.pairId]);
             if (target.isWord && target.wordId != null) onWordCorrect?.(target.wordId);
-            if (onHanjaAcquired) onHanjaAcquired(target.pairId, 10);
+            if (onHanjaAcquired) onHanjaAcquired(target.pairId, 3);
             effectIdRef.current += 1;
             const acqId = effectIdRef.current;
             setAcquisitions(prev => [...prev, { id: acqId, x: target.x, y: target.y, hanja: target.hanja }]);
@@ -843,7 +845,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     const isClear = status === 'clear';
     const isResult = status === 'over' || status === 'clear';
-    const reward = getRewardPreview?.(sessionXp);
+    const killXp = score * 3;
+    const shootClearXp = isClear ? 20 : 0;
+    const reward = getRewardPreview?.(killXp + shootClearXp);
 
     // ─────────────────────────────────────────
     // 게임 화면
@@ -922,7 +926,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             {xpPopup.show && (
                 <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[200]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '80px' }}>
                     <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
-                        ⭐ 웨이브 +{xpPopup.amount} XP
+                        ⭐ 클리어 +{xpPopup.amount} XP
                     </div>
                 </div>
             )}
@@ -987,14 +991,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     <div className="w-24 h-24 absolute flex items-center justify-center animate-ping opacity-50"><IconExplosionBig /></div>
                                 ) : (
                                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                                        {w.isWrongItem && (
-                                            <div className="text-xs font-extrabold text-rose-400 mb-1 bg-white/90 px-2 py-0.5 rounded-full border border-rose-100 shadow-sm uppercase tracking-widest">Review</div>
-                                        )}
+                                        {/* Review 라벨 삭제 */}
                                         <div className={`w-14 h-14 md:w-20 md:h-20 animate-bounce ${w.isWrongItem ? "drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]" : "drop-shadow-md"}`}>
                                             <MonsterIcon />
                                         </div>
-                                        <div className={`font-extrabold bg-white/95 text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
-                                            w.isWrongItem ? "border-rose-200" : w.id === targetId ? "border-[#FFB433]/25 scale-110 shadow-[#FFB433]/15/50" : "border-[#E9EDF2]"
+                                        <div className={`font-extrabold text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
+                                            w.isWrongItem ? "bg-white/95 border-rose-200" : w.id === targetId ? "bg-[#FFB433]/15 border-[#FFB433] scale-110 shadow-[#FFB433]/15/50" : "bg-white/95 border-[#E9EDF2]"
                                         }`}>
                                             <span className="text-center break-keep leading-tight">{w.hanja}</span>
                                         </div>
@@ -1007,7 +1009,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     {/* 획득 애니메이션 */}
                     {acquisitions.map(a => (
                         <div key={a.id} className="absolute pointer-events-none z-30 animate-float font-extrabold text-[#FFB433] text-2xl drop-shadow-lg" style={{ left: a.x + '%', top: a.y + '%', transform: 'translate(-50%, -50%)' }}>
-                            +1 ✨
+                            +3 XP ✨
                         </div>
                     ))}
                 </div>
@@ -1057,12 +1059,14 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     />
                                 )}
                                 
-                                <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                                    {!isClear && <span className="text-sm font-extrabold text-[#AEB7C5]">아쉬운 결과네요...</span>}
-                                    <h1 className="text-h2-res font-black leading-snug" style={{
+                                <div className="text-center flex flex-col gap-1 w-full relative z-10">
+                                    <span className="text-sm font-extrabold text-[#94A3B8]">
+                                        {isClear ? '데일리 세션을 모두 완료했어요!' : '아쉬운 결과네요...'}
+                                    </span>
+                                    <h1 className="text-3xl font-black leading-tight mt-1" style={{
                                         color: isClear ? '#FF9B73' : '#FF6B6B',
-                                        letterSpacing: '-0.5px',
-                                        textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
+                                        letterSpacing: '-0.02em',
+                                        textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none'
                                     }}>
                                         {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                     </h1>
@@ -1084,10 +1088,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
                                 <RewardBreakdown
                                     reward={reward}
-                                    correctXp={sessionXp}
-                                    clearXp={0}
-                                    correctLabel="게임"
-                                    detailText={`${score}마리의 몬스터 격퇴`}
+                                    correctXp={killXp}
+                                    clearXp={shootClearXp}
+                                    correctLabel="몬스터 처치"
+                                    detailText={`${score}마리 x 3XP${isClear ? ` + 완료 20XP` : ''}`}
                                     missionXp={(isClear && clearCountRef.current === 1) ? 20 : 0}
                                 />
 

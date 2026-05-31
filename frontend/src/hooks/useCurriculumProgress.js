@@ -20,7 +20,7 @@ const persist = (data) => {
  * advanceDay(): 현재 day 완료 → completedDay 증가
  * isBlocked(day): 해당 day가 게이트/보스이고 아직 통과 못 한 상태인지
  */
-export const useCurriculumProgress = () => {
+export const useCurriculumProgress = (sessionDoneToday = false) => {
     const [progress, setProgress] = useState(() => {
         const saved = load();
         return {
@@ -29,7 +29,7 @@ export const useCurriculumProgress = () => {
         };
     });
 
-    const currentDay = Math.min(progress.completedDay + 1, DAILY_CURRICULUM.length);
+    const currentDay = Math.min(progress.completedDay + (sessionDoneToday ? 0 : 1), DAILY_CURRICULUM.length);
 
     const clearedHanjaIds = useMemo(
         () => getClearedHanjaIds(progress.completedDay),

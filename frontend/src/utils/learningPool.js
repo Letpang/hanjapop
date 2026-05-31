@@ -186,14 +186,14 @@ export function expandWrongToTen(wrongIds, hanjaData, target = 10) {
 
 /**
  * 단어 아이템용 가중치 샘플링 (WordQuizScreen)
- * 단어 아이템은 hanja_id 필드로 부모 한자의 SRS 상태를 참조
+ * 단어 SRS는 word_data의 word ID 기준으로 판단한다.
  */
-export function getWordSRSWeightedPool(wordPool, srsData = {}, masteryData = {}, userLevel = 1, count, priorityIds = null) {
+export function getWordSRSWeightedPool(wordPool, wordData = {}, userLevel = 1, count, priorityIds = null) {
     if (!wordPool || wordPool.length === 0) return [];
     const primary = getPrimaryGrades(userLevel);
     const prioritySet = priorityIds ? new Set(priorityIds) : null;
     const getWeight = (w) => {
-        const srsWeight = itemWeight(w.hanja_id, srsData, masteryData);
+        const srsWeight = wordItemWeight(w.id, wordData);
         const gradeBoost = primary.includes(w.grade) ? 3.5 : 1.0;
         const todayBoost = (prioritySet && prioritySet.has(w.hanja_id)) ? 2.0 : 1.0;
         return srsWeight * gradeBoost * todayBoost;

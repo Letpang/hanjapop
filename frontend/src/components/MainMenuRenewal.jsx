@@ -3,7 +3,6 @@ import { usePremium } from '../hooks/usePremium.js';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import { getRankDetails } from '../utils/rankUtils.js';
 import CtaButton from './common/CtaButton.jsx';
-import IDIOMS from '../data/idioms.js';
 
 const TOTAL_STAGES = 124;
 
@@ -387,47 +386,45 @@ const MainMenuRenewal = ({
                 </div>
 
                 {/* 5 ── 한자 급수시험 준비 ── */}
-                <div className="w-full max-w-md" style={up(0.18)}>
+                <section className="w-full max-w-md" style={up(0.18)}>
                     <div className="flex items-center justify-between mb-3 px-2">
                         <div className="flex flex-col">
                             <span className="font-black text-lg text-slate-700 tracking-tight">한자 급수시험 준비</span>
-                            <span className="font-bold text-xs mt-0.5" style={{ color: '#7C83FF' }}>사자성어 · 급수별 시험문제</span>
+                            <span className="font-bold text-xs mt-0.5" style={{ color: '#7C83FF' }}>급수별 시험문제 · 오답 단어장</span>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        {/* 사자성어 */}
-                        <button
-                            onClick={() => onNavigate('idiom')}
-                            className="flex flex-col items-start gap-2 px-4 py-4 rounded-[1.5rem] active:scale-[0.97] transition-all relative overflow-hidden"
-                            style={{ background: 'linear-gradient(135deg, #F4F3FF 0%, #E8E6FF 100%)', border: '1.5px solid #C3C6FF' }}
-                        >
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'rgba(124,131,255,0.15)' }}>
-                                📜
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                                <span className="font-black text-[0.95rem]" style={{ color: '#4F56D9' }}>사자성어</span>
-                                <span className="font-bold text-[0.7rem]" style={{ color: '#9AA4B5' }}>4자 성어 학습 · 퀴즈</span>
-                            </div>
-                            <span className="text-xs font-black" style={{ color: '#7C83FF' }}>{`${IDIOMS.length}개 →`}</span>
-                        </button>
-
-                        {/* 급수시험문제 */}
+                    <div className="mm-cert-shortcut-grid">
                         <button
                             onClick={() => onNavigate('gradeExamSelect')}
-                            className="flex flex-col items-start gap-2 px-4 py-4 rounded-[1.5rem] active:scale-[0.97] transition-all relative overflow-hidden"
-                            style={{ background: 'linear-gradient(135deg, #FFF8EE 0%, #FFE9C8 100%)', border: '1.5px solid #FFD6A5' }}
+                            className="mm-cert-shortcut mm-cert-shortcut--exam"
                         >
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'rgba(255,155,115,0.15)' }}>
-                                📝
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                                <span className="font-black text-[0.95rem]" style={{ color: '#C07000' }}>급수시험문제</span>
-                                <span className="font-bold text-[0.7rem]" style={{ color: '#9AA4B5' }}>8급 ~ 6급 모의시험</span>
-                            </div>
-                            <span className="text-xs font-black" style={{ color: '#FF9B73' }}>바로가기 →</span>
+                            <span className="mm-cert-shortcut-mark" aria-hidden="true">級</span>
+                            <span className="mm-cert-shortcut-copy">
+                                <span className="mm-cert-shortcut-title">급수별 시험</span>
+                                <span className="mm-cert-shortcut-desc">8급부터 6급까지 모의시험</span>
+                            </span>
+                            <span className="mm-cert-shortcut-action">
+                                <span>바로가기</span>
+                                <span className="mm-cert-shortcut-chevron" aria-hidden="true" />
+                            </span>
+                        </button>
+
+                        <button
+                            onClick={() => onNavigate('wrongVocabulary')}
+                            className="mm-cert-shortcut mm-cert-shortcut--wrong"
+                        >
+                            <span className="mm-cert-shortcut-mark" aria-hidden="true">誤</span>
+                            <span className="mm-cert-shortcut-copy">
+                                <span className="mm-cert-shortcut-title">오답 단어장</span>
+                                <span className="mm-cert-shortcut-desc">틀린 단어만 모아 복습</span>
+                            </span>
+                            <span className="mm-cert-shortcut-action">
+                                <span>바로가기</span>
+                                <span className="mm-cert-shortcut-chevron" aria-hidden="true" />
+                            </span>
                         </button>
                     </div>
-                </div>
+                </section>
 
                 {/* 6 ── 기억의 보관소 (지나간 단계 복습) ── */}
                 {completedDay > 1 && (

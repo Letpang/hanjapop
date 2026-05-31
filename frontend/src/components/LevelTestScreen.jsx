@@ -2,7 +2,6 @@ import { useState, useMemo, useRef } from 'react';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getCharacterImage } from '../utils/rankUtils.js';
-import { playSound } from '../utils/playSound.js';
 
 const SORTED_HANJA = [...HANJA_DATA].sort((a, b) => a.id - b.id);
 
@@ -155,12 +154,10 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
 
         if (isCorrect) {
             if (onHanjaAcquired) onHanjaAcquired(q.item?.id || null, 10);
-            playSound('match');
             xpPopupKeyRef.current += 1;
             setXpPopup({ show: true, key: xpPopupKeyRef.current, amount: 10 });
             setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
         } else {
-            playSound('mismatch');
         }
     };
 

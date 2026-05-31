@@ -5,7 +5,6 @@ import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { buildSessionPlan, buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
-import { playSound } from '../utils/playSound.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
 
@@ -27,6 +26,20 @@ HANJA_DATA.forEach(h => {
         if (w.word && w.reading) wordReadingMap[w.word] = w.reading;
     });
 });
+
+const getValidSentenceWords = (hanja) => {
+    return (hanja?.words || []).filter(w => w.id != null && w.word && w.meaning);
+};
+
+const buildSentenceQueueFromWordIds = (wordIds, candidateHanja) => {
+    const byWordId = new Map();
+    (candidateHanja || []).forEach(h => {
+        getValidSentenceWords(h).forEach(w => {
+            byWordId.set(String(w.id), { hanja: h, wordItem: w });
+        });
+    });
+    return (wordIds || []).map(id => byWordId.get(String(id))).filter(Boolean);
+};
 
 const speakKorean = (text, onEnd) => {
     if (!text) return;
@@ -59,7 +72,7 @@ const speakKorean = (text, onEnd) => {
     });
 };
 
-const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds, dailyMapNode, hideRetry, quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP }) => {
+const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, onMarkWordWrong, onWordCorrect, onStageClear, onWordSeen, onGoToReview, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, onGetNextWordIds, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds, dailyMapNode, hideRetry, quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP }) => {
     // ── 선택 상태 ──────────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
     const categories = useMemo(() => [...new Set(HANJA_DATA.map(h => h.category).filter(Boolean))], []);
@@ -85,6 +98,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const scoreRef = useRef(0); // stale 클로저 방지: handleNext에서 항상 최신값 사용
     const [totalAnswered, setTotalAnswered] = useState(0);
     const totalAnsweredRef = useRef(0); // stale 클로저 방지
+    const [resultStats, setResultStats] = useState(null);
+    const [plannedQuizTotal, setPlannedQuizTotal] = useState(quizCount);
     const [wrongAttempts, setWrongAttempts] = useState([]);
     const wrongMarkedRef = useRef(false); // 문제당 오답 기록 최초 1회만
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
@@ -96,11 +111,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [isWordCardFlipped, setIsWordCardFlipped] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [celebrationMsg, setCelebrationMsg] = useState('');
+    const clearCountRef = useRef(0);
     const celebrationIndexRef = useRef(0);
     const flipTimerRef = useRef(null);
     const flipSeqRef = useRef(0);
     const stageClearArgsRef = useRef(null); // 결과 화면 표시 후 "돌아가기" 시점에 onStageClear로 전달할 데이터
+    const stageClearDeliveredRef = useRef(false);
     const shownWordsRef = useRef([]); // 이번 세션에서 출제된 단어 목록
+    const shownSimpleHanjaRef = useRef([]);
+    const lastWordIdRef = useRef(null);
+    const lastSimpleHanjaIdRef = useRef(null);
 
     useEffect(() => {
         return () => {
@@ -161,7 +181,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     const initQueues = useCallback((overridePlan) => {
         const plan = overridePlan || sessionPlan;
-        reviewQueueRef.current = [...plan.reviewQueue];
+        reviewQueueRef.current = [...plan.reviewQueue].sort(() => 0.5 - Math.random());
         normalQueueRef.current = [...plan.normalPool].sort(() => 0.5 - Math.random());
         lastHanjaIdRef.current = null;
         queuesReadyRef.current = true;
@@ -197,7 +217,17 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
         if (!hasWordPool) {
             // 단어 없는 경우 단순 한자 뜻/음 퀴즈
-            const randomHanja = activeHanjaSet[Math.floor(Math.random() * activeHanjaSet.length)];
+            const shownSet = new Set(shownSimpleHanjaRef.current);
+            const unseen = activeHanjaSet.filter(h => !shownSet.has(h.id));
+            const candidatePool = unseen.length > 0 ? unseen : activeHanjaSet;
+            const nonConsecutivePool = candidatePool.filter(h => h.id !== lastSimpleHanjaIdRef.current);
+            const finalPool = nonConsecutivePool.length > 0 ? nonConsecutivePool : candidatePool;
+            const randomHanja = finalPool[Math.floor(Math.random() * finalPool.length)];
+            if (randomHanja?.id != null) {
+                if (unseen.length === 0) shownSimpleHanjaRef.current = [];
+                shownSimpleHanjaRef.current = [...shownSimpleHanjaRef.current, randomHanja.id];
+                lastSimpleHanjaIdRef.current = randomHanja.id;
+            }
             const correct = randomHanja.meaning + ' ' + randomHanja.sound;
             const distractors = HANJA_DATA.filter(h => h.id !== randomHanja.id)
                 .sort(() => 0.5 - Math.random()).slice(0, 3).map(h => h.meaning + ' ' + h.sound);
@@ -213,51 +243,99 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 selectedHanja = pickNextFromPool();
             }
             if (!selectedHanja) {
-                stageClearArgsRef.current = [scoreRef.current, totalAnsweredRef.current, [...shownWordsRef.current]];
+                const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
+                stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
+                if (!dailyMapNode) {
+                    onStageClear?.(...stageClearArgsRef.current);
+                    stageClearDeliveredRef.current = true;
+                    stageClearArgsRef.current = null;
+                }
+                setResultStats(finalStats);
                 setGameState('result');
                 return;
             }
-            const validWords = selectedHanja.words.filter(w => w.word && w.meaning);
+            const queueItem = selectedHanja;
+            const hanjaItem = queueItem.hanja || queueItem;
+            const forcedWord = queueItem.wordItem || null;
+            const validWords = forcedWord ? [forcedWord] : getValidSentenceWords(hanjaItem);
             const seenSet = seenWordIds?.length > 0 ? new Set(seenWordIds) : null;
-            const allWordsSeen = seenSet && validWords.every(w => seenSet.has(w.id));
-            const wordPool = (!seenSet || allWordsSeen) ? validWords : validWords.filter(w => !seenSet.has(w.id));
+            const shownWordSet = new Set(shownWordsRef.current);
+            const sessionUnseenWords = validWords.filter(w => !shownWordSet.has(w.id));
+            const sessionPool = sessionUnseenWords.length > 0 ? sessionUnseenWords : validWords;
+            const appUnseenWords = seenSet ? sessionPool.filter(w => !seenSet.has(w.id)) : [];
+            const preferredPool = appUnseenWords.length > 0 ? appUnseenWords : sessionPool;
+            const nonConsecutivePool = preferredPool.filter(w => w.id !== lastWordIdRef.current);
+            const wordPool = nonConsecutivePool.length > 0 ? nonConsecutivePool : preferredPool;
             const targetWord = wordPool[Math.floor(Math.random() * wordPool.length)] ?? validWords[0];
-            if (targetWord?.id != null && !shownWordsRef.current.includes(targetWord.id)) {
-                shownWordsRef.current = [...shownWordsRef.current, targetWord.id];
+            if (targetWord?.id != null) {
+                if (!shownWordsRef.current.includes(targetWord.id)) {
+                    shownWordsRef.current = [...shownWordsRef.current, targetWord.id];
+                }
+                lastWordIdRef.current = targetWord.id;
                 onWordSeen?.(targetWord.id);
             }
-            const allWords = HANJA_DATA.flatMap(h => (h.words || []).map(w => w.word));
+            const allWords = HANJA_DATA.flatMap(h => (h.words || []).map(w => w.word).filter(Boolean));
             const distractors = [];
             while (distractors.length < 3) {
                 const rw = allWords[Math.floor(Math.random() * allWords.length)];
                 if (rw !== targetWord.word && !distractors.includes(rw)) distractors.push(rw);
             }
-            setCurrentQuiz({ type: 'sentence', char: selectedHanja.hanja, target: targetWord, sentence: targetWord.example || `다음 한자어 '${targetWord.word}'의 뜻은?`, _hanjaId: selectedHanja.id });
+            setCurrentQuiz({ type: 'sentence', char: hanjaItem.hanja, target: targetWord, sentence: targetWord.example || `${targetWord.meaning} (${targetWord.word})`, _hanjaId: hanjaItem.id });
             setOptions([...distractors, targetWord.word].sort(() => 0.5 - Math.random()));
         }
         setFeedback(null);
         setGameState('playing');
-    }, [sessionPlan, activeHanjaSet, pickNextFromPool, seenWordIds, onWordSeen]);
+    }, [sessionPlan, activeHanjaSet, pickNextFromPool, seenWordIds, onWordSeen, dailyMapNode, onStageClear]);
 
     // 퀴즈 시작
     function startQuiz(overridePlan) {
+        if (stageClearArgsRef.current && !stageClearDeliveredRef.current) {
+            onStageClear?.(...stageClearArgsRef.current);
+            stageClearDeliveredRef.current = true;
+            stageClearArgsRef.current = null;
+        }
         let plan = overridePlan;
         if (!plan) {
             if (contentPool) {
                 const base = activeHanjaSet.filter(h => h.words?.length > 0);
-                const stage = buildHanjaStage(contentPool, base, srsData, masteryData, seenHanjaIds || [], quizCount);
-                if (stage.length > 0) {
-                    plan = { reviewQueue: [...stage], normalPool: [] };
+                const fallbackWordIds = [
+                    ...(contentPool.main?.wordIds || []),
+                    ...(contentPool.review?.wordIds || []),
+                ].slice(0, quizCount);
+                let wordIds = onGetNextWordIds?.(quizCount) || fallbackWordIds;
+                let wordQueue = buildSentenceQueueFromWordIds(wordIds, base);
+                let refillAttempts = 0;
+                while (onGetNextWordIds && wordQueue.length < quizCount && refillAttempts < 3) {
+                    const refillIds = onGetNextWordIds(quizCount - wordQueue.length);
+                    if (!refillIds.length) break;
+                    wordIds = [...wordIds, ...refillIds];
+                    wordQueue = buildSentenceQueueFromWordIds(wordIds, base);
+                    refillAttempts += 1;
+                }
+                wordQueue = wordQueue.slice(0, quizCount);
+                if (wordQueue.length > 0) {
+                    plan = { reviewQueue: wordQueue, normalPool: [] };
+                } else {
+                    const stage = buildHanjaStage(contentPool, base, srsData, masteryData, seenHanjaIds || [], quizCount);
+                    if (stage.length > 0) plan = { reviewQueue: [...stage], normalPool: [] };
                 }
             } else if (currentDayHanjaIds?.length > 0) {
                 const queue = buildMainQueue();
                 if (queue?.length > 0) plan = { reviewQueue: queue, normalPool: [] };
             }
         }
-        initQueues(plan);
+        const effectivePlan = plan || sessionPlan;
+        const plannedCount = (effectivePlan.reviewQueue?.length || 0) + (effectivePlan.normalPool?.length || 0);
+        setPlannedQuizTotal(plannedCount > 0 ? Math.min(quizCount, plannedCount) : quizCount);
+        initQueues(effectivePlan);
         shownWordsRef.current = [];
+        shownSimpleHanjaRef.current = [];
+        lastWordIdRef.current = null;
+        lastSimpleHanjaIdRef.current = null;
+        stageClearDeliveredRef.current = false;
         setScore(0); scoreRef.current = 0;
         setTotalAnswered(0); totalAnsweredRef.current = 0;
+        setResultStats(null);
         setCombo(0);
         setCurrentQuiz(null); setFeedback(null);
         setStarted(true);
@@ -321,14 +399,12 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 }, 0);
                 onHanjaAcquired(null, 10);
             }
-            playSound('correct');
             const hanjaId = currentQuiz._hanjaId || null;
             if (onMarkCorrect && hanjaId) onMarkCorrect(hanjaId);
             if (currentQuiz.type === 'sentence' && currentQuiz.target?.id != null) onWordCorrect?.(currentQuiz.target.id);
             setGameState('feedback');
         } else {
             setWrongAttempts(prev => [...prev, selected]);
-            setCombo(0); playSound('wrong');
             if (!wrongMarkedRef.current) {
                 wrongMarkedRef.current = true;
                 const hanjaId = currentQuiz._hanjaId || null;
@@ -351,8 +427,18 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         setIsWordCardFlipped(false);
         setIsSpeaking(false);
         const poolExhausted = reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0;
-        if (totalAnsweredRef.current >= quizCount || poolExhausted) {
-            stageClearArgsRef.current = [scoreRef.current, totalAnsweredRef.current, [...shownWordsRef.current]];
+        if (totalAnsweredRef.current >= plannedQuizTotal || poolExhausted) {
+            const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
+            if (finalStats.correct / finalStats.total >= 0.7) {
+                clearCountRef.current += 1;
+            }
+            stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
+            if (!dailyMapNode) {
+                onStageClear?.(...stageClearArgsRef.current);
+                stageClearDeliveredRef.current = true;
+                stageClearArgsRef.current = null;
+            }
+            setResultStats(finalStats);
             setGameState('result');
         } else {
             wrongMarkedRef.current = false;
@@ -374,9 +460,11 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     // ── 결과 화면 ──────────────────────────────────────────────────────────
     if (started && gameState === 'result') {
-        const resultTotal = Math.max(totalAnswered, 1);
-        const isClear = score >= resultTotal * 0.7;
-        const correctXp = score * 10;
+        const resultCorrect = resultStats?.correct ?? score;
+        const resultTotal = Math.max(resultStats?.total ?? totalAnswered, 1);
+        const isClear = resultCorrect >= resultTotal * 0.7;
+        const xpPerCorrect = 10;
+        const correctXp = resultCorrect * xpPerCorrect;
         const reward = getRewardPreview?.(correctXp + clearXp);
 
         // 데일리 세션 모드: 지도 + 단일 버튼 (WordQuizScreen과 동일한 패턴)
@@ -389,15 +477,13 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
                             {/* 텍스트 영역 */}
                             <div className="text-center flex flex-col gap-1 w-full">
-                                <span className="text-sm font-extrabold text-[#94A3B8]">
-                                    {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
-                                </span>
+                                {!isClear && <span className="text-sm font-extrabold text-[#94A3B8]">아쉬운 결과네요...</span>}
                                 <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: isClear ? '#FF9B73' : '#FF6B6B', letterSpacing: '-0.02em', textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none' }}>
                                     {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                 </h1>
                                 <p className="text-xs-res font-bold leading-relaxed break-keep mt-2" style={{ color: '#A5AFBF' }}>
                                     {isClear
-                                        ? <>총 {resultTotal}문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
+                                        ? <>총 {resultTotal}문제 중 {resultCorrect}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
                                         : '조금만 더 노력하면 성공할 수 있어요!'}
                                 </p>
                             </div>
@@ -407,13 +493,20 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 {dailyMapNode}
                             </div>
 
-                            <RewardBreakdown reward={reward} correctXp={correctXp} />
+                            <RewardBreakdown
+                                reward={reward}
+                                correctXp={correctXp}
+                                clearXp={clearXp}
+                                detailText={`${resultCorrect}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
+                                missionXp={(clearCountRef.current === 1) ? 30 : 0}
+                            />
 
                             {/* 다음 단계 버튼 */}
                             <div className="w-full mt-3">
                                 <CtaButton theme="coral" onClick={() => {
-                                    if (stageClearArgsRef.current) {
+                                    if (stageClearArgsRef.current && !stageClearDeliveredRef.current) {
                                         onStageClear?.(...stageClearArgsRef.current);
+                                        stageClearDeliveredRef.current = true;
                                         stageClearArgsRef.current = null;
                                     }
                                 }}>
@@ -449,9 +542,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                         {/* 텍스트 */}
                         <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                            <span className="text-xs-res font-extrabold text-[#AEB7C5]">
-                                {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
-                            </span>
+                            {!isClear && <span className="text-xs-res font-extrabold text-[#AEB7C5]">아쉬운 결과네요...</span>}
                             <h1 className="text-h2-res font-black leading-snug" style={{
                                 color: isClear ? '#FF9B73' : '#FF6B6B',
                                 letterSpacing: '-0.5px',
@@ -461,27 +552,31 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             </h1>
                             <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
                                 {isClear
-                                    ? <>총 {resultTotal}문제 중 {score}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
+                                    ? <>총 {resultTotal}문제 중 {resultCorrect}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></>
                                     : '조금만 더 노력하면 성공할 수 있어요!'}
                             </p>
                         </div>
 
-                        <RewardBreakdown reward={reward} correctXp={correctXp} />
+                        <RewardBreakdown
+                            reward={reward}
+                            correctXp={correctXp}
+                            clearXp={clearXp}
+                            detailText={`${resultCorrect}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
+                            missionXp={(clearCountRef.current === 1) ? 30 : 0}
+                        />
 
                         {/* 버튼 2단 */}
                         <div className="w-full flex flex-col gap-3 relative z-10">
                             {!hideRetry && (
-                                <button
-                                    onClick={() => { setCurrentQuiz(null); setScore(0); setTotalAnswered(0); setCombo(0); setGameState('playing'); }}
-                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                                >
-                                    다시 풀기
-                                </button>
+                                <CtaButton theme="indigo" onClick={() => startQuiz()}>
+                                    <span className="font-black text-white text-[1.5rem] drop-shadow-md">다시 풀기</span>
+                                </CtaButton>
                             )}
                             <button
                                 onClick={() => {
-                                    if (stageClearArgsRef.current) {
+                                    if (stageClearArgsRef.current && !stageClearDeliveredRef.current) {
                                         onStageClear?.(...stageClearArgsRef.current);
+                                        stageClearDeliveredRef.current = true;
                                         stageClearArgsRef.current = null;
                                     }
                                     onBack();
@@ -503,6 +598,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         const word = currentQuiz?.target?.word || '';
         const reading = wordReadingMap[word] || currentQuiz?.target?.reading || word;
         const meaning = currentQuiz?.target?.meaning || '';
+        const displayQuestionNumber = Math.max(
+            1,
+            Math.min(totalAnswered + (gameState === 'playing' ? 1 : 0), plannedQuizTotal)
+        );
 
         const sentenceParts = (() => {
             if (!currentQuiz?.sentence || !currentQuiz.sentence.includes('(')) return null;
@@ -563,6 +662,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         0% { transform: scale(0.8) translateY(10px) translateX(-50%); opacity: 0; }
                         100% { transform: scale(1) translateY(0) translateX(-50%); opacity: 1; }
                     }
+                    @keyframes fade-out-up {
+                        0% { transform: scale(1) translateY(0) translateX(-50%); opacity: 1; }
+                        100% { transform: scale(0.9) translateY(-10px) translateX(-50%); opacity: 0; }
+                    }
                 `}</style>
 
                 {/* XP 팝업 오버레이 */}
@@ -578,7 +681,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     className="px-4 py-1.5 rounded-full font-extrabold text-white text-sm"
                                     style={{ backgroundColor: '#4A51D4', boxShadow: '0 4px 12px rgba(74,81,212,0.45)' }}
                                 >
-                                    🔥 {popupCombo}x 콤보!
+                                    🔥 {popupCombo}연속 정답!
                                 </div>
                             )}
                             <div
@@ -592,24 +695,24 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 )}
 
                 {/* 헤더 */}
-                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                <div className="w-full shrink-0 safe-top pt-2 px-4 mb-1">
+                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
                         <button onClick={started ? () => setShowExitModal(true) : onBack}
                             className="hp-nav-button">
                             <span>{started ? '✕' : '←'}</span>
                         </button>
                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                             <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
-                            <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 한자를 선택하세요</p>
+                            <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 단어를 선택하세요</p>
                         </div>
                         <div className="flex items-center justify-end w-11">
-                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{Math.min(totalAnswered + 1, quizCount)}/{quizCount}</span>
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{displayQuestionNumber}/{plannedQuizTotal}</span>
                         </div>
                     </div>
-                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
+                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-2 relative px-1 mx-auto max-w-[90%]">
                         <div
                             className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
-                            style={{ width: `${(Math.min(totalAnswered + 1, quizCount) / quizCount) * 100}%` }}
+                            style={{ width: `${(displayQuestionNumber / plannedQuizTotal) * 100}%` }}
                         >
                             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
                                 <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
@@ -620,11 +723,11 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                 {/* 본문 */}
                 <div className="flex-1 overflow-y-auto pb-6">
-                    <div className="w-full max-w-xl mx-auto px-4 pt-5 flex flex-col gap-5">
+                    <div className="w-full max-w-xl mx-auto px-4 pt-3 flex flex-col gap-7">
 
                         {/* 문제 카드 (플립) */}
                         <div
-                            className="relative w-full aspect-[16/10]"
+                            className="relative w-full aspect-[21/9] sm:aspect-[16/10]"
                             style={{ perspective: '2000px' }}
                             onClick={() => {
                                 if (isCorrectSelected && currentQuiz?.type === 'sentence') {
@@ -643,10 +746,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             >
                                 {/* 앞면: 빈칸 문장 */}
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-8 overflow-hidden shadow-xl"
+                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-8 overflow-hidden"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isWordCardFlipped ? 0 : 1 }}
                                 >
-                                    <p className="text-3xl sm:text-[2.6rem] font-bold leading-[1.8] text-center text-[#5B677A]/90 break-keep">
+                                    <p className="font-bold leading-[1.8] text-center text-[#5B677A]/90 break-keep" style={{ fontSize: 'clamp(1.2rem, 5vw, 1.875rem)' }}>
                                         {currentQuiz?.type === 'sentence' && sentenceParts ? (
                                             <>
                                                 {sentenceParts.before}
@@ -659,7 +762,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                                         style={{ verticalAlign: 'baseline' }}
                                                     >
                                                         <span
-                                                            className="font-bold text-3xl sm:text-[2.6rem]"
+                                                            className="font-bold"
+                                                            style={{ fontSize: 'clamp(1.2rem, 5vw, 1.875rem)' }}
                                                             style={{
                                                                 color: feedback ? (feedback.isCorrect ? '#7C83FF' : '#E05C5C') : '#C3C6FF'
                                                             }}
@@ -680,32 +784,39 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 {/* 뒷면: 단어 정보 */}
                                 {isCorrectSelected && currentQuiz?.type === 'sentence' && (
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-between px-8 py-6 shadow-xl"
+                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-6 py-4 shadow-xl overflow-y-auto"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', zIndex: isWordCardFlipped ? 1 : 0 }}
                                 >
-                                    <div className="flex flex-row items-baseline gap-3">
-                                        <span className="text-5xl sm:text-[4.5rem] font-black text-[#4F56D9] tracking-tighter leading-none" style={{ textShadow: '0 0 10px rgba(79,86,217,0.10)' }}>
-                                            {reading}
-                                        </span>
-                                        <span className="text-xl sm:text-2xl font-bold text-[#AEB7C5] tracking-widest">
-                                            ({word})
-                                        </span>
-                                    </div>
+                                    {/* 우상단 스피커 아이콘 */}
                                     <button
                                         onClick={handleSpeak}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-xl border-2 border-white ${isSpeaking ? 'bg-[#7C83FF] text-white' : 'bg-[#F8FAF9] text-slate-200'}`}
+                                        className={`absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90 shadow-sm border-2 border-slate-100 ${isSpeaking ? 'bg-[#7C83FF] text-white' : 'bg-[#F8FAF9] text-[#AEB7C5] hover:bg-[#F2F3FF] hover:text-[#7C83FF]'}`}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                         </svg>
                                     </button>
-                                    <div className="w-full flex flex-col items-start text-left px-2">
-                                        <p className="text-body-res font-medium text-[#5B677A] leading-relaxed break-all tracking-tight">
-                                            <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#7C83FF]/10 text-[#7C83FF] text-sm font-black mr-3 shadow-sm border border-[#7C83FF]/20 transform -translate-y-0.5">
-                                                의미
+
+                                    <div className="flex flex-col items-center gap-2 max-h-full my-auto w-full">
+                                        {/* 상단: 한자음 및 한자어 그룹 (가로 배치) */}
+                                        <div className="flex flex-row items-baseline gap-3 justify-center">
+                                            <span className="text-5xl sm:text-[4.5rem] font-black text-[#4F56D9] tracking-tighter leading-none" style={{ textShadow: '0 0 10px rgba(79,86,217,0.10)' }}>
+                                                {reading}
                                             </span>
-                                            {meaning}
-                                        </p>
+                                            <span className="text-xl sm:text-2xl font-bold text-[#AEB7C5] tracking-widest">
+                                                ({word})
+                                            </span>
+                                        </div>
+
+                                        {/* 하단: 의미 영역 */}
+                                        <div className="w-full flex flex-col items-center text-center px-1 mt-5">
+                                            <p className="text-body-res font-medium text-[#5B677A] leading-relaxed break-keep tracking-tight">
+                                                <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#7C83FF]/10 text-[#7C83FF] text-sm font-black mr-2 shadow-sm border border-[#7C83FF]/20 transform -translate-y-0.5">
+                                                    의미
+                                                </span>
+                                                {meaning}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                                 )}
@@ -713,7 +824,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         </div>
 
                         {/* 선택지 */}
-                        <div className="grid grid-cols-1 gap-2.5 w-full">
+                        <div className="grid grid-cols-1 gap-2 w-full">
                             {options.map((opt, i) => {
                                 const isWrong = wrongAttempts.includes(opt);
                                 const isCorrect = isCorrectSelected && opt === currentAnswer;
@@ -722,15 +833,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         key={i}
                                         disabled={isCorrectSelected}
                                         onClick={() => handleAnswer(opt)}
-                                        className={`py-2.5 px-6 rounded-[1.6rem] font-bold text-h3-res border-2 transition-all flex justify-between items-center break-keep relative active:translate-y-[4px] active:border-b-0 ${isCorrect
-                                                ? 'bg-[#F2F3FF] border-[#7C83FF] border-b-4 border-b-[#7C83FF] text-[#4F56D9] -translate-y-[4px]'
-                                                : isWrong
-                                                    ? 'bg-white border-[#FFA88D] border-b-4 border-b-[#FFA88D] text-[#FF8D72] -translate-y-[4px]'
-                                                    : isCorrectSelected
-                                                        ? 'bg-white border-[#E9EDF2] text-[#AEB7C5] opacity-60'
-                                                        : 'bg-white border-[#E9EDF2] border-b-4 border-b-slate-200 text-[#5D544F] -translate-y-[4px] hover:border-[#7C83FF]'
-                                            }`}
-                                        style={{ boxShadow: '0 10px 16px rgba(120,130,160,0.10)' }}
+                                        className={`quiz-choice-btn ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isCorrectSelected ? 'quiz-choice-btn--dimmed' : ''}`}
                                     >
                                         <span className="text-left w-full">{opt}</span>
                                         {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
@@ -743,7 +846,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                                 style={{
                                                     background: 'linear-gradient(135deg, #FF9B73 0%, #FF6B6B 100%)',
                                                     boxShadow: '0 8px 24px rgba(255, 107, 107, 0.3), inset 0 -3px 0 rgba(0,0,0,0.15)',
-                                                    animation: 'pop-bubble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                                                    animation: 'pop-bubble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, fade-out-up 0.3s ease-in 1.2s forwards'
                                                 }}
                                             >
                                                 <span className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.15)]">{celebrationMsg}</span>
@@ -770,7 +873,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                         {/* 네비게이션 버튼 */}
                         {isCorrectSelected && (
-                            <div className="w-full flex gap-5 animate-in fade-in slide-in-from-top-4 duration-500">
+                            <div className="w-full flex gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                                 <button
                                     disabled
                                     className="flex-1 py-3 rounded-[1.8rem] bg-white font-bold text-h3-res text-slate-200 border-2 border-[#E9EDF2]"
@@ -781,7 +884,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     onClick={handleNext}
                                     className="flex-[2] py-3 rounded-[1.8rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
-                                    {totalAnswered >= quizCount ? '결과 보기 ›' : '다음 ›'}
+                                    {totalAnswered >= plannedQuizTotal ? '결과 보기 ›' : '다음 ›'}
                                 </button>
                             </div>
                         )}
@@ -806,12 +909,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 </p>
                             </div>
                             <div className="w-full flex flex-col gap-3">
-                                <button
-                                    onClick={() => setShowExitModal(false)}
-                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                                >
-                                    계속 공부하기
-                                </button>
+                                <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
+                                    <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                                </CtaButton>
                                 <button
                                     onClick={handleExitConfirm}
                                     className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
@@ -838,7 +938,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 한자를 선택하세요</p>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 단어를 선택하세요</p>
                     </div>
                     <div className="w-11" />
                 </div>
@@ -937,12 +1037,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             </p>
                         </div>
                         <div className="w-full flex flex-col gap-3">
-                            <button
-                                onClick={() => setShowExitModal(false)}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                            >
-                                계속 공부하기
-                            </button>
+                            <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
+                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                            </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"

@@ -62,6 +62,14 @@ const buildPairPool = (items) => {
     return pairs;
 };
 
+const moveRecentPairsToBack = (pairs, recentIds) => {
+    if (!recentIds || recentIds.size === 0) return pairs;
+    return [
+        ...pairs.filter(p => !recentIds.has(p.pairId)),
+        ...pairs.filter(p => recentIds.has(p.pairId)),
+    ];
+};
+
 // 모듈 레벨에서 셔플된 전체 풀과 인덱스를 유지 (스테이지 재도전 시 순차 출제 위함)
 let globalStagePoolId = null;
 let globalStagePool = [];
@@ -123,7 +131,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 });
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry }) => {
+const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false }) => {
     // 16단계 캐릭터 로테이션 이미지 생성
     const cardBackSequence = useMemo(() => {
         const chars = ['garae', 'jeolmi', 'chapssal', 'muzi'];
@@ -179,6 +187,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     const roundResolvedRef = useRef(false);
     const roundStartTimeRef = useRef(null);
     const clearCountRef = useRef(0);
+    const missionDoneAtStartRef = useRef(missionDone);
 
     const onMarkCorrectRef = useRef(onMarkCorrect);
     const onHanjaAcquiredRef = useRef(onHanjaAcquired);
@@ -226,12 +235,14 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
 
         let pool = buildPairPool(targetSet);
         const isStageMode = contentPool != null;
+        let stageWordIds = [];
 
         if (isStageMode && contentPool) {
-            const oopsWordIds = new Set([
+            stageWordIds = [
                 ...(contentPool.main?.wordIds || []),
                 ...(contentPool.review?.wordIds || [])
-            ]);
+            ].map(Number).filter(Number.isFinite);
+            const oopsWordIds = new Set(stageWordIds);
             if (oopsWordIds.size > 0) {
                 pool = pool.filter(p => {
                     if (p.typeA === 'word') {
@@ -248,7 +259,10 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         const pairsPerRound = 4;
 
         if (isStageMode) {
-            const currentIds = targetSet.map(h => h.id).sort().join(',');
+            const currentIds = [
+                targetSet.map(h => h.id).sort((a, b) => a - b).join(','),
+                stageWordIds.sort((a, b) => a - b).join(',')
+            ].join('|');
             
             // 처음 진입했거나 한자 세트가 변경된 경우 -> 전체 풀 갱신
             if (globalStagePoolId !== currentIds || globalStagePool.length === 0) {
@@ -257,19 +271,23 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                 globalStagePoolIndex = 0;
             }
 
-            // 이번 게임에 쓸 카드만큼 잘라냄
-            let slice = globalStagePool.slice(globalStagePoolIndex, globalStagePoolIndex + pairsPerRound);
-            
-            // 만약 남은 풀의 카드가 부족하면, 새롭게 섞인 풀(pool)에서 모자란 만큼 가져와서 이어붙임
-            if (slice.length < pairsPerRound) {
-                const remainder = pairsPerRound - slice.length;
+            const desiredPairs = Math.min(pairsPerRound, globalStagePool.length || pool.length);
+            const remainingPairs = globalStagePool.length - globalStagePoolIndex;
+
+            // 판 시작 전에 남은 카드가 한 판 분량보다 적으면, 꼬리와 새 셔플을 섞지 않고 새 사이클부터 시작한다.
+            if (remainingPairs < desiredPairs) {
+                const recentIds = new Set(
+                    globalStagePool
+                        .slice(Math.max(0, globalStagePoolIndex - pairsPerRound), globalStagePoolIndex)
+                        .map(p => p.pairId)
+                );
                 globalStagePoolId = currentIds;
-                globalStagePool = pool;
-                globalStagePoolIndex = remainder;
-                slice = [...slice, ...pool.slice(0, remainder)];
-            } else {
-                globalStagePoolIndex += pairsPerRound;
+                globalStagePool = moveRecentPairsToBack(pool, recentIds);
+                globalStagePoolIndex = 0;
             }
+
+            const slice = globalStagePool.slice(globalStagePoolIndex, globalStagePoolIndex + pairsPerRound);
+            globalStagePoolIndex += slice.length;
 
             pool = slice;
         }
@@ -411,10 +429,15 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
         let workPool = pairPool;
         let workIdx = nextIdx;
 
-        if (nextIdx >= pairPool.length) {
+        if (pairPool.length - nextIdx < Math.min(pairsPerRound, pairPool.length)) {
             if (contentPool != null) { setGameState('allClear'); return; }
-            // standalone: 풀을 다 쓰면 리셔플
-            workPool = [...pairPool].sort(() => Math.random() - 0.5);
+            // standalone: 다음 판 분량이 부족하면 꼬리를 쓰지 않고 새 사이클부터 시작
+            const currentIds = new Set(
+                pairPool
+                    .slice(poolIndex, poolIndex + pairsPerRound)
+                    .map(p => p.pairId)
+            );
+            workPool = moveRecentPairsToBack([...pairPool].sort(() => Math.random() - 0.5), currentIds);
             workIdx = 0;
             pairPoolRef.current = workPool;
             poolIndexRef.current = 0;
@@ -452,7 +475,40 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
     // ── 재도전 ──────────────────────────────────────────────────────────────
     const retryRound = useCallback(() => {
         const pairsPerRound = 4;
-        const slice = pairPool.slice(poolIndex, poolIndex + pairsPerRound);
+        let slice;
+
+        if (contentPool != null) {
+            // stage 모드: globalStagePool에서 다음 4쌍 가져옴
+            if (globalStagePoolIndex >= globalStagePool.length) {
+                globalStagePool = [...globalStagePool].sort(() => Math.random() - 0.5);
+                globalStagePoolIndex = 0;
+            }
+            slice = globalStagePool.slice(globalStagePoolIndex, globalStagePoolIndex + pairsPerRound);
+            if (slice.length < pairsPerRound) {
+                globalStagePool = [...globalStagePool].sort(() => Math.random() - 0.5);
+                globalStagePoolIndex = pairsPerRound - slice.length;
+                slice = [...slice, ...globalStagePool.slice(0, globalStagePoolIndex)];
+            } else {
+                globalStagePoolIndex += pairsPerRound;
+            }
+        } else {
+            // 자유 모드: pairPool에서 다음 4쌍
+            const nextIdx = poolIndex + pairsPerRound;
+            let workIdx, workPool;
+            if (nextIdx >= pairPool.length) {
+                workPool = [...pairPool].sort(() => Math.random() - 0.5);
+                workIdx = 0;
+                setPairPool(workPool);
+                pairPoolRef.current = workPool;
+            } else {
+                workPool = pairPool;
+                workIdx = nextIdx;
+            }
+            slice = workPool.slice(workIdx, workIdx + pairsPerRound);
+            setPoolIndex(workIdx);
+            poolIndexRef.current = workIdx;
+        }
+
         const newCards = [];
         slice.forEach((pair, i) => {
             newCards.push({ uniqueId: `a-${pair.pairId}-${i}-${Math.random()}`, pairId: pair.pairId, content: pair.a, type: pair.typeA, isFlipped: false, isMatched: false, hanjaId: pair.hanjaId });
@@ -620,27 +676,35 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                     }}>
                                         {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
                                     </h1>
-                                    <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                        {gameState === 'clear'
-                                            ? <>콤보 {clearCombo}회 연속 성공! 계속 달려봐요<span className="text-[0.85em] inline-block ml-1">🔥</span></>
-                                        : '조금만 더 빨리 하면 성공할 수 있어요!'}
-                                    </p>
+                                    {gameState !== 'clear' && (
+                                        <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                            조금만 더 빨리 하면 성공할 수 있어요!
+                                        </p>
+                                    )}
                                 </div>
 
                                 <RewardBreakdown
-                                    reward={getRewardPreview?.(matchXp)}
+                                    reward={reward}
                                     correctXp={matchXp}
-                                    clearXp={0}
+                                    clearXp={clearXp}
                                     correctLabel="카드 매칭"
-                                    detailText={`카드 매칭 ${matches}쌍 x ${xpPerMatch}XP`}
-                                    missionXp={(gameState === 'clear' && clearCountRef.current === 1) ? 20 : 0}
+                                    detailText={`${matches}쌍 x ${xpPerMatch}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
+                                    missionXp={(gameState === 'clear' && clearCountRef.current === 1 && !missionDoneAtStartRef.current) ? 20 : 0}
                                 />
 
                                 {/* 버튼 2단 */}
                                 <div className="w-full flex flex-col gap-3 relative z-10">
                                     {(!hideRetry || gameState === 'clear') && (
-                                        <CtaButton theme="indigo" onClick={retryRound}>
-                                            <span className="font-black text-white text-[1.5rem] drop-shadow-md">다시하기</span>
+                                        <CtaButton
+                                            theme={gameState === 'clear' && contentPool == null ? 'coral' : 'indigo'}
+                                            onClick={gameState === 'clear' && contentPool == null ? goNextRound : retryRound}
+                                        >
+                                            <span className="font-black text-white text-[1.5rem] drop-shadow-md">
+                                                {gameState === 'clear' && contentPool == null ? '다음 라운드' : '다시하기'}
+                                            </span>
+                                            {gameState === 'clear' && contentPool == null && (
+                                                <span className="text-white font-black text-[1.5rem] drop-shadow-md ml-2">▶</span>
+                                            )}
                                         </CtaButton>
                                     )}
                                     {(dailyMapNode && gameState === 'clear') ? (

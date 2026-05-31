@@ -46,19 +46,16 @@ const Section = ({ title, color, children, isDarkMode }) => (
 );
 
 const CHARACTERS = [
-    { id: 'garae',    label: '가래', image: '/assets/images/characters/garae/rank_1.webp' },
-    { id: 'jeolmi',   label: '절미', image: '/assets/images/characters/jeolmi/rank_1.webp' },
-    { id: 'chapssal', label: '찹쌀', image: '/assets/images/characters/chapssal/rank_1.webp' },
-    { id: 'muzi',     label: '무지', image: '/assets/images/characters/muzi/rank_1.webp' },
+    { id: 'garae',    label: '가래', image: '/assets/images/characters/garae/rank_5.webp' },
+    { id: 'jeolmi',   label: '절미', image: '/assets/images/characters/jeolmi/rank_5.webp' },
+    { id: 'chapssal', label: '찹쌀', image: '/assets/images/characters/chapssal/rank_5.webp' },
+    { id: 'muzi',     label: '무지', image: '/assets/images/characters/muzi/rank_5.webp' },
 ];
 
 const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUserNickname, selectedCharacter, setSelectedCharacter, restoreFromCloud, isRestoring }) => {
     const [tempNickname, setTempNickname] = useState(userNickname || '');
     const [bgmOn, setBgmOn] = useState(() => localStorage.getItem(SK.BGM_ON) !== 'false');
-    const [sfxOn, setSfxOn] = useState(() => localStorage.getItem(SK.SFX_ON) !== 'false');
     const [bgmVolume, setBgmVolume] = useState(() => parseInt(localStorage.getItem(SK.BGM_VOLUME) ?? '70', 10));
-    const [sfxVolume, setSfxVolume] = useState(() => parseInt(localStorage.getItem(SK.SFX_VOLUME) ?? '80', 10));
-    const [vibration, setVibration] = useState(() => localStorage.getItem(SK.VIBRATION) !== 'false');
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [restoreMsg, setRestoreMsg] = useState(null);
 
@@ -91,14 +88,12 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
 
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                <div className="relative flex items-center bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                     <button onClick={onBack}
                         className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#7C83FF] gap-1">
                         ←
                     </button>
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <h2 className="text-lg font-black text-slate-700 m-0">설정</h2>
-                    </div>
+                    <h2 className="absolute left-1/2 -translate-x-1/2 text-lg font-black text-slate-700 m-0">설정</h2>
                 </div>
             </div>
 
@@ -111,29 +106,7 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
                     </Row>
                 </Section>
 
-                {/* 소리 */}
-                <Section title="소리" color="#7C83FF" isDarkMode={isDarkMode}>
-                    <Row label="배경음악" sub={bgmOn ? `${bgmVolume}%` : '꺼짐'} isDarkMode={isDarkMode}>
-                        <div className="flex items-center gap-2">
-                            {bgmOn && <VolumeSlider value={bgmVolume} onChange={v => set('hangul_bgm_volume', v, setBgmVolume)} color="#7C83FF" />}
-                            <Toggle value={bgmOn} onToggle={() => set('hangul_bgm_on', !bgmOn, setBgmOn)} />
-                        </div>
-                    </Row>
-                    <Divider isDarkMode={isDarkMode} />
-                    <Row label="효과음" sub={sfxOn ? `${sfxVolume}%` : '꺼짐'} isDarkMode={isDarkMode}>
-                        <div className="flex items-center gap-2">
-                            {sfxOn && <VolumeSlider value={sfxVolume} onChange={v => set('hangul_sfx_volume', v, setSfxVolume)} color="#7C83FF" />}
-                            <Toggle value={sfxOn} onToggle={() => set('hangul_sfx_on', !sfxOn, setSfxOn)} />
-                        </div>
-                    </Row>
-                </Section>
 
-                {/* 게임 */}
-                <Section title="게임" color="#7C83FF" isDarkMode={isDarkMode}>
-                    <Row label="진동" sub="햅틱 피드백" isDarkMode={isDarkMode}>
-                        <Toggle value={vibration} onToggle={() => set('hangul_vibration', !vibration, setVibration)} />
-                    </Row>
-                </Section>
 
                 {/* 프로필 */}
                 <Section title="프로필" color="#7C83FF" isDarkMode={isDarkMode}>
@@ -169,13 +142,13 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
                                         <button
                                             key={c.id}
                                             onClick={() => { setSelectedCharacter(c.id); localStorage.setItem(SK.SELECTED_CHARACTER, c.id); }}
-                                            className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-2xl border-2 transition-all active:scale-95 ${
+                                            className={`flex-1 flex flex-col items-center justify-between gap-1 py-2 rounded-2xl border-2 transition-all active:scale-95 h-[90px] ${
                                                 selectedCharacter === c.id
                                                     ? 'border-[#7C83FF] bg-[#7C83FF]/10'
                                                     : isDarkMode ? 'border-slate-700 bg-slate-900/50' : 'border-[#E9EDF2] bg-white'
                                             }`}
                                         >
-                                            <img src={c.image} alt={c.label} className="w-10 h-10 object-contain" />
+                                            <img src={c.image} alt={c.label} className="object-contain" style={{ width: c.id === 'chapssal' ? '60px' : '40px', height: c.id === 'chapssal' ? '60px' : '40px', marginTop: c.id === 'chapssal' ? '-20px' : '0' }} />
                                             <span className={`text-[10px] font-black ${selectedCharacter === c.id ? 'text-[#7C83FF]' : isDarkMode ? 'text-slate-400' : 'text-[#AEB7C5]'}`}>{c.label}</span>
                                         </button>
                                     ))}

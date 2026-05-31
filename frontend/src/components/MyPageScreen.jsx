@@ -103,6 +103,7 @@ const getBadgeStage = (category, value) => {
 const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharacter, isDarkMode, setIsDarkMode, streak, totalStats }) => {
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [hoveredBadgeId, setHoveredBadgeId] = useState(null);
+  const [showGradeModal, setShowGradeModal] = useState(false);
   const xp = userXp || 0;
 
   // 학습일지 통계 계산을 위한 useMemo 보강
@@ -266,36 +267,38 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                 {userNickname || 'Explorer'}
               </span>
               {currentGradeBadge ? (
-                <div 
-                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white shadow-sm border border-slate-100/40 active:scale-95 transition-transform"
-                  style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    filter: 'drop-shadow(0 2px 5px rgba(109,111,242,0.25))' 
+                <div
+                  onClick={() => setShowGradeModal(true)}
+                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white shadow-sm border border-slate-100/40 active:scale-95 transition-transform cursor-pointer"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    filter: 'drop-shadow(0 2px 5px rgba(109,111,242,0.25))'
                   }}
                   title={`${currentGradeBadge.label} 인증 완료`}
                 >
-                  <img 
-                    src={currentGradeBadge.imgSrc} 
-                    alt={currentGradeBadge.label} 
-                    className="object-contain" 
+                  <img
+                    src={currentGradeBadge.imgSrc}
+                    alt={currentGradeBadge.label}
+                    className="object-contain"
                     style={{ width: '22px', height: '22px' }}
                   />
                 </div>
               ) : (
-                <div 
-                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white/70 shadow-sm border border-slate-100/30 active:scale-95 transition-transform"
-                  style={{ 
-                    width: '32px', 
-                    height: '32px', 
-                    filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.06))' 
+                <div
+                  onClick={() => setShowGradeModal(true)}
+                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white/70 shadow-sm border border-slate-100/30 active:scale-95 transition-transform cursor-pointer"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.06))'
                   }}
                   title={`${studyBadge.label} 도전 중!`}
                 >
-                  <img 
-                    src={studyBadge.imgSrc} 
-                    alt={studyBadge.label} 
-                    className="object-contain grayscale opacity-40" 
+                  <img
+                    src={studyBadge.imgSrc}
+                    alt={studyBadge.label}
+                    className="object-contain grayscale opacity-40"
                     style={{ width: '20px', height: '20px' }}
                   />
                 </div>
@@ -545,7 +548,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           >
             <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1 mr-2 text-left">
               <span className="text-white font-extrabold text-base break-keep text-balance">8급 인증 시험 도전하기</span>
-              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">8급 기출 기반 · 20문항 · 70% 합격</span>
+              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">8급 기출 기반 · 50문항 · 70% 합격</span>
             </div>
             <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
           </button>
@@ -557,7 +560,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           >
             <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1 mr-2 text-left">
               <span className="text-white font-extrabold text-base break-keep text-balance">7급II 인증 시험 도전하기</span>
-              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">7급II 기출 기반 · 20문항 · 70% 합격</span>
+              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">7급II 기출 기반 · 60문항 · 70% 합격</span>
             </div>
             <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
           </button>
@@ -569,7 +572,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           >
             <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1 mr-2 text-left">
               <span className="text-white font-extrabold text-base break-keep text-balance">7급 인증 시험 도전하기</span>
-              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">7급 기출 기반 · 20문항 · 70% 합격</span>
+              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">7급 기출 기반 · 70문항 · 70% 합격</span>
             </div>
             <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
           </button>
@@ -581,7 +584,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           >
             <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1 mr-2 text-left">
               <span className="text-white font-extrabold text-base break-keep text-balance">6급II 인증 시험 도전하기</span>
-              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">6급II 기출 기반 · 20문항 · 70% 합격</span>
+              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">6급II 기출 기반 · 80문항 · 70% 합격</span>
             </div>
             <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
           </button>
@@ -593,7 +596,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           >
             <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1 mr-2 text-left">
               <span className="text-white font-extrabold text-base break-keep text-balance">6급 인증 시험 도전하기</span>
-              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">6급 기출 기반 · 20문항 · 70% 합격</span>
+              <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">6급 기출 기반 · 90문항 · 70% 합격</span>
             </div>
             <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
           </button>
@@ -760,6 +763,81 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                   </div>
                 );
               })()}
+          </div>
+        </div>
+      )}
+      {showGradeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowGradeModal(false)}>
+          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 ${isDarkMode ? 'bg-slate-800' : 'bg-[#F7FAF9]'}`} onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setShowGradeModal(false)}
+              className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm ${
+                isDarkMode ? 'bg-slate-700/80 text-slate-300 border border-slate-600' : 'bg-white text-slate-400 border border-slate-200'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <div className="text-center flex flex-col items-center">
+              <h2 className={`text-2xl font-black tracking-tight ${
+                isDarkMode ? 'text-white' : 'bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent'
+              }`} style={{ paddingBottom: '2px' }}>
+                급수 인증 뱃지
+              </h2>
+              <div className="mt-2 px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-[#7C83FF] to-[#9B8CFF] text-white shadow-md">
+                {unlockedIdx === -1 ? '도전 시작 전' : unlockedIdx >= GRADE_BADGES.length - 1 ? '전 급수 인증 완료!' : `${GRADE_BADGES[unlockedIdx].label} 인증 완료`}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-5 gap-2">
+              {GRADE_BADGES.map((b, i) => {
+                const unlocked = i <= unlockedIdx;
+                const isCurrent = i === unlockedIdx + 1 && unlockedIdx < GRADE_BADGES.length - 1;
+                return (
+                  <div key={b.grade} className="flex flex-col items-center gap-1.5">
+                    <div className="relative w-12 h-12">
+                      <img
+                        src={b.imgSrc}
+                        alt={b.label}
+                        className={`w-full h-full object-contain transition-all ${!unlocked ? 'grayscale opacity-35' : ''}`}
+                      />
+                      {unlocked && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#FF9B73] rounded-full flex items-center justify-center text-white text-xs font-extrabold border border-white shadow-sm">✓</div>
+                      )}
+                    </div>
+                    <span className={`text-xs font-black px-1.5 py-0.5 rounded-full transition-all ${
+                      unlocked
+                        ? 'bg-[#7C83FF] text-white shadow-sm'
+                        : isCurrent
+                          ? `font-black ${isDarkMode ? 'text-slate-300' : 'text-[#5B677A]'}`
+                          : 'text-[#AEB7C5]'
+                    }`}>
+                      {b.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className={`rounded-2xl p-4 border flex flex-col gap-1.5 ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-[#E9EDF2]'}`}>
+              {unlockedIdx >= GRADE_BADGES.length - 1 ? (
+                <p className={`text-sm font-bold text-center break-keep ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                  🎉 모든 급수 인증을 완료했습니다!
+                </p>
+              ) : (
+                <>
+                  <p className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'}`}>
+                    다음 도전
+                  </p>
+                  <p className={`text-sm font-bold break-keep ${isDarkMode ? 'text-slate-200' : 'text-[#5B677A]'}`}>
+                    <span className="text-[#6D6FF2] font-black">{GRADE_BADGES[Math.min(unlockedIdx + 1, GRADE_BADGES.length - 1)].label} 인증 시험</span>을 통과하면 뱃지를 획득합니다.
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

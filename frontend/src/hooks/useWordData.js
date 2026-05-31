@@ -124,8 +124,6 @@ export const useWordData = () => {
         if (wordId == null) return;
         const quality = responseTimeMs < 2000 ? 5 : responseTimeMs < 5000 ? 4 : 3;
         update(wordId, curr => {
-            // 한 번도 틀린 적 없고 SRS도 없는 단어는 굳이 기록 안 함
-            if (!curr.wrongCount && !curr.nextReview) return curr;
             const now = new Date().toISOString();
             const srs = sm2Update(curr, quality);
             return {

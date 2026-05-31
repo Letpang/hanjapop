@@ -24,6 +24,7 @@ export const SK = {
     RECORDS:              'hanja_records',
     UNLOCKED_GRADE:       'unlocked_grade',
     MAIN_SEEN_WORDS:      'main_seen_words',
+    STUDY_SHEET_COMPLETED:'study_sheet_completed',
     DAILY_STUDY_LOG:      'daily_study_log',
     // ── 신규 통합 키 (v2) ──────────────────────────────────────
     HANJA_DATA:           'hanja_data',       // 한자 mastery + SRS 통합

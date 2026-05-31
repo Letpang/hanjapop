@@ -4,7 +4,7 @@ import WordQuizScreen from './WordQuizScreen.jsx';
 
 const WrongReviewSession = ({
     onBack, onComplete, onHanjaAcquired, selectedCharacter,
-    onMarkCorrect, onWordCorrect, onClearAllWrong, masteryData, srsData, userLevel,
+    onMarkCorrect, onWordCorrect, onClearAllWrong, masteryData, srsData, wordData, userLevel,
     contentPool, isPremium
 }) => {
     const [phase, setPhase] = useState('flashcard');
@@ -58,6 +58,7 @@ const WrongReviewSession = ({
                 onGoToReview={() => {}} // Cannot go to review from review
                 srsData={srsData}
                 masteryData={masteryData}
+                wordData={wordData}
                 userLevel={userLevel}
                 userXp={0}
                 selectedCharacter={selectedCharacter}

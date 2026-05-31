@@ -64,13 +64,19 @@ const collectVocabulary = () => {
 const FILTERS = [
   { id: 'all', label: '전체' },
   { id: 'wrong', label: '오답' },
-  { id: 'due', label: '복습 예정' },
 ];
 
-const VocabularyScreen = ({ onBack, isDarkMode }) => {
+const VocabularyScreen = ({
+  onBack,
+  isDarkMode,
+  initialFilter = 'all',
+  initialTab = 'words',
+  title = '단어장',
+  subtitle = '학습한 단어와 오답을 모아봐요',
+}) => {
   const { words, hanjas } = useMemo(() => collectVocabulary(), []);
-  const [tab, setTab] = useState('words');
-  const [filter, setFilter] = useState('all');
+  const [tab, setTab] = useState(initialTab);
+  const [filter, setFilter] = useState(initialFilter);
   const [query, setQuery] = useState('');
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -78,7 +84,6 @@ const VocabularyScreen = ({ onBack, isDarkMode }) => {
   const filteredWords = useMemo(() => {
     return words.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'due' && !item.isDue) return false;
       if (!normalizedQuery) return true;
       return [item.word, item.reading, item.meaning, item.hanja]
         .filter(Boolean)
@@ -96,7 +101,6 @@ const VocabularyScreen = ({ onBack, isDarkMode }) => {
   }, [hanjas, normalizedQuery]);
 
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
-  const dueCount = words.filter(w => w.isDue).length;
 
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#334155]'}`}>
@@ -109,16 +113,16 @@ const VocabularyScreen = ({ onBack, isDarkMode }) => {
             ←
           </button>
           <div className="text-center">
-            <h2 className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>단어장</h2>
+            <h2 className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>{title}</h2>
             <p className={`text-[11px] font-extrabold ${isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'}`}>
-              학습한 단어와 오답을 모아봐요
+              {subtitle}
             </p>
           </div>
           <div className="h-10 w-10" />
         </header>
 
         <section className={`rounded-[2rem] border p-4 shadow-sm ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="rounded-2xl bg-[#E8FAF7] px-3 py-3">
               <p className="text-[11px] font-black text-[#00A994]">단어</p>
               <p className="mt-0.5 text-xl font-black text-[#334155]">{words.length}</p>
@@ -126,10 +130,6 @@ const VocabularyScreen = ({ onBack, isDarkMode }) => {
             <div className="rounded-2xl bg-[#FFF1EE] px-3 py-3">
               <p className="text-[11px] font-black text-[#E8664F]">오답</p>
               <p className="mt-0.5 text-xl font-black text-[#334155]">{wrongCount}</p>
-            </div>
-            <div className="rounded-2xl bg-[#F5F3FF] px-3 py-3">
-              <p className="text-[11px] font-black text-[#7C83FF]">복습</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{dueCount}</p>
             </div>
           </div>
         </section>
@@ -188,11 +188,10 @@ const VocabularyScreen = ({ onBack, isDarkMode }) => {
                       </div>
                       <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-black text-[#334155]">{item.hanja}</span>
                     </div>
-                    {(item.wrongCount > 0 || item.correctCount > 0 || item.isDue) && (
+                    {(item.wrongCount > 0 || item.correctCount > 0) && (
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
                         {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
                         {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
-                        {item.isDue && <span className="rounded-full bg-[#F5F3FF] px-2.5 py-1 text-[#7C83FF]">복습 예정</span>}
                       </div>
                     )}
                   </div>
