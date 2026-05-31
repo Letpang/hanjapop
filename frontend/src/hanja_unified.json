@@ -1364,7 +1364,7 @@
         "reading": "직선",
         "meaning": "곧게 뻗은 선",
         "freq": "자주",
-        "example": "( )으로 쭉 가면 학교가 나와.",
+        "example": "자로 ( )을 그었다.",
         "id": 3002
       },
       {
@@ -1992,7 +1992,7 @@
     "id": 44,
     "hanja": "金",
     "meaning": "쇠",
-    "sound": "금",
+    "sound": "금(김)",
     "meaning_en": "Gold",
     "grade": "8급",
     "category": "자연과 시간",
@@ -2210,7 +2210,7 @@
         "reading": "강산",
         "meaning": "강과 산",
         "freq": "가끔",
-        "example": "강산이 변해도 우리 우정은 영원해",
+        "example": "( )이 변해도 우리 우정은 영원해",
         "id": 4802
       }
     ]
@@ -3852,7 +3852,7 @@
   {
     "id": 87,
     "hanja": "主",
-    "meaning": "주인",
+    "meaning": "임금/주인",
     "sound": "주",
     "meaning_en": "Master",
     "grade": "7급",
@@ -4958,6 +4958,14 @@
         "freq": "가끔",
         "example": "( ) 지역은 지리적으로 중요해.",
         "id": 11003
+      },
+      {
+        "word": "東海",
+        "reading": "동해",
+        "meaning": "한반도 동쪽 바다",
+        "freq": "자주",
+        "example": "설날에 ( ) 일출을 보러 갔어.",
+        "id": 11004
       }
     ]
   },
@@ -4991,11 +4999,11 @@
         "id": 11101
       },
       {
-        "word": "東西",
-        "reading": "동서",
-        "meaning": "동쪽과 서쪽",
-        "freq": "가끔",
-        "example": "여기는 ( )남북이 다 보여.",
+        "word": "西部",
+        "reading": "서부",
+        "meaning": "서쪽 지역",
+        "freq": "자주",
+        "example": "( ) 영화에 카우보이가 나와.",
         "id": 11102
       }
     ]
@@ -5014,19 +5022,19 @@
     "etymology_short": "악기 모양을 본떠 '남쪽'을 나타냄",
     "words": [
       {
-        "word": "南方",
-        "reading": "남방",
-        "meaning": "남쪽 지방",
-        "freq": "가끔",
-        "example": "( ) 지역은 기후가 따뜻해.",
+        "word": "南極",
+        "reading": "남극",
+        "meaning": "지구 남쪽 끝",
+        "freq": "자주",
+        "example": "( )에는 펭귄이 살아.",
         "id": 11200
       },
       {
         "word": "南北",
         "reading": "남북",
-        "meaning": "남쪽과 북쪽",
+        "meaning": "남쪽과 북쪽, 남한과 북한",
         "freq": "자주",
-        "example": "( )으로 길게 뻗은 나라야.",
+        "example": "한반도는 ( )으로 길게 뻗어 있어.",
         "id": 11201
       },
       {
@@ -5051,7 +5059,7 @@
     "id": 113,
     "hanja": "北",
     "meaning": "북녘",
-    "sound": "북",
+    "sound": "북(배)",
     "meaning_en": "North",
     "grade": "8급",
     "category": "공간과 위치",
@@ -5087,9 +5095,9 @@
       {
         "word": "南北",
         "reading": "남북",
-        "meaning": "남과 북",
+        "meaning": "남쪽과 북쪽, 남한과 북한",
         "freq": "자주",
-        "example": "( )으로 길게 뻗은 한반도.",
+        "example": "( ) 통일이 되면 좋겠어.",
         "id": 11303
       },
       {
@@ -5623,7 +5631,7 @@
   {
     "id": 124,
     "hanja": "右",
-    "meaning": "오른",
+    "meaning": "오를/오른",
     "sound": "우",
     "meaning_en": "Right",
     "grade": "7급Ⅱ",
@@ -6446,7 +6454,7 @@
     "id": 142,
     "hanja": "洞",
     "meaning": "골",
-    "sound": "동",
+    "sound": "동(통)",
     "meaning_en": "Village",
     "grade": "7급",
     "category": "공간과 위치",
@@ -6687,7 +6695,7 @@
         "reading": "유도",
         "meaning": "상대방의 힘을 역이용하는 격투 스포츠",
         "freq": "자주",
-        "example": "나는 방과 후에 ( )를 배워.",
+        "example": "그는 어릴 적부터 ( )를 수련해 검은 띠를 땄다.",
         "id": 14703
       },
       {
@@ -7432,7 +7440,7 @@
         "word": "圖書館",
         "reading": "도서관",
         "meaning": "각종 지식 자료를 수집·보존하여 사람들이 이용할 수 있게 만든 시설.",
-        "example": "圖書館에서 책을 빌렸다.",
+        "example": "( )에서 책을 빌렸다.",
         "id": 16105
       }
     ]
@@ -7441,7 +7449,7 @@
     "id": 162,
     "hanja": "讀",
     "meaning": "읽을",
-    "sound": "독",
+    "sound": "독(두)",
     "meaning_en": "Read",
     "grade": "6급Ⅱ",
     "category": "학교와 일상생활",
@@ -8271,7 +8279,7 @@
   {
     "id": 179,
     "hanja": "食",
-    "meaning": "밥",
+    "meaning": "밥/먹을",
     "sound": "식",
     "meaning_en": "Eat",
     "grade": "7급Ⅱ",
@@ -8859,7 +8867,7 @@
     "id": 192,
     "hanja": "車",
     "meaning": "수레",
-    "sound": "거",
+    "sound": "거(차)",
     "meaning_en": "Car",
     "grade": "7급Ⅱ",
     "category": "학교와 일상생활",
@@ -8906,7 +8914,7 @@
     "id": 193,
     "hanja": "行",
     "meaning": "다닐",
-    "sound": "행",
+    "sound": "행(항)",
     "meaning_en": "Walk",
     "grade": "6급",
     "category": "학교와 일상생활",
@@ -9823,7 +9831,7 @@
   {
     "id": 211,
     "hanja": "使",
-    "meaning": "하여금",
+    "meaning": "하여금/부릴",
     "sound": "사",
     "meaning_en": "Use",
     "grade": "6급",
@@ -11486,7 +11494,7 @@
     "id": 245,
     "hanja": "樂",
     "meaning": "즐길",
-    "sound": "락",
+    "sound": "락(악/요)",
     "meaning_en": "Enjoy",
     "grade": "6급Ⅱ",
     "category": "행동과 상태",
@@ -12104,7 +12112,7 @@
         "reading": "육군",
         "meaning": "육지를 지키는 군대",
         "freq": "가끔",
-        "example": "우리나라는 ( )의 규모가 커.",
+        "example": "( )은 튼튼한 탱크를 타고 나라를 지켜.",
         "id": 25703
       },
       {
@@ -12112,7 +12120,7 @@
         "reading": "해군",
         "meaning": "바다를 지키는 군대",
         "freq": "가끔",
-        "example": "( )은 배를 타고 작전을 수행해.",
+        "example": "( )은 군함을 타고 작전을 수행해.",
         "id": 25704
       }
     ]
@@ -13212,7 +13220,7 @@
   {
     "id": 278,
     "hanja": "韓",
-    "meaning": "한국",
+    "meaning": "한국/나라",
     "sound": "한",
     "meaning_en": "Korea",
     "grade": "8급",
@@ -13267,7 +13275,7 @@
   {
     "id": 279,
     "hanja": "漢",
-    "meaning": "한수",
+    "meaning": "한수/한나라",
     "sound": "한",
     "meaning_en": "Han River",
     "grade": "7급Ⅱ",
@@ -13871,7 +13879,7 @@
   {
     "id": 291,
     "hanja": "別",
-    "meaning": "다를",
+    "meaning": "다를/나눌",
     "sound": "별",
     "meaning_en": "Different",
     "grade": "6급",
@@ -14154,7 +14162,7 @@
     "id": 297,
     "hanja": "便",
     "meaning": "편할",
-    "sound": "편",
+    "sound": "편(변)",
     "meaning_en": "Convenient",
     "grade": "7급",
     "category": "학교와 일상생활",
@@ -14982,7 +14990,7 @@
       {
         "word": "電波",
         "reading": "전파",
-        "meaning": "전기적 작용으로 발생하는 파동",
+        "meaning": "라디오·TV 등에 쓰이는 전기 파동",
         "freq": "자주",
         "example": "라디오 ( )가 잘 잡히지 않아.",
         "id": 31303
@@ -14991,7 +14999,7 @@
         "word": "電話",
         "reading": "전화",
         "meaning": "전기 신호로 말을 주고받는 통신 수단",
-        "example": "電話로 친구에게 연락했다.",
+        "example": "( )로 친구에게 연락했다.",
         "id": 31304
       }
     ]
@@ -15187,7 +15195,7 @@
   {
     "id": 318,
     "hanja": "反",
-    "meaning": "돌이킬",
+    "meaning": "돌이킬/돌아올",
     "sound": "반",
     "meaning_en": "Opposite",
     "grade": "6급Ⅱ",
@@ -15752,7 +15760,7 @@
     "id": 330,
     "hanja": "省",
     "meaning": "덜",
-    "sound": "생",
+    "sound": "성(생)",
     "meaning_en": "Examine",
     "grade": "6급Ⅱ",
     "category": "사회와 문화",
@@ -16441,7 +16449,7 @@
     "id": 345,
     "hanja": "度",
     "meaning": "법도",
-    "sound": "도",
+    "sound": "도(탁)",
     "meaning_en": "Degree",
     "grade": "6급",
     "category": "숫자와 기초 개념",
@@ -17028,7 +17036,7 @@
     "id": 358,
     "hanja": "畫",
     "meaning": "그림",
-    "sound": "화",
+    "sound": "화(획)",
     "meaning_en": "Picture",
     "grade": "6급",
     "category": "학교와 일상생활",

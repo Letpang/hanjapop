@@ -8,8 +8,28 @@ import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
+import CtaButton from './common/CtaButton.jsx';
 
 const CATEGORIES = ['전체', '숫자와 기초 개념', '자연과 시간', '나와 가족 신체', '공간과 위치', '학교와 일상생활', '행동과 상태', '사회와 문화'];
+const STUDY_SHEET_CLEAR_XP = 25;
+
+const loadCompletedStudyIds = (currentDay) => {
+    try {
+        const key = currentDay ? `${SK.STUDY_SHEET_COMPLETED}_${currentDay}` : SK.STUDY_SHEET_COMPLETED;
+        const saved = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!Array.isArray(saved)) return new Set();
+        return new Set(saved.map(Number).filter(Number.isFinite));
+    } catch {
+        return new Set();
+    }
+};
+
+const saveCompletedStudyIds = (ids, currentDay) => {
+    try {
+        const key = currentDay ? `${SK.STUDY_SHEET_COMPLETED}_${currentDay}` : SK.STUDY_SHEET_COMPLETED;
+        localStorage.setItem(key, JSON.stringify([...ids]));
+    } catch {}
+};
 
 const CURRICULUM_ORDER = new Map();
 DAILY_CURRICULUM.forEach((day, dayIdx) => {
@@ -141,22 +161,13 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                 {q.choices.map((c, i) => {
                     const isWrong = wrongChoices.includes(c);
                     const isRight = isCorrect && c === q.answer;
-                    
-                    let cls = 'py-3.5 px-4 rounded-[2rem] font-extrabold text-body-lg border-2 transition-all active:translate-y-[4px] active:border-b-0 text-left flex justify-between items-center leading-standard relative ';
-
-                    if (isRight) {
-                        cls += 'bg-[#F2F3FF] border-[#7C83FF] border-b-8 border-b-[#7C83FF] text-[#4F56D9] -translate-y-[4px]';
-                    } else if (isWrong) {
-                        cls += 'bg-white border-rose-200 border-b-8 border-b-rose-300 text-rose-400 opacity-70 -translate-y-[4px]';
-                    } else {
-                        cls += 'bg-white border-[#E9EDF2] border-b-8 border-b-slate-200 text-[#5D544F] -translate-y-[4px] hover:border-[#7C83FF]';
-                    }
+                    const cls = `quiz-choice-btn ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
 
                     return (
-                        <button key={i} className={cls} style={{ boxShadow: '0 10px 16px rgba(120,130,160,0.10)' }} onClick={() => handleSelect(c)}>
+                        <button key={i} className={cls} onClick={() => handleSelect(c)}>
                             <span className="break-keep">{c}</span>
                             {isRight && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
-                            {isWrong && <span className="text-rose-300 shrink-0 ml-2">✕</span>}
+                            {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
                         </button>
                     );
                 })}
@@ -166,7 +177,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
 };
 
 // ─── 풀 학습지 화면 ──────────────────────────────────────────────────────
-const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, onStudySheetComplete, selectedCharacter, getRewardPreview }) => {
+const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, isAlreadyCompleted = false, onStudySheetComplete, selectedCharacter, getRewardPreview }) => {
     const questions = useMemo(() => buildWorksheetQuiz(item), [item]);
     const [answers, setAnswers] = useState({});
     const refWords   = useRef(null);
@@ -175,13 +186,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const [quizDone, setQuizDone] = useState(false);
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
+    const completionAwardedRef = useRef(false);
     const completionLabel = isSequence ? (isLast ? '전체 학습 완료하기' : '다음 한자로 이동') : '학습지 완료하기';
 
     const handleWritingComplete = useCallback((hanjaId, score) => {
         if (onHanjaAcquired) onHanjaAcquired(hanjaId, Math.round(score / 10));
     }, [onHanjaAcquired]);
 
-    const handleWritingNext = useCallback(() => setQuizDone(true), []);
+    // handleWritingNext moved below finishStudySheet to avoid TDZ
 
     const handleAnswer = (qId, isCorrect) => {
         if (answers[qId] !== undefined) return;
@@ -209,8 +221,26 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
         });
     };
 
-    const correctCount = Object.values(answers).filter(Boolean).length;
-    const totalQ = questions.length;
+    const clearXp = 0;
+    const finishStudySheet = useCallback((afterComplete) => {
+        if (!completionAwardedRef.current) {
+            completionAwardedRef.current = true;
+            if (!isAlreadyCompleted) onHanjaAcquired?.(null, clearXp);
+        }
+        onStudySheetComplete?.(item.id);
+        afterComplete?.();
+    }, [clearXp, isAlreadyCompleted, item.id, onHanjaAcquired, onStudySheetComplete]);
+
+    const handleWritingNext = useCallback(() => {
+        if (isSequence && isLast) {
+            finishStudySheet();
+            setQuizDone(true);
+        } else if (isSequence) {
+            finishStudySheet(onNext);
+        } else {
+            finishStudySheet(onBack);
+        }
+    }, [isSequence, isLast, finishStudySheet, onNext, onBack]);
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
@@ -231,7 +261,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순을 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="w-11" />
                 </div>
@@ -240,17 +270,15 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
             {/* ── 섹션 바로가기 ── */}
             <div className="w-full px-5 pt-4 pb-2 flex items-center justify-center gap-2">
                 {[
-                    { label: '관련 단어', ref: refWords,   bg: '#FFF8EE', color: '#C8A882' },
-                    { label: '문제',      ref: refQuiz,    bg: '#F0F1FF', color: '#7C83FF' },
-                    { label: '한자 쓰기', ref: refWriting, bg: '#FFF8EE', color: '#C8A882' },
-                ].map(({ label, ref, bg, color }) => (
+                    { label: '관련 단어', ref: refWords, theme: 'warm' },
+                    { label: '문제', ref: refQuiz, theme: 'blue' },
+                ].map(({ label, ref, theme }) => (
                     <button
                         key={label}
                         onClick={() => scrollTo(ref)}
-                        className="flex items-center px-3.5 py-2 rounded-2xl active:scale-95 transition-all"
-                        style={{ background: bg, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                        className={`hp-section-shortcut hp-section-shortcut--${theme}`}
                     >
-                        <span style={{ fontSize: 12, fontWeight: 700, color }}>{label}</span>
+                        {label}
                     </button>
                 ))}
             </div>
@@ -260,7 +288,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 {/* ── 섹션 1: 한자 정보 ── */}
                 <div className="minimal-card-studio bg-white border border-[#E9EDF2] shadow-xl px-5 py-3 !rounded-[2rem]">
                     <div className="flex flex-col items-center gap-1">
-                        <div className="text-[#3C3C3C] leading-tight drop-shadow-sm text-display" style={{ fontFamily: "'Ma Shan Zheng', cursive" }}>{item.hanja}</div>
+                        <div className="text-[#3C3C3C] leading-tight drop-shadow-sm text-display" style={{ fontFamily: "'Nanum Myeongjo', serif" }}>{item.hanja}</div>
                         <div className="flex items-baseline gap-4 mt-2">
                             <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.meaning}</span>
                             <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.sound}</span>
@@ -338,84 +366,57 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         ))}
                     </div>
 
-                    {/* ── 섹션 5: 한자 쓰기 ── */}
-                    <div ref={refWriting} className="flex flex-col gap-5">
-                        <div className="flex items-center gap-3 px-1">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                </svg>
-                            </div>
-                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>한자 쓰기</span>
-                        </div>
-                            <QuizCard
-                                hanja={item}
-                                hanjaList={[item]}
-                                currentIndex={0}
-                                onWritingComplete={handleWritingComplete}
-                                onNextHanja={handleWritingNext}
-                                onBack={handleWritingNext}
-                                nextLabel={completionLabel}
-                            />
-                        </div>
+                    {/* 하단 완료/다음 버튼 */}
+                    <div className="flex w-full mt-2">
+                        <CtaButton theme="coral" onClick={handleWritingNext}>
+                            <span className="font-black text-white text-[1.35rem] drop-shadow-md">{completionLabel}</span>
+                        </CtaButton>
+                    </div>
 
-                    {/* 퀴즈 완료 결과 모달 */}
-                    {quizDone && (
-                        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onBack} />
-                            
-                            <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
-                                <div className="pt-4 pb-8 px-6 flex flex-col items-center gap-2 w-full relative">
+                    </div>
+                </div>
+
+                {/* 퀴즈 완료 결과 모달 (시퀀스의 마지막에만 노출) */}
+                {quizDone && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setQuizDone(false); onNext(); }} />
+                        
+                        <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
+                            <div className="pt-4 pb-8 px-6 flex flex-col items-center gap-2 w-full relative">
+                                {/* 메인 비주얼 */}
+                                <img 
+                                    src={getCharacterImage(selectedCharacter, 'success')} 
+                                    alt="celebration" 
+                                    className="w-52 h-52 object-contain drop-shadow-xl mt-4" 
+                                />
+
+                                {/* 텍스트 정보 */}
+                                <div className="text-center flex flex-col gap-2">
+                                    <h1 className="text-h1 font-black text-[#3C3C3C] tracking-tighter break-keep">
+                                        모든 한자 학습 완료!
+                                    </h1>
                                     
-                                    {/* 상단 장식 아이콘 제거됨 */}
-
-                                    {/* 메인 비주얼 */}
-                                    <img 
-                                        src={getCharacterImage(selectedCharacter, 'success')} 
-                                        alt="celebration" 
-                                        className="w-52 h-52 object-contain drop-shadow-xl mt-4" 
+                                    <RewardBreakdown
+                                        reward={getRewardPreview?.(50)}
+                                        correctXp={50}
+                                        clearXp={0}
+                                        correctLabel="학습지"
+                                        detailText="전체 학습 완료 50XP"
+                                        missionXp={isAlreadyCompleted ? 0 : 50}
                                     />
+                                </div>
 
-                                    {/* 텍스트 정보 */}
-                                    <div className="text-center flex flex-col gap-2">
-                                        <span className="text-xs-res font-extrabold text-[#AEB7C5] uppercase tracking-widest">
-                                            {correctCount >= Math.ceil(totalQ * 0.7) ? '정말 멋진 결과예요!' : '조금만 더 힘내볼까요?'}
-                                        </span>
-                                        <h1 className="text-h1 font-black text-[#3C3C3C] tracking-tighter">
-                                            {correctCount} / {totalQ} 맞춤!
-                                        </h1>
-                                        
-                                        <RewardBreakdown
-                                            reward={getRewardPreview?.(correctCount * 5)}
-                                            correctXp={correctCount * 5}
-                                            clearXp={0}
-                                        />
-                                    </div>
-
-                                    {/* 하단 버튼 */}
-                                    <div className="w-full flex flex-col gap-3 mt-4">
-                                        {isSequence && (
-                                            <button
-                                                onClick={() => { onStudySheetComplete?.(item.id); onNext(); }}
-                                                className="w-full py-5 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-body-lg shadow-xl shadow-[#C3C6FF] active:scale-95 transition-all border-b-4 border-[#4A51D4]"
-                                            >
-                                                {isLast ? '전체 학습 완료하기' : '다음 한자로 이동'}
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => { onStudySheetComplete?.(item.id); onBack(); }}
-                                            className="w-full py-5 rounded-[2rem] bg-[#F8FAF9] text-[#AEB7C5] font-extrabold text-body-lg active:scale-95 transition-all border-b-4 border-[#E9EDF2]"
-                                        >
-                                            {isSequence ? '학습 지도로 돌아가기' : '완료하고 돌아가기'}
-                                        </button>
-                                    </div>
+                                {/* 하단 버튼 */}
+                                <div className="w-full flex flex-col gap-3 mt-4">
+                                    <CtaButton theme="coral" onClick={() => { setQuizDone(false); onNext(); }}>
+                                        <span className="font-black text-white text-[1.35rem] drop-shadow-md">완료하고 돌아가기</span>
+                                    </CtaButton>
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
-        </div>
     );
 };
 
@@ -449,8 +450,8 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
             className="minimal-card-studio !rounded-3xl group relative w-full flex flex-col items-center justify-center p-5 bg-white border-[#E9EDF2] hover:border-[#7C83FF] hover:shadow-xl hover:shadow-[#C3C6FF]/40 active:scale-95 transition-all duration-300 !min-h-[200px]"
         >
             {isCompleted && (
-                <div className="absolute top-3 right-3 z-30 rounded-full bg-[#2ED6C5] px-2.5 py-1 text-xs font-black text-white shadow-md">
-                    완료
+                <div className="absolute top-3 right-3 z-30 w-10 h-10 rounded-full bg-[#2ED6C5] flex items-center justify-center text-xl font-black text-white shadow-lg shadow-[#2ED6C5]/25 border-[3px] border-white">
+                    ✓
                 </div>
             )}
             <div className="w-24 h-24 mb-3 flex items-center justify-center relative z-10 group-hover:scale-110 transition-transform duration-500">
@@ -477,15 +478,15 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
 
 // ─── 인라인 플립 카드 (백업 스타일 모방) ────────────────────
 // ─── 메인 FlashcardScreen ──────────────────────────────────────────────────
-const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, hanjaFilter, onStageClear, unlockedHanjaIds, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview, onStudySheetComplete, isPremium = false, contentPool = null }) => {
+const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, hanjaFilter, onStageClear, unlockedHanjaIds, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview, onStudySheetComplete, isPremium = false, contentPool = null, currentDay = null }) => {
     const { showPremiumGate } = usePremium();
     const [viewMode, setViewMode] = useState('grade');
-    const [gradeFilter, setGradeFilter] = useState('전체');
-    const [categoryFilter, setCategoryFilter] = useState('전체');
-    const [phase, setPhase] = useState(hanjaFilter || contentPool ? 'list' : 'select');
+    const [phase, setPhase] = useState('list');
+    const [isDailyMode, setIsDailyMode] = useState(!!contentPool && !hanjaFilter);
     const [studyItem, setStudyItem] = useState(null); // 학습지 열린 한자
     const [showExitModal, setShowExitModal] = useState(false);
-    const [completedStudyIds, setCompletedStudyIds] = useState(() => new Set());
+    const [showAllDoneModal, setShowAllDoneModal] = useState(false);
+    const [completedStudyIds, setCompletedStudyIds] = useState(() => loadCompletedStudyIds(currentDay));
     const stageClearFiredRef = useRef(false);
     
     // 백업 스타일 싱글 카드 모드용 상태
@@ -493,11 +494,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
 
     const handleExitConfirm = () => {
         setShowExitModal(false);
-        if (phase === 'list' && !hanjaFilter && !contentPool) {
-            setPhase('select');
-        } else {
-            onBack();
-        }
+        onBack();
     };
 
     const characterAvatar = useMemo(() => getRankDetails(userXp || 0, selectedCharacter).avatar, [userXp, selectedCharacter]);
@@ -509,11 +506,11 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
         return new Set([...(contentPool.main?.hanjaIds || []), ...(contentPool.review?.hanjaIds || [])]);
     }, [contentPool]);
 
-    // 비프리미엄: contentPool 한자만, 프리미엄: 전체 unlockedIds
-    const effectiveIds = useMemo(
-        () => (!isPremium && contentPoolIds) ? contentPoolIds : unlockedIds,
-        [isPremium, contentPoolIds, unlockedIds]
-    );
+    // 무조건 이번 스테이지 한자(contentPoolIds)만 보여줍니다. (사전 모드 제거됨)
+    const effectiveIds = useMemo(() => {
+        if (contentPoolIds) return contentPoolIds;
+        return unlockedIds;
+    }, [contentPoolIds, unlockedIds]);
 
     const unlockedGrades = useMemo(() => {
         const s = new Set(['전체']);
@@ -523,20 +520,14 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
 
     const currentItems = useMemo(() => {
         if (hanjaFilter && hanjaFilter.length > 0) return HANJA_DATA.filter(h => hanjaFilter.includes(h.id));
-        let items;
-        if (viewMode === 'grade') {
-            items = gradeFilter === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.grade === gradeFilter);
-        } else {
-            items = categoryFilter === '전체' ? HANJA_DATA : HANJA_DATA.filter(h => h.category === categoryFilter);
-        }
-        return [...items]
+        return HANJA_DATA
             .filter(h => effectiveIds.has(h.id))
             .sort((a, b) => {
                 const aO = CURRICULUM_ORDER.get(a.id) ?? 999999;
                 const bO = CURRICULUM_ORDER.get(b.id) ?? 999999;
                 return aO - bO;
             });
-    }, [viewMode, gradeFilter, categoryFilter, hanjaFilter, effectiveIds]);
+    }, [hanjaFilter, effectiveIds]);
 
     const isUnlocked = (item) => hanjaFilter ? true : unlockedIds.has(item.id);
 
@@ -551,11 +542,13 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
         setCompletedStudyIds(prev => {
             const next = new Set(prev);
             next.add(id);
+            saveCompletedStudyIds(next, currentDay);
 
             const allDone = currentItems.length > 0 && currentItems.every(h => next.has(h.id));
-            if (contentPool && allDone && !stageClearFiredRef.current) {
+            if (allDone && !stageClearFiredRef.current) {
                 stageClearFiredRef.current = true;
                 onStageClear?.();
+                setShowAllDoneModal(true);
             }
 
             return next;
@@ -582,6 +575,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 onMarkWrong={onMarkWrong}
                 onMarkWordWrong={onMarkWordWrong}
                 onHanjaAcquired={onHanjaAcquired}
+                isAlreadyCompleted={completedStudyIds.has(studyItem.id)}
                 onStudySheetComplete={handleStudySheetComplete}
                 selectedCharacter={selectedCharacter}
                 getRewardPreview={getRewardPreview}
@@ -591,18 +585,14 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-5">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
                     <button onClick={
-                        studyItem
-                            ? () => setShowExitModal(true)          // 학습 중 → 확인 모달
-                            : phase === 'list' && !hanjaFilter && !contentPool
-                                ? () => setPhase('select')          // 목록 → 선택 화면
-                                : onBack                             // 그 외 → 뒤로가기
+                        studyItem ? () => setShowExitModal(true) : onBack
                     }
                         className="hp-nav-button">
                         <span>{studyItem ? '✕' : '←'}</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순을 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="w-11" />
                 </div>
@@ -626,6 +616,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             isSequence={true}
                             onNext={handleNext}
                             isLast={currentIndex === currentItems.length - 1}
+                            isAlreadyCompleted={completedStudyIds.has(currentItems[currentIndex]?.id)}
                             onStudySheetComplete={handleStudySheetComplete}
                             selectedCharacter={selectedCharacter}
                             getRewardPreview={getRewardPreview}
@@ -634,71 +625,17 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 ) : (
                     /* ── 기본 그리드 모드 (학습 센터) ── */
                     <div className="w-full max-w-2xl mx-auto px-4 flex flex-col items-center gap-6 pt-5 flex-1 min-h-0 overflow-y-auto">
-                        {phase === 'select' && (
-                            <div className="flex flex-col items-center w-full animate-in fade-in duration-500 pb-10">
-                                {/* 탭 */}
-                                <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-8 shadow-inner">
-                                    <button onClick={() => setViewMode('grade')}
-                                        className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#5B677A]'}`}>
-                                        급수별
-                                    </button>
-                                    <button onClick={() => setViewMode('topic')}
-                                        className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#5B677A]'}`}>
-                                        주제별
-                                    </button>
-                                </div>
-
-                                {/* 컨텐츠 */}
-                                {viewMode === 'grade' ? (
-                                    <GradeGrid selected={gradeFilter} onSelect={isPremium ? setGradeFilter : () => showPremiumGate()} lockedGrades={GRADES.filter(g => g !== '전체' && !unlockedGrades.has(g))} />
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-4 w-full">
-                                        {CATEGORIES.map(cat => (
-                                            <TopicCard key={cat} name={cat} imgSrc={CATEGORY_IMAGES[cat] ? `/assets/images/hanja_all/${CATEGORY_IMAGES[cat]}` : null}
-                                                count={`${HANJA_DATA.filter(h => h.category === cat).length}개`} isSelected={categoryFilter === cat} onClick={isPremium ? () => setCategoryFilter(cat) : showPremiumGate}
-                                                locked={!HANJA_DATA.some(h => h.category === cat && unlockedIds.has(h.id))} />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* 캐릭터 */}
-                                <div className="flex flex-col items-center mt-10 mb-6 relative">
-                                    <div className="absolute top-4 left-[60%] z-20">
-                                        <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
-                                            <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
-                                            <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
-                                        </div>
-                                    </div>
-                                    <div className="relative z-10 w-36 h-36 flex items-center justify-center mt-10">
-                                        <img src={characterAvatar} className="w-full h-full object-contain drop-shadow-2xl" alt="avatar" />
-                                    </div>
-                                    <div className="w-40 h-4 bg-slate-400/20 blur-lg rounded-[100%] scale-x-125 -mt-6" />
-                                </div>
-
-                                {/* 시작 버튼 */}
-                                <div className="w-full max-w-sm px-4 pb-4 mt-2">
-                                    <button onClick={() => setPhase('list')}
-                                        className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
-                                        style={{ backgroundColor: '#FF9B73', borderBottom: '6px solid #E0735A' }}>
-                                        <span>공부 시작!</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {phase === 'list' && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                {currentItems.map(item => (
-                                    <HanjaCard
-                                        key={item.id}
-                                        item={item}
-                                        isLocked={!isUnlocked(item)}
-                                        isCompleted={completedStudyIds.has(item.id)}
-                                        onClick={() => handleCardClick(item)}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {currentItems.map(item => (
+                                <HanjaCard
+                                    key={item.id}
+                                    item={item}
+                                    isLocked={!isUnlocked(item)}
+                                    isCompleted={completedStudyIds.has(item.id)}
+                                    onClick={() => handleCardClick(item)}
+                                />
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
@@ -720,18 +657,48 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             </p>
                         </div>
                         <div className="w-full flex flex-col gap-3">
-                            <button
-                                onClick={() => setShowExitModal(false)}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                            >
-                                계속 공부하기
-                            </button>
+                            <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
+                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                            </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
                             >
                                 그만하고 나가기
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showAllDoneModal && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%)' }}>
+                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative animate-in zoom-in-95 duration-200">
+                        <div className="pt-8 pb-8 px-6 flex flex-col items-center gap-5 w-full">
+                            <img
+                                src={getCharacterImage(selectedCharacter, 'success')}
+                                alt="clear"
+                                className="w-44 h-44 object-contain drop-shadow-xl"
+                            />
+                            <div className="text-center flex flex-col gap-1">
+                                <span className="text-sm font-extrabold text-[#AEB7C5]">모든 한자를 완료했어요!</span>
+                                <h1 className="text-h2-res font-black leading-tight" style={{ color: '#FF9B73', letterSpacing: '-0.02em' }}>
+                                    와우! 참 잘했어요!
+                                </h1>
+                            </div>
+                            <RewardBreakdown
+                                reward={getRewardPreview?.(50)}
+                                correctXp={50}
+                                clearXp={0}
+                                correctLabel="학습지"
+                                detailText="전체 학습 완료 50XP"
+                                missionXp={50}
+                            />
+                            <div className="w-full flex flex-col gap-3">
+                                <CtaButton theme="coral" onClick={() => { setShowAllDoneModal(false); onBack(); }}>
+                                    <span className="font-black text-white text-[1.35rem] drop-shadow-md">완료하고 돌아가기</span>
+                                </CtaButton>
+                            </div>
                         </div>
                     </div>
                 </div>

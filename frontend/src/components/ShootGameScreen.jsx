@@ -9,7 +9,6 @@ import { buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
-import { playSound } from '../utils/playSound.js';
 import { SK } from '../constants/storageKeys.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
@@ -22,51 +21,21 @@ const getStoredXp = () => {
 // 난이도 설정
 // ─────────────────────────────────────────────
 const DIFFICULTY_CONFIG = {
-    easy: {
-        label: '느림',
-        dropSpeedBase: 0.18,       // 낙하 속도 (% per tick, 50ms) — ~18초 바닥 도달
-        dropSpeedPerWave: 0.015,
-        maxOnScreen: 3,
-        spawnIntervalBase: 1800,   // 3000 → 1800ms
-        spawnIntervalPerWave: -100,
-        wrongAnswerMode: 'other_theme',
-        wavesTotal: 1,
-        killsPerWave: 10,
-        hp: 5,
-    },
     normal: {
-        label: '보통',
-        dropSpeedBase: 0.28,       // ~11초 바닥 도달
+        dropSpeedBase: 0.28,
         dropSpeedPerWave: 0.03,
         maxOnScreen: 3,
-        spawnIntervalBase: 1400,   // 2400 → 1400ms
+        spawnIntervalBase: 1400,
         spawnIntervalPerWave: -120,
         wrongAnswerMode: 'same_theme',
         wavesTotal: 1,
-        killsPerWave: 12,
+        killsPerWave: 8,
         hp: 5,
-    },
-    hard: {
-        label: '빠름',
-        dropSpeedBase: 0.40,       // ~7.5초 바닥 도달
-        dropSpeedPerWave: 0.05,
-        maxOnScreen: 4,
-        spawnIntervalBase: 900,    // 1600 → 900ms
-        spawnIntervalPerWave: -100,
-        wrongAnswerMode: 'same_reading_prefix',
-        wavesTotal: 1,
-        killsPerWave: 15,
-        hp: 4,
     },
 };
 
-// ─────────────────────────────────────────────
-// 난이도별 XP 테이블
-// ─────────────────────────────────────────────
 const DIFFICULTY_XP = {
-    easy:   { waveClear: 30, combo3: 10, combo5: 20 },
-    normal: { waveClear: 30, combo3: 15, combo5: 30 },
-    hard:   { waveClear: 30, combo3: 20, combo5: 40 },
+    normal: { waveClear: 20, combo3: 0, combo5: 0 },
 };
 // ─────────────────────────────────────────────
 // 사운드
@@ -210,15 +179,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     
     const [selectedCategory, setSelectedCategory] = useState(categories[0] || '');
     const [selectedGrade, setSelectedGrade] = useState('전체');
-    const [selectedDifficulty, setSelectedDifficulty] = useState(() => {
-        if (currentDay) {
-            const dayNum = Number(currentDay);
-            if (dayNum <= 10) return 'easy';
-            if (dayNum <= 30) return 'normal';
-            return 'hard';
-        }
-        return 'normal';
-    });
+    const selectedDifficulty = 'normal';
 
     const [status, setStatus] = useState((contentPool || autoStart) ? 'loading' : 'idle');
     const [showExitModal, setShowExitModal] = useState(false);
@@ -248,6 +209,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const [isInputLocked, setIsInputLocked] = useState(false);
     const inputLockedRef = useRef(false);
     const effectIdRef = useRef(0);
+    const clearCountRef = useRef(0);
 
     const shipRef = useRef(null);
     const gameAreaRef = useRef(null);
@@ -464,24 +426,21 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
         const timer = setTimeout(() => {
             setStatus('over');
-            if (contentPool && onGameFinish) onGameFinish();
         }, 0);
 
         return () => clearTimeout(timer);
-    }, [hp, status, contentPool, onGameFinish]);
+    }, [hp, status]);
 
     // 웨이브 킬 수 체크 → 다음 웨이브 or 게임 클리어
     useEffect(() => {
         if (status !== 'playing' || waveTransition || waveKills < diffConfig.killsPerWave) return undefined;
 
         const timer = setTimeout(() => {
-            // 웨이브 클리어 XP + 콤보 보너스
+            // 웨이브 클리어 XP
             const xpTable = DIFFICULTY_XP[selectedDifficulty] || DIFFICULTY_XP['normal'];
             const newCombo = clearCombo + 1;
             setClearCombo(newCombo);
-            let xpEarned = xpTable.waveClear;
-            if (newCombo >= 5) xpEarned += xpTable.combo5;
-            else if (newCombo >= 3) xpEarned += xpTable.combo3;
+            const xpEarned = xpTable.waveClear;
             if (onHanjaAcquired) {
                 onHanjaAcquired(null, xpEarned);
                 effectIdRef.current += 1;
@@ -491,16 +450,11 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             setSessionXp(prev => prev + xpEarned);
             if (onWaveClear) onWaveClear(waveKills);
             if (wave >= diffConfig.wavesTotal) {
-                if (dailyMapNode) {
-                    flushWrongItems();
-                    if (onGameFinish) onGameFinish();
-                } else {
-                    setStatus('clear');
-                }
+                clearCountRef.current += 1;
+                setTimeout(() => setStatus('clear'), 1200);
             } else {
                 setWaveTransition(true);
                 setWords([]);
-                playSound('wave');
                 setTimeout(() => {
                     setWave(prev => prev + 1);
                     setWaveKills(0);
@@ -526,7 +480,6 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     if (w.state === 'exploding' && w.timer <= 0) return false;
                     if (w.state !== 'exploding' && w.y >= 90) {
                         hpDelta += 1;
-                        playSound('damage');
                         setShake(true);
                         setTimeout(() => setShake(false), 300);
                         return false;
@@ -644,11 +597,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             const dx = target.x - 50; const dy = target.y - 85;
             const angle = Math.atan2(dy, dx) * (180 / Math.PI);
             setTurretAngle(angle);
-            playSound('shoot');
             effectIdRef.current += 1;
             const laserId = effectIdRef.current;
             setLasers(prev => [...prev, { id: laserId, targetX: target.x, targetY: target.y, shipX: 50, shipY: 95 }]);
-            setTimeout(() => { setLasers(prev => prev.filter(l => l.id !== laserId)); playSound('boom'); }, 100);
+            setTimeout(() => { setLasers(prev => prev.filter(l => l.id !== laserId)); }, 100);
             setWords(prev => prev.map(w => w.id === targetId ? { ...w, state: 'exploding', timer: 6 } : w));
             setScore(prev => prev + 1);
             setWaveKills(prev => prev + 1);
@@ -663,7 +615,6 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             setTimeout(() => { setAcquisitions(prev => prev.filter(a => a.id !== acqId)); inputLockedRef.current = false; }, 1000);
         } else {
             inputLockedRef.current = true;
-            playSound('damage');
             setShake(true);
             setIsInputLocked(true);
             setHp(prev => Math.max(0, prev - 1));
@@ -848,28 +799,6 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             </div>
                         )}
 
-                        {/* 몬스터 속도 */}
-                        <div className="w-full mt-2">
-                            <p className="text-h3 font-bold text-[#5B677A] mb-3 text-center uppercase tracking-widest">몬스터 속도</p>
-                            <div className="grid grid-cols-3 gap-3">
-                                {Object.entries(DIFFICULTY_CONFIG).map(([key, cfg]) => {
-                                    const isSelected = selectedDifficulty === key;
-                                    return (
-                                        <button
-                                            key={key}
-                                            onClick={() => setSelectedDifficulty(key)}
-                                            className={`py-2.5 rounded-3xl font-bold transition-all flex flex-col items-center justify-center gap-1 active:scale-95 border-2 ${
-                                                isSelected 
-                                                ? 'bg-white border-[#FF9B73] text-[#5B677A] shadow-lg' 
-                                                : 'bg-white border-[#E9EDF2] text-[#5B677A]'
-                                            }`}
-                                        >
-                                            <span className="text-h3 font-bold text-[#5B677A]">{cfg.label}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
 
                         {/* 캐릭터 영역 (말풍선 + 캐릭터 + 바닥 그림자) */}
                         <div className="flex flex-col items-center mt-4 mb-5 relative">
@@ -993,7 +922,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             {xpPopup.show && (
                 <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[200]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '80px' }}>
                     <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
-                        ⭐ +{xpPopup.amount} XP
+                        ⭐ 웨이브 +{xpPopup.amount} XP
                     </div>
                 </div>
             )}
@@ -1113,14 +1042,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
                         <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
-                            {dailyMapNode}
-                            <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
+                            <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
-                                {!dailyMapNode && (
+                                {(!dailyMapNode || !isClear) && (
                                     <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
                                 )}
 
-                                {!dailyMapNode && (
+                                {(!dailyMapNode || !isClear) && (
                                     <img
                                         src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
                                         alt={isClear ? 'clear' : 'over'}
@@ -1128,10 +1056,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
                                     />
                                 )}
+                                
                                 <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                                    <span className="text-sm font-extrabold text-[#AEB7C5]">
-                                        {isClear ? '정말 멋진 결과예요!' : '아쉬운 결과네요...'}
-                                    </span>
+                                    {!isClear && <span className="text-sm font-extrabold text-[#AEB7C5]">아쉬운 결과네요...</span>}
                                     <h1 className="text-h2-res font-black leading-snug" style={{
                                         color: isClear ? '#FF9B73' : '#FF6B6B',
                                         letterSpacing: '-0.5px',
@@ -1139,30 +1066,35 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     }}>
                                         {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                     </h1>
-                                    <div className="flex flex-col items-center gap-1 mt-3">
-                                        {isClear && contentPool ? (
-                                            <p className="font-extrabold text-lg tracking-tight" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
-                                                +{sessionXp} XP 획득!<span className="text-[0.85em] inline-block ml-1">⭐</span>
-                                            </p>
-                                        ) : (
+                                    {!isClear && (
+                                        <div className="flex flex-col items-center gap-1 mt-3">
                                             <p className="font-extrabold text-lg tracking-tight" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
                                                 {score}마리의 몬스터 퇴치!<span className="text-[0.85em] inline-block ml-1">🔥</span>
                                             </p>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* 여정 지도 (데일리 세션 클리어 시) */}
+                                {(dailyMapNode && isClear) && (
+                                    <div className="w-full">
+                                        {dailyMapNode}
+                                    </div>
+                                )}
 
                                 <RewardBreakdown
                                     reward={reward}
                                     correctXp={sessionXp}
                                     clearXp={0}
-                                    correctLabel="웨이브"
+                                    correctLabel="게임"
+                                    detailText={`${score}마리의 몬스터 격퇴`}
+                                    missionXp={(isClear && clearCountRef.current === 1) ? 20 : 0}
                                 />
 
                                 {/* 몬스터 오답 노트 (Review Note) */}
                                 {wrongItemsForRender.length > 0 && (
                                     <div className="w-full flex flex-col gap-2 relative z-10 mt-1 max-h-[140px] overflow-y-auto px-1">
-                                        <p className="text-xs font-black text-[#FF6B6B] text-center mb-1">💡 몬스터 오답 노트 (다시 확인하기)</p>
+                                        <p className="text-xs font-black text-[#FF6B6B] text-center mb-1">몬스터 오답 노트</p>
                                         <div className="flex flex-wrap gap-2 justify-center">
                                             {wrongItemsForRender.map((w, idx) => (
                                                 <div key={idx} className="bg-rose-50 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 shadow-sm">
@@ -1176,15 +1108,15 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
                                 <div className="w-full flex flex-col gap-3 relative z-10">
                                     {!hideRetry && (
-                                    <button
-                                        onClick={() => {
-                                            flushWrongItems();
-                                            startGame();
-                                        }}
-                                        className="w-full py-5 rounded-2xl font-black text-[1.5rem] retry-quiz-button"
-                                    >
-                                        계속하기
-                                    </button>
+                                        <CtaButton
+                                            theme="indigo"
+                                            onClick={() => {
+                                                flushWrongItems();
+                                                startGame();
+                                            }}
+                                        >
+                                            <span className="font-black text-white text-[1.5rem] drop-shadow-md">계속하기</span>
+                                        </CtaButton>
                                     )}
                                     {(dailyMapNode && isClear) ? (
                                         <CtaButton
@@ -1242,12 +1174,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             </p>
                         </div>
                         <div className="w-full flex flex-col gap-3">
-                            <button
-                                onClick={() => setShowExitModal(false)}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg retry-quiz-button"
-                            >
-                                계속 플레이하기
-                            </button>
+                            <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
+                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 플레이하기</span>
+                            </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
                                 className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
