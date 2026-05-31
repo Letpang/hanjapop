@@ -1,6 +1,23 @@
 import { useState, useMemo } from 'react';
 import IDIOMS from '../data/idioms.js';
+import HANJA_DATA from '../hanja_unified.json';
 import CtaButton from './common/CtaButton.jsx';
+
+const collectIdioms = (hanjaIds) => {
+    const idSet = new Set(hanjaIds);
+    const seen = new Set();
+    const result = [];
+    for (const item of HANJA_DATA) {
+        if (!idSet.has(item.id)) continue;
+        for (const w of (item.words || [])) {
+            if (w.type !== 'idiom' || seen.has(w.word)) continue;
+            seen.add(w.word);
+            const meta = IDIOMS.find(x => x.hanja === w.word);
+            if (meta) result.push(meta);
+        }
+    }
+    return result;
+};
 
 const GRADE_ORDER = ['전체', '8급', '7급', '7급Ⅱ', '6급', '6급Ⅱ'];
 const IDIOM_WRONG_KEY = 'idiom_wrong_data';
@@ -215,16 +232,26 @@ const IdiomScreen = ({ onBack, onComplete, startInQuiz, contentPool }) => {
     const [grade, setGrade] = useState('전체');
     const [mode, setMode] = useState(startInQuiz ? 'quiz' : 'browse');
 
+    const available = useMemo(() => {
+        if (!contentPool) return IDIOMS;
+        const hanjaIds = [
+            ...(contentPool.main?.hanjaIds || []),
+            ...(contentPool.review?.hanjaIds || []),
+        ];
+        const pool = collectIdioms(hanjaIds);
+        return pool.length > 0 ? pool : IDIOMS;
+    }, [contentPool]);
+
     const filtered = useMemo(
-        () => grade === '전체' ? IDIOMS : IDIOMS.filter(x => x.grade === grade),
-        [grade]
+        () => grade === '전체' ? available : available.filter(x => x.grade === grade),
+        [available, grade]
     );
 
     const counts = useMemo(() => {
         const m = {};
-        GRADE_ORDER.slice(1).forEach(g => { m[g] = IDIOMS.filter(x => x.grade === g).length; });
+        GRADE_ORDER.slice(1).forEach(g => { m[g] = available.filter(x => x.grade === g).length; });
         return m;
-    }, []);
+    }, [available]);
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
