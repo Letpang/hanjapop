@@ -369,13 +369,6 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
     return (
         <div className="flex flex-col gap-3 w-full animate-in fade-in duration-500">
             <style>{`
-                @keyframes xpFloat {
-                    0%   { opacity: 0; transform: scale(0.6) translateY(16px); }
-                    28%  { opacity: 1; transform: scale(1.1) translateY(-6px); }
-                    40%  { opacity: 1; transform: scale(1) translateY(0); }
-                    68%  { opacity: 1; transform: scale(1) translateY(0); }
-                    100% { opacity: 0; transform: translateY(-28px); }
-                }
                 @keyframes star-burst-1 {
                     0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
                     50% { opacity: 1; }
@@ -432,10 +425,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                                 🔥 {combo + 1}연속 정답!
                             </div>
                         )}
-                        <div
-                            className="px-7 py-3 rounded-full font-extrabold text-xl"
-                            style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}
-                        >
+                        <div className="xp-popup-badge">
                             ⭐ +5 XP
                         </div>
                     </div>

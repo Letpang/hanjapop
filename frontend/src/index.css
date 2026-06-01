@@ -1531,6 +1531,40 @@ body.dark .clay-button {
         #020617;
 }
 
+/* XP 팝업 공통 */
+@keyframes xpFloat {
+    0%   { opacity: 0; transform: scale(0.6) translateY(16px); }
+    28%  { opacity: 1; transform: scale(1.1) translateY(-6px); }
+    40%  { opacity: 1; transform: scale(1) translateY(0); }
+    68%  { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: translateY(-28px); }
+}
+.xp-popup-wrapper {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 999;
+    animation: xpFloat 1.5s ease-in-out forwards;
+    padding-bottom: 120px;
+}
+.xp-popup-wrapper--low {
+    padding-bottom: 80px;
+    z-index: 200;
+}
+.xp-popup-badge {
+    padding: 0.75rem 1.75rem;
+    border-radius: 9999px;
+    font-weight: 800;
+    font-size: var(--text-h3);
+    background-color: rgba(255, 180, 51, 0.12);
+    color: #A07800;
+    border: 2px solid #FFB433;
+    box-shadow: 0 8px 28px rgba(255, 215, 0, 0.5);
+}
+
 /* 퀴즈 다음/이전 네비게이션 버튼 공통 */
 .quiz-next-btn {
     padding: 0.75rem 1.25rem;

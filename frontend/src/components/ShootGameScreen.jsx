@@ -675,7 +675,6 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 0%   { filter: hue-rotate(0deg); }
                 100% { filter: hue-rotate(360deg); }
             }
-            @keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}
             @keyframes starSparkle {
                 0%, 100% { opacity: 0.18; transform: scale(0.7); }
                 50% { opacity: 1; transform: scale(1.4); }
@@ -924,8 +923,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 />
             ))}
             {xpPopup.show && (
-                <div key={xpPopup.key} className="fixed inset-0 flex items-center justify-center pointer-events-none z-[200]" style={{ animation: 'xpFloat 1.5s ease-in-out forwards', paddingBottom: '80px' }}>
-                    <div className="px-7 py-3 rounded-full font-extrabold text-xl" style={{ backgroundColor: 'rgba(255,180,51,0.12)', color: '#A07800', border: '2px solid #FFB433', boxShadow: '0 8px 28px rgba(255,215,0,0.5)' }}>
+                <div key={xpPopup.key} className="xp-popup-wrapper xp-popup-wrapper--low">
+                    <div className="xp-popup-badge">
                         ⭐ 클리어 +{xpPopup.amount} XP
                     </div>
                 </div>
