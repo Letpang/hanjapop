@@ -83,16 +83,16 @@ const QUESTIONS = [
   { type: 'meaning_to_word', prompt: '"높은 속도"를 뜻하는 한자어는?', choices: ['高速', '高級', '速度', '高大'], answer: '高速' },
 
   // ── [68-77] 밑줄 친 말 → 한자 ──
-  { type: 'underline', sentence: '과학 기술이 빠르게 발전해요.', underline: '과학', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['科學', '果學', '科目', '學科'], answer: '科學' },
-  { type: 'underline', sentence: '그것은 근본적인 문제예요.', underline: '근본', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['根本', '近本', '根力', '本根'], answer: '根本' },
-  { type: 'underline', sentence: '감사의 마음을 전해요.', underline: '감사', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['感謝', '感事', '感動', '謝感'], answer: '感謝' },
-  { type: 'underline', sentence: '세계 여행이 꿈이에요.', underline: '세계', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['世界', '世代', '世上', '界世'], answer: '世界' },
-  { type: 'underline', sentence: '신념이 강한 사람이에요.', underline: '신념', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['信念', '信力', '新念', '念信'], answer: '信念' },
-  { type: 'underline', sentence: '시작이 반이라는 말이 있어요.', underline: '시작', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['始作', '時作', '始初', '作始'], answer: '始作' },
-  { type: 'underline', sentence: '사건을 조사해요.', underline: '사건', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['事件', '事故', '事業', '件事'], answer: '事件' },
-  { type: 'underline', sentence: '반성하고 나아가야 해요.', underline: '반성', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['反省', '反對', '反動', '省反'], answer: '反省' },
-  { type: 'underline', sentence: '각종 준비물을 챙겼어요.', underline: '각종', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['各種', '各界', '各色', '種各'], answer: '各種' },
-  { type: 'underline', sentence: '고속버스를 탔어요.', underline: '고속', prompt: '밑줄 친 말에 해당하는 한자어는?', choices: ['高速', '急速', '高急', '速高'], answer: '高速' },
+  { type: 'underline', sentence: '과학 기술이 빠르게 발전해요.', underline: '과학', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['科學', '果學', '課學', '科鶴'], answer: '科學' },
+  { type: 'underline', sentence: '그것은 근본적인 문제예요.', underline: '근본', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['根本', '近本', '勤本', '謹本'], answer: '根本' },
+  { type: 'underline', sentence: '감사의 마음을 전해요.', underline: '감사', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['感謝', '感事', '感史', '感思'], answer: '感謝' },
+  { type: 'underline', sentence: '세계 여행이 꿈이에요.', underline: '세계', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['世界', '細界', '洗界', '世計'], answer: '世界' },
+  { type: 'underline', sentence: '신념이 강한 사람이에요.', underline: '신념', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['信念', '新念', '身念', '神念'], answer: '信念' },
+  { type: 'underline', sentence: '시작이 반이라는 말이 있어요.', underline: '시작', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['始作', '時作', '詩作', '示作'], answer: '始作' },
+  { type: 'underline', sentence: '사건을 조사해요.', underline: '사건', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['事件', '史件', '死件', '事健'], answer: '事件' },
+  { type: 'underline', sentence: '반성하고 나아가야 해요.', underline: '반성', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['反省', '半省', '班省', '反性'], answer: '反省' },
+  { type: 'underline', sentence: '각종 준비물을 챙겼어요.', underline: '각종', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['各種', '覺種', '角種', '各宗'], answer: '各種' },
+  { type: 'underline', sentence: '고속버스를 탔어요.', underline: '고속', prompt: '다음 밑줄 친 漢字語를 漢字로 쓰세요.', choices: ['高速', '古速', '考速', '高俗'], answer: '高速' },
 
   // ── [78-80] 필순 ──
   { type: 'stroke', hanja: '和', prompt: '이 한자의 총 획수는?', choices: ['8획', '6획', '7획', '9획'], answer: '8획' },
@@ -108,7 +108,7 @@ const TYPE_LABELS = {
   opposite: '반대어 (대응어)',
   fill_blank: '빈칸 채우기',
   meaning_to_word: '뜻 → 한자어',
-  underline: '밑줄 → 한자어',
+  underline: '한자어 쓰기',
   stroke: '필순 (획수)',
 };
 
