@@ -735,7 +735,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                         />
                         <div className="quiz-result-content">
                             <h2 className="quiz-result-title">
-                                정말 쓰기를 중단할까요? 🥺
+                                정말 쓰기를 중단할까요?
                             </h2>
                             <p className="body-muted break-keep">
                                 지금 나가면 작성 중인 한자 쓰기의 연습 기록이 저장되지 않아요. 계속 끝까지 써볼까요?

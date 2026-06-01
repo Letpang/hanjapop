@@ -482,7 +482,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                 )}
             </div>
 
-            <CtaButton theme="indigo" onClick={onStart} className="max-w-sm">
+            <CtaButton theme="coral" onClick={onStart} className="max-w-sm">
                 <div className="flex flex-col items-center justify-center gap-1.5 w-full py-1">
                     <div className="font-black text-white leading-tight drop-shadow-md flex items-center justify-center gap-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.02em' }}>
                         <span>{buttonContent.title}</span>
@@ -500,7 +500,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
 // ── Game Pick Screen ───────────────────────────────────────────────────────
 const GAMES = [
     { id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
-    { id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png', theme: 'mint', color: '#2ED6C5', bg: '#F0FDFB' },
+    { id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png', theme: 'coral', color: '#2ED6C5', bg: '#F0FDFB' },
 ];
 
 const GamePickScreen = ({ onResult, onBack }) => {
@@ -534,7 +534,7 @@ const GamePickScreen = ({ onResult, onBack }) => {
 
 // ── Quiz Pick Screen ───────────────────────────────────────────────────────
 const QUIZZES = [
-    { id: 'wordQuiz',     label: '단어 퀴즈', icon: '/assets/images/icons/words.png',    theme: 'blue', color: '#7C83FF', bg: '#F5F5FF' },
+    { id: 'wordQuiz',     label: '단어 퀴즈', icon: '/assets/images/icons/words.png',    theme: 'coral', color: '#7C83FF', bg: '#F5F5FF' },
     { id: 'sentenceQuiz', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.png', theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
 ];
 
@@ -1205,7 +1205,7 @@ const DailySessionScreen = ({
             { label: gameLabel,  icon: gameIcon,  color: '#2ED6C5' },
         ];
         return (
-            <div className="w-full relative z-10 mt-4 px-1 mb-6">
+            <div className="w-full relative z-10 mt-4 px-4 mb-6">
                 <div className="flex items-start justify-between w-full">
                     {mapSteps.flatMap((s, i) => {
                         const isDone = i <= currentStepIndex;

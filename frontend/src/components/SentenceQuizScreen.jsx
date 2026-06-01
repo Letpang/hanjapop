@@ -526,7 +526,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300"
                 style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'linear-gradient(180deg, #FDEAEA 0%, #FFF0F0 100%)' }}
             >
-                <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
+                <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible">
                     <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
 
                         {/* 캐릭터 아래 백그라운드 글로우 추가 */}
@@ -568,7 +568,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         {/* 버튼 2단 */}
                         <div className="w-full flex flex-col gap-3 relative z-10">
                             {!hideRetry && (
-                                <CtaButton theme="indigo" onClick={() => startQuiz()}>
+                                <CtaButton theme="coral" onClick={() => startQuiz()}>
                                     <span className="quiz-cta-text">다시 풀기</span>
                                 </CtaButton>
                             )}
@@ -865,10 +865,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         {isCorrectSelected && (
                             <div className="w-full flex gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                                 <button disabled className="quiz-prev-btn flex-[1.5] opacity-30">
-                                    ‹ 이전
+                                    이전
                                 </button>
                                 <button onClick={handleNext} className="quiz-next-btn flex-[2.5]">
-                                    {totalAnswered >= plannedQuizTotal ? '결과 보기 ›' : '다음 ›'}
+                                    {totalAnswered >= plannedQuizTotal ? '결과 보기' : '다음'}
                                 </button>
                             </div>
                         )}
@@ -886,7 +886,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             />
                             <div className="quiz-result-content">
                                 <h2 className="quiz-result-title">
-                                    {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
+                                    {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요?'}
                                 </h2>
                                 <p className="body-muted break-keep">
                                     {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}
@@ -1014,7 +1014,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         />
                         <div className="quiz-result-content">
                             <h2 className="quiz-result-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
+                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}

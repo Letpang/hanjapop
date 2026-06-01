@@ -1,8 +1,27 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import IDIOMS from '../data/idioms.js';
 import HANJA_DATA from '../hanja_unified.json';
 import CtaButton from './common/CtaButton.jsx';
-import { getRankDetails } from '../utils/rankUtils.js';
+import RewardBreakdown from './common/RewardBreakdown.jsx';
+import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
+
+const speakKorean = (text, onEnd) => {
+    if (!text) return;
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    const audio = new Audio(`/assets/audio/words/word_${encodeURIComponent(text.trim())}.mp3`);
+    if (onEnd) audio.onended = onEnd;
+    audio.play().catch(() => {
+        if (!window.speechSynthesis) { if (onEnd) onEnd(); return; }
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ko-KR'; utter.rate = 0.8; utter.pitch = 0.95;
+        if (onEnd) utter.onend = onEnd;
+        const voices = window.speechSynthesis.getVoices();
+        const ko = voices.filter(v => v.lang.startsWith('ko'));
+        if (ko.length > 0) utter.voice = ko.find(v => /yuna|siri|sora/i.test(v.name)) || ko[0];
+        window.speechSynthesis.speak(utter);
+    });
+};
 
 const collectIdioms = (hanjaIds) => {
     const idSet = new Set(hanjaIds);
@@ -126,13 +145,21 @@ const buildQuiz = (idioms) => {
     return questions;
 };
 
-const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) => {
+const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
     const [idx, setIdx] = useState(0);
     const [wrongChoices, setWrongChoices] = useState([]);
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
     const [score, setScore] = useState(0);
     const [done, setDone] = useState(false);
+    const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
+    const [isFlipped, setIsFlipped] = useState(false);
+    const [skipTransition, setSkipTransition] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [history, setHistory] = useState([]); // [{wrongChoices, isCorrectSelected}]
+    const flipTimerRef = useRef(null);
+    const flipSeqRef = useRef(0);
+    const clearCountRef = useRef(0);
 
     const characterAvatar = useMemo(() => {
         if (!selectedCharacter) return null;
@@ -148,46 +175,99 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
             if (wrongChoices.length === 0) {
                 setScore(s => s + 1);
                 clearIdiomWrong(q);
+                onHanjaAcquired?.(null, 5);
+                setXpPopup({ show: true, key: Date.now(), amount: 5 });
+                setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
             }
+            const flipSeq = flipSeqRef.current + 1;
+            flipSeqRef.current = flipSeq;
+            flipTimerRef.current = setTimeout(() => {
+                if (flipSeqRef.current !== flipSeq) return;
+                setIsFlipped(true);
+                setIsSpeaking(true);
+                speakKorean(q.reading, () => setIsSpeaking(false));
+                flipTimerRef.current = null;
+            }, 1500);
             return;
         }
         if (wrongChoices.length === 0) writeIdiomWrong(q);
         setWrongChoices(prev => [...prev, choice]);
     };
 
+    const resetCard = () => {
+        if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
+        flipSeqRef.current += 1;
+        window.speechSynthesis?.cancel();
+        setIsSpeaking(false);
+        setSkipTransition(true);
+        setIsFlipped(false);
+    };
+
     const handleNext = () => {
-        if (idx + 1 >= questions.length) {
-            onComplete?.();
-            setDone(true);
-            return;
-        }
-        setIdx(i => i + 1);
-        setWrongChoices([]);
-        setIsCorrectSelected(false);
+        setHistory(h => [...h, { wrongChoices, isCorrectSelected }]);
+        resetCard();
+        requestAnimationFrame(() => {
+            setSkipTransition(false);
+            if (idx + 1 >= questions.length) {
+                clearCountRef.current += 1;
+                onComplete?.();
+                setDone(true);
+            } else {
+                setIdx(i => i + 1);
+                setWrongChoices([]);
+                setIsCorrectSelected(false);
+            }
+        });
+    };
+
+    const handlePrev = () => {
+        if (history.length === 0) return;
+        const prev = history[history.length - 1];
+        setHistory(h => h.slice(0, -1));
+        resetCard();
+        requestAnimationFrame(() => {
+            setSkipTransition(false);
+            setIdx(i => i - 1);
+            setWrongChoices(prev.wrongChoices);
+            setIsCorrectSelected(prev.isCorrectSelected);
+        });
     };
 
     if (done) {
         const pct = Math.round((score / questions.length) * 100);
+        const correctXp = score * 5;
+        const clearXp = 25;
+        const reward = getRewardPreview?.(correctXp + clearXp);
         return (
-            <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
-                <div className="idiom-result-mark">{score}</div>
-                <div className="text-center flex flex-col gap-1">
-                    <p className="font-black text-[2rem] text-[#3C3C3C]">{score} / {questions.length}</p>
-                    <p className="font-bold text-[#9AA4B5]">
-                        {pct === 100 ? '완벽해요! 사자성어 마스터!' :
-                         pct >= 70 ? '훌륭해요! 조금만 더 연습해요!' : '다시 한번 도전해 보세요!'}
-                    </p>
-                </div>
-                <div className="w-full max-w-xs flex flex-col gap-3">
-                    <CtaButton theme="coral" onClick={() => { setIdx(0); setWrongChoices([]); setIsCorrectSelected(false); setScore(0); setDone(false); }}>
-                        <span className="font-black text-white text-lg drop-shadow-md">다시 풀기</span>
-                    </CtaButton>
-                    <button
-                        onClick={onBack}
-                        className="w-full py-3.5 rounded-2xl font-extrabold text-[#9AA4B5] bg-white border border-[#E9EDF2] active:scale-95 transition-all"
-                    >
-                        목록으로 돌아가기
-                    </button>
+            <div className="quiz-result-backdrop">
+                <div className="quiz-result-card">
+                    <img
+                        src={getCharacterImage(selectedCharacter, pct >= 70 ? 'success' : 'failure')}
+                        alt="result"
+                        className="quiz-char-img img-shadow-sm"
+                    />
+                    <div className="quiz-result-content">
+                        <p className="quiz-result-title">{score} / {questions.length}</p>
+                        <p className="body-muted">
+                            {pct === 100 ? '완벽해요! 사자성어 마스터!' :
+                             pct >= 70 ? '훌륭해요! 조금만 더 연습해요!' : '다시 한번 도전해 보세요!'}
+                        </p>
+                    </div>
+                    <RewardBreakdown
+                        reward={reward}
+                        correctXp={correctXp}
+                        clearXp={clearXp}
+                        detailText={`${score}문제 x 5XP + 완료 ${clearXp}XP`}
+                        missionXp={clearCountRef.current === 1 ? 25 : 0}
+                    />
+                    <div className="w-full flex flex-col gap-3 mt-4">
+                        <CtaButton theme="coral" onClick={() => { setIdx(0); setWrongChoices([]); setIsCorrectSelected(false); setScore(0); setDone(false); }}>
+                            <span className="quiz-cta-text">다시 풀기</span>
+                        </CtaButton>
+                        <button onClick={onBack} className="w-full py-3.5 rounded-2xl back-quiz-button">
+                            목록으로 돌아가기
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -195,6 +275,11 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
 
     return (
         <div className="idiom-quiz-shell">
+            {xpPopup.show && (
+                <div key={xpPopup.key} className="xp-popup-wrapper">
+                    <div className="xp-popup-badge">⭐ +{xpPopup.amount} XP</div>
+                </div>
+            )}
             <div className="w-full shrink-0 mb-4 w-full max-w-lg mx-auto">
                 <div className="quiz-header-card quiz-header-card--sm">
                     <button onClick={onBack} className="hp-nav-button">
@@ -222,28 +307,59 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                 </div>
             </div>
 
-            <div className="grade-test-question-card">
-                <span className="grade-test-type-label">{q.typeLabel}</span>
-                <p className="grade-test-prompt">{q.prompt}</p>
+            <div className="w-full" style={{ perspective: '2000px' }}
+                onClick={() => {
+                    if (isCorrectSelected && isFlipped) {
+                        setIsFlipped(f => !f);
+                        if (!isFlipped) { setIsSpeaking(true); speakKorean(q.reading, () => setIsSpeaking(false)); }
+                    }
+                }}
+            >
+                <div
+                    className="relative w-full"
+                    style={{ transformStyle: 'preserve-3d', WebkitTransformStyle: 'preserve-3d', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)', transition: skipTransition ? 'none' : 'transform 700ms', minHeight: '180px' }}
+                >
+                    {/* 앞면: 문제 */}
+                    <div
+                        className="grade-test-question-card"
+                        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', position: isFlipped ? 'absolute' : 'relative', inset: 0 }}
+                    >
+                        <span className="grade-test-type-label">{q.typeLabel}</span>
+                        <p className="grade-test-prompt">{q.prompt}</p>
 
-                {/* 괄호 채우기: 빈칸 포함 한자 */}
-                {q.type === 'fill_blank' && (
-                    <div className="grade-test-hanja-box grade-test-hanja-box--compound">
-                        <span className="grade-test-hanja-char hanja-char">{q.displayHanja}</span>
+                        {q.type === 'fill_blank' && (
+                            <div className="grade-test-hanja-box grade-test-hanja-box--compound">
+                                <span className="grade-test-hanja-char hanja-char">{q.displayHanja}</span>
+                            </div>
+                        )}
+                        {(q.type === 'reading' || q.type === 'meaning_from_idiom') && (
+                            <div className="grade-test-hanja-box grade-test-hanja-box--compound">
+                                <span className="grade-test-hanja-char hanja-char">{q.hanja}</span>
+                            </div>
+                        )}
+                        {q.type === 'idiom_from_meaning' && (
+                            <p className="grade-exam-guide-text text-center">{q.displayMeaning}</p>
+                        )}
                     </div>
-                )}
 
-                {/* 독음 읽기 / 뜻 찾기: 전체 한자 박스 */}
-                {(q.type === 'reading' || q.type === 'meaning_from_idiom') && (
-                    <div className="grade-test-hanja-box grade-test-hanja-box--compound">
-                        <span className="grade-test-hanja-char hanja-char">{q.hanja}</span>
+                    {/* 뒷면: 정답 정보 */}
+                    <div
+                        className="grade-test-question-card absolute inset-0 flex flex-col items-center justify-center gap-3"
+                        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                    >
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsSpeaking(true); speakKorean(q.reading, () => setIsSpeaking(false)); }}
+                            className={`absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full border-2 border-slate-100 transition-all active:scale-90 ${isSpeaking ? 'bg-[#7C83FF] text-white' : 'bg-[#F8FAF9] text-[#AEB7C5]'}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                        </button>
+                        <span className="text-5xl font-black text-[#4F56D9] tracking-tighter">{q.hanja}</span>
+                        <span className="text-2xl font-black text-[#7C83FF]">{q.reading}</span>
+                        <p className="text-sm font-bold text-[#8F99AD] text-center break-keep px-2">{q.meaning}</p>
                     </div>
-                )}
-
-                {/* 사자성어 찾기: 뜻 텍스트 */}
-                {q.type === 'idiom_from_meaning' && (
-                    <p className="grade-exam-guide-text text-center">{q.displayMeaning}</p>
-                )}
+                </div>
             </div>
 
             <div className={`grade-test-choice-grid ${q.type === 'meaning_from_idiom' ? 'grade-test-choice-grid--single' : ''}`}>
@@ -267,15 +383,22 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
             </div>
 
             {isCorrectSelected && (
-                <button onClick={handleNext} className="quiz-next-btn w-full">
-                    {idx + 1 >= questions.length ? '결과 보기 ›' : '다음 ›'}
-                </button>
+                <div className="w-full flex gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                    {history.length > 0 && (
+                        <button onClick={handlePrev} className="quiz-prev-btn flex-[1.5]">
+                            이전
+                        </button>
+                    )}
+                    <button onClick={handleNext} className={`quiz-next-btn ${history.length > 0 ? 'flex-[2.5]' : 'w-full'}`}>
+                        {idx + 1 >= questions.length ? '결과 보기' : '다음'}
+                    </button>
+                </div>
             )}
         </div>
     );
 };
 
-const IdiomScreen = ({ onBack, onComplete, contentPool, userXp, selectedCharacter }) => {
+const IdiomScreen = ({ onBack, onComplete, onHanjaAcquired, contentPool, userXp, selectedCharacter, getRewardPreview }) => {
     const idioms = useMemo(() => {
         if (!contentPool) return IDIOMS;
         const hanjaIds = [
@@ -287,9 +410,9 @@ const IdiomScreen = ({ onBack, onComplete, contentPool, userXp, selectedCharacte
     }, [contentPool]);
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" className="bg-[#F8FAF9]">
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F8FAF9]">
             <div className="w-full shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }} />
-            <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} userXp={userXp} selectedCharacter={selectedCharacter} />
+            <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} onHanjaAcquired={onHanjaAcquired} userXp={userXp} selectedCharacter={selectedCharacter} getRewardPreview={getRewardPreview} />
         </div>
     );
 };

@@ -641,7 +641,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
                         style={{ background: gameState === 'clear' ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
-                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
+                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible">
                             {dailyMapNode}
                             <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
@@ -736,7 +736,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                             />
                             <div className="quiz-result-content">
                                 <h2 className="quiz-result-title">
-                                    {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요? 🥺'}
+                                    {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
                                 </h2>
                                 <p className="body-muted break-keep">
                                     {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
@@ -894,7 +894,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         />
                         <div className="quiz-result-content">
                             <h2 className="quiz-result-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요? 🥺'}
+                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}

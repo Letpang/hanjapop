@@ -13,15 +13,10 @@ const RewardBreakdown = ({ reward, correctXp, clearXp = 30, correctLabel = '정�
                 <span className="text-sm font-black text-[#94A3B8]">{missionXp > 0 ? '보상 합계' : '활동 보상'}</span>
                 <span className="text-xl font-black text-[#FF9B73]">+{totalXp} XP</span>
             </div>
-            {(baseText || reward.multiplier > 1) && (
+            {baseText && (
             <div className="mt-1.5 flex items-center justify-between gap-2 text-sm font-bold text-[#8F99AD] leading-snug">
                 <span>활동 {reward.finalXp}XP</span>
-                <span className="text-right break-keep">
-                    {baseText}
-                    {reward.multiplier > 1 && (
-                        <span className="text-[#FF9B73]"> · {reward.multiplierText} 적용</span>
-                    )}
-                </span>
+                <span className="text-right break-keep">{baseText}</span>
             </div>
             )}
             {missionXp > 0 && (

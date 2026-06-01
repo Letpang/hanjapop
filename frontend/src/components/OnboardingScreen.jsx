@@ -182,76 +182,88 @@ const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
   </div>
 );
 
-const MemoryGame = ({ items, onFinish }) => {
-  const pairs = useMemo(() => items.slice(0, 4), [items]);
-  const [cards] = useState(() => shuffle([
-    ...pairs.map((item, idx) => ({ id: `h-${idx}`, pair: idx, type: 'hanja', label: item.hanja })),
-    ...pairs.map((item, idx) => ({ id: `m-${idx}`, pair: idx, type: 'meaning', label: item.answer })),
-  ]));
-  const [flipped, setFlipped] = useState([]);
-  const [matched, setMatched] = useState(new Set());
+const ShootMiniGame = ({ items, onFinish }) => {
+  const questions = useMemo(() => items.slice(0, 4).map(item => ({
+    hanja: item.hanja,
+    answer: item.answer,
+    options: shuffle(item.options),
+  })), [items]);
+
+  const [qIdx, setQIdx] = useState(0);
   const [mistakes, setMistakes] = useState(0);
-  const [locked, setLocked] = useState(false);
+  const [selected, setSelected] = useState(null);
 
-  const handleFlip = (idx) => {
-    if (locked || flipped.includes(idx) || matched.has(cards[idx].pair)) return;
-    const next = [...flipped, idx];
-    setFlipped(next);
-    if (next.length !== 2) return;
+  const q = questions[qIdx];
 
-    setLocked(true);
-    const [a, b] = next.map(i => cards[i]);
-    if (a.pair === b.pair && a.type !== b.type) {
-      const nextMatched = new Set([...matched, a.pair]);
-      setTimeout(() => {
-        setMatched(nextMatched);
-        setFlipped([]);
-        setLocked(false);
-        if (nextMatched.size === pairs.length) onFinish(mistakes);
-      }, 350);
-    } else {
-      setMistakes(prev => prev + 1);
-      setTimeout(() => {
-        setFlipped([]);
-        setLocked(false);
-      }, 720);
-    }
+  const handleShoot = (option) => {
+    if (selected != null) return;
+    const wrong = option !== q.answer;
+    const nextMistakes = mistakes + (wrong ? 1 : 0);
+    if (wrong) setMistakes(nextMistakes);
+    setSelected(option);
+    setTimeout(() => {
+      const nextIdx = qIdx + 1;
+      if (nextIdx >= questions.length) {
+        onFinish(nextMistakes);
+      } else {
+        setQIdx(nextIdx);
+        setSelected(null);
+      }
+    }, 600);
   };
 
   return (
     <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] px-5 py-6 safe-top">
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-5">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
         <div className="flex items-start gap-3 rounded-[1.75rem] bg-white p-4 shadow-sm">
           <img src={GUIDE} alt="가래뭉치" className="h-14 w-14 object-contain" />
           <div>
-            <p className="text-[11px] font-black tracking-wider text-[#00A994]">MEMORY CHECK</p>
-            <h2 className="text-lg font-black text-[#334155]">방금 본 한자를 기억해볼까?</h2>
-            <p className="mt-1 text-xs font-bold text-[#8D9CAE]">한자와 뜻을 짝지으면 진단이 완성돼요.</p>
+            <p className="text-[11px] font-black tracking-wider text-[#FF9B73]">MONSTER SHOOT</p>
+            <h2 className="text-lg font-black text-[#334155]">몬스터를 잡아라!</h2>
+            <p className="mt-1 text-xs font-bold text-[#8D9CAE]">한자 뜻이 적힌 몬스터를 빠르게 잡아요.</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2.5">
-          {cards.map((card, idx) => {
-            const open = flipped.includes(idx) || matched.has(card.pair);
-            const done = matched.has(card.pair);
+        <div className="flex items-center gap-3">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E8EEF4]">
+            <div className="h-full rounded-full bg-[#FF9B73] transition-all duration-500" style={{ width: `${((qIdx + 1) / questions.length) * 100}%` }} />
+          </div>
+          <span className="text-xs font-black text-[#8D9CAE]">{qIdx + 1}/{questions.length}</span>
+        </div>
+
+        <div className="flex flex-col items-center justify-center rounded-[2rem] bg-white p-6 shadow-sm gap-2">
+          <p className="text-xs font-black text-[#8D9CAE]">이 한자의 뜻은?</p>
+          <span className={`${q.hanja.length > 2 ? 'text-5xl' : 'text-8xl'} font-black text-[#334155]`}>{q.hanja}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {q.options.map(option => {
+            const answered = selected != null;
+            const right = answered && option === q.answer;
+            const wrong = answered && option === selected && option !== q.answer;
             return (
               <button
-                key={card.id}
-                onClick={() => handleFlip(idx)}
-                className={`aspect-square rounded-2xl border-2 text-center font-black transition-all active:scale-95 ${
-                  done ? 'border-[#00C7AE] bg-[#E8FAF7] text-[#00A994]' :
-                  open ? 'border-[#7C83FF] bg-[#F0EFFF] text-[#6F63E8]' :
-                  'border-[#E5ECF3] bg-white text-[#CBD5E1] shadow-sm'
+                key={option}
+                onClick={() => handleShoot(option)}
+                disabled={answered}
+                className={`min-h-[72px] rounded-[1.35rem] border-2 px-3 text-base font-black transition-all active:scale-95 ${
+                  right ? 'border-[#00C7AE] bg-[#E8FAF7] text-[#00A994]' :
+                  wrong ? 'border-[#FFB5A8] bg-[#FFF1EE] text-[#E8664F]' :
+                  answered ? 'border-[#EDF2F7] bg-white text-[#CBD5E1]' :
+                  'border-[#FFD5B8] bg-[#FFF8F4] text-[#4B5A6D] shadow-sm'
                 }`}
               >
-                {open ? <span className={card.type === 'hanja' ? 'text-2xl' : 'text-[11px]'}>{card.label}</span> : '?'}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-xl">{right ? '💥' : wrong ? '✗' : '👾'}</span>
+                  <span>{option}</span>
+                </div>
               </button>
             );
           })}
         </div>
 
         <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-xs font-black text-[#8D9CAE]">
-          <span>매칭 {matched.size}/{pairs.length}</span>
+          <span>진행 {qIdx + 1}/{questions.length}</span>
           <span>실수 {mistakes}</span>
         </div>
       </div>
@@ -312,7 +324,7 @@ const Result = ({ score, finalLevel, skillStats, memoryMistakes, onComplete }) =
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-black">
             <span className="rounded-xl bg-[#FFF1EA] px-3 py-2 text-[#E8664F]">진단 +{profile.xp}</span>
-            <span className="rounded-xl bg-[#F0EFFF] px-3 py-2 text-[#6F63E8]">기억력 +{memoryBonus}</span>
+            <span className="rounded-xl bg-[#FFF1EA] px-3 py-2 text-[#FF9B73]">슈팅 보너스 +{memoryBonus}</span>
           </div>
         </div>
 
@@ -372,7 +384,7 @@ const OnboardingScreen = ({ onComplete }) => {
     setTimeout(() => {
       if (qState.index + 1 >= 8) {
         setFinalLevel(nextLevel);
-        setStep('memory');
+        setStep('shoot');
         return;
       }
       const nextUsed = new Set(qState.used);
@@ -383,7 +395,7 @@ const OnboardingScreen = ({ onComplete }) => {
     }, 820);
   };
 
-  const handleMemoryFinish = (mistakes) => {
+  const handleShootFinish = (mistakes) => {
     setMemoryMistakes(mistakes);
     setStep('result');
   };
@@ -410,8 +422,8 @@ const OnboardingScreen = ({ onComplete }) => {
     );
   }
 
-  if (step === 'memory') {
-    return <MemoryGame items={seenItems.length >= 4 ? seenItems : answers} onFinish={handleMemoryFinish} />;
+  if (step === 'shoot') {
+    return <ShootMiniGame items={seenItems.length >= 4 ? seenItems : answers} onFinish={handleShootFinish} />;
   }
 
   return (

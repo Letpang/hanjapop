@@ -272,56 +272,59 @@ const MainMenuRenewal = ({
                                         <span className="absolute right-[7.2rem] bottom-5 text-[#FFE7A8] text-[13px] pointer-events-none" style={{ animation: 'mm-sparkle 2.2s ease-in-out infinite 0.2s' }}>✦</span>
                                     </>
                                 )}
-                                <div className="flex items-center justify-between gap-3 w-full">
-                                    <div className="flex items-center gap-4">
-                                        <div className="text-left">
-                                            <div
-                                                className={`font-black leading-tight ${selectedPastStage || isDailyComplete ? 'text-white drop-shadow-md' : 'text-[#5B677A]'}`}
-                                                style={{ fontSize: '1.65rem', letterSpacing: '-0.02em' }}
-                                            >
-                                                {selectedPastStage
-                                                    ? `${selectedPastStage}단계 복습하기`
-                                                    : isDailyComplete
-                                                    ? `다음 탐험으로 가기`
-                                                    : `오늘의 탐험 떠나기`}
+                                <div className="w-full flex flex-col">
+                                    <div className="flex items-center justify-between gap-3 w-full">
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-left">
+                                                <div
+                                                    className={`font-black leading-tight ${selectedPastStage || isDailyComplete ? 'text-white drop-shadow-md' : 'text-[#5B677A]'}`}
+                                                    style={{ fontSize: '1.65rem', letterSpacing: '-0.02em' }}
+                                                >
+                                                    {selectedPastStage
+                                                        ? `${selectedPastStage}단계 복습하기`
+                                                        : isDailyComplete
+                                                        ? `다음 탐험으로 가기`
+                                                        : `오늘의 탐험 떠나기`}
+                                                </div>
+                                                <div
+                                                    className={`mt-0.5 font-bold ${selectedPastStage || isDailyComplete ? 'text-white opacity-95' : 'text-[#FF9B73]'}`}
+                                                    style={{ fontSize: '1rem' }}
+                                                >
+                                                    {isDailyComplete
+                                                        ? '다음 탐험으로 가볼까요?'
+                                                        : '탐험 지도로 이동합니다'}
+                                                </div>
                                             </div>
-                                            <div
-                                                className={`mt-0.5 font-bold ${selectedPastStage || isDailyComplete ? 'text-white opacity-95' : 'text-[#FF9B73]'}`}
-                                                style={{ fontSize: '1rem' }}
-                                            >
-                                                {isDailyComplete
-                                                    ? '다음 탐험으로 가볼까요?'
-                                                    : '탐험 지도로 이동합니다'}
-                                            </div>
+                                        </div>
+                                        <div
+                                            className={`shrink-0 flex items-center justify-center rounded-full w-10 h-10 shadow-md relative ${selectedPastStage || isDailyComplete ? 'bg-white text-[#FF6B6B]' : 'bg-[#FF9B73] text-white'}`}
+                                            style={isDailyComplete ? { boxShadow: '0 8px 18px rgba(255,255,255,0.35), 0 0 0 6px rgba(255,255,255,0.16)' } : undefined}
+                                        >
+                                            <span style={{ fontSize: 18, fontWeight: 900, marginLeft: 2 }}>▶</span>
                                         </div>
                                     </div>
                                     <div
-                                        className={`shrink-0 flex items-center justify-center rounded-full w-10 h-10 shadow-md relative ${selectedPastStage || isDailyComplete ? 'bg-white text-[#FF6B6B]' : 'bg-[#FF9B73] text-white'}`}
-                                        style={isDailyComplete ? { boxShadow: '0 8px 18px rgba(255,255,255,0.35), 0 0 0 6px rgba(255,255,255,0.16)' } : undefined}
+                                        className="w-full mt-3 pt-3 flex items-center gap-3"
+                                        style={{ borderTop: `1px solid ${selectedPastStage || isDailyComplete ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.07)'}` }}
+                                        onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
                                     >
-                                        <span style={{ fontSize: 18, fontWeight: 900, marginLeft: 2 }}>▶</span>
+                                        <span className={`font-bold text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-white/70' : 'text-[#8f99ad]'}`}>급수진행도</span>
+                                        <div className="flex-1 flex items-center gap-2 min-w-0">
+                                            <div className={`flex-1 rounded-full overflow-hidden h-[8px] shadow-inner ${selectedPastStage || isDailyComplete ? 'bg-white/25' : 'bg-slate-100'}`}>
+                                                <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
+                                            </div>
+                                            <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-orange-50/80 border border-orange-100/60 shadow-sm shrink-0">
+                                                <span className="font-black text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>
+                                                    {completedDay}/{TOTAL_STAGES}
+                                                </span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-400/80" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </CtaButton>
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="w-full flex items-center gap-3 px-5 py-3.5 rounded-[1.5rem] active:scale-[0.98] transition-all bg-white/70 backdrop-blur-md shadow-sm mt-2"
-                            >
-                                <span className="font-bold text-xs shrink-0 text-[#8f99ad]">급수진행도</span>
-                                <div className="flex-1 flex items-center gap-2 min-w-0">
-                                    <div className="flex-1 rounded-full overflow-hidden h-[10px] bg-slate-100 shadow-inner">
-                                        <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
-                                    </div>
-                                    <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-orange-50/80 border border-orange-100/60 shadow-sm shrink-0">
-                                        <span className="font-black text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>
-                                            {completedDay}/{TOTAL_STAGES}
-                                        </span>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-400/80" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </button>
                         </>
                     )}
                 </div>

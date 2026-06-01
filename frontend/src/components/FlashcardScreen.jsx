@@ -836,7 +836,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                         />
                         <div className="quiz-result-content">
                             <h2 className="quiz-result-title">
-                                정말 학습을 중단할까요? 🥺
+                                정말 학습을 중단할까요?
                             </h2>
                             <p className="body-muted break-keep">
                                 지금 나가면 공부 중인 학습지의 진행 상황이 저장되지 않아요. 계속 끝까지 학습해 볼까요?

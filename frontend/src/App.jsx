@@ -308,15 +308,9 @@ const App = () => {
 
     const getRewardPreview = useCallback((xp) => {
         if (!xp || xp <= 0) return null;
-        return {
-            baseXp: xp,
-            finalXp: xp,
-            multiplier: 1,
-            multiplierText: '',
-        };
+        return { finalXp: xp };
     }, []);
 
-    // 모든 XP 보상은 스트릭 배율을 같은 규칙으로 적용한다.
     const addBonusXp = useCallback((xp) => {
         const finalXp = getRewardXp(xp);
         if (!finalXp) return;
@@ -641,24 +635,18 @@ const App = () => {
                     selectedCharacter={selectedCharacter}
                     onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 600); }}
                 />;
-            case 'idiom':
-                return <IdiomScreen
-                    onBack={() => setCurrentScreen('main')}
-                    contentPool={effectivePool}
-                    userXp={userXp}
-                    selectedCharacter={selectedCharacter}
-                />;
             case 'idiomQuiz':
                 return <IdiomScreen
                     onBack={() => setCurrentScreen('main')}
                     contentPool={effectivePool}
-                    startInQuiz
+                    onHanjaAcquired={handleHanjaAcquired}
                     onComplete={() => {
                         handleHanjaAcquired(null, 25);
                         updateMissionProgress('idiomQuiz', 1, addBonusXp);
                     }}
                     userXp={userXp}
                     selectedCharacter={selectedCharacter}
+                    getRewardPreview={getRewardPreview}
                 />;
             case 'gradeExamSelect':
                 return <GradeExamSelectScreen

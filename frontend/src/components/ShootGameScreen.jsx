@@ -1042,7 +1042,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
                         style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
-                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
+                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible">
                             <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {(!dailyMapNode || !isClear) && (
@@ -1170,7 +1170,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         />
                         <div className="quiz-result-content">
                             <h2 className="quiz-result-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요? 🥺'}
+                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}

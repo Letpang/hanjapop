@@ -91,7 +91,7 @@ const GradeTestResult = ({
 
                 <div className="w-full mt-5 flex flex-col gap-3">
                     {!passed && (
-                        <CtaButton onClick={onRetry} theme="blue">
+                        <CtaButton onClick={onRetry} theme="coral">
                             다시 도전
                         </CtaButton>
                     )}
