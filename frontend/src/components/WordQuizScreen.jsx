@@ -538,9 +538,9 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                                 key={idx}
                                 onClick={() => handleSelect(choice)}
                                 disabled={isCorrectSelected}
-                                className={`quiz-choice-btn ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isCorrectSelected ? 'quiz-choice-btn--dimmed' : ''}`}
+                                className={`quiz-choice-btn quiz-choice-btn--center ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isCorrectSelected ? 'quiz-choice-btn--dimmed' : ''}`}
                             >
-                                <span className="text-left w-full">{choice}</span>
+                                <span>{choice}</span>
                                 {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
                                 {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
 

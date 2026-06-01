@@ -271,7 +271,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                             key={i}
                             onClick={() => handleSelect(choice)}
                             disabled={isCorrectSelected}
-                            className={`quiz-choice-btn idiom-quiz-choice ${isLarge ? 'quiz-choice-btn--large' : ''} ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isDimmed ? 'quiz-choice-btn--dimmed' : ''}`}
+                            className={`quiz-choice-btn quiz-choice-btn--center idiom-quiz-choice ${isLarge ? 'quiz-choice-btn--large' : ''} ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isDimmed ? 'quiz-choice-btn--dimmed' : ''}`}
                         >
                             <span>{choice}</span>
                             {isCorrect && <span className="idiom-quiz-choice-mark">✓</span>}
