@@ -28,7 +28,7 @@ HANJA_DATA.forEach(h => {
 });
 
 const getValidSentenceWords = (hanja) => {
-    return (hanja?.words || []).filter(w => w.id != null && w.word && w.meaning);
+    return (hanja?.words || []).filter(w => w.id != null && w.word && w.meaning && w.type !== 'idiom');
 };
 
 const buildSentenceQueueFromWordIds = (wordIds, candidateHanja) => {
