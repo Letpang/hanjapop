@@ -269,7 +269,7 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
                   <button
                     key={choice}
                     onClick={() => handleSelect(choice)}
-                    className={`quiz-choice-btn quiz-choice-btn--center ${isChoiceLarge ? 'quiz-choice-btn--large' : ''} ${stateClass}`}
+                    className={`quiz-choice-btn ${isChoiceLarge ? 'quiz-choice-btn--large' : ''} ${stateClass}`}
                   >
                     {choice}
                   </button>

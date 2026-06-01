@@ -317,7 +317,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                                 }
                                 return (
                                     <button key={ci} onClick={() => handleSelect(choice)}
-                                        className={`quiz-choice-btn quiz-choice-btn--center ${stateClass}`}>
+                                        className={`quiz-choice-btn ${stateClass}`}>
                                         {choice}
                                     </button>
                                 );
