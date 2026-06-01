@@ -235,8 +235,8 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
 
                 {/* 독음 읽기 / 뜻 찾기: 전체 한자 박스 */}
                 {(q.type === 'reading' || q.type === 'meaning_from_idiom') && (
-                    <div className="idiom-quiz-hanja-box">
-                        <span>{q.hanja}</span>
+                    <div className="grade-test-hanja-box grade-test-hanja-box--compound">
+                        <span className="grade-test-hanja-char hanja-char">{q.hanja}</span>
                     </div>
                 )}
 

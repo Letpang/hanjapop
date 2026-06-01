@@ -326,10 +326,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
 
                         {/* 정오 표시 */}
                         {revealed && (
-                            <div className="w-full rounded-2xl px-5 py-3 text-center font-extrabold text-sm"
-                                style={selected === q.answer
-                                    ? { backgroundColor: '#EAFBF0', color: '#2A7A50', border: '1px solid #4CCB7F' }
-                                    : { backgroundColor: '#FFF1F1', color: '#CC3333', border: '1px solid #FF7A7A' }}>
+                            <div className={`quiz-feedback ${selected === q.answer ? 'quiz-feedback--correct' : 'quiz-feedback--wrong'}`}>
                                 {selected === q.answer ? '✓ 정답!' : `✗ 정답: ${q.answer}`}
                             </div>
                         )}
