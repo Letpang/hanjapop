@@ -78,7 +78,7 @@ const buildQuiz = (idioms) => {
                 ...item,
                 type: 'fill_blank',
                 typeLabel: '괄호 채우기',
-                prompt: '다음 괄호 안에 들어갈 알맞은 한자는?',
+                prompt: '괄호 안에 들어갈 한자는?',
                 displayHanja,
                 displayReading,
                 choices: shuffle([correct, ...distractors]),
@@ -268,9 +268,9 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
 
             {isCorrectSelected && (
                 <button onClick={handleNext}
-                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white active:scale-95 transition-all shadow-xl flex items-center justify-center"
+                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
                     style={{ background: '#7C83FF' }}>
-                    {idx + 1 >= questions.length ? '결과 보기' : '다음 문제'}
+                    {idx + 1 >= questions.length ? '결과 보기' : '다음 →'}
                 </button>
             )}
         </div>
