@@ -230,7 +230,7 @@ const GradeTest7Screen = ({ onBack, onComplete, selectedCharacter }) => {
                 <span>7급 인증 시험</span>
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
-              <div className="w-full rounded-full overflow-hidden" style={{ height: '11px', backgroundColor: '#E9EDF5' }}>
+              <div className="quiz-progress-track">
                 <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }} />
               </div>
             </div>
