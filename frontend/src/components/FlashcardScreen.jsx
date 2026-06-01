@@ -81,9 +81,7 @@ const playCardSound = (item, onEnd) => {
         const audioId = String(item.id).padStart(item.id < 51 ? 2 : 3, '0');
         const audio = new Audio('/assets/audio/card_' + audioId + '.mp3');
         if (onEnd) audio.onended = onEnd;
-        audio.play().catch(() => {
-            playTTS();
-        });
+        audio.play().catch(() => playTTS());
     } else {
         playTTS();
     }
@@ -245,6 +243,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     }, [item]);
     const [quizDone, setQuizDone] = useState(false);
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
+    const [isSpeaking, setIsSpeaking] = useState(false);
     const completionAwardedRef = useRef(false);
     const completionLabel = isSequence ? (isLast ? '전체 학습 완료하기' : '다음 한자로 이동') : '학습지 완료하기';
 
@@ -339,10 +338,13 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.sound}</span>
                         </div>
                         <button
-                            onClick={() => playCardSound(item)}
-                            className="mt-3 w-11 h-11 rounded-2xl bg-white border-2 border-[#E9EDF2] flex items-center justify-center active:scale-90 shadow-sm"
+                            onClick={() => {
+                                setIsSpeaking(true);
+                                playCardSound(item, () => setIsSpeaking(false));
+                            }}
+                            className={`mt-3 w-11 h-11 rounded-2xl border-2 flex items-center justify-center active:scale-90 shadow-sm transition-all ${isSpeaking ? 'bg-[#7C83FF] border-[#7C83FF]' : 'bg-white border-[#E9EDF2]'}`}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#7C83FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={isSpeaking ? '#fff' : '#7C83FF'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                                 <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
                             </svg>
