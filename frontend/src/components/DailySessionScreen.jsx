@@ -1039,7 +1039,7 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                         </div>
                         <div className="w-full flex items-center gap-2 mt-1">
                             <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden shadow-inner">
-                                <div className="h-full rounded-full transition-all duration-700"
+                                <div className="quiz-progress-fill"
                                     style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #2ED6C5, #0D9488)', boxShadow: '0 0 6px rgba(46,214,197,0.3)' }} />
                             </div>
                             <span className="font-black text-[11px] text-[#0D9488] min-w-[28px] text-right">{Math.round(progressPct)}%</span>

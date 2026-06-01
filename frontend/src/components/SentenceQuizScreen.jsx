@@ -619,7 +619,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
         })();
 
         return (
-            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
+            <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: '#F8FAF9' }}>
                 <style>{`
                     @keyframes star-burst-1 {
                         0% { transform: translate(0, 0) scale(0.5) rotate(0deg); opacity: 0; }
@@ -691,12 +691,12 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             className="hp-nav-button">
                             <span>{started ? '✕' : '←'}</span>
                         </button>
-                        <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                            <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
+                        <div className="quiz-header-title-area">
+                            <h2 className="quiz-screen-title">문장 퀴즈</h2>
                             <p className="screen-subtitle">빈칸에 알맞은 단어를 선택하세요</p>
                         </div>
                         <div className="flex items-center justify-end w-11">
-                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{displayQuestionNumber}/{plannedQuizTotal}</span>
+                            <span className="quiz-counter-text">{displayQuestionNumber}/{plannedQuizTotal}</span>
                         </div>
                     </div>
                     <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-2 relative px-1 mx-auto max-w-[90%]">
@@ -877,15 +877,15 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 </div>
                 {showExitModal && (
                     <div className="modal-overlay">
-                        <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="quiz-result-card">
                             <img
                                 src={getCharacterImage(selectedCharacter, 'keep_going')}
                                 alt="exit confirm"
-                                className="w-[120px] h-[120px] object-contain mb-4"
+                                className="quiz-char-img"
                                 className="img-shadow-sm"
                             />
-                            <div className="text-center flex flex-col gap-2 mb-6">
-                                <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                            <div className="quiz-result-content">
+                                <h2 className="quiz-result-title">
                                     {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
                                 </h2>
                                 <p className="body-muted break-keep">
@@ -912,7 +912,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
     // ── 선택 화면 (급수/주제별 탭 + 시작 버튼) ────────────────────────────
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F7FAF9' }}>
+        <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: '#F7FAF9' }}>
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                 <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
@@ -920,8 +920,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         className="hp-nav-button">
                         <span>←</span>
                     </button>
-                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
+                    <div className="quiz-header-title-area">
+                        <h2 className="quiz-screen-title">문장 퀴즈</h2>
                         <p className="screen-subtitle">빈칸에 알맞은 단어를 선택하세요</p>
                     </div>
                     <div className="w-11" />
@@ -1005,15 +1005,15 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
             </div>
             {showExitModal && (
                 <div className="modal-overlay">
-                    <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="quiz-result-card">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
-                            className="w-[120px] h-[120px] object-contain mb-4"
+                            className="quiz-char-img"
                             className="img-shadow-sm"
                         />
-                        <div className="text-center flex flex-col gap-2 mb-6">
-                            <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                        <div className="quiz-result-content">
+                            <h2 className="quiz-result-title">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
                             </h2>
                             <p className="body-muted break-keep">

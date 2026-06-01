@@ -200,12 +200,12 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                     <button onClick={onBack} className="hp-nav-button">
                         <span>✕</span>
                     </button>
-                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">사자성어 퀴즈</h2>
+                    <div className="quiz-header-title-area">
+                        <h2 className="quiz-screen-title">사자성어 퀴즈</h2>
                         <p className="screen-subtitle">사자성어를 보고 뜻을 맞혀보세요</p>
                     </div>
                     <div className="flex items-center justify-end w-11">
-                        <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{idx + 1}/{questions.length}</span>
+                        <span className="quiz-counter-text">{idx + 1}/{questions.length}</span>
                     </div>
                 </div>
                 <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">

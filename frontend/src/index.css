@@ -1531,6 +1531,81 @@ body.dark .clay-button {
         #020617;
 }
 
+/* ── 퀴즈 화면 공통 레이아웃 구조 ─────────────────────────── */
+.quiz-screen {
+    width: 100%; height: 100dvh;
+    display: flex; flex-direction: column;
+    max-width: 1280px; margin: 0 auto;
+    overflow: hidden;
+    background-color: #F7FAF9;
+}
+.quiz-screen--plain { background-color: transparent; }
+
+.quiz-header-wrap {
+    width: 100%; flex-shrink: 0;
+    padding-top: calc(env(safe-area-inset-top) + 1rem);
+    padding-inline: 1rem;
+    margin-bottom: 0.75rem;
+}
+.quiz-header-wrap--sm { margin-bottom: 0.5rem; }
+
+.quiz-header-title-area {
+    display: flex; flex-direction: column;
+    align-items: center; min-width: 0; flex: 1;
+    padding-inline: 0.5rem;
+}
+.quiz-screen-title {
+    font-size: var(--text-h3); font-weight: 700;
+    color: #5B677A; margin: 0; word-break: keep-all;
+}
+.quiz-counter-text {
+    color: #AEB7C5; font-size: var(--text-sm);
+    font-weight: 700; white-space: nowrap;
+}
+.quiz-content-area {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    padding-inline: 1.25rem; padding-bottom: 2rem;
+    overflow-y: auto;
+}
+.quiz-content-inner {
+    width: 100%; max-width: 28rem;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 1.25rem; padding-top: 0.5rem;
+}
+.quiz-progress-fill {
+    height: 100%; border-radius: 9999px;
+    transition: width 0.5s ease;
+}
+
+/* ── 퀴즈 결과 카드 ──────────────────────────────────────── */
+.quiz-result-card {
+    width: 100%; max-width: 24rem;
+    display: flex; flex-direction: column; align-items: center;
+    background: white; box-shadow: 0 25px 50px rgba(0,0,0,0.12);
+    border-radius: 40px; padding: 2rem;
+    position: relative; overflow: hidden;
+    animation: zoom-in 0.2s ease, fade-in 0.2s ease;
+}
+.quiz-result-content {
+    text-align: center; display: flex;
+    flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;
+}
+.quiz-result-title {
+    font-size: var(--text-h3-res); font-weight: 900;
+    color: #334155; letter-spacing: -0.02em; line-height: 1.3;
+}
+.quiz-char-img {
+    width: 120px; height: 120px;
+    object-fit: contain; margin-bottom: 1rem;
+}
+.modal-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
 /* 화면 헤더 서브타이틀 */
 .screen-subtitle {
     font-size: var(--text-xs);
@@ -1540,6 +1615,16 @@ body.dark .clay-button {
     line-height: 1.25;
     word-break: keep-all;
     color: #969CEB;
+}
+
+/* 학습지 단어/사자성어 카드 아이템 */
+.flashcard-word-item {
+    display: flex;
+    flex-direction: column;
+    background-color: #FCFCFC;
+    border: 1.5px solid #E9EDF2;
+    border-radius: 28px;
+    padding: 24px 28px;
 }
 
 /* 퀴즈 진행바 트랙 */

@@ -708,13 +708,13 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                         className="hp-nav-button">
                         <span>{(phase === 'quiz') ? '✕' : '←'}</span>
                     </button>
-                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">단어 퀴즈</h2>
+                    <div className="quiz-header-title-area">
+                        <h2 className="quiz-screen-title">단어 퀴즈</h2>
                         <p className="screen-subtitle">한자의 뜻과 음을 골라보세요</p>
                     </div>
                     <div className="flex items-center justify-end w-11">
                         {phase === 'quiz' && (
-                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{currentIdx + 1}/{questions.length}</span>
+                            <span className="quiz-counter-text">{currentIdx + 1}/{questions.length}</span>
                         )}
                     </div>
                 </div>
@@ -855,15 +855,15 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
             </div>
             {showExitModal && (
                 <div className="modal-overlay">
-                    <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="quiz-result-card">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
-                            className="w-[120px] h-[120px] object-contain mb-4"
+                            className="quiz-char-img"
                             className="img-shadow-sm"
                         />
-                        <div className="text-center flex flex-col gap-2 mb-6">
-                            <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                        <div className="quiz-result-content">
+                            <h2 className="quiz-result-title">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
                             </h2>
                             <p className="body-muted break-keep">

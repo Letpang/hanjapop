@@ -244,7 +244,7 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
 
   if (phase === 'quiz') {
     return (
-      <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
+      <div className="quiz-screen">
         <div className="w-full shrink-0 safe-top pt-4 px-4 mb-3">
           <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-5 shadow-md border border-white">
             <button onClick={onBack}
@@ -257,15 +257,15 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
               <div className="quiz-progress-track">
-                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }} />
+                <div className="quiz-progress-fill" style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }} />
               </div>
             </div>
             <span className="text-sm font-extrabold text-[#4A51D4] shrink-0">{correct}점</span>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
-          <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
+        <div className="quiz-content-area">
+          <div className="quiz-content-inner">
             <div className="grade-test-question-card">
               <span className="grade-test-type-label">
                 {TYPE_LABELS[q.type] || ''}

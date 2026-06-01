@@ -179,7 +179,7 @@ const MainMenuRenewal = ({
                                             </span>
                                         </div>
                                         <div className="w-full h-[10px] rounded-full bg-slate-200 overflow-hidden shadow-inner">
-                                            <div className="h-full rounded-full transition-all duration-700"
+                                            <div className="quiz-progress-fill"
                                                 style={{ width: `${rank.progress}%`, background: 'linear-gradient(90deg, #2ED6C5, #0D9488)' }} />
                                         </div>
                                     </div>
@@ -310,7 +310,7 @@ const MainMenuRenewal = ({
                                 <span className="font-bold text-xs shrink-0 text-[#8f99ad]">급수진행도</span>
                                 <div className="flex-1 flex items-center gap-2 min-w-0">
                                     <div className="flex-1 rounded-full overflow-hidden h-[10px] bg-slate-100 shadow-inner">
-                                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
+                                        <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
                                     </div>
                                     <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-orange-50/80 border border-orange-100/60 shadow-sm shrink-0">
                                         <span className="font-black text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>

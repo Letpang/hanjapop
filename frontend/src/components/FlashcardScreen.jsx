@@ -314,8 +314,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <button onClick={onBack} className="hp-nav-button">
                         ←
                     </button>
-                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
+                    <div className="quiz-header-title-area">
+                        <h2 className="quiz-screen-title">한자 학습지</h2>
                         <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="w-11" />
@@ -378,7 +378,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         {isWordsOpen && (
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {regularWords.map((w, i) => (
-                                    <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
+                                    <div key={i} className="flashcard-word-item">
                                         <div className="flex items-baseline gap-2">
                                             <span className="hanja-char font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{w.word}</span>
                                             <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({w.reading})</span>
@@ -415,7 +415,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         {isIdiomsOpen && (
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {relatedIdioms.map((idiom, i) => (
-                                    <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
+                                    <div key={i} className="flashcard-word-item">
                                         <div className="flex items-baseline gap-2">
                                             <span className="hanja-char font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
                                             <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
@@ -541,7 +541,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 {/* 퀴즈 완료 결과 모달 (시퀀스의 마지막에만 노출) */}
                 {quizDone && (
                     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setQuizDone(false); onNext(); }} />
+                        <div className="modal-backdrop" onClick={() => { setQuizDone(false); onNext(); }} />
                         
                         <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
                             <div className="pt-4 pb-8 px-6 flex flex-col items-center gap-2 w-full relative">
@@ -754,13 +754,13 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                         className="hp-nav-button">
                         <span>{studyItem || (hanjaFilter && hanjaFilter.length > 0) ? '✕' : '←'}</span>
                     </button>
-                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
+                    <div className="quiz-header-title-area">
+                        <h2 className="quiz-screen-title">한자 학습지</h2>
                         <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="flex items-center justify-end w-11">
                         {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (
-                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">
+                            <span className="quiz-counter-text">
                                 {hanjaFilter && hanjaFilter.length > 0 ? `${currentIndex + 1}/${currentItems.length}` : '1/1'}
                             </span>
                         )}
@@ -827,15 +827,15 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
             </div>
             {showExitModal && (
                 <div className="modal-overlay">
-                    <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="quiz-result-card">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
-                            className="w-[120px] h-[120px] object-contain mb-4"
+                            className="quiz-char-img"
                             className="img-shadow-sm"
                         />
-                        <div className="text-center flex flex-col gap-2 mb-6">
-                            <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                        <div className="quiz-result-content">
+                            <h2 className="quiz-result-title">
                                 정말 학습을 중단할까요? 🥺
                             </h2>
                             <p className="body-muted break-keep">

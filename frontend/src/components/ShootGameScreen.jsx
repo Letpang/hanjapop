@@ -708,7 +708,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     if (status === 'idle') {
         return (
-            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
+            <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: '#F8FAF9' }}>
                 {/* 헤더 */}
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
@@ -716,8 +716,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             className="hp-nav-button">
                             <span>←</span>
                         </button>
-                        <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                            <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">몬스터 슈팅</h2>
+                        <div className="quiz-header-title-area">
+                            <h2 className="quiz-screen-title">몬스터 슈팅</h2>
                         <p className="screen-subtitle">정답 한자를 맞춰 몬스터를 물리치세요</p>
                         </div>
                         <div className="w-11" />
@@ -942,7 +942,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     {/* 2. 진행도 */}
                     <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center gap-2 flex-1 min-w-0">
                         <div className="flex-1 h-2 bg-[#F4F7F8] rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
+                            <div className="quiz-progress-fill" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
                         </div>
                         <span className="text-xs font-black text-[#AEB7C5] tabular-nums whitespace-nowrap">{waveKills}/{diffConfig.killsPerWave}</span>
                     </div>
@@ -989,7 +989,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                 {w.state === 'exploding' ? (
                                     <div className="w-24 h-24 absolute flex items-center justify-center animate-ping opacity-50"><IconExplosionBig /></div>
                                 ) : (
-                                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
+                                    <div className="quiz-header-title-area">
                                         {/* Review 라벨 삭제 */}
                                         <div className={`w-14 h-14 md:w-20 md:h-20 animate-bounce ${w.isWrongItem ? "drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]" : "drop-shadow-md"}`}>
                                             <MonsterIcon />
@@ -1161,15 +1161,15 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             </div>
             {showExitModal && (
                 <div className="modal-overlay">
-                    <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="quiz-result-card">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
-                            className="w-[120px] h-[120px] object-contain mb-4"
+                            className="quiz-char-img"
                             className="img-shadow-sm"
                         />
-                        <div className="text-center flex flex-col gap-2 mb-6">
-                            <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
+                        <div className="quiz-result-content">
+                            <h2 className="quiz-result-title">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요? 🥺'}
                             </h2>
                             <p className="body-muted break-keep">

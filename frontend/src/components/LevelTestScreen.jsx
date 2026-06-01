@@ -185,7 +185,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
 
     if (phase === 'intro') {
         return (
-            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden">
+            <div className="quiz-screen quiz-screen--plain">
                 {/* 헤더 */}
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                     <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
@@ -261,7 +261,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
         const isHanjaDisplay = q.qType === 'meaning' || q.qType === 'sound';
 
         return (
-            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
+            <div className="quiz-screen">
                 {xpPopup.show && (
                     <div key={xpPopup.key} className="xp-popup-wrapper">
                         <div className="xp-popup-badge">
@@ -283,7 +283,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                                 <span>{qIndex + 1} / {questions.length}</span>
                             </div>
                             <div className="quiz-progress-track">
-                                <div className="h-full rounded-full transition-all duration-500"
+                                <div className="quiz-progress-fill"
                                     style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }} />
                             </div>
                         </div>
@@ -291,8 +291,8 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                 </div>
 
                 {/* 문제 영역 */}
-                <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
-                    <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
+                <div className="quiz-content-area">
+                    <div className="quiz-content-inner">
                         {/* 문제 카드 */}
                         <div className="grade-test-question-card">
                             <p className="grade-test-prompt">{q.prompt}</p>
@@ -343,7 +343,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
     // Result phase
     return (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={handleFinish} />
+            <div className="modal-backdrop" onClick={handleFinish} />
             
             <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
                 <div className="pt-1 pb-1 px-8 flex flex-col items-center gap-2 w-full relative">
