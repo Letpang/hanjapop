@@ -121,8 +121,8 @@ const buildWorksheetQuiz = (item) => {
     });
 
     // Q3~Q5: 역방향 — 뜻 보고 한자어 고르기 (단어마다 1개, 최대 3개)
-    const wordPool = (item.words || []).filter(w => w.word && w.meaning);
-    const allWords = HANJA_DATA.flatMap(h => h.words || []);
+    const wordPool = (item.words || []).filter(w => w.word && w.meaning && w.type !== 'idiom');
+    const allWords = HANJA_DATA.flatMap(h => h.words || []).filter(w => w.type !== 'idiom');
     shuffle(wordPool).slice(0, 3).forEach((w, i) => {
         const revDistractors = shuffle(allWords.filter(x => x.word && x.word !== w.word)).slice(0, 3).map(x => x.word);
         questions.push({
@@ -227,6 +227,15 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const hasSynAnt = (item.syn && item.syn.length > 0) || (item.ant && item.ant.length > 0);
 
+    const [isWordsOpen, setIsWordsOpen] = useState(false);
+    const [isIdiomsOpen, setIsIdiomsOpen] = useState(false);
+    const [isSynAntOpen, setIsSynAntOpen] = useState(false);
+    const [isQuizOpen, setIsQuizOpen] = useState(false);
+
+    const regularWords = useMemo(() => {
+        return (item.words || []).filter(w => w.type !== 'idiom');
+    }, [item]);
+
     const relatedIdioms = useMemo(() => {
         return (item.words || [])
             .filter(w => w.type === 'idiom')
@@ -316,23 +325,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 </div>
             </div>
 
-            {/* ── 섹션 바로가기 ── */}
-            <div className="w-full px-5 pt-4 pb-2 flex items-center justify-center gap-2 flex-wrap">
-                {[
-                    { label: '관련 단어', ref: refWords, theme: 'warm', show: true },
-                    { label: '사자성어', ref: refIdioms, theme: 'purple', show: relatedIdioms.length > 0 },
-                    { label: '유사어·반대어', ref: refSynAnt, theme: 'purple', show: hasSynAnt },
-                    { label: '문제', ref: refQuiz, theme: 'blue', show: true },
-                ].filter(s => s.show).map(({ label, ref, theme }) => (
-                    <button
-                        key={label}
-                        onClick={() => scrollTo(ref)}
-                        className={`hp-section-shortcut hp-section-shortcut--${theme}`}
-                    >
-                        {label}
-                    </button>
-                ))}
-            </div>
+
 
             <div className="flex-1 min-h-0 overflow-y-auto pb-32 px-5 pt-4 flex flex-col gap-10 max-w-2xl w-full mx-auto">
 
@@ -362,115 +355,144 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 </div>
 
                 {/* ── 섹션 3: 단어장 ── */}
-                {item.words && item.words.length > 0 && (
-                    <div ref={refWords} className="flex flex-col gap-5">
-                        <div className="flex items-center gap-3 px-1">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="4" y="3" width="16" height="18" rx="3" />
-                                    <line x1="8" y1="8" x2="16" y2="8" />
-                                    <line x1="8" y1="12" x2="14" y2="12" />
-                                    <line x1="8" y1="16" x2="12" y2="16" />
+                {regularWords.length > 0 && (
+                    <div ref={refWords} className="flex flex-col gap-4">
+                        <button onClick={() => setIsWordsOpen(!isWordsOpen)} className="flex items-center justify-between w-full text-left px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="4" y="3" width="16" height="18" rx="3" />
+                                        <line x1="8" y1="8" x2="16" y2="8" />
+                                        <line x1="8" y1="12" x2="14" y2="12" />
+                                        <line x1="8" y1="16" x2="12" y2="16" />
+                                    </svg>
+                                </div>
+                                <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>관련 단어 <span className="text-sm text-[#9AA4B5] ml-1">({regularWords.length})</span></span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isWordsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>관련 단어</span>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            {item.words.map((w, i) => (
-                                <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{w.word}</span>
-                                        <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({w.reading})</span>
+                        </button>
+                        {isWordsOpen && (
+                            <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                                {regularWords.map((w, i) => (
+                                    <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{w.word}</span>
+                                            <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({w.reading})</span>
+                                        </div>
+                                        <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{w.meaning}</span>
                                     </div>
-                                    <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{w.meaning}</span>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* ── 섹션 3-2: 사자성어 ── */}
                 {relatedIdioms.length > 0 && (
-                    <div ref={refIdioms} className="flex flex-col gap-5">
-                        <div className="flex items-center gap-3 px-1">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="4" y="3" width="16" height="18" rx="3" />
-                                    <line x1="8" y1="8" x2="16" y2="8" />
-                                    <line x1="8" y1="12" x2="14" y2="12" />
-                                    <line x1="8" y1="16" x2="12" y2="16" />
+                    <div ref={refIdioms} className="flex flex-col gap-4">
+                        <button onClick={() => setIsIdiomsOpen(!isIdiomsOpen)} className="flex items-center justify-between w-full text-left px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="4" y="3" width="16" height="18" rx="3" />
+                                        <line x1="8" y1="8" x2="16" y2="8" />
+                                        <line x1="8" y1="12" x2="14" y2="12" />
+                                        <line x1="8" y1="16" x2="12" y2="16" />
+                                    </svg>
+                                </div>
+                                <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>사자성어 <span className="text-sm text-[#9AA4B5] ml-1">({relatedIdioms.length})</span></span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isIdiomsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>사자성어</span>
-                        </div>
-                        <div className="flex flex-col gap-4">
-                            {relatedIdioms.map((idiom, i) => (
-                                <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
-                                        <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
+                        </button>
+                        {isIdiomsOpen && (
+                            <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                                {relatedIdioms.map((idiom, i) => (
+                                    <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
+                                            <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
+                                        </div>
+                                        <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{idiom.meaning}</span>
                                     </div>
-                                    <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{idiom.meaning}</span>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* ── 섹션 3-3: 유사어 · 반대어 ── */}
                 {hasSynAnt && (
-                    <div ref={refSynAnt} className="flex flex-col gap-5">
-                        <div className="flex items-center gap-3 px-1">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="4" y="3" width="16" height="18" rx="3" />
-                                    <line x1="8" y1="8" x2="16" y2="8" />
-                                    <line x1="8" y1="12" x2="14" y2="12" />
-                                    <line x1="8" y1="16" x2="12" y2="16" />
+                    <div ref={refSynAnt} className="flex flex-col gap-4">
+                        <button onClick={() => setIsSynAntOpen(!isSynAntOpen)} className="flex items-center justify-between w-full text-left px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="4" y="3" width="16" height="18" rx="3" />
+                                        <line x1="8" y1="8" x2="16" y2="8" />
+                                        <line x1="8" y1="12" x2="14" y2="12" />
+                                        <line x1="8" y1="16" x2="12" y2="16" />
+                                    </svg>
+                                </div>
+                                <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>유사어 · 반대어</span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isSynAntOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                                 </svg>
                             </div>
-                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>유사어 · 반대어</span>
-                        </div>
+                        </button>
+                        
+                        {isSynAntOpen && (
+                            <div className="flex flex-col gap-5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                                {item.syn && item.syn.length > 0 && (
+                                    <div className="flex flex-col gap-3">
+                                        <span className="font-bold text-sm px-1" style={{ color: '#7C83FF' }}>유사어 — 비슷한 뜻</span>
+                                        <div className="flex flex-wrap gap-3">
+                                            {item.syn.map(h => {
+                                                const d = HANJA_MAP[h];
+                                                return d ? (
+                                                    <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#F4F3FF', border: '1.5px solid #C3C6FF' }}>
+                                                        <span className="font-black text-h3" style={{ color: '#7C83FF' }}>{h}</span>
+                                                        <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
+                                                    </div>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
-                        {item.syn && item.syn.length > 0 && (
-                            <div className="flex flex-col gap-3">
-                                <span className="font-bold text-sm px-1" style={{ color: '#7C83FF' }}>유사어 — 비슷한 뜻</span>
-                                <div className="flex flex-wrap gap-3">
-                                    {item.syn.map(h => {
-                                        const d = HANJA_MAP[h];
-                                        return d ? (
-                                            <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#F4F3FF', border: '1.5px solid #C3C6FF' }}>
-                                                <span className="font-black text-h3" style={{ color: '#7C83FF' }}>{h}</span>
-                                                <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
-                                            </div>
-                                        ) : null;
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {item.ant && item.ant.length > 0 && (
-                            <div className="flex flex-col gap-3">
-                                <span className="font-bold text-sm px-1" style={{ color: '#FF8D72' }}>반대어 — 반대 뜻</span>
-                                <div className="flex flex-wrap gap-3">
-                                    {item.ant.map(h => {
-                                        const d = HANJA_MAP[h];
-                                        return d ? (
-                                            <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#FFF3EE', border: '1.5px solid #FFCDB8' }}>
-                                                <span className="font-black text-h3" style={{ color: '#FF8D72' }}>{h}</span>
-                                                <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
-                                            </div>
-                                        ) : null;
-                                    })}
-                                </div>
+                                {item.ant && item.ant.length > 0 && (
+                                    <div className="flex flex-col gap-3">
+                                        <span className="font-bold text-sm px-1" style={{ color: '#FF8D72' }}>반대어 — 반대 뜻</span>
+                                        <div className="flex flex-wrap gap-3">
+                                            {item.ant.map(h => {
+                                                const d = HANJA_MAP[h];
+                                                return d ? (
+                                                    <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#FFF3EE', border: '1.5px solid #FFCDB8' }}>
+                                                        <span className="font-black text-h3" style={{ color: '#FF8D72' }}>{h}</span>
+                                                        <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
+                                                    </div>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 )}
 
                 {/* ── 섹션 4: 연습 문제 ── */}
-                <div ref={refQuiz} className="flex flex-col gap-6">
-                    <div className="flex items-center px-1">
+                <div ref={refQuiz} className="flex flex-col gap-4">
+                    <button onClick={() => setIsQuizOpen(!isQuizOpen)} className="flex items-center justify-between w-full text-left px-1">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -482,21 +504,28 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             </div>
                             <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>연습 문제</span>
                         </div>
-                    </div>
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isQuizOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                    </button>
 
-                    <div className="flex flex-col gap-10">
-                        {questions.map((q, idx) => (
-                            <div key={q.id} className="minimal-card-studio p-5 bg-white border border-[#E9EDF2] shadow-xl !rounded-[3rem]">
-                                <QuizItem
-                                    q={q}
-                                    idx={idx}
-                                    onAnswer={handleAnswer}
-                                    answered={!!answers[q.id]}
-                                    twoCol={!q.id.startsWith('q_word_') && q.id !== 'q_syn' && q.id !== 'q_ant'}
-                                />
-                            </div>
-                        ))}
-                    </div>
+                    {isQuizOpen && (
+                        <div className="flex flex-col gap-10 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                            {questions.map((q, idx) => (
+                                <div key={q.id} className="minimal-card-studio p-5 bg-white border border-[#E9EDF2] shadow-xl !rounded-[3rem]">
+                                    <QuizItem
+                                        q={q}
+                                        idx={idx}
+                                        onAnswer={handleAnswer}
+                                        answered={!!answers[q.id]}
+                                        twoCol={!q.id.startsWith('q_word_') && q.id !== 'q_syn' && q.id !== 'q_ant'}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* 하단 완료/다음 버튼 */}
                     <div className="flex w-full mt-2">
@@ -505,8 +534,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         </CtaButton>
                     </div>
 
-                    </div>
                 </div>
+            </div>
 
                 {/* 퀴즈 완료 결과 모달 (시퀀스의 마지막에만 노출) */}
                 {quizDone && (
@@ -716,20 +745,41 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
             />
         )}
             {/* 헤더 */}
-            <div className="w-full shrink-0 safe-top pt-4 px-4 mb-5">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+            <div className="w-full shrink-0 safe-top pt-2 px-4 mb-3">
+                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
                     <button onClick={
-                        studyItem ? () => setShowExitModal(true) : onBack
+                        studyItem || (hanjaFilter && hanjaFilter.length > 0) ? () => setShowExitModal(true) : onBack
                     }
                         className="hp-nav-button">
-                        <span>{studyItem ? '✕' : '←'}</span>
+                        <span>{studyItem || (hanjaFilter && hanjaFilter.length > 0) ? '✕' : '←'}</span>
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
                         <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
-                    <div className="w-11" />
+                    <div className="flex items-center justify-end w-11">
+                        {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (
+                            <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">
+                                {hanjaFilter && hanjaFilter.length > 0 ? `${currentIndex + 1}/${currentItems.length}` : '1/1'}
+                            </span>
+                        )}
+                    </div>
                 </div>
+                {/* 진행 바 */}
+                {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (
+                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-2 relative px-1 mx-auto max-w-[90%]">
+                        <div
+                            className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
+                            style={{ width: `${(hanjaFilter && hanjaFilter.length > 0) ? ((currentIndex + 1) / currentItems.length) * 100 : 100}%` }}
+                        >
+                            {characterAvatar && (
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
+                                    <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 본문 컨텐츠 */}

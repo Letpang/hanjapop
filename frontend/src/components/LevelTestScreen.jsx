@@ -64,10 +64,10 @@ const buildLevelTestQuestions = (unlockedHanja) => {
             });
         } else {
             // 단어 뜻 맞추기
-            const wordPool = (item.words || []).filter(w => w.word && w.meaning);
+            const wordPool = (item.words || []).filter(w => w.word && w.meaning && w.type !== 'idiom');
             if (wordPool.length > 0) {
                 const target = shuffle(wordPool)[0];
-                const allWords = SORTED_HANJA.flatMap(h => h.words || []);
+                const allWords = SORTED_HANJA.flatMap(h => h.words || []).filter(w => w.type !== 'idiom');
                 const distractors = shuffle(allWords.filter(w => w.meaning && w.meaning !== target.meaning)).slice(0, 3).map(w => w.meaning);
                 questions.push({
                     id: `q_${idx}_word`,

@@ -620,17 +620,20 @@ body.dark-mode {
     box-shadow: 0 14px 28px rgba(255, 155, 115, 0.10), inset 0 1px 0 rgba(255,255,255,0.92);
 }
 
-.mm-quest-card--focus::before {
-    background: linear-gradient(180deg, #FFB36F, #FF7B65);
+.mm-quest-card--focus {
+    border-color: rgba(255, 155, 115, 0.42);
+    box-shadow: 0 14px 28px rgba(255, 155, 115, 0.10), inset 0 1px 0 rgba(255,255,255,0.92);
 }
 
 .mm-quest-card--done {
     opacity: 0.82;
 }
 
-.mm-quest-card--done::before {
-    background: #2ED6C5;
-}
+.mm-quest-card--stripe-study::before   { background: linear-gradient(180deg, #FFB36F, #FF9B73); }
+.mm-quest-card--stripe-quiz::before    { background: linear-gradient(180deg, #9198FF, #7C83FF); }
+.mm-quest-card--stripe-game::before    { background: linear-gradient(180deg, #FFB8BA, #FF9FA3); }
+.mm-quest-card--stripe-writing::before { background: linear-gradient(180deg, #FFD590, #FFC879); }
+.mm-quest-card--stripe-idiom::before   { background: linear-gradient(180deg, #B8B2FF, #A99CFF); }
 
 .mm-quest-card:active {
     transform: scale(0.98);

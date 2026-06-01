@@ -652,6 +652,8 @@ const App = () => {
                 return <IdiomScreen
                     onBack={() => setCurrentScreen('main')}
                     contentPool={effectivePool}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
                 />;
             case 'idiomQuiz':
                 return <IdiomScreen
@@ -662,6 +664,8 @@ const App = () => {
                         handleHanjaAcquired(null, 25);
                         updateMissionProgress('idiomQuiz', 1, addBonusXp);
                     }}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
                 />;
             case 'gradeExamSelect':
                 return <GradeExamSelectScreen

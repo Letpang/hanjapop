@@ -15,7 +15,7 @@ const buildWordPool = () => {
     for (const h of HANJA_DATA) {
         if (!h.words || h.words.length === 0) continue;
         for (const w of h.words) {
-            if (w.word && w.meaning) {
+            if (w.word && w.meaning && w.type !== 'idiom') {
                 pool.push({
                     id: w.id,
                     hanja_char: h.hanja,

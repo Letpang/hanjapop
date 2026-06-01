@@ -38,13 +38,13 @@ const FLOAT_CSS = `
 `;
 
 const MISSION_META = {
-    flashcard:    { label: '한자 학습지', icon: '/assets/images/icons/study.png',    nav: 'flashcard'    },
-    wordQuiz:     { label: '단어 퀴즈',   icon: '/assets/images/icons/words.png',    nav: 'wordQuiz'     },
-    sentenceQuiz: { label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.png', nav: 'sentenceQuiz' },
-    shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame'    },
-    matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame'    },
-    writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing'      },
-    idiomQuiz:    { label: '사자성어',     icon: null,                               nav: 'idiomQuiz'    },
+    flashcard:    { label: '한자 학습지', icon: '/assets/images/icons/study.png',    nav: 'flashcard',    color: '#FF9B73' },
+    wordQuiz:     { label: '단어 퀴즈',   icon: '/assets/images/icons/words.png',    nav: 'wordQuiz',     color: '#7C83FF' },
+    sentenceQuiz: { label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.png', nav: 'sentenceQuiz', color: '#7C83FF' },
+    shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame',    color: '#2ED6C5' },
+    matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame',    color: '#2ED6C5' },
+    writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing',      color: '#FFB347' },
+    idiomQuiz:    { label: '사자성어',     icon: null,                               nav: 'idiomQuiz',    color: '#9B6BFF' },
 };
 
 const MainMenuRenewal = ({
@@ -360,9 +360,14 @@ const MainMenuRenewal = ({
                                 <button
                                     key={m.id}
                                     onClick={() => meta.nav && onNavigate(meta.nav)}
-                                    className={`mm-quest-card ${m.done ? 'mm-quest-card--done' : isRecommended ? 'mm-quest-card--focus' : ''}`}
+                                    className="w-full flex items-center gap-3 py-3.5 px-4 rounded-[1.5rem] active:scale-[0.97] transition-all bg-white relative overflow-hidden shadow-sm"
                                 >
-                                    <div className="flex-1 flex items-center justify-between min-w-0 relative z-10">
+                                    {/* 좌측 컈러 바 */}
+                                    <div
+                                        className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-[1.5rem]"
+                                        style={{ background: meta.color || '#2ED6C5', opacity: m.done ? 0.35 : 1 }}
+                                    />
+                                    <div className="flex-1 flex items-center justify-between min-w-0 relative z-10 pl-1">
                                         <div className="flex items-center gap-2 min-w-0">
                                             <span className="font-black text-[20px] truncate text-slate-700">
                                                 {meta.label || m.label}
@@ -376,7 +381,10 @@ const MainMenuRenewal = ({
                                         </span>
                                     </div>
 
-                                    <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center relative z-10 shadow-sm border-2 bg-[#2ED6C5] border-[#2ED6C5] text-white">
+                                    <div
+                                        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center relative z-10 shadow-sm border-2 text-white"
+                                        style={{ background: '#FF9B73', borderColor: '#FF9B73', opacity: m.done ? 0.5 : 1 }}
+                                    >
                                         <span style={{ fontSize: 14, fontWeight: 900 }}>▶</span>
                                     </div>
                                 </button>

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import IDIOMS from '../data/idioms.js';
 import HANJA_DATA from '../hanja_unified.json';
 import CtaButton from './common/CtaButton.jsx';
+import { getRankDetails } from '../utils/rankUtils.js';
 
 const collectIdioms = (hanjaIds) => {
     const idSet = new Set(hanjaIds);
@@ -125,13 +126,18 @@ const buildQuiz = (idioms) => {
     return questions;
 };
 
-const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
+const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
     const [idx, setIdx] = useState(0);
     const [wrongChoices, setWrongChoices] = useState([]);
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
     const [score, setScore] = useState(0);
     const [done, setDone] = useState(false);
+
+    const characterAvatar = useMemo(() => {
+        if (!selectedCharacter) return null;
+        return getRankDetails(userXp || 0, selectedCharacter).avatar;
+    }, [userXp, selectedCharacter]);
 
     const q = questions[idx];
 
@@ -189,24 +195,44 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
 
     return (
         <div className="idiom-quiz-shell">
-            <div className="idiom-quiz-meta">
-                <span>사자성어 퀴즈</span>
-                <span>{idx + 1} / {questions.length}</span>
-                <span>{score}점</span>
+            <div className="w-full shrink-0 mb-4 w-full max-w-lg mx-auto">
+                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
+                    <button onClick={onBack} className="hp-nav-button">
+                        <span>✕</span>
+                    </button>
+                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
+                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">사자성어 퀴즈</h2>
+                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>사자성어를 보고 뜻을 맞혀보세요</p>
+                    </div>
+                    <div className="flex items-center justify-end w-11">
+                        <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{idx + 1}/{questions.length}</span>
+                    </div>
+                </div>
+                <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-3 relative px-1 mx-auto max-w-[90%]">
+                    <div
+                        className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
+                        style={{ width: `${((idx + 1) / questions.length) * 100}%` }}
+                    >
+                        {characterAvatar && (
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
+                                <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <div className="idiom-quiz-question-card">
                 <span className="idiom-quiz-type-label">{q.typeLabel}</span>
                 <p className="idiom-quiz-prompt">{q.prompt}</p>
 
-                {/* 괄호 채우기: 빈칸 포함 한자 + 독음 */}
+                {/* 괄호 채우기: 빈칸 포함 한자 */}
                 {q.type === 'fill_blank' && (
                     <div className="flex flex-col items-center gap-1">
                         <span className="font-black tracking-widest text-[#1A2B2A]"
                             style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'serif' }}>
                             {q.displayHanja}
                         </span>
-                        <span className="font-bold text-sm" style={{ color: '#7C83FF' }}>{q.displayReading}</span>
                     </div>
                 )}
 
@@ -214,15 +240,13 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
                 {q.type === 'reading' && (
                     <div className="idiom-quiz-hanja-box">
                         <span>{q.hanja}</span>
-                        <small>{q.reading}</small>
                     </div>
                 )}
 
-                {/* 뜻 찾기: 한자 + 독음 */}
+                {/* 뜻 찾기: 전체 한자 박스 */}
                 {q.type === 'meaning_from_idiom' && (
                     <div className="idiom-quiz-hanja-box">
                         <span>{q.hanja}</span>
-                        <small>{q.reading}</small>
                     </div>
                 )}
 
@@ -268,7 +292,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete }) => {
     );
 };
 
-const IdiomScreen = ({ onBack, onComplete, contentPool }) => {
+const IdiomScreen = ({ onBack, onComplete, contentPool, userXp, selectedCharacter }) => {
     const idioms = useMemo(() => {
         if (!contentPool) return IDIOMS;
         const hanjaIds = [
@@ -281,19 +305,8 @@ const IdiomScreen = ({ onBack, onComplete, contentPool }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
-            <div className="w-full px-4 shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '4px' }}>
-                <div className="minimal-card-studio w-full flex justify-between items-center p-4 px-6 bg-white border-[#E9EDF2] shadow-xl !rounded-[3rem] min-h-[72px]">
-                    <button onClick={onBack} className="hp-nav-button">×</button>
-                    <div className="flex flex-col items-center min-w-0 flex-1 px-2">
-                        <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">사자성어 퀴즈</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>
-                            사자성어를 보고 뜻을 맞혀보세요
-                        </p>
-                    </div>
-                    <div className="w-11" />
-                </div>
-            </div>
-            <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} />
+            <div className="w-full shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }} />
+            <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} userXp={userXp} selectedCharacter={selectedCharacter} />
         </div>
     );
 };
