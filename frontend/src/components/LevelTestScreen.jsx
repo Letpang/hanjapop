@@ -245,7 +245,8 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                     <button
                         onClick={handleStart}
                         disabled={unlockedHanja.length < 3}
-                        className="px-12 py-4 rounded-[2rem] bg-[#7C83FF] disabled:bg-slate-300 text-white font-extrabold text-lg shadow-xl active:scale-95 transition-all"
+                        className="w-full max-w-md py-5 rounded-[2rem] font-bold text-h3 text-white disabled:bg-slate-300 active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+                        style={{ background: '#7C83FF' }}
                     >
                         시작하기
                     </button>
@@ -256,11 +257,11 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
 
     if (phase === 'quiz') {
         const q = questions[qIndex];
-        const progress = ((qIndex) / questions.length) * 100;
+        const progress = (qIndex / questions.length) * 100;
         const isHanjaDisplay = q.qType === 'meaning' || q.qType === 'sound';
 
         return (
-            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden relative">
+            <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden bg-[#F7FAF9]">
                 <style>{`@keyframes xpFloat{0%{opacity:0;transform:scale(0.6) translateY(16px)}28%{opacity:1;transform:scale(1.1) translateY(-6px)}40%{opacity:1;transform:scale(1) translateY(0)}68%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:translateY(-28px)}}`}</style>
 
                 {xpPopup.show && (
@@ -270,61 +271,77 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                         </div>
                     </div>
                 )}
-                {/* 헤더 */}
-                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+
+                {/* 헤더 + 진행바 */}
+                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-3">
+                    <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-5 shadow-md border border-white">
                         <button onClick={() => setPhase('intro')}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
-                            ←
+                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-sm active:scale-95 transition-all px-3 py-1.5 font-black text-[#5B677A] text-sm gap-1 shrink-0">
+                            <span>←</span>
                         </button>
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <h2 className="text-lg font-black text-slate-700 m-0">레벨 테스트</h2>
-                            <span className="text-[#7C83FF] opacity-60 text-sm font-bold whitespace-nowrap">{qIndex + 1}/{questions.length}</span>
+                        <div className="flex-1">
+                            <div className="flex justify-between text-xs font-extrabold text-[#AEB7C5] mb-1">
+                                <span>레벨 테스트</span>
+                                <span>{qIndex + 1} / {questions.length}</span>
+                            </div>
+                            <div className="w-full rounded-full overflow-hidden" style={{ height: '11px', backgroundColor: '#E9EDF5' }}>
+                                <div className="h-full rounded-full transition-all duration-500"
+                                    style={{ width: `${progress}%`, backgroundColor: '#6D6FF2' }} />
+                            </div>
                         </div>
-                    </div>
-                    <div className="w-full h-[3px] bg-[#F4F7F8] rounded-full overflow-hidden mt-3 px-2 mx-auto max-w-[90%]">
-                        <div
-                            className="h-full transition-all duration-500 rounded-full bg-[#7C83FF]"
-                            style={{ width: `${progress}%` }}
-                        />
                     </div>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 overflow-y-auto">
-                    <div className="clay-panel rounded-[3rem] p-8 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-4 text-center max-w-sm w-full">
-                        <p className="text-[#5B677A] dark:text-[#AEB7C5] font-bold text-sm">{q.prompt}</p>
-                        <div className={`flex items-center justify-center ${isHanjaDisplay ? 'text-display-res font-extrabold text-[#3C3C3C] dark:text-white' : 'text-h3-res font-extrabold text-[#4A51D4] dark:text-[#7C83FF]'}`}>
-                            {q.hanja}
+                {/* 문제 영역 */}
+                <div className="flex-1 flex flex-col items-center justify-between px-5 pb-8 overflow-y-auto">
+                    <div className="w-full max-w-md flex flex-col items-center gap-5 pt-2">
+                        {/* 문제 카드 */}
+                        <div className="grade-test-question-card">
+                            <p className="grade-test-prompt">{q.prompt}</p>
+                            <div className={`grade-test-hanja-box ${isHanjaDisplay ? 'grade-test-hanja-box--single' : 'grade-test-hanja-box--compound'}`}>
+                                <span className="grade-test-hanja-char hanja-char">{q.hanja}</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
-                        {q.choices.map((choice, ci) => {
-                            let bgClass = 'bg-white dark:bg-slate-800 border-white';
-                            if (revealed) {
-                                if (choice === q.answer) bgClass = 'bg-[#FF9B73]/15 dark:bg-[#FF9B73]/20/50 border-[#FF9B73]';
-                                else if (choice === selected) bgClass = 'bg-red-100 dark:bg-red-900/50 border-red-400';
-                            }
-                            return (
-                                <button
-                                    key={ci}
-                                    onClick={() => handleSelect(choice)}
-                                    className={`clay-panel rounded-2xl p-4 border-4 ${bgClass} font-bold text-slate-700 dark:text-white text-base active:scale-95 transition-all`}
-                                >
-                                    {choice}
-                                </button>
-                            );
-                        })}
-                    </div>
+                        {/* 보기 */}
+                        <div className="grade-test-choice-grid">
+                            {q.choices.map((choice, ci) => {
+                                let stateClass = '';
+                                if (revealed) {
+                                    if (choice === q.answer) stateClass = 'quiz-choice-btn--correct';
+                                    else if (choice === selected) stateClass = 'quiz-choice-btn--wrong';
+                                    else stateClass = 'quiz-choice-btn--dimmed';
+                                } else if (selected !== null) {
+                                    if (choice === selected) stateClass = 'quiz-choice-btn--wrong';
+                                    else stateClass = 'quiz-choice-btn--dimmed';
+                                }
+                                return (
+                                    <button key={ci} onClick={() => handleSelect(choice)}
+                                        className={`quiz-choice-btn quiz-choice-btn--center ${stateClass}`}>
+                                        {choice}
+                                    </button>
+                                );
+                            })}
+                        </div>
 
-                    {revealed && (
-                        <button
-                            onClick={handleNext}
-                            className="px-12 py-4 rounded-[2rem] bg-[#7C83FF] text-white font-extrabold text-lg shadow-xl active:scale-95 transition-all"
-                        >
-                            {qIndex + 1 >= questions.length ? '결과 보기' : '다음 →'}
-                        </button>
-                    )}
+                        {/* 정오 표시 */}
+                        {revealed && (
+                            <div className="w-full rounded-2xl px-5 py-3 text-center font-extrabold text-sm"
+                                style={selected === q.answer
+                                    ? { backgroundColor: '#EAFBF0', color: '#2A7A50', border: '1px solid #4CCB7F' }
+                                    : { backgroundColor: '#FFF1F1', color: '#CC3333', border: '1px solid #FF7A7A' }}>
+                                {selected === q.answer ? '✓ 정답!' : `✗ 정답: ${q.answer}`}
+                            </div>
+                        )}
+
+                        {revealed && (
+                            <button onClick={handleNext}
+                                className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
+                                style={{ background: '#7C83FF' }}>
+                                {qIndex + 1 >= questions.length ? '결과 보기' : '다음 →'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         );
