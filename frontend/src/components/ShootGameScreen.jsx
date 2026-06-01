@@ -1172,7 +1172,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요? 🥺'}
                             </h2>
-                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                            <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}
                             </p>
                         </div>

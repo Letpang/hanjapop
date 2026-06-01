@@ -676,7 +676,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                         {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
                                     </h1>
                                     {gameState !== 'clear' && (
-                                        <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                        <p className="body-muted break-keep">
                                             조금만 더 빨리 하면 성공할 수 있어요!
                                         </p>
                                     )}
@@ -738,7 +738,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                 <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
                                     {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요? 🥺'}
                                 </h2>
-                                <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                <p className="body-muted break-keep">
                                     {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
                                 </p>
                             </div>
@@ -896,7 +896,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요? 🥺'}
                             </h2>
-                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                            <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
                             </p>
                         </div>

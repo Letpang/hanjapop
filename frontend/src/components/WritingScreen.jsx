@@ -737,7 +737,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
                                 정말 쓰기를 중단할까요? 🥺
                             </h2>
-                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                            <p className="body-muted break-keep">
                                 지금 나가면 작성 중인 한자 쓰기의 연습 기록이 저장되지 않아요. 계속 끝까지 써볼까요?
                             </p>
                         </div>

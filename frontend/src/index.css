@@ -1542,6 +1542,16 @@ body.dark .clay-button {
     color: #969CEB;
 }
 
+/* 결과/설명 본문 흐린 텍스트 */
+.body-muted {
+    color: #A5AFBF;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    line-height: 1.4;
+    word-break: keep-all;
+    margin-top: 0.25rem;
+}
+
 /* XP 팝업 공통 */
 @keyframes xpFloat {
     0%   { opacity: 0; transform: scale(0.6) translateY(16px); }

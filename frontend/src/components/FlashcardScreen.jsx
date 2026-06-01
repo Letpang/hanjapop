@@ -838,7 +838,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
                                 정말 학습을 중단할까요? 🥺
                             </h2>
-                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                            <p className="body-muted break-keep">
                                 지금 나가면 공부 중인 학습지의 진행 상황이 저장되지 않아요. 계속 끝까지 학습해 볼까요?
                             </p>
                         </div>

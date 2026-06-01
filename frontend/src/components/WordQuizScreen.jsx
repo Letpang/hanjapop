@@ -152,7 +152,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                             <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: isClear ? '#FF9B73' : '#FF6B6B', letterSpacing: '-0.02em', textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none' }}>
                                 {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                             </h1>
-                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-2" style={{ color: '#A5AFBF' }}>
+                            <p className="body-muted break-keep mt-2">
                                 {isClear 
                                     ? <>총 {total}문제 중 {correct}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></> 
                                     : '조금만 더 노력하면 성공할 수 있어요!'}
@@ -215,7 +215,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         }}>
                             {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
-                        <p className="text-sm-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                        <p className="body-muted break-keep" style={{ fontSize: 'var(--text-sm)' }}>
                             {isClear 
                                 ? <>총 {total}문제 중 {correct}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></> 
                                 : '조금만 더 노력하면 성공할 수 있어요!'}
@@ -866,7 +866,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요? 🥺'}
                             </h2>
-                            <p className="text-xs-res font-bold leading-relaxed break-keep mt-1" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                            <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}
                             </p>
                         </div>
