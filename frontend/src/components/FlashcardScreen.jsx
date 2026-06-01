@@ -198,8 +198,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                 {q.choices.map((c, i) => {
                     const isWrong = wrongChoices.includes(c);
                     const isRight = isCorrect && c === q.answer;
-                    const hasHanja = /[一-鿿]/.test(c);
-                    const cls = `quiz-choice-btn ${hasHanja ? 'quiz-choice-btn--hanja' : ''} ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
+                    const cls = `quiz-choice-btn quiz-choice-btn--large ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
 
                     return (
                         <button key={i} className={cls} onClick={() => handleSelect(c)}>
