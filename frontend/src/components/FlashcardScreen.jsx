@@ -194,11 +194,11 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                 <span className="w-8 h-8 rounded-xl bg-[#F4F7F8] flex items-center justify-center text-xs-res font-bold text-[#AEB7C5] border border-[#E9EDF2] uppercase tracking-widest">Q{idx + 1}</span>
                 <p className="font-extrabold text-[#3C3C3C] text-h3 tracking-tight break-keep leading-standard">{q.prompt}</p>
             </div>
-            <div className={`grid gap-3 ${twoCol ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grade-test-choice-grid ${twoCol ? '' : 'grade-test-choice-grid--single'}`}>
                 {q.choices.map((c, i) => {
                     const isWrong = wrongChoices.includes(c);
                     const isRight = isCorrect && c === q.answer;
-                    const cls = `quiz-choice-btn quiz-choice-btn--large ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
+                    const cls = `quiz-choice-btn quiz-choice-btn--center ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
 
                     return (
                         <button key={i} className={cls} onClick={() => handleSelect(c)}>

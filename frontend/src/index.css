@@ -1044,6 +1044,10 @@ body.dark-mode {
     gap: 0.85rem;
 }
 
+.grade-test-choice-grid--single {
+    grid-template-columns: 1fr;
+}
+
 .grade-test-choice-grid .quiz-choice-btn {
     min-height: clamp(4.25rem, 15vw, 5.25rem);
     padding: 0.85rem 1rem;
