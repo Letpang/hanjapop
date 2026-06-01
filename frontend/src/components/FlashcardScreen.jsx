@@ -316,7 +316,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
+                        <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="w-11" />
                 </div>
@@ -756,7 +756,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">한자 학습지</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
+                        <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="flex items-center justify-end w-11">
                         {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (

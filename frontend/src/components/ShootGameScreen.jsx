@@ -718,7 +718,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         </button>
                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                             <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">몬스터 슈팅</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>정답 한자를 맞춰 몬스터를 물리치세요</p>
+                        <p className="screen-subtitle">정답 한자를 맞춰 몬스터를 물리치세요</p>
                         </div>
                         <div className="w-11" />
                     </div>

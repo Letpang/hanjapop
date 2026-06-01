@@ -693,7 +693,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         </button>
                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                             <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
-                            <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 단어를 선택하세요</p>
+                            <p className="screen-subtitle">빈칸에 알맞은 단어를 선택하세요</p>
                         </div>
                         <div className="flex items-center justify-end w-11">
                             <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{displayQuestionNumber}/{plannedQuizTotal}</span>
@@ -922,7 +922,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">문장 퀴즈</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>빈칸에 알맞은 단어를 선택하세요</p>
+                        <p className="screen-subtitle">빈칸에 알맞은 단어를 선택하세요</p>
                     </div>
                     <div className="w-11" />
                 </div>

@@ -1531,6 +1531,17 @@ body.dark .clay-button {
         #020617;
 }
 
+/* 화면 헤더 서브타이틀 */
+.screen-subtitle {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    margin-top: 0.125rem;
+    text-align: center;
+    line-height: 1.25;
+    word-break: keep-all;
+    color: #969CEB;
+}
+
 /* XP 팝업 공통 */
 @keyframes xpFloat {
     0%   { opacity: 0; transform: scale(0.6) translateY(16px); }

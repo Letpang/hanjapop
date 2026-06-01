@@ -586,7 +586,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                         </button>
                         <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                             <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">메모리 게임</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>같은 한자 카드 쌍을 기억해서 맞춰보세요</p>
+                        <p className="screen-subtitle">같은 한자 카드 쌍을 기억해서 맞춰보세요</p>
                         </div>
                         <div className="flex items-center justify-end w-11">
                             <span className="text-[#AEB7C5] text-sm font-bold whitespace-nowrap">{currentRound + 1}/{totalRounds}</span>
@@ -772,7 +772,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                     </button>
                     <div className="flex flex-col items-center min-w-0 flex-1 px-2">
                         <h2 className="text-h3 font-bold text-[#5B677A] m-0 break-keep">메모리 게임</h2>
-                        <p className="text-xs font-bold mt-0.5 text-center leading-tight break-keep" style={{ color: '#969CEB' }}>같은 한자 카드 쌍을 기억해서 맞춰보세요</p>
+                        <p className="screen-subtitle">같은 한자 카드 쌍을 기억해서 맞춰보세요</p>
                     </div>
                     <div className="w-11" />
                 </div>
