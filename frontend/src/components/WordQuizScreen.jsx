@@ -202,7 +202,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
                         alt={isClear ? "clear" : "fail"}
                         className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
-                        style={{ filter: 'drop-shadow(0 12px 24px rgba(120,130,160,0.16))' }}
+                        className="img-shadow-lg"
                     />
 
                     {/* 텍스트 */}
@@ -854,13 +854,13 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                 </div>
             </div>
             {showExitModal && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'rgba(120, 130, 160, 0.22)' }}>
+                <div className="modal-overlay">
                     <div className="w-full max-w-sm flex flex-col items-center bg-white shadow-2xl rounded-[40px] p-8 relative overflow-hidden animate-in zoom-in-95 duration-200">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
                             className="w-[120px] h-[120px] object-contain mb-4"
-                            style={{ filter: 'drop-shadow(0 8px 16px rgba(120,130,160,0.16))' }}
+                            className="img-shadow-sm"
                         />
                         <div className="text-center flex flex-col gap-2 mb-6">
                             <h2 className="text-h3-res font-black text-slate-700 tracking-tight leading-snug">
