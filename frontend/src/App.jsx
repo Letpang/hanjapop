@@ -303,25 +303,18 @@ const App = () => {
 
     const getRewardXp = useCallback((xp) => {
         if (!xp || xp <= 0) return 0;
-        const streakCount = streak?.count || 0;
-        const streakMultiplier = streakCount >= 15 ? 2.0 : streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
-        return Math.round(xp * streakMultiplier);
-    }, [streak]);
+        return xp;
+    }, []);
 
     const getRewardPreview = useCallback((xp) => {
         if (!xp || xp <= 0) return null;
-        const streakCount = streak?.count || 0;
-        const streakMultiplier = streakCount >= 15 ? 2.0 : streakCount >= 7 ? 1.5 : streakCount >= 3 ? 1.2 : 1.0;
-        const multiplier = streakMultiplier;
-        const parts = [];
-        if (streakMultiplier > 1) parts.push(`스트릭 ${streakMultiplier}`);
         return {
             baseXp: xp,
-            finalXp: Math.round(xp * multiplier),
-            multiplier,
-            multiplierText: parts.join(' x '),
+            finalXp: xp,
+            multiplier: 1,
+            multiplierText: '',
         };
-    }, [streak]);
+    }, []);
 
     // 모든 XP 보상은 스트릭 배율을 같은 규칙으로 적용한다.
     const addBonusXp = useCallback((xp) => {
@@ -745,7 +738,7 @@ const App = () => {
                             setSessionDoneToday(false);
                         }}
                         isDarkMode={isDarkMode}
-                        streak={streak}
+                        
                     />
                 );
         }
