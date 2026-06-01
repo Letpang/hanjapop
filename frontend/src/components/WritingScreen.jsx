@@ -111,7 +111,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                     />
                     <div className="w-full flex flex-col gap-3 relative z-10">
                         <CtaButton theme="indigo" onClick={onRetry}>
-                            <span className="font-black text-white text-[1.5rem] drop-shadow-md">다시 하기</span>
+                            <span className="quiz-cta-text">다시 하기</span>
                         </CtaButton>
                         <button
                             onClick={onBack}
@@ -608,8 +608,8 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
     return (
         <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: phase === 'select' ? '#F7FAF9' : '#F8FAFC' }}>
             {/* 헤더 */}
-            <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+            <div className="quiz-header-wrap quiz-header-wrap--sm">
+                <div className="quiz-header-card quiz-header-card--wide">
                     <button onClick={
                         phase === 'quiz' ? () => setShowExitModal(true) :
                         phase === 'list' && !initialHanja && (!hanjaFilter || hanjaFilter.length === 0) && !contentPool ? () => setPhase('select') :
@@ -622,7 +622,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                         <h2 className="quiz-screen-title">한자 획순</h2>
                         <p className="screen-subtitle">획순에 맞게 써보세요</p>
                     </div>
-                    <div className="flex items-center justify-end w-11">
+                    <div className="quiz-header-right">
                         {phase === 'quiz' && activeHanjaList.length > 0 && (
                             <span className="quiz-counter-text">{currentIndex + 1}/{activeHanjaList.length}</span>
                         )}
@@ -663,7 +663,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                             {/* 캐릭터 */}
                             <div className="flex flex-col items-center mt-4 mb-5 relative">
                                 <div className="absolute top-4 left-[60%] z-20">
-                                    <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
+                                    <div className="quiz-bubble">
                                         <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
                                         <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
                                     </div>
@@ -743,7 +743,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                         </div>
                         <div className="w-full flex flex-col gap-3">
                             <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
-                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 쓰기 연습</span>
+                                <span className="quiz-cta-text">계속 쓰기 연습</span>
                             </CtaButton>
                             <button
                                 onClick={handleExitConfirm}

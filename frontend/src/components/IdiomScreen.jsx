@@ -196,7 +196,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
     return (
         <div className="idiom-quiz-shell">
             <div className="w-full shrink-0 mb-4 w-full max-w-lg mx-auto">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
+                <div className="quiz-header-card quiz-header-card--sm">
                     <button onClick={onBack} className="hp-nav-button">
                         <span>✕</span>
                     </button>
@@ -204,7 +204,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                         <h2 className="quiz-screen-title">사자성어 퀴즈</h2>
                         <p className="screen-subtitle">사자성어를 보고 뜻을 맞혀보세요</p>
                     </div>
-                    <div className="flex items-center justify-end w-11">
+                    <div className="quiz-header-right">
                         <span className="quiz-counter-text">{idx + 1}/{questions.length}</span>
                     </div>
                 </div>

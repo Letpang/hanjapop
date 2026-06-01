@@ -510,8 +510,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         stageClearArgsRef.current = null;
                                     }
                                 }}>
-                                    <span className="font-black text-white text-[1.5rem] drop-shadow-md">다음 단계로 이동</span>
-                                    <span className="text-white font-black text-[1.5rem] drop-shadow-md ml-2">▶</span>
+                                    <span className="quiz-cta-text">다음 단계로 이동</span>
+                                    <span className="quiz-cta-text ml-2">▶</span>
                                 </CtaButton>
                             </div>
                         </div>
@@ -569,7 +569,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <div className="w-full flex flex-col gap-3 relative z-10">
                             {!hideRetry && (
                                 <CtaButton theme="indigo" onClick={() => startQuiz()}>
-                                    <span className="font-black text-white text-[1.5rem] drop-shadow-md">다시 풀기</span>
+                                    <span className="quiz-cta-text">다시 풀기</span>
                                 </CtaButton>
                             )}
                             <button
@@ -686,7 +686,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                 {/* 헤더 */}
                 <div className="w-full shrink-0 safe-top pt-2 px-4 mb-1">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
+                    <div className="quiz-header-card quiz-header-card--sm">
                         <button onClick={started ? () => setShowExitModal(true) : onBack}
                             className="hp-nav-button">
                             <span>{started ? '✕' : '←'}</span>
@@ -695,7 +695,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             <h2 className="quiz-screen-title">문장 퀴즈</h2>
                             <p className="screen-subtitle">빈칸에 알맞은 단어를 선택하세요</p>
                         </div>
-                        <div className="flex items-center justify-end w-11">
+                        <div className="quiz-header-right">
                             <span className="quiz-counter-text">{displayQuestionNumber}/{plannedQuizTotal}</span>
                         </div>
                     </div>
@@ -894,7 +894,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             </div>
                             <div className="w-full flex flex-col gap-3">
                                 <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
-                                    <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                                    <span className="quiz-cta-text">계속 공부하기</span>
                                 </CtaButton>
                                 <button
                                     onClick={handleExitConfirm}
@@ -914,8 +914,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     return (
         <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: '#F7FAF9' }}>
             {/* 헤더 */}
-            <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+            <div className="quiz-header-wrap quiz-header-wrap--sm">
+                <div className="quiz-header-card quiz-header-card--wide">
                     <button onClick={onBack}
                         className="hp-nav-button">
                         <span>←</span>
@@ -977,7 +977,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                     {/* 캐릭터 영역 */}
                     <div className="flex flex-col items-center mt-4 mb-5 relative">
                         <div className="absolute top-4 left-[60%] z-20">
-                            <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
+                            <div className="quiz-bubble">
                                 <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
                                 <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
                             </div>
@@ -1022,7 +1022,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         </div>
                         <div className="w-full flex flex-col gap-3">
                             <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
-                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                                <span className="quiz-cta-text">계속 공부하기</span>
                             </CtaButton>
                             <button
                                 onClick={handleExitConfirm}

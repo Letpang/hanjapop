@@ -88,7 +88,7 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
 
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                <div className="relative flex items-center bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                <div className="quiz-header-card quiz-header-card--wide relative">
                     <button onClick={onBack}
                         className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#7C83FF] gap-1">
                         ←

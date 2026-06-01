@@ -531,7 +531,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <div className="flex w-full mt-2">
                         <CtaButton theme="coral" onClick={handleWritingNext}
                             disabled={questions.length > 0 && Object.keys(answers).length < questions.length}>
-                            <span className="font-black text-white text-[1.35rem] drop-shadow-md">{completionLabel}</span>
+                            <span className="quiz-cta-text">{completionLabel}</span>
                         </CtaButton>
                     </div>
 
@@ -571,7 +571,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {/* 하단 버튼 */}
                                 <div className="w-full flex flex-col gap-3 mt-4">
                                     <CtaButton theme="coral" onClick={() => { setQuizDone(false); onNext(); }}>
-                                        <span className="font-black text-white text-[1.35rem] drop-shadow-md">돌아가기</span>
+                                        <span className="quiz-cta-text">돌아가기</span>
                                     </CtaButton>
                                 </div>
                             </div>
@@ -747,7 +747,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
         )}
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-2 px-4 mb-3">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
+                <div className="quiz-header-card quiz-header-card--sm">
                     <button onClick={
                         studyItem || (hanjaFilter && hanjaFilter.length > 0) ? () => setShowExitModal(true) : onBack
                     }
@@ -758,7 +758,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                         <h2 className="quiz-screen-title">한자 학습지</h2>
                         <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
-                    <div className="flex items-center justify-end w-11">
+                    <div className="quiz-header-right">
                         {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (
                             <span className="quiz-counter-text">
                                 {hanjaFilter && hanjaFilter.length > 0 ? `${currentIndex + 1}/${currentItems.length}` : '1/1'}
@@ -844,7 +844,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                         </div>
                         <div className="w-full flex flex-col gap-3">
                             <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
-                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                                <span className="quiz-cta-text">계속 공부하기</span>
                             </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
@@ -882,7 +882,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             />
                             <div className="w-full flex flex-col gap-3">
                                 <CtaButton theme="coral" onClick={() => { setShowAllDoneModal(false); onBack(); }}>
-                                    <span className="font-black text-white text-[1.35rem] drop-shadow-md">돌아가기</span>
+                                    <span className="quiz-cta-text">돌아가기</span>
                                 </CtaButton>
                             </div>
                         </div>

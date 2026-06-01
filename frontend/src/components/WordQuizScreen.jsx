@@ -175,8 +175,8 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         {/* 3D 다음 단계 버튼 */}
                         <div className="w-full mt-3">
                             <CtaButton theme="coral" onClick={onBack}>
-                                <span className="font-black text-white text-[1.5rem] drop-shadow-md">다음 단계로 이동</span>
-                                <span className="text-white font-black text-[1.5rem] drop-shadow-md ml-2">▶</span>
+                                <span className="quiz-cta-text">다음 단계로 이동</span>
+                                <span className="quiz-cta-text ml-2">▶</span>
                             </CtaButton>
                         </div>
 
@@ -234,7 +234,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         <div className="w-full flex flex-col gap-3 relative z-10">
                             {!hideRetry && (
                                 <CtaButton theme="indigo" onClick={onRetry}>
-                                    <span className="font-black text-white text-[1.5rem] drop-shadow-md">다시 풀기</span>
+                                    <span className="quiz-cta-text">다시 풀기</span>
                                 </CtaButton>
                             )}
                             <button
@@ -703,7 +703,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
 
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-2 px-4 mb-1">
-                <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-2.5 px-5 min-h-[60px] shadow-md border border-white w-full">
+                <div className="quiz-header-card quiz-header-card--sm">
                     <button onClick={(phase === 'quiz') ? () => setShowExitModal(true) : onBack}
                         className="hp-nav-button">
                         <span>{(phase === 'quiz') ? '✕' : '←'}</span>
@@ -712,7 +712,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                         <h2 className="quiz-screen-title">단어 퀴즈</h2>
                         <p className="screen-subtitle">한자의 뜻과 음을 골라보세요</p>
                     </div>
-                    <div className="flex items-center justify-end w-11">
+                    <div className="quiz-header-right">
                         {phase === 'quiz' && (
                             <span className="quiz-counter-text">{currentIdx + 1}/{questions.length}</span>
                         )}
@@ -872,7 +872,7 @@ const WordQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWrong, o
                         </div>
                         <div className="w-full flex flex-col gap-3">
                             <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
-                                <span className="font-black text-white text-[1.35rem] drop-shadow-md">계속 공부하기</span>
+                                <span className="quiz-cta-text">계속 공부하기</span>
                             </CtaButton>
                             <button
                                 onClick={handleExitConfirm}

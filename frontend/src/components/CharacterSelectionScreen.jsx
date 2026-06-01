@@ -73,7 +73,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
             <div className="w-full min-h-full flex flex-col items-center justify-center gap-6 md:gap-10 relative z-50 px-4 pt-10 pb-8 md:px-10 max-w-5xl mx-auto">
                 {/* 헤더 */}
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                    <div className="quiz-header-card quiz-header-card--wide">
                         {onBack && (
                             <button onClick={onBack}
                                 className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">

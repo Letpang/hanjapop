@@ -1531,6 +1531,65 @@ body.dark .clay-button {
         #020617;
 }
 
+/* ── 퀴즈 헤더 구조 ─────────────────────────────────────── */
+.quiz-header-wrap {
+    width: 100%; flex-shrink: 0;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-inline: 1rem;
+    margin-bottom: 0.75rem;
+}
+.quiz-header-wrap--sm { margin-bottom: 0.5rem; }
+
+/* 헤더 카드 (유리 모프 스타일) */
+.quiz-header-card {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-radius: 3rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 4px 12px rgba(80,96,120,0.08);
+    border: 1px solid white;
+    width: 100%;
+}
+.quiz-header-card--wide {
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    min-height: 72px;
+}
+.quiz-header-card--sm {
+    justify-content: space-between;
+    padding: 0.625rem 1.25rem;
+    min-height: 60px;
+}
+
+.quiz-progress-row {
+    display: flex; justify-content: space-between;
+    font-size: var(--text-xs); font-weight: 800;
+    color: #AEB7C5; margin-bottom: 0.25rem;
+}
+.quiz-header-right {
+    display: flex; align-items: center;
+    justify-content: flex-end; width: 2.75rem;
+}
+.quiz-bubble {
+    padding: 0.5rem 1.25rem;
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgba(80,96,120,0.12);
+    border: 1px solid white;
+    position: relative;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* CTA 버튼 내부 텍스트 */
+.quiz-cta-text {
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: white;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
+}
+
 /* ── 퀴즈 화면 공통 레이아웃 구조 ─────────────────────────── */
 .quiz-screen {
     width: 100%; height: 100dvh;

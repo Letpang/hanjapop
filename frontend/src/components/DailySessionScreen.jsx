@@ -206,7 +206,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                 <div className="w-full max-w-sm mx-auto flex flex-col relative z-10 safe-top pt-4 pb-20">
 
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-6 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                    <div className="quiz-header-card quiz-header-card--wide mb-6">
                         <button onClick={onBack}
                             className="hp-nav-button">
                             <span>✕</span>

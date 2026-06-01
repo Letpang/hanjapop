@@ -187,8 +187,8 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
         return (
             <div className="quiz-screen quiz-screen--plain">
                 {/* 헤더 */}
-                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-6 min-h-[72px] shadow-md border border-white w-full">
+                <div className="quiz-header-wrap quiz-header-wrap--sm">
+                    <div className="quiz-header-card quiz-header-card--wide">
                         <button onClick={onBack}
                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-black text-[#5B677A] gap-1">
                             ←
@@ -271,14 +271,14 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                 )}
 
                 {/* 헤더 + 진행바 */}
-                <div className="w-full shrink-0 safe-top pt-4 px-4 mb-3">
-                    <div className="flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-[3rem] p-4 px-5 shadow-md border border-white">
+                <div className="quiz-header-wrap">
+                    <div className="quiz-header-card">
                         <button onClick={() => setPhase('intro')}
                             className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-sm active:scale-95 transition-all px-3 py-1.5 font-black text-[#5B677A] text-sm gap-1 shrink-0">
                             <span>←</span>
                         </button>
                         <div className="flex-1">
-                            <div className="flex justify-between text-xs font-extrabold text-[#AEB7C5] mb-1">
+                            <div className="quiz-progress-row">
                                 <span>레벨 테스트</span>
                                 <span>{qIndex + 1} / {questions.length}</span>
                             </div>
