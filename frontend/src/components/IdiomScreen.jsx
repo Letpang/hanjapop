@@ -230,7 +230,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                 {q.type === 'fill_blank' && (
                     <div className="flex flex-col items-center gap-1">
                         <span className="font-black tracking-widest text-[#1A2B2A]"
-                            style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'serif' }}>
+                            style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'var(--font-hanja)' }}>
                             {q.displayHanja}
                         </span>
                     </div>

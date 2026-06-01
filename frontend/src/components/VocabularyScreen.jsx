@@ -267,7 +267,7 @@ const VocabularyScreen = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="text-xl font-black tracking-wider text-[#334155]" style={{ fontFamily: "'Nanum Myeongjo', serif" }}>{item.hanja}</span>
+                        <span className="hanja-char text-xl font-black tracking-wider text-[#334155]">{item.hanja}</span>
                         <span className="text-xs font-extrabold text-[#94A3B8]">{item.reading}</span>
                       </div>
                       <p className="mt-1 text-sm font-bold leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>

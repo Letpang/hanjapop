@@ -472,7 +472,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                                 zIndex: isFlipped ? 0 : 1
                             }}
                         >
-                            <span className={`${wordFontSize} font-black text-[#1e293b] tracking-tighter drop-shadow-sm text-center leading-none`}>
+                            <span className={`hanja-char ${wordFontSize} font-black text-[#1e293b] tracking-tighter drop-shadow-sm text-center leading-none`}>
                                 {q.word}
                             </span>
                         </div>

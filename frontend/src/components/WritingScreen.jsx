@@ -50,7 +50,7 @@ const WritingHanjaCard = ({ item, onClick }) => {
         >
             <div
                 className="leading-none drop-shadow-sm text-[#3C3C3C] flex items-center justify-center mb-2"
-                style={{ fontSize: 'clamp(3.5rem, 12vw, 5.5rem)', fontFamily: "'Nanum Myeongjo', serif" }}
+                style={{ fontSize: 'clamp(3.5rem, 12vw, 5.5rem)', fontFamily: 'var(--font-hanja)' }}
             >
                 {item.hanja}
             </div>

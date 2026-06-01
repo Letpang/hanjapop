@@ -108,9 +108,9 @@ const MainMenuRenewal = ({
             >
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #2ED6C5 0%, #0D9488 100%)' }}>
-                        <span style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: '1rem', color: '#fff' }}>H</span>
+                        <span style={{ fontFamily: "'GenJyuuGothic',sans-serif", fontWeight: 900, fontSize: '1rem', color: '#fff' }}>H</span>
                     </div>
-                    <span style={{ fontFamily: "'Nunito',sans-serif", fontWeight: 900, fontSize: '1.25rem', color: '#5B677A', letterSpacing: '-0.02em' }}>
+                    <span style={{ fontFamily: "'GenJyuuGothic',sans-serif", fontWeight: 900, fontSize: '1.25rem', color: '#5B677A', letterSpacing: '-0.02em' }}>
                         HanjaPop
                     </span>
                 </div>

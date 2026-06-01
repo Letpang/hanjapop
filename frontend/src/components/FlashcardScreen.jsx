@@ -200,7 +200,8 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                 {q.choices.map((c, i) => {
                     const isWrong = wrongChoices.includes(c);
                     const isRight = isCorrect && c === q.answer;
-                    const cls = `quiz-choice-btn ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
+                    const hasHanja = /[一-鿿]/.test(c);
+                    const cls = `quiz-choice-btn ${hasHanja ? 'quiz-choice-btn--hanja' : ''} ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
 
                     return (
                         <button key={i} className={cls} onClick={() => handleSelect(c)}>
@@ -332,7 +333,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 {/* ── 섹션 1: 한자 정보 ── */}
                 <div className="minimal-card-studio bg-white border border-[#E9EDF2] shadow-xl px-5 py-3 !rounded-[2rem]">
                     <div className="flex flex-col items-center gap-1">
-                        <div className="text-[#3C3C3C] leading-tight drop-shadow-sm text-display" style={{ fontFamily: "'Nanum Myeongjo', serif" }}>{item.hanja}</div>
+                        <div className="hanja-char text-[#3C3C3C] leading-tight drop-shadow-sm text-display">{item.hanja}</div>
                         <div className="flex items-baseline gap-4 mt-2">
                             <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.meaning}</span>
                             <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.sound}</span>
@@ -380,7 +381,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {regularWords.map((w, i) => (
                                     <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{w.word}</span>
+                                            <span className="hanja-char font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{w.word}</span>
                                             <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({w.reading})</span>
                                         </div>
                                         <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{w.meaning}</span>
@@ -417,7 +418,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {relatedIdioms.map((idiom, i) => (
                                     <div key={i} className="flex flex-col" style={{ backgroundColor: '#FCFCFC', border: '1.5px solid #E9EDF2', borderRadius: '28px', padding: '24px 28px' }}>
                                         <div className="flex items-baseline gap-2">
-                                            <span className="font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
+                                            <span className="hanja-char font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
                                             <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
                                         </div>
                                         <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{idiom.meaning}</span>
@@ -460,7 +461,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                                 const d = HANJA_MAP[h];
                                                 return d ? (
                                                     <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#F4F3FF', border: '1.5px solid #C3C6FF' }}>
-                                                        <span className="font-black text-h3" style={{ color: '#7C83FF' }}>{h}</span>
+                                                        <span className="hanja-char font-black text-h3" style={{ color: '#7C83FF' }}>{h}</span>
                                                         <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
                                                     </div>
                                                 ) : null;
@@ -477,7 +478,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                                 const d = HANJA_MAP[h];
                                                 return d ? (
                                                     <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#FFF3EE', border: '1.5px solid #FFCDB8' }}>
-                                                        <span className="font-black text-h3" style={{ color: '#FF8D72' }}>{h}</span>
+                                                        <span className="hanja-char font-black text-h3" style={{ color: '#FF8D72' }}>{h}</span>
                                                         <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
                                                     </div>
                                                 ) : null;
@@ -599,7 +600,7 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
         return (
             <div className="minimal-card-studio !rounded-3xl relative w-full flex flex-col items-center justify-center p-8 bg-white/40 border-[#E9EDF2] !min-h-[200px] opacity-40 grayscale">
                 <span className="text-h1-res opacity-20 mb-3">🔒</span>
-                <span className="text-[#5D544F] font-extrabold text-h3-res tracking-tighter uppercase">{item.hanja}</span>
+                <span className="hanja-char text-[#5D544F] font-extrabold text-h3-res tracking-tighter uppercase">{item.hanja}</span>
                 <div className="absolute bottom-0 left-0 right-0 h-1.5 opacity-30" style={{ backgroundColor: barColor }} />
             </div>
         );
@@ -631,7 +632,7 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
                 />
             </div>
             <div className="flex flex-col items-center relative z-10">
-                <span className="text-h2-res font-extrabold text-[#5D544F] tracking-tighter uppercase">{item.hanja}</span>
+                <span className="hanja-char text-h2-res font-extrabold text-[#5D544F] tracking-tighter uppercase">{item.hanja}</span>
             </div>
         </button>
     );

@@ -13,6 +13,9 @@
     --text-sm:      clamp(0.938rem, 3.5vw, 1.125rem);/* 버튼/상태라벨 (15px ~ 18px) */
     --text-xs:      clamp(0.875rem, 3vw, 0.938rem); /* 최저 하한선 (14px ~ 15px) */
 
+    /* Hanja Font */
+    --font-hanja: 'GenJyuuGothic', sans-serif;
+
     /* Colors & Theme */
     --primary-warm: #5D544F;
     --bg-warm: #F7FAF9;
@@ -39,9 +42,10 @@
 .text-xs-res, .text-xs           { font-size: var(--text-xs); }
 .text-balance                    { text-wrap: balance; }
 .break-keep                      { word-break: keep-all; }
+.hanja-char                      { font-family: var(--font-hanja); }
 
 body {
-    font-family: 'GmarketSans', 'Outfit', 'SUIT', 'Nunito', sans-serif;
+    font-family: 'GenJyuuGothic', sans-serif;
     font-weight: 400;
     letter-spacing: 0;
     word-spacing: normal;
@@ -408,13 +412,13 @@ body.dark-mode {
 
 .quiz-choice-btn--large {
     font-size: clamp(1.45rem, 5vw, 1.85rem);
-    font-family: serif;
+    font-family: var(--font-hanja);
     line-height: 1.15;
 }
 
 .quiz-choice-btn--hanja {
     font-size: clamp(1.15rem, 4vw, 1.35rem);
-    font-family: serif;
+    font-family: var(--font-hanja);
 }
 
 
@@ -503,7 +507,7 @@ body.dark-mode {
 
 .idiom-quiz-hanja-box span {
     color: #29313F;
-    font-family: 'Nanum Myeongjo', serif;
+    font-family: var(--font-hanja);
     font-size: clamp(2.15rem, 10vw, 3.35rem);
     line-height: 1.08;
     font-weight: 900;
@@ -754,7 +758,7 @@ body.dark-mode {
     font-size: 0.85rem;
     line-height: 1;
     font-weight: 900;
-    font-family: Georgia, serif;
+    font-family: 'GenJyuuGothic', sans-serif;
     box-shadow: 0 6px 14px rgba(125, 132, 239, 0.24);
 }
 
@@ -1023,7 +1027,7 @@ body.dark-mode {
 
 .grade-test-hanja-char {
     color: #3C3C3C;
-    font-family: serif;
+    font-family: var(--font-hanja);
     font-size: clamp(3rem, 13vw, 4.6rem);
     font-weight: 700;
     line-height: 1;
@@ -1137,7 +1141,7 @@ body.dark-mode {
     color: var(--shortcut-accent-deep);
     background: rgba(255, 255, 255, 0.54);
     box-shadow: inset 0 -2px 0 rgba(91, 103, 122, 0.05);
-    font-family: 'Nanum Myeongjo', serif;
+    font-family: var(--font-hanja);
     font-size: 1.55rem;
     line-height: 1;
     font-weight: 900;

@@ -457,7 +457,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                           isDarkMode 
                             ? 'text-white' 
                             : 'bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent'
-                        }`} style={{ fontFamily: '"Outfit", "Inter", sans-serif' }}>
+                        }`} style={{ fontFamily: "'GenJyuuGothic', sans-serif" }}>
                           {display}
                         </span>
                         {item.unit && !isEmpty && (
