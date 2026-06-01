@@ -222,29 +222,19 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                 </div>
             </div>
 
-            <div className="idiom-quiz-question-card">
-                <span className="idiom-quiz-type-label">{q.typeLabel}</span>
-                <p className="idiom-quiz-prompt">{q.prompt}</p>
+            <div className="grade-test-question-card">
+                <span className="grade-test-type-label">{q.typeLabel}</span>
+                <p className="grade-test-prompt">{q.prompt}</p>
 
                 {/* 괄호 채우기: 빈칸 포함 한자 */}
                 {q.type === 'fill_blank' && (
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="font-black tracking-widest text-[#1A2B2A]"
-                            style={{ fontSize: 'clamp(1.8rem, 7vw, 2.6rem)', fontFamily: 'var(--font-hanja)' }}>
-                            {q.displayHanja}
-                        </span>
+                    <div className="grade-test-hanja-box grade-test-hanja-box--compound">
+                        <span className="grade-test-hanja-char hanja-char">{q.displayHanja}</span>
                     </div>
                 )}
 
-                {/* 독음 읽기: 전체 한자 박스 */}
-                {q.type === 'reading' && (
-                    <div className="idiom-quiz-hanja-box">
-                        <span>{q.hanja}</span>
-                    </div>
-                )}
-
-                {/* 뜻 찾기: 전체 한자 박스 */}
-                {q.type === 'meaning_from_idiom' && (
+                {/* 독음 읽기 / 뜻 찾기: 전체 한자 박스 */}
+                {(q.type === 'reading' || q.type === 'meaning_from_idiom') && (
                     <div className="idiom-quiz-hanja-box">
                         <span>{q.hanja}</span>
                     </div>
@@ -252,14 +242,11 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
 
                 {/* 사자성어 찾기: 뜻 텍스트 */}
                 {q.type === 'idiom_from_meaning' && (
-                    <p className="text-center font-bold text-[#4B5563] text-base leading-relaxed break-keep px-2">
-                        {q.displayMeaning}
-                    </p>
+                    <p className="grade-exam-guide-text text-center">{q.displayMeaning}</p>
                 )}
             </div>
 
-            <div className="idiom-quiz-choice-grid"
-                style={q.type === 'meaning_from_idiom' ? { gridTemplateColumns: '1fr' } : undefined}>
+            <div className={`grade-test-choice-grid ${q.type === 'meaning_from_idiom' ? 'grade-test-choice-grid--single' : ''}`}>
                 {q.choices.map((choice, i) => {
                     const isWrong = wrongChoices.includes(choice);
                     const isCorrect = isCorrectSelected && choice === q.answer;
@@ -271,22 +258,20 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
                             key={i}
                             onClick={() => handleSelect(choice)}
                             disabled={isCorrectSelected}
-                            className={`quiz-choice-btn idiom-quiz-choice ${isLarge ? 'quiz-choice-btn--large' : ''} ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isDimmed ? 'quiz-choice-btn--dimmed' : ''}`}
+                            className={`quiz-choice-btn ${isLarge ? 'quiz-choice-btn--large' : ''} ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isDimmed ? 'quiz-choice-btn--dimmed' : ''}`}
                         >
-                            <span>{choice}</span>
-                            {isCorrect && <span className="idiom-quiz-choice-mark">✓</span>}
-                            {isWrong && <span className="idiom-quiz-choice-mark">×</span>}
+                            {choice}
                         </button>
                     );
                 })}
             </div>
 
             {isCorrectSelected && (
-                <div className="idiom-quiz-next-row">
-                    <button onClick={handleNext} className="idiom-quiz-next-button">
-                        {idx + 1 >= questions.length ? '결과 보기' : '다음 문제'}
-                    </button>
-                </div>
+                <button onClick={handleNext}
+                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white active:scale-95 transition-all shadow-xl flex items-center justify-center"
+                    style={{ background: '#7C83FF' }}>
+                    {idx + 1 >= questions.length ? '결과 보기' : '다음 문제'}
+                </button>
             )}
         </div>
     );
