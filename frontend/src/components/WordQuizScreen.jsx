@@ -580,17 +580,11 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                 {isCorrectSelected && (
                     <div className="w-full flex gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
                         {!isFirst && (
-                            <button
-                                onClick={onPrev}
-                                className="flex-[1.5] py-3 rounded-[2.5rem] bg-white font-black text-[1.5rem] text-[#5B677A] border-2 border-[#E9EDF2] shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2"
-                            >
+                            <button onClick={onPrev} className="quiz-prev-btn flex-[1.5]">
                                 ‹ 이전
                             </button>
                         )}
-                        <button 
-                            onClick={handleNext}
-                            className="flex-[2.5] py-3 rounded-[2.5rem] bg-[#7278F2] font-black text-[1.5rem] text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
-                        >
+                        <button onClick={handleNext} className="quiz-next-btn flex-[2.5]">
                             다음 ›
                         </button>
                     </div>

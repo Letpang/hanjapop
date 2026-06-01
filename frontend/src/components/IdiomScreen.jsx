@@ -267,10 +267,8 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, userXp, selectedCharacter }) =>
             </div>
 
             {isCorrectSelected && (
-                <button onClick={handleNext}
-                    className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
-                    style={{ background: '#7C83FF' }}>
-                    {idx + 1 >= questions.length ? '결과 보기' : '다음 →'}
+                <button onClick={handleNext} className="quiz-next-btn w-full">
+                    {idx + 1 >= questions.length ? '결과 보기 ›' : '다음 ›'}
                 </button>
             )}
         </div>

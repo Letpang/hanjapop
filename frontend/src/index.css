@@ -1531,6 +1531,41 @@ body.dark .clay-button {
         #020617;
 }
 
+/* 퀴즈 다음/이전 네비게이션 버튼 공통 */
+.quiz-next-btn {
+    padding: 0.75rem 1.25rem;
+    border-radius: 2.5rem;
+    background: #7278F2;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(124, 131, 255, 0.18);
+    active-scale: 0.95;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.quiz-next-btn:active { transform: scale(0.95); }
+
+.quiz-prev-btn {
+    padding: 0.75rem 1.25rem;
+    border-radius: 2.5rem;
+    background: #FFFFFF;
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: #5B677A;
+    border: 2px solid #E9EDF2;
+    box-shadow: 0 2px 8px rgba(120, 130, 160, 0.08);
+    transition: transform 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.quiz-prev-btn:active { transform: scale(0.95); }
+
 /* 다시 풀기 버튼 커스텀 컬러 및 그림자 스타일 (3D Claymorphism fallback) */
 .retry-quiz-button {
     position: relative;

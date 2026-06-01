@@ -874,16 +874,10 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         {/* 네비게이션 버튼 */}
                         {isCorrectSelected && (
                             <div className="w-full flex gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                                <button
-                                    disabled
-                                    className="flex-1 py-3 rounded-[1.8rem] bg-white font-bold text-h3-res text-slate-200 border-2 border-[#E9EDF2]"
-                                >
+                                <button disabled className="quiz-prev-btn flex-[1.5] opacity-30">
                                     ‹ 이전
                                 </button>
-                                <button
-                                    onClick={handleNext}
-                                    className="flex-[2] py-3 rounded-[1.8rem] bg-[#7278F2] font-bold text-h3-res text-white shadow-2xl shadow-[rgba(124,131,255,0.18)] active:scale-95 transition-all flex items-center justify-center gap-2"
-                                >
+                                <button onClick={handleNext} className="quiz-next-btn flex-[2.5]">
                                     {totalAnswered >= plannedQuizTotal ? '결과 보기 ›' : '다음 ›'}
                                 </button>
                             </div>
