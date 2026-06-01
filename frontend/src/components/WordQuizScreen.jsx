@@ -140,7 +140,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
 
     if (dailyMapNode) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300" style={{ background: 'linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%)' }}>
+            <div className="quiz-result-backdrop">
                 <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative animate-in zoom-in-95 duration-200">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
                     
@@ -215,7 +215,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         }}>
                             {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
-                        <p className="body-muted break-keep" style={{ fontSize: 'var(--text-sm)' }}>
+                        <p className="body-muted break-keep" style={{ fontSize: "var(--text-sm)" }}>
                             {isClear 
                                 ? <>총 {total}문제 중 {correct}문제를 맞혔어요!<span className="text-[0.85em] inline-block ml-1">🔥</span></> 
                                 : '조금만 더 노력하면 성공할 수 있어요!'}

@@ -708,7 +708,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     if (status === 'idle') {
         return (
-            <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: '#F8FAF9' }}>
+            <div className="quiz-screen quiz-screen--plain" className="bg-[#F8FAF9]">
                 {/* 헤더 */}
                 <div className="quiz-header-wrap quiz-header-wrap--sm">
                     <div className="quiz-header-card quiz-header-card--wide">

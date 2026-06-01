@@ -287,7 +287,7 @@ const IdiomScreen = ({ onBack, onComplete, contentPool, userXp, selectedCharacte
     }, [contentPool]);
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" className="bg-[#F8FAF9]">
             <div className="w-full shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }} />
             <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} userXp={userXp} selectedCharacter={selectedCharacter} />
         </div>

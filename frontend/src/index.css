@@ -1665,6 +1665,57 @@ body.dark .clay-button {
     -webkit-backdrop-filter: blur(4px);
 }
 
+/* 퀴즈 결과 성공 배경 */
+.quiz-result-backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    background: linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%);
+    animation: fadeIn 0.3s ease;
+}
+
+/* 퀴즈 콤보 뱃지 */
+.quiz-combo-badge {
+    padding: 0.375rem 1rem;
+    border-radius: 9999px;
+    font-weight: 800;
+    font-size: var(--text-sm);
+    color: white;
+    background-color: #4A51D4;
+    box-shadow: 0 4px 12px rgba(74,81,212,0.45);
+}
+
+/* 학습지 섹션 아이콘 버튼 */
+.flashcard-section-icon {
+    width: 2.5rem; height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(80,96,120,0.1);
+    background-color: #FFF8EE;
+}
+/* 학습지 섹션 타이틀 */
+.flashcard-section-title {
+    font-weight: 800;
+    font-size: var(--text-h3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #34383F;
+}
+/* 유사어 / 반대어 칩 */
+.syn-chip {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1rem; border-radius: 1rem;
+    background-color: #F4F3FF;
+    border: 1.5px solid #C3C6FF;
+}
+.ant-chip {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1rem; border-radius: 1rem;
+    background-color: #FFF3EE;
+    border: 1.5px solid #FFCDB8;
+}
+
 /* 화면 헤더 서브타이틀 */
 .screen-subtitle {
     font-size: var(--text-xs);

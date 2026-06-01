@@ -300,7 +300,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     }, [isSequence, isLast, finishStudySheet, onNext, onBack]);
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden" style={{ backgroundColor: '#F8FAF9' }}>
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F8FAF9]">
             {xpPopup.show && (
                 <div key={xpPopup.key} className="xp-popup-wrapper">
                     <div className="xp-popup-badge">
@@ -359,7 +359,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <div ref={refWords} className="flex flex-col gap-4">
                         <button onClick={() => setIsWordsOpen(!isWordsOpen)} className="flex items-center justify-between w-full text-left px-1">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                <div className="flashcard-section-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="4" y="3" width="16" height="18" rx="3" />
                                         <line x1="8" y1="8" x2="16" y2="8" />
@@ -367,7 +367,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                         <line x1="8" y1="16" x2="12" y2="16" />
                                     </svg>
                                 </div>
-                                <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>관련 단어 <span className="text-sm text-[#9AA4B5] ml-1">({regularWords.length})</span></span>
+                                <span className="flashcard-section-title">관련 단어 <span className="text-sm text-[#9AA4B5] ml-1">({regularWords.length})</span></span>
                             </div>
                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isWordsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -380,10 +380,10 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {regularWords.map((w, i) => (
                                     <div key={i} className="flashcard-word-item">
                                         <div className="flex items-baseline gap-2">
-                                            <span className="hanja-char font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{w.word}</span>
-                                            <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({w.reading})</span>
+                                            <span className="hanja-char font-extrabold text-body-lg break-keep text-[#34383F]">{w.word}</span>
+                                            <span className="text-sm-res break-keep text-[#9AA4B5]">({w.reading})</span>
                                         </div>
-                                        <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{w.meaning}</span>
+                                        <span className="text-body break-keep mt-1 text-[#5B677A]">{w.meaning}</span>
                                     </div>
                                 ))}
                             </div>
@@ -396,7 +396,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <div ref={refIdioms} className="flex flex-col gap-4">
                         <button onClick={() => setIsIdiomsOpen(!isIdiomsOpen)} className="flex items-center justify-between w-full text-left px-1">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                <div className="flashcard-section-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="4" y="3" width="16" height="18" rx="3" />
                                         <line x1="8" y1="8" x2="16" y2="8" />
@@ -404,7 +404,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                         <line x1="8" y1="16" x2="12" y2="16" />
                                     </svg>
                                 </div>
-                                <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>사자성어 <span className="text-sm text-[#9AA4B5] ml-1">({relatedIdioms.length})</span></span>
+                                <span className="flashcard-section-title">사자성어 <span className="text-sm text-[#9AA4B5] ml-1">({relatedIdioms.length})</span></span>
                             </div>
                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isIdiomsOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -417,10 +417,10 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {relatedIdioms.map((idiom, i) => (
                                     <div key={i} className="flashcard-word-item">
                                         <div className="flex items-baseline gap-2">
-                                            <span className="hanja-char font-extrabold text-body-lg break-keep" style={{ color: '#34383F' }}>{idiom.hanja}</span>
-                                            <span className="text-sm-res break-keep" style={{ color: '#9AA4B5' }}>({idiom.reading})</span>
+                                            <span className="hanja-char font-extrabold text-body-lg break-keep text-[#34383F]">{idiom.hanja}</span>
+                                            <span className="text-sm-res break-keep text-[#9AA4B5]">({idiom.reading})</span>
                                         </div>
-                                        <span className="text-body break-keep mt-1" style={{ color: '#5B677A' }}>{idiom.meaning}</span>
+                                        <span className="text-body break-keep mt-1 text-[#5B677A]">{idiom.meaning}</span>
                                     </div>
                                 ))}
                             </div>
@@ -433,7 +433,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <div ref={refSynAnt} className="flex flex-col gap-4">
                         <button onClick={() => setIsSynAntOpen(!isSynAntOpen)} className="flex items-center justify-between w-full text-left px-1">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                                <div className="flashcard-section-icon">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="4" y="3" width="16" height="18" rx="3" />
                                         <line x1="8" y1="8" x2="16" y2="8" />
@@ -441,7 +441,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                         <line x1="8" y1="16" x2="12" y2="16" />
                                     </svg>
                                 </div>
-                                <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>유사어 · 반대어</span>
+                                <span className="flashcard-section-title">유사어 · 반대어</span>
                             </div>
                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isSynAntOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -454,14 +454,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <div className="flex flex-col gap-5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {item.syn && item.syn.length > 0 && (
                                     <div className="flex flex-col gap-3">
-                                        <span className="font-bold text-sm px-1" style={{ color: '#7C83FF' }}>유사어 — 비슷한 뜻</span>
+                                        <span className="font-bold text-sm px-1 text-[#7C83FF]">유사어 — 비슷한 뜻</span>
                                         <div className="flex flex-wrap gap-3">
                                             {item.syn.map(h => {
                                                 const d = HANJA_MAP[h];
                                                 return d ? (
-                                                    <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#F4F3FF', border: '1.5px solid #C3C6FF' }}>
-                                                        <span className="hanja-char font-black text-h3" style={{ color: '#7C83FF' }}>{h}</span>
-                                                        <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
+                                                    <div key={h} className="syn-chip">
+                                                        <span className="hanja-char font-black text-h3 text-[#7C83FF]">{h}</span>
+                                                        <span className="text-sm font-bold text-[#9AA4B5]">{d.meaning} {d.sound}</span>
                                                     </div>
                                                 ) : null;
                                             })}
@@ -471,14 +471,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
                                 {item.ant && item.ant.length > 0 && (
                                     <div className="flex flex-col gap-3">
-                                        <span className="font-bold text-sm px-1" style={{ color: '#FF8D72' }}>반대어 — 반대 뜻</span>
+                                        <span className="font-bold text-sm px-1 text-[#FF8D72]">반대어 — 반대 뜻</span>
                                         <div className="flex flex-wrap gap-3">
                                             {item.ant.map(h => {
                                                 const d = HANJA_MAP[h];
                                                 return d ? (
-                                                    <div key={h} className="flex items-center gap-2 px-4 py-3 rounded-2xl" style={{ backgroundColor: '#FFF3EE', border: '1.5px solid #FFCDB8' }}>
-                                                        <span className="hanja-char font-black text-h3" style={{ color: '#FF8D72' }}>{h}</span>
-                                                        <span className="text-sm font-bold" style={{ color: '#9AA4B5' }}>{d.meaning} {d.sound}</span>
+                                                    <div key={h} className="ant-chip">
+                                                        <span className="hanja-char font-black text-h3 text-[#FF8D72]">{h}</span>
+                                                        <span className="text-sm font-bold text-[#9AA4B5]">{d.meaning} {d.sound}</span>
                                                     </div>
                                                 ) : null;
                                             })}
@@ -494,7 +494,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                 <div ref={refQuiz} className="flex flex-col gap-4">
                     <button onClick={() => setIsQuizOpen(!isQuizOpen)} className="flex items-center justify-between w-full text-left px-1">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm" style={{ backgroundColor: '#FFF8EE' }}>
+                            <div className="flashcard-section-icon">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#C8A882" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect x="4" y="3" width="16" height="18" rx="3" />
                                     <line x1="8" y1="8" x2="16" y2="8" />
@@ -502,7 +502,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                     <line x1="8" y1="16" x2="12" y2="16" />
                                 </svg>
                             </div>
-                            <span className="font-extrabold text-h3 uppercase tracking-widest" style={{ color: '#34383F' }}>연습 문제</span>
+                            <span className="flashcard-section-title">연습 문제</span>
                         </div>
                         <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                             <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform ${isQuizOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -728,7 +728,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     };
 
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto overflow-hidden animate-fade-in" style={{ backgroundColor: '#F7FAF9' }}>
+        <div className="quiz-screen animate-fade-in">
         {studyItem && !hanjaFilter && (
             <HanjaStudySheet
                 item={studyItem}
@@ -868,7 +868,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             />
                             <div className="text-center flex flex-col gap-1">
                                 <span className="text-sm font-extrabold text-[#AEB7C5]">모든 한자를 완료했어요!</span>
-                                <h1 className="text-h2-res font-black leading-tight" style={{ color: '#FF9B73', letterSpacing: '-0.02em' }}>
+                                <h1 className="text-h2-res font-black leading-tight text-[#FF9B73] tracking-tight">
                                     와우! 참 잘했어요!
                                 </h1>
                             </div>
