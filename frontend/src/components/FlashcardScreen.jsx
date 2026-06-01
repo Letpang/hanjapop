@@ -530,7 +530,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
                     {/* 하단 완료/다음 버튼 */}
                     <div className="flex w-full mt-2">
-                        <CtaButton theme="coral" onClick={handleWritingNext}>
+                        <CtaButton theme="coral" onClick={handleWritingNext}
+                            disabled={questions.length > 0 && Object.keys(answers).length < questions.length}>
                             <span className="font-black text-white text-[1.35rem] drop-shadow-md">{completionLabel}</span>
                         </CtaButton>
                     </div>
