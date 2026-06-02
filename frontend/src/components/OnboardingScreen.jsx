@@ -131,41 +131,35 @@ const Intro = ({ slideIdx, onNext, onSkip }) => {
 const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
   <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] px-5 py-6 safe-top">
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E8EEF4]">
-          <div className="h-full rounded-full bg-[#00C7AE] transition-all duration-500" style={{ width: `${((index + 1) / 8) * 100}%` }} />
-        </div>
-        <span className="text-xs font-black text-[#8D9CAE]">{index + 1}/8</span>
+      <div className="quiz-progress-track">
+        <div className="quiz-progress-fill bg-[#00C7AE]" style={{ width: `${((index + 1) / 8) * 100}%` }} />
+        <span className="quiz-counter-text ml-2 shrink-0">{index + 1}/8</span>
       </div>
 
-      <div className="rounded-[2rem] border border-white bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
+      <div className="grade-test-question-card">
+        <div className="flex items-center justify-between w-full">
           <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-[11px] font-black text-[#00A994]">{question.grade}</span>
-          <span className="text-[11px] font-black text-[#AEB7C5]">{question.skill}</span>
+          <span className="grade-test-type-label">{question.skill}</span>
         </div>
-        <div className="mt-5 flex h-44 items-center justify-center rounded-[1.5rem] bg-[#F8FAF9]">
-          <span className={`${question.hanja.length > 2 ? 'text-5xl' : 'text-8xl'} font-black text-[#334155]`}>{question.hanja}</span>
+        <div className="grade-test-hanja-box grade-test-hanja-box--single">
+          <span className={`grade-test-hanja-char hanja-char ${question.hanja.length > 2 ? 'text-5xl' : ''}`}>{question.hanja}</span>
         </div>
-        <p className="mt-4 text-center text-base font-black text-[#334155]">이 한자의 뜻은?</p>
-        <p className="mt-2 text-center text-xs font-bold text-[#8D9CAE]">{question.hint}</p>
+        <p className="grade-test-prompt">이 한자의 뜻은?</p>
+        <p className="screen-subtitle">{question.hint}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grade-test-choice-grid">
         {question.options.map(option => {
           const answered = selected != null;
           const right = answered && option === question.answer;
           const wrong = answered && option === selected && option !== question.answer;
+          const dimmed = answered && !right;
           return (
             <button
               key={option}
               onClick={() => onSelect(option)}
               disabled={answered}
-              className={`min-h-[64px] rounded-[1.35rem] border-2 px-3 text-base font-black transition-all active:scale-95 ${
-                right ? 'border-[#00C7AE] bg-[#E8FAF7] text-[#00A994]' :
-                wrong ? 'border-[#FFB5A8] bg-[#FFF1EE] text-[#E8664F]' :
-                answered ? 'border-[#EDF2F7] bg-white text-[#CBD5E1]' :
-                'border-[#E5ECF3] bg-white text-[#4B5A6D] shadow-sm'
-              }`}
+              className={`quiz-choice-btn ${right ? 'quiz-choice-btn--correct' : wrong ? 'quiz-choice-btn--wrong' : dimmed ? 'quiz-choice-btn--dimmed' : ''}`}
             >
               {option}
             </button>

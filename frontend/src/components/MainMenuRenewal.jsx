@@ -262,17 +262,14 @@ const MainMenuRenewal = ({
                             >
                                 {isDailyComplete && (
                                     <span
-                                        className="absolute inset-y-0 left-0 w-24 bg-white/45 blur-sm pointer-events-none"
+                                        className="absolute inset-y-0 left-0 w-24 bg-white/30 pointer-events-none"
                                         style={{ animation: 'mm-cta-shine 2.6s ease-in-out infinite' }}
                                     />
                                 )}
                                 {isDailyComplete && (
-                                    <>
-                                        <span className="absolute right-[5.5rem] top-5 text-[#FFE7A8] text-[18px] pointer-events-none" style={{ animation: 'mm-sparkle 1.8s ease-in-out infinite' }}>✦</span>
-                                        <span className="absolute right-[7.2rem] bottom-5 text-[#FFE7A8] text-[13px] pointer-events-none" style={{ animation: 'mm-sparkle 2.2s ease-in-out infinite 0.2s' }}>✦</span>
-                                    </>
+                                    <span className="absolute right-[5.5rem] top-5 text-[#FFE7A8] text-[18px] pointer-events-none" style={{ animation: 'mm-sparkle 1.8s ease-in-out infinite' }}>✦</span>
                                 )}
-                                <div className="w-full flex flex-col">
+                                <div className="w-full flex flex-col relative z-10">
                                     <div className="flex items-center justify-between gap-3 w-full">
                                         <div className="flex items-center gap-4">
                                             <div className="text-left">
@@ -287,7 +284,7 @@ const MainMenuRenewal = ({
                                                         : `오늘의 탐험 떠나기`}
                                                 </div>
                                                 <div
-                                                    className={`mt-0.5 font-bold ${selectedPastStage || isDailyComplete ? 'text-white opacity-95' : 'text-[#FF9B73]'}`}
+                                                    className={`mt-0.5 font-bold ${selectedPastStage || isDailyComplete ? 'text-white' : 'text-[#FF9B73]'}`}
                                                     style={{ fontSize: '1rem' }}
                                                 >
                                                     {isDailyComplete
@@ -308,12 +305,18 @@ const MainMenuRenewal = ({
                                         style={{ borderTop: `1px solid ${selectedPastStage || isDailyComplete ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.07)'}` }}
                                         onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
                                     >
-                                        <span className={`font-bold text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-white/70' : 'text-[#8f99ad]'}`}>급수진행도</span>
+                                        <span className={`font-bold text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-white' : 'text-[#8f99ad]'}`}>급수진행도</span>
                                         <div className="flex-1 flex items-center gap-2 min-w-0">
-                                            <div className={`flex-1 rounded-full overflow-hidden h-[8px] shadow-inner ${selectedPastStage || isDailyComplete ? 'bg-white/25' : 'bg-slate-100'}`}>
-                                                <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
+                                            <div className={`flex-1 rounded-full overflow-hidden h-[8px] shadow-inner ${selectedPastStage || isDailyComplete ? 'bg-white/60' : 'bg-slate-100'}`}>
+                                                <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: selectedPastStage || isDailyComplete ? 'linear-gradient(90deg, rgba(255,235,220,0.7), rgba(255,255,255,0.95))' : 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: selectedPastStage || isDailyComplete ? 'none' : '0 0 8px rgba(255,155,115,0.5)' }} />
                                             </div>
-                                            <div className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl bg-orange-50/80 border border-orange-100/60 shadow-sm shrink-0">
+                                            <div
+                                                className="flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-xl shadow-sm shrink-0"
+                                                style={selectedPastStage || isDailyComplete
+                                                    ? { background: 'rgba(255,255,255,0.92)', border: '1.5px solid rgba(255,255,255,0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
+                                                    : { background: 'rgba(255,241,234,0.8)', border: '1px solid rgba(255,225,200,0.6)' }
+                                                }
+                                            >
                                                 <span className="font-black text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>
                                                     {completedDay}/{TOTAL_STAGES}
                                                 </span>
