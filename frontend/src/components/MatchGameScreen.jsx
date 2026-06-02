@@ -131,7 +131,7 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 });
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false }) => {
+const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false }) => {
     // 16단계 캐릭터 로테이션 이미지 생성
     const cardBackSequence = useMemo(() => {
         const chars = ['garae', 'jeolmi', 'chapssal', 'muzi'];
@@ -707,7 +707,7 @@ const MatchGameScreen = ({ onBack, onHanjaAcquired, onStageClear, onMarkCorrect,
                                         </CtaButton>
                                     )}
                                     {(dailyMapNode && gameState === 'clear') ? (
-                                        <CtaButton theme="coral" onClick={onBack}>
+                                        <CtaButton theme="coral" onClick={onGameFinish || onBack}>
                                             <span className="quiz-cta-text">다음 단계로 이동</span>
                                             <span className="quiz-cta-text ml-2">▶</span>
                                         </CtaButton>

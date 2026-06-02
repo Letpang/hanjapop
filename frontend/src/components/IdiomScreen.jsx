@@ -61,8 +61,14 @@ const writeIdiomWrong = (item) => {
 const clearIdiomWrong = (item) => {
     const key = idiomKey(item);
     const data = readIdiomWrongData();
-    if (!data[key]) return;
-    delete data[key];
+    const prev = data[key] || {};
+    data[key] = {
+        ...prev,
+        correctCount: (prev.correctCount || 0) + 1,
+    };
+    if (data[key].wrongCount) {
+        delete data[key].wrongCount;
+    }
     localStorage.setItem(IDIOM_WRONG_KEY, JSON.stringify(data));
 };
 

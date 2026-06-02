@@ -78,11 +78,11 @@ const collectVocabulary = () => {
     }
   }
 
-  // Also include any idiom that has a wrong count, just in case
+  // Also include any idiom that has a wrong or correct count, just in case
   IDIOMS.forEach(item => {
     const key = item.id || item.hanja;
     const memory = idiomWrongData[key];
-    if (memory && memory.wrongCount > 0) {
+    if (memory && (memory.wrongCount > 0 || memory.correctCount > 0)) {
       if (!seenIdioms.has(item.hanja)) {
         seenIdioms.add(item.hanja);
         unlockedIdiomsList.push(item);
@@ -95,6 +95,7 @@ const collectVocabulary = () => {
     return {
       ...item,
       wrongCount: memory.wrongCount || 0,
+      correctCount: memory.correctCount || 0,
       lastWrongAt: memory.lastWrongAt || null,
     };
   }).sort((a, b) => b.wrongCount - a.wrongCount || a.hanja.localeCompare(b.hanja, 'ko'));
@@ -156,7 +157,7 @@ const VocabularyScreen = ({
 
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
   const idiomWrongCount = idioms.filter(w => w.wrongCount > 0).length;
-  const correctCount = words.filter(w => w.correctCount > 0).length;
+  const correctCount = words.filter(w => w.correctCount > 0).length + idioms.filter(w => w.correctCount > 0).length;
 
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#334155]'}`}>
@@ -218,47 +219,47 @@ const VocabularyScreen = ({
             className={`mb-3 w-full rounded-2xl border px-4 py-3 text-sm font-bold outline-none ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500' : 'bg-[#F8FAF9] border-slate-100 text-[#334155] placeholder:text-[#AEB7C5]'}`}
           />
 
-          {tab === 'words' && (
-            <>
-              <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-                {FILTERS.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => setFilter(item.id)}
-                    className={`shrink-0 rounded-full px-4 py-2 text-xs font-black transition-all ${filter === item.id ? 'bg-[#334155] text-white' : 'bg-[#F4F6F8] text-[#7A8798]'}`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+          {(tab === 'words' || tab === 'idioms') && (
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+              {FILTERS.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setFilter(item.id)}
+                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-black transition-all ${filter === item.id ? 'bg-[#334155] text-white' : 'bg-[#F4F6F8] text-[#7A8798]'}`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-              <div className="flex flex-col gap-2">
-                {filteredWords.length === 0 ? (
-                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-extrabold text-[#AEB7C5]">
-                    표시할 단어가 없어요
-                  </div>
-                ) : filteredWords.map(item => (
-                  <div key={item.id} className={`rounded-[1.5rem] border px-4 py-3 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-black text-[#334155]">{item.word}</span>
-                          <span className="text-xs font-extrabold text-[#94A3B8]">{item.reading}</span>
-                        </div>
-                        <p className="mt-1 text-sm font-bold text-[#64748B]">{item.meaning}</p>
+          {tab === 'words' && (
+            <div className="flex flex-col gap-2">
+              {filteredWords.length === 0 ? (
+                <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-extrabold text-[#AEB7C5]">
+                  표시할 단어가 없어요
+                </div>
+              ) : filteredWords.map(item => (
+                <div key={item.id} className={`rounded-[1.5rem] border px-4 py-3 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-black text-[#334155]">{item.word}</span>
+                        <span className="text-xs font-extrabold text-[#94A3B8]">{item.reading}</span>
                       </div>
-                      <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-black text-[#334155]">{item.hanja}</span>
+                      <p className="mt-1 text-sm font-bold text-[#64748B]">{item.meaning}</p>
                     </div>
-                    {(item.wrongCount > 0 || item.correctCount > 0) && (
-                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
-                        {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
-                        {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
-                      </div>
-                    )}
+                    <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-black text-[#334155]">{item.hanja}</span>
                   </div>
-                ))}
-              </div>
-            </>
+                  {(item.wrongCount > 0 || item.correctCount > 0) && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
+                      {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
+                      {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
 
           {tab === 'hanja' && (
@@ -299,9 +300,10 @@ const VocabularyScreen = ({
                     </div>
                     <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-xs font-black text-[#334155]">{item.grade}</span>
                   </div>
-                  {item.wrongCount > 0 && (
+                  {(item.wrongCount > 0 || item.correctCount > 0) && (
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
-                      <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>
+                      {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
+                      {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
                     </div>
                   )}
                 </div>

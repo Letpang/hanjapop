@@ -1395,6 +1395,7 @@ const DailySessionScreen = ({
                 <MatchGameScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
                     onBack={() => setStep('dice')}
+                    onGameFinish={() => finishSession()}
                     contentPool={contentPool}
                     onHanjaAcquired={onHanjaAcquired}
                     onStageClear={(round, elapsedSec) => {
@@ -1402,7 +1403,6 @@ const DailySessionScreen = ({
                         if (onHanjaAcquired) onHanjaAcquired(null, 20);
                         if (addTodayStat) addTodayStat('matchGame');
                         if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec);
-                        finishSession();
                     }}
                     onMarkCorrect={(id) => onMarkCorrect(id)}
                     onMarkWrong={() => { }}
