@@ -131,9 +131,11 @@ const Intro = ({ slideIdx, onNext, onSkip }) => {
 const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
   <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] px-5 py-6 safe-top">
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
-      <div className="quiz-progress-track">
-        <div className="quiz-progress-fill bg-[#00C7AE]" style={{ width: `${((index + 1) / 8) * 100}%` }} />
-        <span className="quiz-counter-text ml-2 shrink-0">{index + 1}/8</span>
+      <div className="flex items-center gap-3">
+        <div className="quiz-progress-track flex-1">
+          <div className="quiz-progress-fill bg-[#00C7AE]" style={{ width: `${((index + 1) / 8) * 100}%` }} />
+        </div>
+        <span className="quiz-counter-text shrink-0">{index + 1}/8</span>
       </div>
 
       <div className="grade-test-question-card">
@@ -141,14 +143,14 @@ const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
           <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-[11px] font-black text-[#00A994]">{question.grade}</span>
           <span className="grade-test-type-label">{question.skill}</span>
         </div>
-        <div className="grade-test-hanja-box grade-test-hanja-box--single">
-          <span className={`grade-test-hanja-char hanja-char ${question.hanja.length > 2 ? 'text-5xl' : ''}`}>{question.hanja}</span>
+        <div className={`grade-test-hanja-box ${question.hanja.length > 1 ? 'grade-test-hanja-box--compound' : 'grade-test-hanja-box--single'}`}>
+          <span className="grade-test-hanja-char hanja-char">{question.hanja}</span>
         </div>
-        <p className="grade-test-prompt">이 한자의 뜻은?</p>
-        <p className="screen-subtitle">{question.hint}</p>
+        <p className="text-center font-black text-[#334155] text-xl">이 한자의 뜻은?</p>
+        <p className="body-muted text-center">{question.hint}</p>
       </div>
 
-      <div className="grade-test-choice-grid">
+      <div className="grid grid-cols-2 gap-3">
         {question.options.map(option => {
           const answered = selected != null;
           const right = answered && option === question.answer;
@@ -159,7 +161,7 @@ const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
               key={option}
               onClick={() => onSelect(option)}
               disabled={answered}
-              className={`quiz-choice-btn ${right ? 'quiz-choice-btn--correct' : wrong ? 'quiz-choice-btn--wrong' : dimmed ? 'quiz-choice-btn--dimmed' : ''}`}
+              className={`quiz-choice-btn justify-center text-xl ${right ? 'quiz-choice-btn--correct' : wrong ? 'quiz-choice-btn--wrong' : dimmed ? 'quiz-choice-btn--dimmed' : ''}`}
             >
               {option}
             </button>

@@ -120,13 +120,13 @@ export const getCharacterImage = (charType, status) => {
     const type = VALID.includes(charType) ? charType : 'garae';
     
     if (status === 'success') {
-        return `/assets/images/characters/${type}/sucess.png`;
+        return `/assets/images/characters/${type}/sucess.webp`;
     }
     if (status === 'failure') {
-        return `/assets/images/characters/${type}/failure.png`;
+        return `/assets/images/characters/${type}/failure.webp`;
     }
     if (status === 'keep_going') {
-        return `/assets/images/characters/${type}/keep_going.png`;
+        return `/assets/images/characters/${type}/keep_going.webp`;
     }
     
     // Fallbacks

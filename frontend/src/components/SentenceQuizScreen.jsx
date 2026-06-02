@@ -274,7 +274,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 lastWordIdRef.current = targetWord.id;
                 onWordSeen?.(targetWord.id);
             }
-            const allWords = HANJA_DATA.flatMap(h => (h.words || []).map(w => w.word).filter(Boolean));
+            const allWords = HANJA_DATA.flatMap(h => (h.words || []).filter(w => w.word && w.type !== 'idiom').map(w => w.word));
             const distractors = [];
             while (distractors.length < 3) {
                 const rw = allWords[Math.floor(Math.random() * allWords.length)];
@@ -774,7 +774,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 {/* 뒷면: 단어 정보 */}
                                 {isCorrectSelected && currentQuiz?.type === 'sentence' && (
                                 <div
-                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-6 py-4 shadow-xl overflow-y-auto"
+                                    className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-6 py-4 shadow-xl overflow-hidden"
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)', zIndex: isWordCardFlipped ? 1 : 0 }}
                                 >
                                     {/* 우상단 스피커 아이콘 */}
@@ -790,16 +790,16 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                     <div className="flex flex-col items-center gap-2 max-h-full my-auto w-full">
                                         {/* 상단: 한자음 및 한자어 그룹 (가로 배치) */}
                                         <div className="flex flex-row items-baseline gap-3 justify-center">
-                                            <span className="text-5xl sm:text-[4.5rem] font-black text-[#4F56D9] tracking-tighter leading-none" style={{ textShadow: '0 0 10px rgba(79,86,217,0.10)' }}>
+                                            <span className="text-4xl font-black text-[#4F56D9] tracking-tighter leading-none" style={{ textShadow: '0 0 10px rgba(79,86,217,0.10)' }}>
                                                 {reading}
                                             </span>
-                                            <span className="text-xl sm:text-2xl font-bold text-[#AEB7C5] tracking-widest">
+                                            <span className="text-lg font-bold text-[#AEB7C5] tracking-widest">
                                                 ({word})
                                             </span>
                                         </div>
 
                                         {/* 하단: 의미 영역 */}
-                                        <div className="w-full flex flex-col items-center text-center px-1 mt-5">
+                                        <div className="w-full flex flex-col items-center text-center px-1 mt-3">
                                             <p className="text-body-res font-medium text-[#5B677A] leading-relaxed break-keep tracking-tight">
                                                 <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-[#7C83FF]/10 text-[#7C83FF] text-sm font-black mr-2 shadow-sm border border-[#7C83FF]/20 transform -translate-y-0.5">
                                                     의미

@@ -376,7 +376,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                     {/* 1. 한자 카드 (완료) */}
                                     <div className="flex flex-col items-center gap-2 relative z-10">
                                         <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#E0F2FE] to-[#7DD3FC] shadow-md border-[3px] border-white flex items-center justify-center relative transform transition-transform hover:scale-105">
-                                            <img src="/assets/images/icons/study.png" className="w-7 h-7 object-contain opacity-90 drop-shadow-sm" alt="Study" />
+                                            <img src="/assets/images/icons/study.webp" className="w-7 h-7 object-contain opacity-90 drop-shadow-sm" alt="Study" />
                                             <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black shadow-sm border border-white">✓</div>
                                         </div>
                                         <span className="text-[11px] font-black text-[#FF9B73]">한자 카드</span>
@@ -386,7 +386,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                     <div className="flex flex-col items-center gap-2 relative z-10">
                                         <div className="absolute -top-7 text-xl animate-bounce drop-shadow-sm">📍</div>
                                         <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#A7F3D0] to-[#10B981] shadow-[0_8px_16px_rgba(16,185,129,0.3)] border-[3px] border-white flex items-center justify-center transform scale-110">
-                                            <img src="/assets/images/icons/sentence.png" className="w-7 h-7 object-contain drop-shadow-md" alt="Quiz" />
+                                            <img src="/assets/images/icons/sentence.webp" className="w-7 h-7 object-contain drop-shadow-md" alt="Quiz" />
                                         </div>
                                         <span className="text-[12px] font-black text-[#10B981] mt-0.5">퀴즈</span>
                                     </div>
@@ -394,7 +394,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                     {/* 3. 게임 (잠김) */}
                                     <div className="flex flex-col items-center gap-2 relative z-10">
                                         <div className="w-14 h-14 rounded-[1.2rem] bg-[#F1F5F9] shadow-inner border-[3px] border-white flex items-center justify-center grayscale opacity-50">
-                                            <img src="/assets/images/icons/monster.png" className="w-7 h-7 object-contain" alt="Game" />
+                                            <img src="/assets/images/icons/monster.webp" className="w-7 h-7 object-contain" alt="Game" />
                                         </div>
                                         <span className="text-[11px] font-bold text-[#94A3B8]">게임</span>
                                     </div>
@@ -499,8 +499,8 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
 
 // ── Game Pick Screen ───────────────────────────────────────────────────────
 const GAMES = [
-    { id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
-    { id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png', theme: 'coral', color: '#2ED6C5', bg: '#F0FDFB' },
+    { id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.webp',  theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
+    { id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.webp', theme: 'coral', color: '#2ED6C5', bg: '#F0FDFB' },
 ];
 
 const GamePickScreen = ({ onResult, onBack }) => {
@@ -534,8 +534,8 @@ const GamePickScreen = ({ onResult, onBack }) => {
 
 // ── Quiz Pick Screen ───────────────────────────────────────────────────────
 const QUIZZES = [
-    { id: 'wordQuiz',     label: '단어 퀴즈', icon: '/assets/images/icons/words.png',    theme: 'coral', color: '#7C83FF', bg: '#F5F5FF' },
-    { id: 'sentenceQuiz', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.png', theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
+    { id: 'wordQuiz',     label: '단어 퀴즈', icon: '/assets/images/icons/words.webp',    theme: 'coral', color: '#7C83FF', bg: '#F5F5FF' },
+    { id: 'sentenceQuiz', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.webp', theme: 'coral', color: '#FF9B73', bg: '#FFF7F3' },
 ];
 
 const pickDailyOption = (options, salt = '') => {
@@ -695,7 +695,7 @@ const MapNode = ({ label, icon, isLeft, activeColor, status, charImg, onTap }) =
                     {/* Stars for completed nodes */}
                     {isDone && (
                         <>
-                            <img src="/assets/images/icons/clay_star.png" alt="star" className="absolute -top-4 -right-4 w-8 h-8 object-contain animate-pulse drop-shadow-[0_4px_8px_rgba(255,211,182,0.6)]" style={{ animationDelay: '0.2s' }} />
+                            <img src="/assets/images/icons/clay_star.webp" alt="star" className="absolute -top-4 -right-4 w-8 h-8 object-contain animate-pulse drop-shadow-[0_4px_8px_rgba(255,211,182,0.6)]" style={{ animationDelay: '0.2s' }} />
                         </>
                     )}
                 </div>
@@ -805,7 +805,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                     {/* Clouds & Monster */}
                     <div className="absolute top-[5%] right-[10%] text-[50px] opacity-80" style={{ animation: 'cloud-drift 22s ease-in-out infinite' }}>☁️</div>
                     <div className="absolute top-[45%] -left-[10%] opacity-90 flex justify-center items-center" style={{ animation: 'cloud-drift 28s ease-in-out infinite reverse' }}>
-                        <img src="/assets/images/icons/cute_monster.png" alt="hidden monster" className="absolute w-16 h-16 z-0 drop-shadow-md" style={{ animation: 'peek-monster 14s ease-in-out infinite' }} />
+                        <img src="/assets/images/icons/cute_monster.webp" alt="hidden monster" className="absolute w-16 h-16 z-0 drop-shadow-md" style={{ animation: 'peek-monster 14s ease-in-out infinite' }} />
                         <span className="text-[70px] relative z-10">☁️</span>
                     </div>
                     <div className="absolute bottom-[15%] right-[15%] text-[60px] opacity-70" style={{ animation: 'cloud-drift 19s ease-in-out infinite 2s' }}>☁️</div>
@@ -874,7 +874,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
 
                             {/* 두 번째 구름 + 숨어있는 몬스터 */}
                             <div className="absolute top-1/2 -right-10 opacity-70 flex justify-center items-center" style={{ animation: 'cloud-drift 25s ease-in-out infinite reverse' }}>
-                                <img src="/assets/images/icons/cute_monster.png" alt="hidden monster" className="absolute w-16 h-16 z-0 drop-shadow-md" style={{ animation: 'peek-monster 12s ease-in-out infinite' }} />
+                                <img src="/assets/images/icons/cute_monster.webp" alt="hidden monster" className="absolute w-16 h-16 z-0 drop-shadow-md" style={{ animation: 'peek-monster 12s ease-in-out infinite' }} />
                                 <span className="text-[80px] relative z-10">☁️</span>
                             </div>
 
@@ -914,7 +914,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         {/* 01. 한자 카드 */}
                         <MapNode
                             stepNum="01" label="한자 카드"
-                            icon="/assets/images/icons/study.png"
+                            icon="/assets/images/icons/study.webp"
                             isLeft={true} activeColor="#FF9B73" textColor="text-[#FF9B73]"
                             status={done.has('flashcard') ? 'done' : 'active'}
                             charImg={currentStep === 'flashcard' ? charImg : null}
@@ -924,8 +924,8 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         {/* 02. 퀴즈 */}
                         <BranchSection
                             stepNum="02" sectionLabel="퀴즈" textColor="text-[#FF9B73]" activeColor="#FF9B73"
-                            leftNode={{ id: 'word', label: '단어 퀴즈', icon: '/assets/images/icons/words.png' }}
-                            rightNode={{ id: 'sentence', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.png' }}
+                            leftNode={{ id: 'word', label: '단어 퀴즈', icon: '/assets/images/icons/words.webp' }}
+                            rightNode={{ id: 'sentence', label: '문장 퀴즈', icon: '/assets/images/icons/sentence.webp' }}
                             available={done.has('flashcard')} chosen={chosenQuiz} stepDone={done.has('quiz')}
                             showChar={currentStep === 'quiz'} charImg={charImg} onTap={onTapNode}
                         />
@@ -933,8 +933,8 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         {/* 03. 게임 */}
                         <BranchSection
                             stepNum="03" sectionLabel="게임" textColor="text-[#FF9B73]" activeColor="#FF9B73"
-                            leftNode={{ id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png' }}
-                            rightNode={{ id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.png' }}
+                            leftNode={{ id: 'shoot', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.webp' }}
+                            rightNode={{ id: 'match', label: '메모리 게임', icon: '/assets/images/icons/matching.webp' }}
                             available={done.has('quiz')} chosen={chosenGame} stepDone={done.has('game')}
                             showChar={currentStep === 'game'} charImg={charImg} onTap={onTapNode}
                         />
@@ -943,7 +943,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                         <div className="mt-[30px]">
                             <MapNode
                                 stepNum="04" label="한자 획순"
-                                icon="/assets/images/icons/writing.png"
+                                icon="/assets/images/icons/writing.webp"
                                 isLeft={false} activeColor="#FFD3B6" textColor="text-orange-600"
                                 status={done.has('writing') ? 'done' : done.has('game') ? 'active' : 'locked'}
                                 charImg={currentStep === 'writing' ? charImg : null}
@@ -1196,11 +1196,11 @@ const DailySessionScreen = ({
 
     const renderMiniMap = (currentStepIndex) => {
         const quizLabel = chosenQuiz === 'wordQuiz' ? '단어 퀴즈' : (chosenQuiz === 'sentenceQuiz' ? '문장 퀴즈' : '오늘의 퀴즈');
-        const quizIcon  = chosenQuiz === 'wordQuiz' ? '/assets/images/icons/words.png' : (chosenQuiz === 'sentenceQuiz' ? '/assets/images/icons/sentence.png' : '/assets/images/icons/words.png');
+        const quizIcon  = chosenQuiz === 'wordQuiz' ? '/assets/images/icons/words.webp' : (chosenQuiz === 'sentenceQuiz' ? '/assets/images/icons/sentence.webp' : '/assets/images/icons/words.webp');
         const gameLabel = chosenGame === 'shoot' ? '몬스터 슈팅' : (chosenGame === 'matchGame' ? '메모리 게임' : '오늘의 게임');
-        const gameIcon  = chosenGame === 'shoot' ? '/assets/images/icons/monster.png' : (chosenGame === 'matchGame' ? '/assets/images/icons/matching.png' : '/assets/images/icons/monster.png');
+        const gameIcon  = chosenGame === 'shoot' ? '/assets/images/icons/monster.webp' : (chosenGame === 'matchGame' ? '/assets/images/icons/matching.webp' : '/assets/images/icons/monster.webp');
         const mapSteps = [
-            { label: '한자 카드', icon: '/assets/images/icons/study.png', color: '#7C83FF' },
+            { label: '한자 카드', icon: '/assets/images/icons/study.webp', color: '#7C83FF' },
             { label: quizLabel,  icon: quizIcon,  color: '#FF9B73' },
             { label: gameLabel,  icon: gameIcon,  color: '#2ED6C5' },
         ];

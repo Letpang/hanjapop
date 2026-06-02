@@ -134,7 +134,7 @@ export function allocateTodayWords(hanjaData, currentDayHanjaIds, wordQuizSlots 
     hanjaData.forEach(h => {
         if (!todaySet.has(h.id)) return;
         (h.words || []).forEach(w => {
-            if (w.word && w.meaning && w.reading) {
+            if (w.word && w.meaning && w.reading && w.type !== 'idiom') {
                 allTodayWords.push({
                     hanja_char: h.hanja, hanja_id: h.id, grade: h.grade,
                     category: h.category || '', word: w.word, reading: w.reading,
@@ -206,7 +206,7 @@ export function getWordSRSWeightedPool(wordPool, wordData = {}, userLevel = 1, c
 function getWordIdsForHanja(hanjaIds, hanjaData) {
     return hanjaIds.flatMap(id => {
         const h = hanjaData.find(h => h.id === id);
-        return (h?.words || []).filter(w => w.id && w.word && w.meaning && w.reading).map(w => w.id);
+        return (h?.words || []).filter(w => w.id && w.word && w.meaning && w.reading && w.type !== 'idiom').map(w => w.id);
     });
 }
 
@@ -237,7 +237,7 @@ export function buildUnifiedPool(todayHanjaIds, hanjaData, srsData, masteryData,
     const maxWordReview = Math.round(todayWordIds.length * targetReviewRatio / (1 - targetReviewRatio));
     const pastWordObjects = pastHanjaIds.flatMap(id => {
         const h = hanjaData.find(h => h.id === id);
-        return (h?.words || []).filter(w => w.id && w.word && w.meaning && w.reading);
+        return (h?.words || []).filter(w => w.id && w.word && w.meaning && w.reading && w.type !== 'idiom');
     });
     const reviewWordIds = maxWordReview > 0
         ? weightedSort(pastWordObjects, w => wordItemWeight(w.id, wordData)).slice(0, maxWordReview).map(w => w.id)

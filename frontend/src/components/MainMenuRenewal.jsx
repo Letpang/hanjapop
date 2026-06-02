@@ -38,12 +38,12 @@ const FLOAT_CSS = `
 `;
 
 const MISSION_META = {
-    flashcard:    { label: '한자 학습지', icon: '/assets/images/icons/study.png',    nav: 'flashcard',    color: '#FF9B73' },
-    wordQuiz:     { label: '단어 퀴즈',   icon: '/assets/images/icons/words.png',    nav: 'wordQuiz',     color: '#7C83FF' },
-    sentenceQuiz: { label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.png', nav: 'sentenceQuiz', color: '#7C83FF' },
-    shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  nav: 'shootGame',    color: '#2ED6C5' },
-    matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.png', nav: 'matchGame',    color: '#2ED6C5' },
-    writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.png',  nav: 'writing',      color: '#FFB347' },
+    flashcard:    { label: '한자 학습지', icon: '/assets/images/icons/study.webp',    nav: 'flashcard',    color: '#FF9B73' },
+    wordQuiz:     { label: '단어 퀴즈',   icon: '/assets/images/icons/words.webp',    nav: 'wordQuiz',     color: '#7C83FF' },
+    sentenceQuiz: { label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.webp', nav: 'sentenceQuiz', color: '#7C83FF' },
+    shootGame:    { label: '몬스터 슈팅', icon: '/assets/images/icons/monster.webp',  nav: 'shootGame',    color: '#2ED6C5' },
+    matchGame:    { label: '메모리 게임', icon: '/assets/images/icons/matching.webp', nav: 'matchGame',    color: '#2ED6C5' },
+    writing:      { label: '한자 획순',   icon: '/assets/images/icons/writing.webp',  nav: 'writing',      color: '#FFB347' },
     idiomQuiz:    { label: '사자성어',     icon: null,                               nav: 'idiomQuiz',    color: '#9B6BFF' },
 };
 
@@ -224,7 +224,7 @@ const MainMenuRenewal = ({
                         <>
                             {/* 빼꼼 튀어나온 귀여운 몬스터 복구 (버튼 뒤로 숨김) */}
                             <img
-                                src={isDailyComplete ? '/assets/images/icons/monster_remove.png' : '/assets/images/icons/monster_new_new.png'}
+                                src={isDailyComplete ? '/assets/images/icons/monster_remove.webp' : '/assets/images/icons/monster_new_new.webp'}
                                 alt="monster"
                                 className={`absolute pointer-events-none object-contain ${isDailyComplete ? 'z-30' : 'z-0'}`}
                                 style={{
@@ -474,8 +474,8 @@ const MainMenuRenewal = ({
                             <button onClick={() => setShowQuizModal(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.06)', color: '#94A3B8', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                         </div>
                         {[
-                            { id: 'wordQuiz',     label: '단어 퀴즈',   icon: '/assets/images/icons/words.png',    desc: '한자 단어를 보고 뜻과 읽기를 맞춰보세요' },
-                            { id: 'sentenceQuiz', label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.png', desc: '예문 속 빈칸을 채우며 문장을 익혀보세요' },
+                            { id: 'wordQuiz',     label: '단어 퀴즈',   icon: '/assets/images/icons/words.webp',    desc: '한자 단어를 보고 뜻과 읽기를 맞춰보세요' },
+                            { id: 'sentenceQuiz', label: '문장 퀴즈',   icon: '/assets/images/icons/sentence.webp', desc: '예문 속 빈칸을 채우며 문장을 익혀보세요' },
                         ].map(({ id, label, icon, desc }) => (
                             <button key={id} onClick={() => { setShowQuizModal(false); onNavigate(id); }}
                                 className="w-full flex items-center gap-3 px-4 py-4 rounded-[1.2rem] active:scale-[0.97] transition-all"
@@ -504,8 +504,8 @@ const MainMenuRenewal = ({
                             <button onClick={() => setShowGameModal(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.06)', color: '#94A3B8', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                         </div>
                         {[
-                            { id: 'matchGame', label: '메모리 게임', icon: '/assets/images/icons/matching.png', desc: '짝을 맞추며 한자와 뜻을 기억해보세요' },
-                            { id: 'shootGame', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.png',  desc: '정답 한자를 쏘아 몬스터를 물리치세요' },
+                            { id: 'matchGame', label: '메모리 게임', icon: '/assets/images/icons/matching.webp', desc: '짝을 맞추며 한자와 뜻을 기억해보세요' },
+                            { id: 'shootGame', label: '몬스터 슈팅', icon: '/assets/images/icons/monster.webp',  desc: '정답 한자를 쏘아 몬스터를 물리치세요' },
                         ].map(({ id, label, icon, desc }) => (
                             <button key={id} onClick={() => { setShowGameModal(false); onNavigate(id); }}
                                 className="w-full flex items-center gap-3 px-4 py-4 rounded-[1.2rem] active:scale-[0.97] transition-all"

@@ -65,7 +65,32 @@ const collectVocabulary = () => {
     .filter(Boolean)
     .sort((a, b) => a.id - b.id);
 
-  const idioms = IDIOMS.map(item => {
+  const seenIdioms = new Set();
+  const unlockedIdiomsList = [];
+
+  for (const item of HANJA_DATA) {
+    if (!hanjaIds.has(item.id)) continue;
+    for (const w of (item.words || [])) {
+      if (w.type !== 'idiom' || seenIdioms.has(w.word)) continue;
+      seenIdioms.add(w.word);
+      const meta = IDIOMS.find(x => x.hanja === w.word);
+      if (meta) unlockedIdiomsList.push(meta);
+    }
+  }
+
+  // Also include any idiom that has a wrong count, just in case
+  IDIOMS.forEach(item => {
+    const key = item.id || item.hanja;
+    const memory = idiomWrongData[key];
+    if (memory && memory.wrongCount > 0) {
+      if (!seenIdioms.has(item.hanja)) {
+        seenIdioms.add(item.hanja);
+        unlockedIdiomsList.push(item);
+      }
+    }
+  });
+
+  const idioms = unlockedIdiomsList.map(item => {
     const memory = idiomWrongData[item.id || item.hanja] || {};
     return {
       ...item,
