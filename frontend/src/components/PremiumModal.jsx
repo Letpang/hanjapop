@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { openCheckout } from '../utils/paymentUtils.js';
+import { useRevenueCat } from '../hooks/useRevenueCat.js';
+import { getPlatform } from '../hooks/useAuth.js';
 
 const PACKS = [
     {
@@ -34,8 +36,49 @@ const PACKS = [
     },
 ];
 
-export default function PremiumModal({ onClose, onShowLogin }) {
+export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }) {
     const [selected, setSelected] = useState('fullpack');
+    const [errorMsg, setErrorMsg] = useState('');
+    const { initialized, loading, purchasePackage, restorePurchases } = useRevenueCat();
+    const isNative = getPlatform() !== 'web';
+
+    const handleBuy = async () => {
+        setErrorMsg('');
+        if (isNative) {
+            // 네이티브(iOS/Android): RevenueCat 인앱결제
+            if (!initialized) {
+                setErrorMsg('결제 시스템 준비 중입니다. 잠시 후 다시 시도해 주세요.');
+                return;
+            }
+            const result = await purchasePackage(selected);
+            if (result.success) {
+                // localStorage 업데이트 후 App.jsx에 알림
+                localStorage.setItem('unlocked_pack', String(result.pack));
+                onPurchaseSuccess?.(result.pack);
+                onClose();
+            } else if (!result.cancelled) {
+                setErrorMsg('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+            }
+        } else {
+            // 웹: 기존 Lemon Squeezy 결제
+            openCheckout(selected);
+        }
+    };
+
+    const handleRestore = async () => {
+        setErrorMsg('');
+        if (!isNative) return;
+        const result = await restorePurchases();
+        if (result.success && result.pack > 0) {
+            localStorage.setItem('unlocked_pack', String(result.pack));
+            onPurchaseSuccess?.(result.pack);
+            onClose();
+        } else if (result.success && result.pack === 0) {
+            setErrorMsg('복원할 구매 내역이 없습니다.');
+        } else {
+            setErrorMsg('복원 중 오류가 발생했습니다.');
+        }
+    };
 
     return (
         <div
@@ -100,21 +143,40 @@ export default function PremiumModal({ onClose, onShowLogin }) {
                     })}
                 </div>
 
+                {/* 에러 메시지 */}
+                {errorMsg && (
+                    <p className="px-6 mb-3 text-center text-[13px] text-red-500 font-semibold">{errorMsg}</p>
+                )}
+
                 {/* CTA */}
                 <div className="px-6">
                     <button
-                        onClick={() => openCheckout(selected)}
-                        className="w-full py-4 rounded-full font-black text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98]"
+                        onClick={handleBuy}
+                        disabled={loading}
+                        className="w-full py-4 rounded-full font-black text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
                         style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
                     >
-                        {PACKS.find(p => p.id === selected)?.price} · 지금 구매하기
+                        {loading ? '처리 중...' : `${PACKS.find(p => p.id === selected)?.price} · 지금 구매하기`}
                     </button>
-                    <button
-                        onClick={onShowLogin}
-                        className="w-full py-3 mt-1 text-[13px] text-gray-400 font-medium"
-                    >
-                        이미 구매했어요 → 로그인으로 복원
-                    </button>
+
+                    {/* 네이티브: 구매 복원 / 웹: 로그인 복원 */}
+                    {isNative ? (
+                        <button
+                            onClick={handleRestore}
+                            disabled={loading}
+                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-medium disabled:opacity-60"
+                        >
+                            이미 구매했어요 → 구매 복원하기
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onShowLogin}
+                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-medium"
+                        >
+                            이미 구매했어요 → 로그인으로 복원
+                        </button>
+                    )}
+
                     <button
                         onClick={onClose}
                         className="w-full py-2 text-[13px] text-gray-300 font-medium"

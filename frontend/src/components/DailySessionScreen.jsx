@@ -203,7 +203,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
     return (
         <>
             <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center px-6 overflow-y-auto bg-[#F7FAF9]">
-                <div className="w-full max-w-sm mx-auto flex flex-col relative z-10 safe-top pt-4 pb-20">
+                <div className="w-full max-w-sm mx-auto flex flex-col relative z-10 safe-top pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}>
 
                     {/* Header */}
                     <div className="quiz-header-card quiz-header-card--wide mb-6">

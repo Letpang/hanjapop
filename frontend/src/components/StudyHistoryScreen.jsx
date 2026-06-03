@@ -311,7 +311,7 @@ const StudyHistoryScreen = ({ onBack, isDarkMode }) => {
 
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#334155]'}`}>
-      <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col gap-5 px-5 pb-16 pt-4 safe-top">
+      <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col gap-5 px-5 pt-4 safe-top safe-bottom">
         <header className={`flex min-h-[64px] items-center justify-between rounded-[2rem] border px-4 shadow-sm ${isDarkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-white'}`}>
           <button
             onClick={onBack}

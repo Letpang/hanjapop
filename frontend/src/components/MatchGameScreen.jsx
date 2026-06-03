@@ -595,7 +595,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                 </div>
 
                 {/* 중앙 그룹: 제목 + 카드 + 타임바 — 균형 잡힌 수직 배치 */}
-                <div className="flex-1 flex flex-col items-center justify-between px-5 pt-8 pb-12">
+                <div className="flex-1 flex flex-col items-center justify-between px-5 pt-8" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 3rem)' }}>
                     
                     {/* 카드 그리드 영역 (중앙 집중) */}
                     {gameState === 'playing' && (
@@ -619,17 +619,18 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
                     {/* 타임바 — playing 중에만 */}
                     {gameState === 'playing' && (
-                        <div className="w-full max-w-sm mx-auto flex flex-col gap-1.5">
-                            <div className="flex justify-between px-1">
-                                <span className="text-xs-res font-bold text-[#AEB7C5] uppercase tracking-widest">Time</span>
-                                <span className={`text-xs-res font-extrabold tabular-nums ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-[#AEB7C5]'}`}>{timeLeft}s</span>
-                            </div>
-                            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="w-full max-w-sm mx-auto flex items-center gap-2.5 mt-2">
+                            <div className="flex-1 h-2.5 rounded-full bg-slate-200 overflow-hidden shadow-inner">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-1000 ${timeLeft <= 10 ? 'bg-rose-400' : timeLeft <= 20 ? 'bg-[#FFB433]' : 'bg-[#FF9B73]'}`}
-                                    style={{ width: `${Math.max(0, Math.min(100, timeFraction * 100))}%` }}
+                                    className="h-full rounded-full transition-all duration-1000"
+                                    style={{
+                                        width: `${Math.max(0, Math.min(100, timeFraction * 100))}%`,
+                                        background: timeLeft <= 10 ? 'linear-gradient(90deg, #FF9B73, #FF6B6B)' : timeLeft <= 20 ? 'linear-gradient(90deg, #FFD4CC, #FF9B73)' : 'linear-gradient(90deg, #2ED6C5, #0D9488)',
+                                        boxShadow: timeLeft <= 10 ? '0 0 8px rgba(255,107,107,0.4)' : timeLeft <= 20 ? '0 0 8px rgba(255,155,115,0.4)' : '0 0 8px rgba(46,214,197,0.4)'
+                                    }}
                                 />
                             </div>
+                            <span className={`font-black text-[13px] min-w-[32px] text-right ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-[#8F99AD]'}`}>{timeLeft}s</span>
                         </div>
                     )}
 

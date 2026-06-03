@@ -133,7 +133,7 @@ const MainMenuRenewal = ({
             </header>
 
             {/* ── 스크롤 바디 ── */}
-            <div className="flex-1 overflow-y-auto w-full flex flex-col items-center px-5 pt-2 pb-28 gap-5 relative z-10">
+            <div className="flex-1 overflow-y-auto w-full flex flex-col items-center px-5 pt-2 gap-5 relative z-10" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 7rem)' }}>
 
                 {/* 1 ── 탐험가 스테이터스 보드 (ID Card) ── */}
                 <div className="w-full max-w-md relative" style={up(0)}>

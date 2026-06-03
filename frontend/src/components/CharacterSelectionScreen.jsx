@@ -70,7 +70,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
 
     return (
         <div className="fixed inset-0 w-full z-[100] bg-[#F7FAF9] overflow-y-auto">
-            <div className="w-full min-h-full flex flex-col items-center justify-center gap-6 md:gap-10 relative z-50 px-4 pt-10 pb-8 md:px-10 max-w-5xl mx-auto">
+            <div className="w-full min-h-full flex flex-col items-center justify-center gap-6 md:gap-10 relative z-50 px-4 pt-10 safe-bottom md:px-10 max-w-5xl mx-auto">
                 {/* 헤더 */}
                 <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
                     <div className="quiz-header-card quiz-header-card--wide">

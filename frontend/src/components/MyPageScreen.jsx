@@ -250,7 +250,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           </div>
       </div>
 
-      <div className="flex flex-col gap-6 px-5 pt-6 pb-12 max-w-2xl w-full mx-auto">
+      <div className="flex flex-col gap-6 px-5 pt-6 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 3rem)' }}>
 
         {/* 프로필 카드 */}
         <div className={`w-full rounded-[2rem] border-4 shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-5 flex items-center gap-4 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>

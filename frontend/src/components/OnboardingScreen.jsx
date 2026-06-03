@@ -275,7 +275,7 @@ const Result = ({ score, finalLevel, skillStats, memoryMistakes, onComplete }) =
 
   return (
     <div className="flex min-h-[100dvh] w-full flex-col overflow-y-auto bg-[#F7FAF9] px-5 py-6 safe-top">
-      <div className="mx-auto flex w-full max-w-sm flex-col gap-5 pb-8">
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-5 safe-bottom">
         <div className="rounded-[2.4rem] border border-white bg-white p-6 text-center shadow-xl">
           <img src={GUIDE} alt="가래뭉치" className="mx-auto h-36 w-36 object-contain drop-shadow-xl" />
           <p className="mt-2 text-[11px] font-black tracking-[0.18em] text-[#00A994]">DIAGNOSIS COMPLETE</p>

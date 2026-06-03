@@ -144,7 +144,7 @@ const App = () => {
         }
     }, []);
 
-    useVersionCheck();
+    const versionInfo = useVersionCheck();
 
     useEffect(() => {
         if (isDarkMode) document.body.classList.add('dark-mode');
@@ -744,6 +744,30 @@ const App = () => {
             >
                 <div className="space-bg"></div>
                 <div className="stars-overlay"></div>
+
+                {/* 강제 업데이트 모달 */}
+                {versionInfo.needsUpdate && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.7)' }}>
+                        <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: '#fff' }}>
+                            <div className="text-4xl mb-4">🆕</div>
+                            <h2 className="text-xl font-extrabold text-gray-800 mb-2">업데이트 필요</h2>
+                            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                                새 버전({versionInfo.latestVersion})이 출시됐어요.<br />
+                                계속하려면 앱을 업데이트해 주세요.
+                            </p>
+                            <a
+                                href={versionInfo.storeUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block w-full py-4 rounded-full font-black text-white text-[17px]"
+                                style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
+                            >
+                                지금 업데이트
+                            </a>
+                        </div>
+                    </div>
+                )}
+
                 <div className="content-area relative z-10">
                     {charToast && selectedCharacter && (
                         <CharacterToast
@@ -818,6 +842,10 @@ const App = () => {
                             onClose={() => setShowPremiumModal(false)}
                             onShowLogin={() => { setShowPremiumModal(false); setShowLoginModal(true); }}
                             avatarUrl={selectedCharacter ? getRankDetails(userXp, selectedCharacter).avatar : '/assets/images/characters/default_3d.webp'}
+                            onPurchaseSuccess={(pack) => {
+                                setUnlockedPack(pack);
+                                setShowPremiumModal(false);
+                            }}
                         />
                     )}
                     {gradeTestAlert && (

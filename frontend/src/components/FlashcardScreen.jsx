@@ -316,7 +316,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </button>
                     <div className="quiz-header-title-area">
                         <h2 className="quiz-screen-title">한자 학습지</h2>
-                        <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
+                        <p className="screen-subtitle">단어장을 보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="w-11" />
                 </div>
@@ -324,7 +324,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
 
 
-            <div className="flex-1 min-h-0 overflow-y-auto pb-32 px-5 pt-4 flex flex-col gap-10 max-w-2xl w-full mx-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 flex flex-col gap-10 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' }}>
 
                 {/* ── 섹션 1: 한자 정보 ── */}
                 <div className="minimal-card-studio bg-white border border-[#E9EDF2] shadow-xl px-5 py-3 !rounded-[2rem]">
@@ -756,7 +756,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                     </button>
                     <div className="quiz-header-title-area">
                         <h2 className="quiz-screen-title">한자 학습지</h2>
-                        <p className="screen-subtitle">획순대로 써보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
+                        <p className="screen-subtitle">단어장을 보고 문제를 풀며<br />한자를 다양하게 익혀보아요!</p>
                     </div>
                     <div className="quiz-header-right">
                         {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (
