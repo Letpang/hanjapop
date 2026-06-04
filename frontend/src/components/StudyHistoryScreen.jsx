@@ -96,6 +96,7 @@ const getEntrySummary = (entry = {}, missions = []) => {
 };
 
 const DetailSection = ({ title, count, tone = 'slate', children }) => {
+  const [open, setOpen] = useState(true);
   const toneClasses = {
     teal: 'text-[#00A994] bg-[#E8FAF7]',
     coral: 'text-[#E8664F] bg-[#FFF1EE]',
@@ -105,13 +106,16 @@ const DetailSection = ({ title, count, tone = 'slate', children }) => {
 
   return (
     <section className="flex flex-col gap-2.5">
-      <div className="flex items-center justify-between">
+      <button className="flex items-center justify-between w-full active:opacity-70 transition-opacity" onClick={() => setOpen(v => !v)}>
         <h3 className="text-sm font-black text-[#334155]">{title}</h3>
-        <span className={`px-2.5 py-1 rounded-full text-[11px] font-black ${toneClasses[tone]}`}>
-          {count}개
-        </span>
-      </div>
-      {children}
+        <div className="flex items-center gap-2">
+          <span className={`px-2.5 py-1 rounded-full text-[11px] font-black ${toneClasses[tone]}`}>
+            {count}개
+          </span>
+          <span className={`text-[#AEB7C5] text-xs transition-transform duration-200 ${open ? '' : '-rotate-90'}`}>▼</span>
+        </div>
+      </button>
+      {open && children}
     </section>
   );
 };
