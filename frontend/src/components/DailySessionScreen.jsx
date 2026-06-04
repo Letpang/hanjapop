@@ -172,6 +172,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
     const [flippedSet, setFlippedSet] = useState(new Set());
     const [showWords, setShowWords] = useState(false);
     const [showClearPopup, setShowClearPopup] = useState(false);
+    const clearMsg = useMemo(() => CLEAR_MESSAGES[Math.floor(Math.random() * CLEAR_MESSAGES.length)], []);
 
     const item = items[currentIndex];
     const isLastCard = currentIndex === items.length - 1;
@@ -360,8 +361,8 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                             {/* 텍스트 영역 */}
                             <div className="text-center flex flex-col gap-1 w-full">
                                 <span className="text-sm font-extrabold text-[#94A3B8]">3개의 한자를 모두 익혔네요!</span>
-                                <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: '#FF9B73', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(255,160,120,0.15)' }}>
-                                    와우! 참 잘했어요!
+                                <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: '#FF9B73', letterSpacing: '-0.02em', textShadow: '0 2px 10px rgba(255,160,120,0.15)', whiteSpace: 'pre-line' }}>
+                                    {clearMsg}
                                 </h1>
                             </div>
 
@@ -969,9 +970,23 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
 };
 
 // ── Results Screen (3D Style - Premium Crossroads) ───────────────────────────
+const CLEAR_MESSAGES = [
+    '와우!\n참 잘했어요!',
+    '최고예요!\n정말 대단해요!',
+    '훌륭해요!\n오늘도 빛났어요!',
+    '멋져요!\n한자 실력이 쑥쑥!',
+    '완벽해요!\n오늘도 성공이에요!',
+    '굉장해요!\n이 속도면 금방이에요!',
+    '짱이에요!\n오늘 하루도 수고했어요!',
+    '대단해요!\n한자 탐험 완료!',
+    '브라보!\n오늘도 해냈어요!',
+    '역시예요!\n꾸준함이 최고예요!',
+];
+
 const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, dayNumber, missions, doneCount }) => {
     const charImg = getCharacterImage(selectedCharacter, 'success');
     const isFinalDay = dayNumber >= DAILY_CURRICULUM.length;
+    const clearMsg = useMemo(() => CLEAR_MESSAGES[Math.floor(Math.random() * CLEAR_MESSAGES.length)], []);
 
     const missionTotal = missions?.length || 6;
     const missionDone = doneCount || 0;
@@ -1005,8 +1020,8 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                     <div className="text-center flex flex-col gap-1 -mt-2">
                         <span className="text-xs font-extrabold text-[#AEB7C5] tracking-tight">오늘의 {dayNumber}단계 탐험 완료!</span>
                         <h1 className="text-[1.85rem] font-black leading-tight tracking-tight"
-                            style={{ color: '#FF9B73', textShadow: '0 2px 10px rgba(255,160,120,0.12)' }}>
-                            와우! 참 잘했어요!
+                            style={{ color: '#FF9B73', textShadow: '0 2px 10px rgba(255,160,120,0.12)', whiteSpace: 'pre-line' }}>
+                            {clearMsg}
                         </h1>
                         <p className="font-extrabold text-sm tracking-tight mt-1 text-[#8F99AD]">
                             일일 학습 완료 보너스 <span className="text-[#FF9B73] font-black">+200 XP</span> 획득!
@@ -1205,28 +1220,28 @@ const DailySessionScreen = ({
             { label: gameLabel,  icon: gameIcon,  color: '#2ED6C5' },
         ];
         return (
-            <div className="w-full relative z-10 mt-4 px-4 mb-6">
-                <div className="flex items-start justify-between w-full">
+            <div className="w-full relative z-10 mt-3 px-5 mb-4">
+                <div className="flex items-start justify-between w-full min-w-0">
                     {mapSteps.flatMap((s, i) => {
                         const isDone = i <= currentStepIndex;
                         const els = [
-                            <div key={`step-${i}`} className={`flex flex-col items-center gap-2 ${isDone ? '' : 'opacity-50 grayscale'}`}>
-                                <div className="relative w-[72px] h-[72px] rounded-[1.3rem] flex items-center justify-center shadow-lg border-[3px] border-white"
+                            <div key={`step-${i}`} className={`flex flex-col items-center gap-2 shrink-0 ${isDone ? '' : 'opacity-50 grayscale'}`}>
+                                <div className="relative w-16 h-16 rounded-[1.3rem] flex items-center justify-center shadow-lg border-[3px] border-white"
                                     style={{ background: isDone ? s.color + '22' : '#f1f5f9' }}>
-                                    <img src={s.icon} className="w-10 h-10 object-contain" alt={s.label} />
+                                    <img src={s.icon} className="w-9 h-9 object-contain" alt={s.label} />
                                     {isDone && (
-                                        <div className="absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-black shadow-md border-2 border-white"
+                                        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black shadow-md border-2 border-white"
                                             style={{ background: '#FF9B73' }}>✓</div>
                                     )}
                                 </div>
-                                <span className="text-[11px] font-black text-[#5B677A] text-center leading-tight max-w-[72px]">{s.label}</span>
+                                <span className="text-[10px] font-black text-[#5B677A] text-center leading-tight max-w-[64px]">{s.label}</span>
                             </div>,
                         ];
                         if (i < mapSteps.length - 1) {
                             const connColor = isDone ? s.color : '#e2e8f0';
                             const nextColor = (i + 1) <= currentStepIndex ? mapSteps[i+1].color : '#e2e8f0';
                             els.push(
-                                <div key={`conn-${i}`} className="flex-1 flex items-center mx-1" style={{ marginTop: '36px' }}>
+                                <div key={`conn-${i}`} className="flex-1 min-w-0 flex items-center mx-1" style={{ marginTop: '32px' }}>
                                     <div className="h-[3px] w-full rounded-full" style={{ background: `linear-gradient(90deg, ${connColor}, ${nextColor})`, opacity: 0.4 }} />
                                 </div>
                             );

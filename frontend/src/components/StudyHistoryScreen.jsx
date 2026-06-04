@@ -112,7 +112,9 @@ const DetailSection = ({ title, count, tone = 'slate', children }) => {
           <span className={`px-2.5 py-1 rounded-full text-[11px] font-black ${toneClasses[tone]}`}>
             {count}개
           </span>
-          <span className={`text-[#AEB7C5] text-xs transition-transform duration-200 ${open ? '' : '-rotate-90'}`}>▼</span>
+          <svg xmlns="http://www.w3.org/2000/svg" className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} style={{ color: '#FF8D7E' }} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
         </div>
       </button>
       {open && children}

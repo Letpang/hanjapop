@@ -241,38 +241,45 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
 
     if (done) {
         const pct = Math.round((score / questions.length) * 100);
+        const isClear = pct >= 70;
         const correctXp = score * 5;
         const clearXp = 25;
         const reward = getRewardPreview?.(correctXp + clearXp);
         return (
-            <div className="quiz-result-backdrop">
-                <div className="quiz-result-card">
-                    <img
-                        src={getCharacterImage(selectedCharacter, pct >= 70 ? 'success' : 'failure')}
-                        alt="result"
-                        className="quiz-char-img img-shadow-sm"
-                    />
-                    <div className="quiz-result-content">
-                        <p className="quiz-result-title">{score} / {questions.length}</p>
-                        <p className="body-muted">
-                            {pct === 100 ? '완벽해요! 사자성어 마스터!' :
-                             pct >= 70 ? '훌륭해요! 조금만 더 연습해요!' : '다시 한번 도전해 보세요!'}
-                        </p>
-                    </div>
-                    <RewardBreakdown
-                        reward={reward}
-                        correctXp={correctXp}
-                        clearXp={clearXp}
-                        detailText={`${score}문제 x 5XP + 완료 ${clearXp}XP`}
-                        missionXp={clearCountRef.current === 1 ? 25 : 0}
-                    />
-                    <div className="w-full flex flex-col gap-3 mt-4">
-                        <CtaButton theme="coral" onClick={() => { setIdx(0); setWrongChoices([]); setIsCorrectSelected(false); setScore(0); setDone(false); }}>
-                            <span className="quiz-cta-text">다시 풀기</span>
-                        </CtaButton>
-                        <button onClick={onBack} className="w-full py-3.5 rounded-2xl back-quiz-button">
-                            목록으로 돌아가기
-                        </button>
+            <div className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
+                style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}>
+                <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
+                    <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+                        <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0 char-bg-glow" />
+                        <img
+                            src={getCharacterImage(selectedCharacter, isClear ? 'success' : 'failure')}
+                            alt="result"
+                            className="w-[176px] h-[176px] object-contain relative z-10 mt-4 img-shadow-lg"
+                        />
+                        <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
+                            <span className="result-subtitle">
+                                {isClear ? '사자성어 완료!' : '아쉬운 결과네요...'}
+                            </span>
+                            <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
+                                {pct === 100 ? '완벽해요! 마스터!' : isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                            </h1>
+                            <p className="body-muted">{score} / {questions.length}문제 정답</p>
+                        </div>
+                        <RewardBreakdown
+                            reward={reward}
+                            correctXp={correctXp}
+                            clearXp={clearXp}
+                            detailText={`${score}문제 x 5XP + 완료 ${clearXp}XP`}
+                            missionXp={clearCountRef.current >= 1 ? 25 : 0}
+                        />
+                        <div className="w-full flex flex-col gap-3 relative z-10">
+                            <CtaButton theme="coral" onClick={() => { setIdx(0); setWrongChoices([]); setIsCorrectSelected(false); setScore(0); setDone(false); }}>
+                                <span className="quiz-cta-text">다시 풀기</span>
+                            </CtaButton>
+                            <button onClick={onBack} className="w-full py-3.5 rounded-2xl back-quiz-button">
+                                목록으로 돌아가기
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

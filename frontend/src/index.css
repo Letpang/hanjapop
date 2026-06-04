@@ -326,11 +326,12 @@ body.dark-mode {
 }
 
 .hp-cta-button--indigo {
-    background: linear-gradient(135deg, #9B9FF7 0%, #7278F2 100%);
+    background: linear-gradient(160deg, #A5A9F8 0%, #6B72EF 100%);
+    box-shadow: 0 8px 20px rgba(100, 108, 240, 0.38), 0 2px 6px rgba(100, 108, 240, 0.22);
 }
 
 .hp-cta-button--indigo:active {
-    box-shadow: 0 6px 12px rgba(114, 120, 242, 0.2), inset 0 -2px 0 rgba(72, 78, 200, 0.2);
+    box-shadow: 0 3px 8px rgba(100, 108, 240, 0.25), inset 0 -1px 0 rgba(60, 66, 180, 0.2);
 }
 
 /* ── Quiz Choice Button System ──────────────────────────────── */
@@ -1380,11 +1381,16 @@ body.dark .clay-button {
 /* 퀴즈 결과 성공 배경 */
 .quiz-result-backdrop {
     position: fixed; inset: 0; z-index: 50;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: flex-start; justify-content: center;
     padding: 1.5rem;
+    overflow-y: auto;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     background: linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%);
     animation: fadeIn 0.3s ease;
+}
+.quiz-result-backdrop > * {
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 /* 학습지 섹션 아이콘 버튼 */
@@ -1626,4 +1632,25 @@ body.dark .clay-button {
     box-shadow: 0 18px 44px rgba(120, 130, 160, 0.12) !important;
     border-radius: 48px !important;
     background-color: #FFFFFF !important;
+}
+
+/* ── 활동 완료 화면 공통 ──────────────────────────────────────── */
+.result-subtitle {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: #94A3B8;
+}
+
+.result-title {
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.result-title--clear {
+    color: #FF9B73;
+    text-shadow: 0 2px 10px rgba(255, 160, 120, 0.15);
+}
+
+.result-title--fail {
+    color: #FF6B6B;
 }

@@ -867,8 +867,8 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                                 className="w-44 h-44 object-contain drop-shadow-xl"
                             />
                             <div className="text-center flex flex-col gap-1">
-                                <span className="text-sm font-extrabold text-[#AEB7C5]">모든 한자를 완료했어요!</span>
-                                <h1 className="text-h2-res font-black leading-tight text-[#FF9B73] tracking-tight">
+                                <span className="result-subtitle">모든 한자를 완료했어요!</span>
+                                <h1 className="text-h2-res leading-tight result-title result-title--clear">
                                     와우! 참 잘했어요!
                                 </h1>
                             </div>

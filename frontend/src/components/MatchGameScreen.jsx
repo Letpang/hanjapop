@@ -133,17 +133,12 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false }) => {
     // 16단계 캐릭터 로테이션 이미지 생성
-    const cardBackSequence = useMemo(() => {
-        const chars = ['garae', 'jeolmi', 'chapssal', 'muzi'];
-        const levels = [2, 3, 4, 5];
-        const seq = [];
-        chars.forEach(char => {
-            levels.forEach(lv => {
-                seq.push(`/assets/images/characters/${char}/rank_${lv}.webp`);
-            });
-        });
-        return seq;
-    }, []);
+    const cardBackSequence = useMemo(() => [
+        '/assets/images/characters/muzi/rank_5.webp',
+        '/assets/images/characters/chapssal/rank_5.webp',
+        '/assets/images/characters/jeolmi/rank_5.webp',
+        '/assets/images/characters/garae/rank_5.webp',
+    ], []);
 
     // ── 선택 화면 상태 ──────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
@@ -639,10 +634,10 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                 {/* 클리어 / 타임오버 모달 */}
                 {(gameState === 'clear' || gameState === 'over') && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
+                        className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
                         style={{ background: gameState === 'clear' ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
-                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible">
+                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
                             {dailyMapNode}
                             <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
@@ -668,12 +663,8 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
                                 {/* 텍스트 */}
                                 <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                                    {gameState !== 'clear' && <span className="text-xs-res font-extrabold text-[#AEB7C5]">아쉬운 결과네요...</span>}
-                                    <h1 className="text-h2-res font-black leading-snug" style={{ 
-                                        color: gameState === 'clear' ? '#FF9B73' : '#FF6B6B',
-                                        letterSpacing: '-0.5px',
-                                        textShadow: gameState === 'clear' ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
-                                    }}>
+                                    <span className="result-subtitle">{gameState === 'clear' ? '메모리 게임 완료!' : '아쉬운 결과네요...'}</span>
+                                    <h1 className={`text-h2-res leading-snug result-title ${gameState === 'clear' ? 'result-title--clear' : 'result-title--fail'}`}>
                                         {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
                                     </h1>
                                     {gameState !== 'clear' && (
@@ -689,7 +680,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     clearXp={clearXp}
                                     correctLabel="카드 매칭"
                                     detailText={`${matches}쌍 x ${xpPerMatch}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
-                                    missionXp={(gameState === 'clear' && clearCountRef.current === 1 && !missionDoneAtStartRef.current) ? 20 : 0}
+                                    missionXp={(gameState === 'clear' && clearCountRef.current >= 1 && !missionDoneAtStartRef.current) ? 20 : 0}
                                 />
 
                                 {/* 버튼 2단 */}

@@ -477,8 +477,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
                             {/* 텍스트 영역 */}
                             <div className="text-center flex flex-col gap-1 w-full">
-                                {!isClear && <span className="text-sm font-extrabold text-[#94A3B8]">아쉬운 결과네요...</span>}
-                                <h1 className="text-3xl font-black leading-tight mt-1" style={{ color: isClear ? '#FF9B73' : '#FF6B6B', letterSpacing: '-0.02em', textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none' }}>
+                                <span className="result-subtitle">{isClear ? '문장 퀴즈 완료!' : '아쉬운 결과네요...'}</span>
+                                <h1 className={`text-3xl leading-tight mt-1 result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
                                     {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                 </h1>
                                 <p className="body-muted break-keep mt-2">
@@ -498,7 +498,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 correctXp={correctXp}
                                 clearXp={clearXp}
                                 detailText={`${resultCorrect}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
-                                missionXp={(clearCountRef.current === 1) ? 30 : 0}
+                                missionXp={(clearCountRef.current >= 1) ? 30 : 0}
                             />
 
                             {/* 다음 단계 버튼 */}
@@ -542,12 +542,8 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                         {/* 텍스트 */}
                         <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                            {!isClear && <span className="text-xs-res font-extrabold text-[#AEB7C5]">아쉬운 결과네요...</span>}
-                            <h1 className="text-h2-res font-black leading-snug" style={{
-                                color: isClear ? '#FF9B73' : '#FF6B6B',
-                                letterSpacing: '-0.5px',
-                                textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
-                            }}>
+                            <span className="result-subtitle">{isClear ? '문장 퀴즈 완료!' : '아쉬운 결과네요...'}</span>
+                            <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
                                 {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br />다시 도전해봐요!</>}
                             </h1>
                             <p className="body-muted break-keep">

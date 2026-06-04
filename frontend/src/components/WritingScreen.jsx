@@ -95,14 +95,10 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                         className="img-shadow-lg"
                     />
                     <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
-                        <span className="text-xs-res font-extrabold text-[#AEB7C5]">
+                        <span className="result-subtitle">
                             {isClear ? '완벽하게 써냈어요!' : '조금 더 연습해볼까요?'}
                         </span>
-                        <h1 className="text-h2-res font-black leading-snug" style={{
-                            color: isClear ? '#FF9B73' : '#FF6B6B',
-                            letterSpacing: '-0.5px',
-                            textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.16)' : 'none'
-                        }}>
+                        <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
                             {isClear ? '참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
                     </div>

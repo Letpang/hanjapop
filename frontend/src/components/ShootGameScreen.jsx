@@ -1039,10 +1039,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 {/* 결과 모달 (매칭 게임과 동일한 팝업 방식) */}
                 {isResult && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
+                        className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
                         style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
                     >
-                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible">
+                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
                             <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {(!dailyMapNode || !isClear) && (
@@ -1059,14 +1059,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                 )}
                                 
                                 <div className="text-center flex flex-col gap-1 w-full relative z-10">
-                                    <span className="text-sm font-extrabold text-[#94A3B8]">
-                                        {isClear ? '데일리 세션을 모두 완료했어요!' : '아쉬운 결과네요...'}
+                                    <span className="result-subtitle">
+                                        {isClear ? '몬스터 슈팅 완료!' : '아쉬운 결과네요...'}
                                     </span>
-                                    <h1 className="text-3xl font-black leading-tight mt-1" style={{
-                                        color: isClear ? '#FF9B73' : '#FF6B6B',
-                                        letterSpacing: '-0.02em',
-                                        textShadow: isClear ? '0 2px 10px rgba(255,160,120,0.15)' : 'none'
-                                    }}>
+                                    <h1 className={`text-3xl leading-tight mt-1 result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
                                         {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                     </h1>
                                     {!isClear && (
@@ -1091,7 +1087,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     clearXp={shootClearXp}
                                     correctLabel="몬스터 처치"
                                     detailText={`${score}마리 x 3XP${isClear ? ` + 완료 20XP` : ''}`}
-                                    missionXp={(isClear && clearCountRef.current === 1) ? 20 : 0}
+                                    missionXp={(isClear && clearCountRef.current >= 1) ? 20 : 0}
                                 />
 
                                 {/* 몬스터 오답 노트 (Review Note) */}
