@@ -96,7 +96,7 @@ const getEntrySummary = (entry = {}, missions = []) => {
 };
 
 const DetailSection = ({ title, count, tone = 'slate', children }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const toneClasses = {
     teal: 'text-[#00A994] bg-[#E8FAF7]',
     coral: 'text-[#E8664F] bg-[#FFF1EE]',
