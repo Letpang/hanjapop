@@ -1454,6 +1454,30 @@ body.dark .clay-button {
 .img-shadow-sm { filter: drop-shadow(0 8px 16px rgba(120,130,160,0.16)); }
 .img-shadow-lg { filter: drop-shadow(0 12px 24px rgba(120,130,160,0.16)); }
 
+/* 아이콘 흰 글로우 (뱃지/테스트 아이콘) */
+.icon-glow { filter: drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+
+/* 캐릭터 배경 글로우 블러 */
+.char-bg-glow { background-color: rgba(255,255,255,0.65); }
+
+/* 바텀시트 딤 오버레이 */
+.bottomsheet-dim { background: rgba(0,0,0,0.42); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+
+/* 바텀시트 패널 */
+.bottomsheet-panel { background: #fff; border-radius: 2rem 2rem 0 0; }
+
+/* 바텀시트 타이틀 */
+.bottomsheet-title { font-size: 17px; font-weight: 900; color: #1A2B2A; }
+
+/* 그라디언트 텍스트 (coral) */
+.gradient-text-coral {
+    font-size: 1.35rem;
+    background: linear-gradient(90deg, #FF9B73, #FF6B6B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 /* 결과/설명 본문 흐린 텍스트 */
 .body-muted {
     color: #A5AFBF;

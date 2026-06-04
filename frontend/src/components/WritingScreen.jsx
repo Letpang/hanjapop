@@ -42,12 +42,17 @@ const STROKE_WIDTHS = [
 ];
 
 // ─── 한자 카드 (쓰기 목록용) ────────────────────────────────────────────────
-const WritingHanjaCard = ({ item, onClick }) => {
+const WritingHanjaCard = ({ item, isCompleted, onClick }) => {
     return (
         <button
             onClick={onClick}
             className="group relative w-full flex flex-col items-center justify-center pt-4 pb-4 px-3 bg-white border border-[#E9EDF2] rounded-[2rem] hover:border-[#7C83FF] hover:shadow-xl active:scale-95 transition-all duration-300 min-h-[160px] shadow-md overflow-hidden"
         >
+            {isCompleted && (
+                <div className="absolute top-2 right-2 z-30 w-8 h-8 rounded-full bg-[#2ED6C5] flex items-center justify-center text-[16px] font-black text-white shadow-lg shadow-[#2ED6C5]/25 border-2 border-white">
+                    ✓
+                </div>
+            )}
             <div
                 className="leading-none drop-shadow-sm text-[#3C3C3C] flex items-center justify-center mb-2"
                 style={{ fontSize: 'clamp(3.5rem, 12vw, 5.5rem)', fontFamily: 'var(--font-hanja)' }}
@@ -81,7 +86,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
             <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
                 <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
                     {/* 캐릭터 아래 백그라운드 글로우 추가 */}
-                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" style={{ backgroundColor: 'rgba(255,255,255,0.65)' }} />
+                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" className="char-bg-glow" />
 
                     <img
                         src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
@@ -511,7 +516,25 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [activeHanjaList, setActiveHanjaList] = useState(initialHanja ? [initialHanja] : []);
     const [completedCount, setCompletedCount] = useState(0);
+    const [completedIds, setCompletedIds] = useState(() => {
+        try {
+            const stored = localStorage.getItem('writingCompletedIds');
+            return stored ? new Set(JSON.parse(stored)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
     const clearCountRef = useRef(0);
+
+    const handleWritingCompleteLocal = useCallback((id, score) => {
+        setCompletedIds(prev => {
+            const next = new Set(prev);
+            next.add(id);
+            try { localStorage.setItem('writingCompletedIds', JSON.stringify([...next])); } catch (e) {}
+            return next;
+        });
+        if (onWritingComplete) onWritingComplete(id, score);
+    }, [onWritingComplete]);
 
     const handleExitConfirm = () => {
         setShowExitModal(false);
@@ -693,6 +716,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                                         <WritingHanjaCard
                                             key={item.id}
                                             item={item}
+                                            isCompleted={completedIds.has(item.id)}
                                             onClick={() => handleCardClick(item)}
                                         />
                                     ))}
@@ -708,7 +732,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
 
                     {phase === 'quiz' && selectedHanja && (
                         <QuizCard key={selectedHanja.id} hanja={selectedHanja} hanjaList={activeHanjaList} currentIndex={currentIndex}
-                            onWritingComplete={onWritingComplete} onNextHanja={handleNextHanja} onBack={() => setPhase('list')} />
+                            onWritingComplete={handleWritingCompleteLocal} onNextHanja={handleNextHanja} onBack={() => setPhase('list')} />
                     )}
 
                     {phase === 'result' && (

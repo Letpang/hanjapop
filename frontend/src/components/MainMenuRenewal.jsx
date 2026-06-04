@@ -465,12 +465,12 @@ const MainMenuRenewal = ({
 
             {/* ── 퀴즈 선택 모달 ── */}
             {showQuizModal && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(4px)' }}
+                <div className="fixed inset-0 z-50 flex items-end justify-center" className="bottomsheet-dim"
                     onClick={() => setShowQuizModal(false)}>
-                    <div className="w-full max-w-lg flex flex-col gap-3 p-6 pb-10" style={{ background: '#fff', borderRadius: '2rem 2rem 0 0' }}
+                    <div className="w-full max-w-lg flex flex-col gap-3 p-6 pb-10" className="bottomsheet-panel"
                         onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-1">
-                            <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1A2B2A' }}>한자 어휘</h3>
+                            <h3 className="bottomsheet-title">한자 어휘</h3>
                             <button onClick={() => setShowQuizModal(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.06)', color: '#94A3B8', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                         </div>
                         {[
@@ -495,12 +495,12 @@ const MainMenuRenewal = ({
 
             {/* ── 게임 선택 모달 ── */}
             {showGameModal && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(4px)' }}
+                <div className="fixed inset-0 z-50 flex items-end justify-center" className="bottomsheet-dim"
                     onClick={() => setShowGameModal(false)}>
-                    <div className="w-full max-w-lg flex flex-col gap-3 p-6 pb-10" style={{ background: '#fff', borderRadius: '2rem 2rem 0 0' }}
+                    <div className="w-full max-w-lg flex flex-col gap-3 p-6 pb-10" className="bottomsheet-panel"
                         onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-1">
-                            <h3 style={{ fontSize: 17, fontWeight: 900, color: '#1A2B2A' }}>한자 게임</h3>
+                            <h3 className="bottomsheet-title">한자 게임</h3>
                             <button onClick={() => setShowGameModal(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.06)', color: '#94A3B8', fontWeight: 900, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                         </div>
                         {[

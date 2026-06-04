@@ -461,7 +461,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                         <span className="w-2 h-2 rounded-full bg-[#9FA5FF]"></span>
                     </div>
                     {theme && (
-                        <p className="font-extrabold tracking-widest mt-1" style={{ fontSize: '1.35rem', background: 'linear-gradient(90deg, #FF9B73, #FF6B6B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{theme}</p>
+                        <p className="gradient-text-coral">{theme}</p>
                     )}
                 </div>
                 {todayHanja.length > 0 && (
@@ -834,7 +834,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                             한자 탐험 {dayNumber}단계
                         </h1>
                         {theme && (
-                            <p className="font-extrabold tracking-widest" style={{ fontSize: '1.35rem', background: 'linear-gradient(90deg, #FF9B73, #FF6B6B)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{theme}</p>
+                            <p className="gradient-text-coral">{theme}</p>
                         )}
                     </div>
                     {todayHanja.length > 0 && (

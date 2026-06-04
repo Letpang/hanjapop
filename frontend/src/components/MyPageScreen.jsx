@@ -550,7 +550,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               <span className="text-white font-extrabold text-base break-keep text-balance">8급 인증 시험 도전하기</span>
               <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">8급 기출 기반 · 50문항 · 70% 합격</span>
             </div>
-            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
+            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1 icon-glow" />
           </button>
         )}
         {unlockedGrade === '8급' && (
@@ -562,7 +562,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               <span className="text-white font-extrabold text-base break-keep text-balance">7급II 인증 시험 도전하기</span>
               <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">7급II 기출 기반 · 60문항 · 70% 합격</span>
             </div>
-            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
+            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1 icon-glow" />
           </button>
         )}
         {unlockedGrade === '7급II' && (
@@ -574,7 +574,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               <span className="text-white font-extrabold text-base break-keep text-balance">7급 인증 시험 도전하기</span>
               <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">7급 기출 기반 · 70문항 · 70% 합격</span>
             </div>
-            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
+            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1 icon-glow" />
           </button>
         )}
         {unlockedGrade === '7급' && (
@@ -586,7 +586,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               <span className="text-white font-extrabold text-base break-keep text-balance">6급II 인증 시험 도전하기</span>
               <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">6급II 기출 기반 · 80문항 · 70% 합격</span>
             </div>
-            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
+            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1 icon-glow" />
           </button>
         )}
         {unlockedGrade === '6급II' && (
@@ -598,7 +598,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               <span className="text-white font-extrabold text-base break-keep text-balance">6급 인증 시험 도전하기</span>
               <span className="text-white/70 font-bold text-xs mt-0.5 break-keep">6급 기출 기반 · 90문항 · 70% 합격</span>
             </div>
-            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1" style={{ filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }} />
+            <img src="/assets/images/icons/icon_test.webp" alt="Test" className="w-10 h-10 object-contain shrink-0 translate-y-1 icon-glow" />
           </button>
         )}
         {unlockedGrade === '6급완료' && (
