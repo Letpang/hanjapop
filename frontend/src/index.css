@@ -1444,6 +1444,25 @@ body.dark-mode {
 .safe-top    { padding-top:    max(1rem,    env(safe-area-inset-top)); }
 .safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
 
+/* =============================================
+   SHARED OVERLAY / PERSPECTIVE UTILITIES
+   ============================================= */
+
+/* 모달 딤 오버레이 — PremiumModal, GradeTestAlertModal */
+.modal-dim {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+/* 정답/완료 성공 그라디언트 오버레이 — DailySessionScreen, FlashcardScreen */
+.overlay-success {
+    background: linear-gradient(180deg, rgba(221,241,234,0.85) 0%, rgba(234,246,242,0.95) 100%);
+}
+
+/* 카드 플립 원근감 — IdiomScreen, SentenceQuizScreen, WordQuizScreen */
+.card-flip-perspective {
+    perspective: 2000px;
+}
+
 /* ── 태블릿/대형화면: 앱 콘텐츠를 중앙 컬럼으로 제한 ── */
 .content-area {
     width: 100%;

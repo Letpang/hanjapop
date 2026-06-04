@@ -14,8 +14,7 @@ export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
+            className="fixed inset-0 z-50 flex items-end justify-center modal-dim"
             onClick={onClose}
         >
             <div

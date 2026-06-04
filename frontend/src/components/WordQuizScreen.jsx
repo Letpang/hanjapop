@@ -435,8 +435,7 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
             <div className="flex flex-col gap-5 w-full animate-in slide-in-from-bottom-6 duration-400">
                 {/* ── 상단 카드 영역 (정답 시 플립 가능) ── */}
                 <div 
-                    className="relative w-full aspect-[21/9] sm:aspect-[16/9]"
-                    style={{ perspective: '2000px' }}
+                    className="relative w-full aspect-[21/9] sm:aspect-[16/9] card-flip-perspective"
                     onClick={() => {
                         if (isCorrectSelected) {
                             setIsFlipped(!isFlipped);

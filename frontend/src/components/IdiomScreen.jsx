@@ -313,7 +313,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                 </div>
             </div>
 
-            <div className="w-full" style={{ perspective: '2000px' }}
+            <div className="w-full card-flip-perspective"
                 onClick={() => {
                     if (isCorrectSelected && isFlipped) {
                         setIsFlipped(f => !f);

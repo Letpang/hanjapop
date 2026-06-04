@@ -717,8 +717,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
 
                         {/* 문제 카드 (플립) */}
                         <div
-                            className="relative w-full aspect-[21/9] sm:aspect-[16/10]"
-                            style={{ perspective: '2000px' }}
+                            className="relative w-full aspect-[21/9] sm:aspect-[16/10] card-flip-perspective"
                             onClick={() => {
                                 if (isCorrectSelected && currentQuiz?.type === 'sentence') {
                                     setIsWordCardFlipped(f => !f);
