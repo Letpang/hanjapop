@@ -312,6 +312,19 @@ body.dark-mode {
     box-shadow: 0 6px 12px rgba(255, 107, 107, 0.2), inset 0 -2px 0 rgba(134, 42, 42, 0.18);
 }
 
+.hp-cta-button--cream {
+    color: #5B677A;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%);
+}
+
+.hp-cta-button--cream::before {
+    background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0));
+}
+
+.hp-cta-button--cream:active {
+    box-shadow: 0 6px 12px rgba(148, 163, 184, 0.12), inset 0 -2px 0 rgba(203, 213, 225, 0.32);
+}
+
 .hp-cta-button--indigo {
     background: linear-gradient(135deg, #9B9FF7 0%, #7278F2 100%);
 }
