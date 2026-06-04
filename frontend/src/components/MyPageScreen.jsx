@@ -333,7 +333,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           <div className="grid grid-cols-3 px-4 pt-4 pb-6" style={{ columnGap: '10px', rowGap: '20px' }}>
             {BADGE_CATEGORIES.map((badge) => {
               const stage = getBadgeStage(badge, getBadgeValue(badge.id, streak, totalStats));
-              const assetPath = `${badge.base}_${stage}.png`;
+              const assetPath = `${badge.base}_${stage}.webp`;
               const pedestal = BADGE_PEDESTAL[badge.id];
               const isHovered = hoveredBadgeId === badge.id;
               return (
