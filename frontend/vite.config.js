@@ -10,6 +10,9 @@ export default defineConfig({
   // 루트 public 폴더를 정적 파일 디렉토리로 사용 (이미지, 오디오 등)
   publicDir: resolve(appDir, '../public'),
   base: '/',
+  optimizeDeps: {
+    include: ['@capacitor/app', '@capacitor/core'],
+  },
   server: {
     port: 3001,
     strictPort: true,

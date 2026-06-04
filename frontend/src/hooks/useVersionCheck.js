@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { App } from '@capacitor/app';
 
-// 네이티브 환경에서만 버전 체크 (Capacitor)
 const getCapacitor = () => window?.Capacitor ?? null;
 
 export const useVersionCheck = () => {
@@ -17,7 +17,6 @@ export const useVersionCheck = () => {
                 const cap = getCapacitor();
                 if (!cap?.isNativePlatform?.()) return;
 
-                const { App } = await import('@capacitor/app');
                 const appInfo = await App.getInfo();
                 const currentVersion = appInfo.version;
 

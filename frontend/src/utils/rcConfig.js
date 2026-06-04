@@ -17,15 +17,15 @@
 
 // ── API 키 ────────────────────────────────────────────────────────────────
 // RevenueCat 대시보드 > API Keys > iOS / Android SDK Key
-export const RC_API_KEY_IOS     = 'appl_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
-export const RC_API_KEY_ANDROID = 'goog_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
+export const RC_API_KEY_IOS     = 'appl_pNzDkEyCUTMxnvWJuQzrpYocFeN';
+export const RC_API_KEY_ANDROID = 'goog_WZvGTzxNuyrupdLpaCxoIUZyqgF';
 
 // ── 상품 ID ───────────────────────────────────────────────────────────────
 // Play Console / App Store Connect에 등록하는 상품 ID와 동일해야 함
 export const RC_PRODUCT_IDS = {
-    pack1:    'hanjapop_pack1',     // ₩9,900  기초 팩 (18~51단계)
-    pack2:    'hanjapop_pack2',     // ₩13,900 심화 팩 (52~124단계)
-    fullpack: 'hanjapop_fullpack',  // ₩19,900 전체 팩 (18~124단계)
+    pack1:    'com.soujinne.hanjaexplorer.pack1',     // ₩9,900  기초 팩 (18~51단계)
+    pack2:    'com.soujinne.hanjaexplorer.pack2',     // ₩13,900 심화 팩 (52~124단계)
+    fullpack: 'com.soujinne.hanjaexplorer.fullpack',  // ₩19,900 전체 팩 (18~124단계)
 };
 
 // ── Entitlement ID ────────────────────────────────────────────────────────
