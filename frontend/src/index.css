@@ -1545,18 +1545,18 @@ body.dark .clay-button {
 .quiz-next-btn {
     padding: 0.75rem 1.25rem;
     border-radius: 2.5rem;
-    background: #7278F2;
+    background: linear-gradient(160deg, #A5A9F8 0%, #6B72EF 100%);
     font-weight: 900;
     font-size: 1.5rem;
     color: #FFFFFF;
-    box-shadow: 0 8px 24px rgba(124, 131, 255, 0.18);
+    box-shadow: 0 8px 20px rgba(100, 108, 240, 0.38), 0 2px 6px rgba(100, 108, 240, 0.22);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
 }
-.quiz-next-btn:active { transform: scale(0.95); }
+.quiz-next-btn:active { transform: scale(0.95); box-shadow: 0 3px 8px rgba(100, 108, 240, 0.25); }
 
 .quiz-prev-btn {
     padding: 0.75rem 1.25rem;

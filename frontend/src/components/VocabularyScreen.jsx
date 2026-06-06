@@ -3,8 +3,14 @@ import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { wordById } from '../utils/wordUtils.js';
 import IDIOMS from '../data/idioms.js';
+import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 
 const hanjaById = Object.fromEntries(HANJA_DATA.map(h => [h.id, h]));
+
+const hanjaIdToDay = {};
+DAILY_CURRICULUM.forEach(({ day, hanja }) => {
+  hanja.forEach(h => { hanjaIdToDay[h.id] = day; });
+});
 const IDIOM_WRONG_KEY = 'idiom_wrong_data';
 
 const readStudyLog = () => {
@@ -45,20 +51,27 @@ const collectVocabulary = () => {
       const correctCount = memory.correctCount || 0;
       const nextReview = memory.nextReview || null;
       const isDue = nextReview ? new Date(nextReview) <= new Date() : false;
+      const lastWrong = memory.lastWrong || null;
+      const hanjaId = memory.hanjaId ?? word.hanjaId ?? null;
+      const day = hanjaId ? (hanjaIdToDay[hanjaId] ?? null) : null;
       return {
         ...word,
         wrongCount,
         correctCount,
         nextReview,
         isDue,
+        lastWrong,
+        day,
       };
     })
     .filter(Boolean)
-    .sort((a, b) =>
-      Number(b.isDue) - Number(a.isDue) ||
-      b.wrongCount - a.wrongCount ||
-      a.word.localeCompare(b.word, 'ko')
-    );
+    .sort((a, b) => {
+      // 최근 틀린 순 우선, 없으면 틀린 횟수 순
+      if (a.lastWrong && b.lastWrong) return b.lastWrong.localeCompare(a.lastWrong);
+      if (a.lastWrong) return -1;
+      if (b.lastWrong) return 1;
+      return b.wrongCount - a.wrongCount || a.word.localeCompare(b.word, 'ko');
+    });
 
   const hanjas = [...hanjaIds]
     .map(id => hanjaById[id])
@@ -249,7 +262,10 @@ const VocabularyScreen = ({
                       </div>
                       <p className="mt-1 text-sm font-bold text-[#64748B]">{item.meaning}</p>
                     </div>
-                    <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-black text-[#334155]">{item.hanja}</span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-black text-[#334155]">{item.hanja}</span>
+                      {item.day && <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-black text-[#7C83FF]">{item.day}단계</span>}
+                    </div>
                   </div>
                   {(item.wrongCount > 0 || item.correctCount > 0) && (
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">

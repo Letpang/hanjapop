@@ -42,6 +42,7 @@ import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
 import { useAuth } from './hooks/useAuth.js';
 import { PremiumProvider } from './context/PremiumContext.jsx';
 import { canAccessStage } from './utils/premiumAccess.js';
+import { useAdMob } from './hooks/useAdMob.js';
 
 const LoginModal             = lazy(() => import('./components/LoginModal.jsx'));
 const PremiumModal           = lazy(() => import('./components/PremiumModal.jsx'));
@@ -54,6 +55,7 @@ const App = () => {
     const { user, platform, signInWithApple, signInWithGoogle } = useAuth();
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const { showInterstitial } = useAdMob({ onAfterInterstitial: () => { if (!isPremium) setShowPremiumModal(true); } });
     const [gradeTestAlert, setGradeTestAlert] = useState(null);
     const [gradeTestBackScreen, setGradeTestBackScreen] = useState('mypage');
     const [unlockedPack, setUnlockedPack] = useState(() => {
@@ -150,6 +152,11 @@ const App = () => {
         if (isDarkMode) document.body.classList.add('dark-mode');
         else document.body.classList.remove('dark-mode');
     }, [isDarkMode]);
+
+    // 메인 화면 복귀 시 전면광고 (5번에 1번, 프리미엄 사용자 제외)
+    useEffect(() => {
+        if (currentScreen === 'main' && !isPremium) showInterstitial();
+    }, [currentScreen]);
 
     const { currentDay, completedDay, currentDayData, clearedHanjaIds, advanceDay } = useCurriculumProgress(sessionDoneToday);
 

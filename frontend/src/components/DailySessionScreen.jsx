@@ -341,7 +341,12 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                             }}
                             disabled={!isFlipped}
                             className="flex-[2] clay-button py-4 rounded-[2rem] font-bold text-lg shadow-xl active:scale-95 border-4 border-white disabled:opacity-30 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: !isFlipped ? undefined : topicColor, color: !isFlipped ? undefined : '#fff' }}
+                            style={!isFlipped ? undefined : {
+                                background: `linear-gradient(160deg, #A5A9F8 0%, ${topicColor} 100%)`,
+                                color: '#fff',
+                                boxShadow: '0 8px 20px rgba(100,108,240,0.38), 0 2px 6px rgba(100,108,240,0.22)',
+                                border: 'none',
+                            }}
                         >
                             {isLastCard ? '완료' : '다음 ›'}
                         </button>

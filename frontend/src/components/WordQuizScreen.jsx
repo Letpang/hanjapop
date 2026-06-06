@@ -561,19 +561,17 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                     })}
                 </div>
 
-                {/* ── 하단 네비게이션 (정답 후 나타남) ── */}
-                {isCorrectSelected && (
-                    <div className="w-full flex gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                        {!isFirst && (
-                            <button onClick={onPrev} className="quiz-prev-btn flex-[1.5]">
-                                이전
-                            </button>
-                        )}
-                        <button onClick={handleNext} className="quiz-next-btn flex-[2.5]">
-                            다음
+                {/* ── 하단 네비게이션 (공간 항상 확보, 정답 후 표시) ── */}
+                <div className={`w-full flex gap-3 transition-opacity duration-300 ${isCorrectSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                    {!isFirst && (
+                        <button onClick={onPrev} className="quiz-prev-btn flex-[1.5]">
+                            이전
                         </button>
-                    </div>
-                )}
+                    )}
+                    <button onClick={handleNext} className="quiz-next-btn flex-[2.5]">
+                        다음
+                    </button>
+                </div>
             </div>
         </div>
     );
