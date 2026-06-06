@@ -68,7 +68,7 @@ const IDIOMS = [
   { grade: '6급Ⅱ', hanja: '白面書生', reading: '백면서생', meaning: '얼굴이 하얀 선비. 글만 읽어 세상일에 경험이 없는 사람을 이르는 말.' },
   { grade: '6급Ⅱ', hanja: '安全第一', reading: '안전제일', meaning: '모든 일에 안전을 첫째로 삼음.' },
   { grade: '6급Ⅱ', hanja: '天地神明', reading: '천지신명', meaning: '하늘과 땅을 다스리는 신령.' },
-  { grade: '6급Ⅱ', hanja: '千秋萬代', reading: '천추만대', meaning: '천 번의 가을과 만 번의 대. 아주 기나긴 세월.' },
+  { grade: '6급', hanja: '千差萬別', reading: '천차만별', meaning: '여러 가지 사물이 모두 무수히 서로 다름.' },
   { grade: '6급', hanja: '溫故知新', reading: '온고지신', meaning: '옛것을 익혀 새것을 앎' },
   { grade: 'NON', hanja: '東奔西走', reading: '동분서주', meaning: '동쪽으로 뛰고 서쪽으로 뛴다는 뜻으로, 사방으로 이리저리 바쁘게 돌아다님.' },
   { grade: 'NON', hanja: '苦盡甘來', reading: '고진감래', meaning: '고생 끝에 즐거움이 옴' },

@@ -134,4 +134,4 @@ export const getCharacterImage = (charType, status) => {
     return '/assets/images/icons/timeout_new.webp';
 };
 
-export { LEVEL_THRESHOLDS };
+export { LEVEL_THRESHOLDS, levelToImageRank };

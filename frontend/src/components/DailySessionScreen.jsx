@@ -1225,28 +1225,28 @@ const DailySessionScreen = ({
             { label: gameLabel,  icon: gameIcon,  color: '#2ED6C5' },
         ];
         return (
-            <div className="w-full relative z-10 mt-3 px-5 mb-4">
+            <div className="w-full relative z-10 mt-7 px-6 mb-3">
                 <div className="flex items-start justify-between w-full min-w-0">
                     {mapSteps.flatMap((s, i) => {
                         const isDone = i <= currentStepIndex;
                         const els = [
-                            <div key={`step-${i}`} className={`flex flex-col items-center gap-2 shrink-0 ${isDone ? '' : 'opacity-50 grayscale'}`}>
-                                <div className="relative w-16 h-16 rounded-[1.3rem] flex items-center justify-center shadow-lg border-[3px] border-white"
+                            <div key={`step-${i}`} className={`flex flex-col items-center gap-1.5 shrink-0 ${isDone ? '' : 'opacity-50 grayscale'}`}>
+                                <div className="relative w-12 h-12 rounded-[1rem] flex items-center justify-center shadow-md border-[2px] border-white"
                                     style={{ background: isDone ? s.color + '22' : '#f1f5f9' }}>
-                                    <img src={s.icon} className="w-9 h-9 object-contain" alt={s.label} />
+                                    <img src={s.icon} className="w-7 h-7 object-contain" alt={s.label} />
                                     {isDone && (
-                                        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black shadow-md border-2 border-white"
+                                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-black shadow-md border-2 border-white"
                                             style={{ background: '#FF9B73' }}>✓</div>
                                     )}
                                 </div>
-                                <span className="text-[10px] font-black text-[#5B677A] text-center leading-tight max-w-[64px]">{s.label}</span>
+                                <span className="text-[9px] font-black text-[#5B677A] text-center leading-tight max-w-[56px]">{s.label}</span>
                             </div>,
                         ];
                         if (i < mapSteps.length - 1) {
                             const connColor = isDone ? s.color : '#e2e8f0';
                             const nextColor = (i + 1) <= currentStepIndex ? mapSteps[i+1].color : '#e2e8f0';
                             els.push(
-                                <div key={`conn-${i}`} className="flex-1 min-w-0 flex items-center mx-1" style={{ marginTop: '32px' }}>
+                                <div key={`conn-${i}`} className="flex-1 min-w-0 flex items-center mx-1" style={{ marginTop: '24px' }}>
                                     <div className="h-[3px] w-full rounded-full" style={{ background: `linear-gradient(90deg, ${connColor}, ${nextColor})`, opacity: 0.4 }} />
                                 </div>
                             );

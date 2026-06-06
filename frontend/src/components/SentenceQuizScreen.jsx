@@ -527,7 +527,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'linear-gradient(180deg, #FDEAEA 0%, #FFF0F0 100%)' }}
             >
                 <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible">
-                    <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+                    <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">
 
                         {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                         <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" className="char-bg-glow" />
@@ -695,12 +695,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             <span className="quiz-counter-text">{displayQuestionNumber}/{plannedQuizTotal}</span>
                         </div>
                     </div>
-                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-2 relative px-1 mx-auto max-w-[90%]">
-                        <div
-                            className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
-                            style={{ width: `${(displayQuestionNumber / plannedQuizTotal) * 100}%` }}
-                        >
-                            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
+                    <div className="quiz-progress-track">
+                        <div className="quiz-progress-fill" style={{ width: `${(displayQuestionNumber / plannedQuizTotal) * 100}%` }}>
+                            <div className="quiz-progress-avatar">
                                 <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
                             </div>
                         </div>
@@ -738,9 +735,9 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         {currentQuiz?.type === 'sentence' && sentenceParts ? (
                                             <>
                                                 {sentenceParts.before}
-                                                <span className="inline-block whitespace-nowrap">
+                                                <span className="inline-block">
                                                     <span
-                                                        className={`inline-flex items-center justify-center min-w-[120px] rounded-2xl transition-all duration-300 mx-2 py-0.5 ${feedback
+                                                        className={`inline-flex items-center justify-center min-w-[80px] rounded-2xl transition-all duration-300 mx-1 py-0.5 ${feedback
                                                                 ? (feedback.isCorrect ? 'bg-[#7C83FF]/10 border-2 border-[#7C83FF] shadow-sm' : 'bg-rose-50 border-2 border-rose-400 shadow-sm')
                                                                 : 'bg-[#F8FAF9] border-2 border-dashed border-[#7C83FF]/30 shadow-inner'
                                                             }`}

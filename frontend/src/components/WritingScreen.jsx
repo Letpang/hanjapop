@@ -80,11 +80,11 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300"
+            className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
             style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
         >
-            <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-hidden">
-                <div className="pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative">
+            <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
+                <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">
                     {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                     <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" className="char-bg-glow" />
 
@@ -647,6 +647,15 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                         )}
                     </div>
                 </div>
+                {phase === 'quiz' && activeHanjaList.length > 0 && (
+                    <div className="quiz-progress-track">
+                        <div className="quiz-progress-fill" style={{ width: `${((currentIndex + 1) / activeHanjaList.length) * 100}%` }}>
+                            <div className="quiz-progress-avatar">
+                                <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Body */}

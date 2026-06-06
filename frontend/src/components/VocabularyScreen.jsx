@@ -81,14 +81,22 @@ const collectVocabulary = () => {
   const seenIdioms = new Set();
   const unlockedIdiomsList = [];
 
+  // 이디엄별 관련 한자 전체 수집
+  const idiomHanjaMap = {};
   for (const item of HANJA_DATA) {
     if (!hanjaIds.has(item.id)) continue;
     for (const w of (item.words || [])) {
-      if (w.type !== 'idiom' || seenIdioms.has(w.word)) continue;
-      seenIdioms.add(w.word);
-      const meta = IDIOMS.find(x => x.hanja === w.word);
-      if (meta) unlockedIdiomsList.push(meta);
+      if (w.type !== 'idiom') continue;
+      if (!idiomHanjaMap[w.word]) idiomHanjaMap[w.word] = [];
+      idiomHanjaMap[w.word].push({ hanjaChar: item.hanja, hanjaId: item.id });
     }
+  }
+
+  for (const [hanjaWord, relatedHanjas] of Object.entries(idiomHanjaMap)) {
+    if (seenIdioms.has(hanjaWord)) continue;
+    seenIdioms.add(hanjaWord);
+    const meta = IDIOMS.find(x => x.hanja === hanjaWord);
+    if (meta) unlockedIdiomsList.push({ ...meta, relatedHanjas });
   }
 
   // Also include any idiom that has a wrong or correct count, just in case
@@ -105,13 +113,21 @@ const collectVocabulary = () => {
 
   const idioms = unlockedIdiomsList.map(item => {
     const memory = idiomWrongData[item.id || item.hanja] || {};
+    const days = (item.relatedHanjas || []).map(h => hanjaIdToDay[h.hanjaId]).filter(Boolean);
+    const day = days.length > 0 ? Math.max(...days) : null;
     return {
       ...item,
       wrongCount: memory.wrongCount || 0,
       correctCount: memory.correctCount || 0,
       lastWrongAt: memory.lastWrongAt || null,
+      day,
     };
-  }).sort((a, b) => b.wrongCount - a.wrongCount || a.hanja.localeCompare(b.hanja, 'ko'));
+  }).sort((a, b) => {
+    if (a.lastWrongAt && b.lastWrongAt) return b.lastWrongAt.localeCompare(a.lastWrongAt);
+    if (a.lastWrongAt) return -1;
+    if (b.lastWrongAt) return 1;
+    return b.wrongCount - a.wrongCount || a.hanja.localeCompare(b.hanja, 'ko');
+  });
 
   return { words, hanjas, idioms };
 };
@@ -314,7 +330,18 @@ const VocabularyScreen = ({
                       </div>
                       <p className="mt-1 text-sm font-bold leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>
                     </div>
-                    <span className="shrink-0 rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-xs font-black text-[#334155]">{item.grade}</span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {item.relatedHanjas?.length > 0 && (
+                        <div className="flex flex-wrap justify-end gap-1">
+                          {item.relatedHanjas.map(h => (
+                            <span key={h.hanjaChar} className="rounded-lg bg-[#F4F6F8] px-1.5 py-0.5 text-xs font-black text-[#334155]">{h.hanjaChar}</span>
+                          ))}
+                        </div>
+                      )}
+                      {item.day && (
+                        <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-black text-[#7C83FF]">{item.day}단계</span>
+                      )}
+                    </div>
                   </div>
                   {(item.wrongCount > 0 || item.correctCount > 0) && (
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">

@@ -639,7 +639,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                     >
                         <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
                             {dailyMapNode}
-                            <div className={`pt-6 pb-10 px-6 flex flex-col items-center gap-7 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
+                            <div className={`pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {!dailyMapNode && (
                                     <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" className="char-bg-glow" />

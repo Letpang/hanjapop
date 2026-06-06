@@ -3,6 +3,7 @@ import HANJA_DATA from './hanja_unified.json';
 import DAILY_CURRICULUM from './data/dailyCurriculum.js';
 import { buildUnifiedPool, buildOopsPool } from './utils/learningPool.js';
 import CharacterToast from './components/CharacterToast.jsx';
+const RankUpModal = lazy(() => import('./components/RankUpModal.jsx'));
 import { isSessionDoneToday, getTodayStr } from './utils/sessionUtils.js';
 import { LangProvider } from './LangContext.jsx';
 import { SK } from './constants/storageKeys.js';
@@ -34,7 +35,7 @@ const GradeTest62Screen        = lazy(() => import('./components/GradeTest62Scre
 const GradeTest6Screen         = lazy(() => import('./components/GradeTest6Screen.jsx'));
 const IdiomScreen              = lazy(() => import('./components/IdiomScreen.jsx'));
 const GradeExamSelectScreen    = lazy(() => import('./components/GradeExamSelectScreen.jsx'));
-import { getLevel, getRankDetails } from './utils/rankUtils.js';
+import { getLevel, getRankDetails, LEVEL_THRESHOLDS, levelToImageRank } from './utils/rankUtils.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
@@ -327,8 +328,29 @@ const App = () => {
 
     // 캐릭터 토스트 메시지
     const [charToast, setCharToast] = useState(null);
+    const [showRankUpModal, setShowRankUpModal] = useState(false);
     const missionToastShownRef = useRef(false);
     const dismissToast = useCallback(() => setCharToast(null), []);
+
+    // 진화 감지: XP 변화 시 imageRank 비교 → rank_up 토스트
+    const prevXpRef = useRef(userXp);
+    useEffect(() => {
+        const prevXp = prevXpRef.current;
+        prevXpRef.current = userXp;
+        if (userXp <= prevXp) return;
+        const oldRank = levelToImageRank(getLevel(prevXp));
+        const newRank = levelToImageRank(getLevel(userXp));
+        if (newRank > oldRank) setShowRankUpModal(true);
+    }, [userXp]);
+
+    // 진화 예고 토스트: 메인 화면 진입 시, 하루 1번, 진화 2레벨 전 구간에서
+    const RANK_SOON_KEY = 'rank_soon_last_shown';
+    const isInRankSoonZone = (level) => [3, 4, 7, 8, 11, 12, 15, 16].includes(level);
+    const nextRankAvatar = useMemo(() => {
+        const curRank = levelToImageRank(getLevel(userXp));
+        const nextRank = Math.min(curRank + 1, 5);
+        return selectedCharacter ? `/assets/images/characters/${selectedCharacter}/rank_${nextRank}.webp` : null;
+    }, [userXp, selectedCharacter]);
 
     // 메인화면 진입할 때마다 오답 5개 이상이고 개수가 늘어났을 때만 복습 토스트
     useEffect(() => {
@@ -352,6 +374,20 @@ const App = () => {
                     localStorage.setItem('last_notified_wrong_count', String(currentWrongCount));
                 }, 800);
                 return () => clearTimeout(t);
+            }
+
+            // 진화 예고: 진화 2레벨 전 구간이면 하루 1번
+            const level = getLevel(userXp);
+            if (isInRankSoonZone(level)) {
+                const today = new Date().toDateString();
+                const lastShown = localStorage.getItem(RANK_SOON_KEY);
+                if (lastShown !== today) {
+                    const t = setTimeout(() => {
+                        setCharToast('rank_soon');
+                        localStorage.setItem(RANK_SOON_KEY, today);
+                    }, 1200);
+                    return () => clearTimeout(t);
+                }
             }
         } catch {
             return undefined;
@@ -781,6 +817,7 @@ const App = () => {
                             type={charToast}
                             selectedCharacter={selectedCharacter}
                             userXp={userXp}
+                            nextRankAvatar={nextRankAvatar}
                             onDismiss={dismissToast}
                             onAction={charToast === 'review_reminder' ? () => {
                                 setCharToast(null);
@@ -788,6 +825,16 @@ const App = () => {
                             } : undefined}
                         />
                     )}
+                    {showRankUpModal && (
+                        <Suspense fallback={null}>
+                            <RankUpModal
+                                selectedCharacter={selectedCharacter}
+                                userXp={userXp}
+                                onClose={() => setShowRankUpModal(false)}
+                            />
+                        </Suspense>
+                    )}
+
                     <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
                         {!onboardingDone
                         ? <OnboardingScreen onComplete={(grade, xp) => {
