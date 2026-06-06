@@ -372,11 +372,23 @@ body.dark-mode {
     border-bottom-color: #7C83FF;
     color: #4F56D9;
 }
+.quiz-choice-btn--correct::after {
+    content: '✓';
+    color: #7C83FF;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
 
 .quiz-choice-btn--wrong {
     border-color: #FFA88D;
     border-bottom-color: #FFA88D;
     color: #FF8D72;
+}
+.quiz-choice-btn--wrong::after {
+    content: '✕';
+    color: #FF8D72;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
 }
 
 .quiz-choice-btn--dimmed {
@@ -405,6 +417,24 @@ body.dark-mode {
    while balancing the prompt and example sentence sizes. */
 
 
+/* ── 퀴즈 화면 공통 스크롤 바디 (가로 스크롤 방지) ─────────────── */
+.quiz-scroll-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 1.5rem;
+}
+.quiz-scroll-inner {
+    width: 100%;
+    max-width: 36rem;
+    margin: 0 auto;
+    padding-inline: 1rem;
+    padding-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
 /* ── Idiom quiz: shared quiz visual rhythm ───────────────────── */
 .idiom-quiz-shell {
     width: 100%;
@@ -413,6 +443,7 @@ body.dark-mode {
     padding: 1.35rem 1.25rem calc(env(safe-area-inset-bottom) + 2rem);
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 1.2rem;
@@ -851,9 +882,9 @@ body.dark-mode {
     min-height: clamp(4.25rem, 15vw, 5.25rem);
     padding: 0.85rem 1rem;
     border-radius: 1.8rem;
-    font-size: clamp(1.35rem, 5.3vw, 1.9rem);
-    font-weight: 900;
-    letter-spacing: -0.04em;
+    font-size: var(--text-h3);
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 @media (max-width: 380px) {
@@ -863,7 +894,7 @@ body.dark-mode {
 
     .grade-test-choice-grid .quiz-choice-btn {
         padding-inline: 0.75rem;
-        font-size: clamp(1.2rem, 5vw, 1.55rem);
+        font-size: clamp(1.1rem, 5.5vw, 1.4rem);
     }
 }
 
@@ -1639,11 +1670,12 @@ body.dark .clay-button {
     width: 100%; height: 10px;
     background: #F4F7F8;
     border-radius: 999px;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
     position: relative;
     padding: 0 4px;
     margin-left: auto; margin-right: auto;
     max-width: 90%;
+    overflow: visible;
 }
 
 .quiz-progress-fill {

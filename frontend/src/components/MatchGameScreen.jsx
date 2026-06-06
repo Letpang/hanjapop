@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, memo, useMemo, useRef } from 'react';
+import { pickClearMessage } from '../constants/messages.js';
 import HANJA_DATA_RAW from '../hanja_unified.json';
 import { getSRSWeightedPool } from '../utils/learningPool.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
@@ -159,7 +160,8 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
     const [matches, setMatches] = useState(0);
     const [targetMatches, setTargetMatches] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
-    const [gameState, setGameState] = useState('idle'); // 'idle'|'playing'|'clear'|'over'|'allClear'
+    const [gameState, setGameState] = useState('idle');
+    const resultClearMsg = useMemo(() => pickClearMessage(), [gameState]); // 'idle'|'playing'|'clear'|'over'|'allClear'
     const clearCombo = 0; // Legacy display value; combo scoring was removed.
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [showExitModal, setShowExitModal] = useState(false);
@@ -665,7 +667,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                 <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
                                     <span className="result-subtitle">{gameState === 'clear' ? '메모리 게임 완료!' : '아쉬운 결과네요...'}</span>
                                     <h1 className={`text-h2-res leading-snug result-title ${gameState === 'clear' ? 'result-title--clear' : 'result-title--fail'}`}>
-                                        {gameState === 'clear' ? '와우! 참 잘했어요!' : '시간이 다 됐어요!'}
+                                        {gameState === 'clear' ? resultClearMsg : '시간이 다 됐어요!'}
                                     </h1>
                                     {gameState !== 'clear' && (
                                         <p className="body-muted break-keep">

@@ -277,7 +277,7 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
                     onClick={() => handleSelect(choice)}
                     className={`quiz-choice-btn ${isChoiceLarge ? 'quiz-choice-btn--large' : isChoiceMediumHanja ? 'quiz-choice-btn--hanja' : ''} ${stateClass}`}
                   >
-                    {choice}
+                    <span className="break-keep">{choice}</span>
                   </button>
                 );
               })}

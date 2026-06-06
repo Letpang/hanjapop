@@ -8,6 +8,7 @@ import { getTodayStr } from '../utils/sessionUtils.js';
 import { buildUnifiedPool } from '../utils/learningPool.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
+import { CLEAR_MESSAGES } from '../constants/messages.js';
 
 const ShootGameScreen = lazy(() => import('./ShootGameScreen.jsx'));
 const MatchGameScreen = lazy(() => import('./MatchGameScreen.jsx'));
@@ -81,9 +82,10 @@ const playCardSound = (item) => {
     if (item.id <= 370) {
         const audioId = String(item.id).padStart(item.id < 51 ? 2 : 3, '0');
         const audio = new Audio('/assets/audio/card_' + audioId + '.mp3');
-        audio.play().catch(() => {
-            playTTS();
-        });
+        let done = false;
+        const fallback = () => { if (!done) { done = true; playTTS(); } };
+        audio.onerror = fallback;
+        audio.play().catch(fallback);
     } else {
         playTTS();
     }
@@ -975,19 +977,6 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
 };
 
 // ── Results Screen (3D Style - Premium Crossroads) ───────────────────────────
-const CLEAR_MESSAGES = [
-    '와우!\n참 잘했어요!',
-    '최고예요!\n정말 대단해요!',
-    '훌륭해요!\n오늘도 빛났어요!',
-    '멋져요!\n한자 실력이 쑥쑥!',
-    '완벽해요!\n오늘도 성공이에요!',
-    '굉장해요!\n이 속도면 금방이에요!',
-    '짱이에요!\n오늘 하루도 수고했어요!',
-    '대단해요!\n한자 탐험 완료!',
-    '브라보!\n오늘도 해냈어요!',
-    '역시예요!\n꾸준함이 최고예요!',
-];
-
 const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, dayNumber, missions, doneCount }) => {
     const charImg = getCharacterImage(selectedCharacter, 'success');
     const isFinalDay = dayNumber >= DAILY_CURRICULUM.length;

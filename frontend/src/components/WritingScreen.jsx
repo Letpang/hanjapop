@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { pickClearMessage } from '../constants/messages.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { usePremium } from '../hooks/usePremium.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
@@ -99,7 +100,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                             {isClear ? '완벽하게 써냈어요!' : '조금 더 연습해볼까요?'}
                         </span>
                         <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                            {isClear ? '참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                            {isClear ? pickClearMessage() : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
                     </div>
                     <RewardBreakdown

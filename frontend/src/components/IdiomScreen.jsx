@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { pickClearMessage } from '../constants/messages.js';
 import IDIOMS from '../data/idioms.js';
 import HANJA_DATA from '../hanja_unified.json';
 import CtaButton from './common/CtaButton.jsx';
@@ -154,6 +155,7 @@ const buildQuiz = (idioms) => {
 const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
     const [idx, setIdx] = useState(0);
+    const resultClearMsg = useMemo(() => pickClearMessage(), []);
     const [wrongChoices, setWrongChoices] = useState([]);
     const [isCorrectSelected, setIsCorrectSelected] = useState(false);
     const [score, setScore] = useState(0);
@@ -261,7 +263,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                                 {isClear ? '사자성어 완료!' : '아쉬운 결과네요...'}
                             </span>
                             <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                                {pct === 100 ? '완벽해요! 마스터!' : isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                {pct === 100 ? '완벽해요! 마스터!' : isClear ? resultClearMsg : <>괜찮아요,<br/>다시 도전해봐요!</>}
                             </h1>
                             <p className="body-muted">{score} / {questions.length}문제 정답</p>
                         </div>
@@ -269,7 +271,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                             reward={reward}
                             correctXp={correctXp}
                             clearXp={clearXp}
-                            detailText={`${score}문제 x 5XP + 완료 ${clearXp}XP`}
+                            detailText={`${score}개 정답 x 5XP + 완료 ${clearXp}XP`}
                             missionXp={clearCountRef.current >= 1 ? 25 : 0}
                         />
                         <div className="w-full flex flex-col gap-3 relative z-10">

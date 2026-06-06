@@ -7,6 +7,7 @@ import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
+import { pickClearMessage } from '../constants/messages.js';
 
 
 // Flatten all words from all hanja into a single pool
@@ -134,6 +135,7 @@ const buildQuiz = (filter, filterType, wordData, userLevel, allowedIds = null, q
 const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedCharacter, dailyMapNode, hideRetry, getRewardPreview, clearXp = DEFAULT_CLEAR_XP, missionXp = 0 }) => {
     const pct = Math.round((correct / total) * 100);
     const isClear = pct >= 70;
+    const resultClearMsg = pickClearMessage();
     const xpPerCorrect = 5;
     const correctXp = correct * xpPerCorrect;
     const reward = getRewardPreview?.(correctXp + clearXp);
@@ -150,7 +152,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         <div className="text-center flex flex-col gap-1 w-full">
                             <span className="result-subtitle">{isClear ? '단어 퀴즈 완료!' : '아쉬운 결과네요...'}</span>
                             <h1 className={`text-3xl leading-tight mt-1 result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                                {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                {isClear ? resultClearMsg : <>괜찮아요,<br/>다시 도전해봐요!</>}
                             </h1>
                             <p className="body-muted break-keep mt-2">
                                 {isClear 
@@ -168,7 +170,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                             reward={reward}
                             correctXp={correctXp}
                             clearXp={clearXp}
-                            detailText={`${correct}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
+                            detailText={`${correct}개 정답 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
                             missionXp={missionXp}
                         />
 
@@ -209,7 +211,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                     <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
                         <span className="result-subtitle">{isClear ? '단어 퀴즈 완료!' : '아쉬운 결과네요...'}</span>
                         <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                            {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                            {isClear ? resultClearMsg : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
                         <p className="body-muted break-keep" style={{ fontSize: "var(--text-sm)" }}>
                             {isClear 
@@ -222,7 +224,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, onGoToReview, selectedC
                         reward={reward}
                         correctXp={correctXp}
                         clearXp={clearXp}
-                        detailText={`${correct}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
+                        detailText={`${correct}개 정답 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
                         missionXp={missionXp}
                     />
 
@@ -526,8 +528,6 @@ const QuizCard = ({ q, onAnswer, onNext, onPrev, combo, suppressXp, isFirst, onW
                                 className={`quiz-choice-btn ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isCorrectSelected ? 'quiz-choice-btn--dimmed' : ''}`}
                             >
                                 <span>{choice}</span>
-                                {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
-                                {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
 
                                 {/* 정답 축하 3D 스피치 버블 및 별 쏟아짐 효과 */}
                                 {isCorrect && celebrationMsg && (

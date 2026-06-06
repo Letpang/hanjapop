@@ -66,11 +66,24 @@ const collectVocabulary = () => {
     })
     .filter(Boolean)
     .sort((a, b) => {
-      // 최근 틀린 순 우선, 없으면 틀린 횟수 순
-      if (a.lastWrong && b.lastWrong) return b.lastWrong.localeCompare(a.lastWrong);
-      if (a.lastWrong) return -1;
-      if (b.lastWrong) return 1;
-      return b.wrongCount - a.wrongCount || a.word.localeCompare(b.word, 'ko');
+      const today = new Date().toISOString().slice(0, 10);
+      const aToday = a.lastWrong?.slice(0, 10) === today;
+      const bToday = b.lastWrong?.slice(0, 10) === today;
+      // 1순위: 오늘 틀린 것 (최신순)
+      if (aToday && !bToday) return -1;
+      if (!aToday && bToday) return 1;
+      if (aToday && bToday) return b.lastWrong.localeCompare(a.lastWrong);
+      // 2순위: SRS 복습 기한 초과 (더 오래 밀린 것 먼저)
+      const now = new Date();
+      const aOverdue = a.nextReview ? Math.max(0, now - new Date(a.nextReview)) : 0;
+      const bOverdue = b.nextReview ? Math.max(0, now - new Date(b.nextReview)) : 0;
+      if (aOverdue > 0 && bOverdue === 0) return -1;
+      if (bOverdue > 0 && aOverdue === 0) return 1;
+      if (aOverdue > 0 && bOverdue > 0) return bOverdue - aOverdue;
+      // 3순위: 틀린 횟수 → 최근 오답 순
+      return b.wrongCount - a.wrongCount
+        || (b.lastWrong && a.lastWrong ? b.lastWrong.localeCompare(a.lastWrong) : 0)
+        || a.word.localeCompare(b.word, 'ko');
     });
 
   const hanjas = [...hanjaIds]
@@ -123,10 +136,9 @@ const collectVocabulary = () => {
       day,
     };
   }).sort((a, b) => {
-    if (a.lastWrongAt && b.lastWrongAt) return b.lastWrongAt.localeCompare(a.lastWrongAt);
-    if (a.lastWrongAt) return -1;
-    if (b.lastWrongAt) return 1;
-    return b.wrongCount - a.wrongCount || a.hanja.localeCompare(b.hanja, 'ko');
+    return b.wrongCount - a.wrongCount
+      || (b.lastWrongAt && a.lastWrongAt ? b.lastWrongAt.localeCompare(a.lastWrongAt) : 0)
+      || a.hanja.localeCompare(b.hanja, 'ko');
   });
 
   return { words, hanjas, idioms };
@@ -186,7 +198,9 @@ const VocabularyScreen = ({
 
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
   const idiomWrongCount = idioms.filter(w => w.wrongCount > 0).length;
-  const correctCount = words.filter(w => w.correctCount > 0).length + idioms.filter(w => w.correctCount > 0).length;
+  const totalCount = words.length + idioms.length;
+  // 정답 = 오답 기록 없는 것 전체 (미학습 포함) → 오답 + 정답 = 총합
+  const correctCount = totalCount - wrongCount - idiomWrongCount;
 
   return (
     <div className={`fixed inset-0 z-50 overflow-y-auto ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-[#F7FAF9] text-[#334155]'}`}>
@@ -210,8 +224,8 @@ const VocabularyScreen = ({
         <section className={`rounded-[2rem] border p-4 shadow-sm ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-[#E8FAF7] px-3 py-3">
-              <p className="text-[11px] font-black text-[#00A994]">단어</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{words.length}</p>
+              <p className="text-[11px] font-black text-[#00A994]">단어 · 사자성어</p>
+              <p className="mt-0.5 text-xl font-black text-[#334155]">{totalCount}</p>
             </div>
             <div className="rounded-2xl bg-[#FFF1EE] px-3 py-3">
               <p className="text-[11px] font-black text-[#E8664F]">오답</p>

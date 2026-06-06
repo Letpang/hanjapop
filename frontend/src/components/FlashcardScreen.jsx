@@ -10,6 +10,7 @@ import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
 import CtaButton from './common/CtaButton.jsx';
+import { pickClearMessage } from '../constants/messages.js';
 
 const CATEGORIES = ['전체', '숫자와 기초 개념', '자연과 시간', '나와 가족 신체', '공간과 위치', '학교와 일상생활', '행동과 상태', '사회와 문화'];
 const STUDY_SHEET_CLEAR_XP = 25;
@@ -51,23 +52,30 @@ const shuffle = (arr) => {
 const HANJA_MAP = Object.fromEntries(HANJA_DATA.map(h => [h.hanja, h]));
 
 const speakKorean = (text, onEnd) => {
-    if (!text || !window.speechSynthesis) {
-        if (onEnd) onEnd();
-        return;
+    if (!text) { if (onEnd) onEnd(); return; }
+    const synth = window.speechSynthesis;
+    if (!synth) { if (onEnd) onEnd(); return; }
+    synth.cancel();
+    const trySpeak = () => {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'ko-KR';
+        utter.rate = 0.8;
+        utter.pitch = 0.95;
+        if (onEnd) utter.onend = onEnd;
+        const voices = synth.getVoices();
+        const koVoice = voices.find(v => v.lang.startsWith('ko') && (
+            v.name.toLowerCase().includes('yuna') || v.name.toLowerCase().includes('sora') ||
+            v.name.toLowerCase().includes('hyerim') || v.name.toLowerCase().includes('heami')
+        )) || voices.find(v => v.lang.startsWith('ko'));
+        if (koVoice) utter.voice = koVoice;
+        synth.speak(utter);
+    };
+    // iOS에서 첫 호출 시 voices가 비어있는 경우 onvoiceschanged 후 재시도
+    if (synth.getVoices().length === 0 && synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = () => { synth.onvoiceschanged = null; trySpeak(); };
+    } else {
+        trySpeak();
     }
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'ko-KR';
-    utter.rate = 0.8;
-    utter.pitch = 0.95;
-    if (onEnd) utter.onend = onEnd;
-    const voices = window.speechSynthesis.getVoices();
-    const koVoice = voices.find(v => v.lang.startsWith('ko') && (
-        v.name.toLowerCase().includes('yuna') || v.name.toLowerCase().includes('sora') ||
-        v.name.toLowerCase().includes('hyerim') || v.name.toLowerCase().includes('heami')
-    )) || voices.find(v => v.lang.startsWith('ko'));
-    if (koVoice) utter.voice = koVoice;
-    window.speechSynthesis.speak(utter);
 };
 
 const playCardSound = (item, onEnd) => {
@@ -80,8 +88,11 @@ const playCardSound = (item, onEnd) => {
     if (item.id <= 370) {
         const audioId = String(item.id).padStart(item.id < 51 ? 2 : 3, '0');
         const audio = new Audio('/assets/audio/card_' + audioId + '.mp3');
-        if (onEnd) audio.onended = onEnd;
-        audio.play().catch(() => playTTS());
+        let done = false;
+        const fallback = () => { if (!done) { done = true; playTTS(); } };
+        audio.onended = () => { done = true; if (onEnd) onEnd(); };
+        audio.onerror = fallback;
+        audio.play().catch(fallback);
     } else {
         playTTS();
     }
@@ -129,7 +140,7 @@ const buildWorksheetQuiz = (item) => {
             prompt: `"${w.meaning}"을 뜻하는 한자어는?`,
             choices: shuffle([w.word, ...revDistractors]),
             answer: w.word,
-            word: w.word, reading: w.reading, meaning: w.meaning,
+            wordId: w.id, word: w.word, reading: w.reading, meaning: w.meaning,
         });
     });
 
@@ -203,8 +214,6 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                     return (
                         <button key={i} className={cls} onClick={() => handleSelect(c)}>
                             <span className="break-keep">{c}</span>
-                            {isRight && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
-                            {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
                         </button>
                     );
                 })}
@@ -264,8 +273,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
             // 문제별 오답 기록 (QuizItem이 정답 선택 시 1회만 호출 보장)
             if (!isCorrect) {
                 const q = questions.find(q => q.id === qId);
-                if (q?.word && onMarkWordWrong) {
-                    onMarkWordWrong(q.word, item.id, q.reading, q.meaning);
+                if (q?.wordId != null && onMarkWordWrong) {
+                    onMarkWordWrong(q.wordId, item.id, q.reading, q.meaning);
                 } else if (onMarkWrong) {
                     onMarkWrong(item.id);
                 }
@@ -563,7 +572,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                         correctXp={Object.values(answers).filter(Boolean).length * 5}
                                         clearXp={50}
                                         correctLabel="학습지"
-                                        detailText={`${Object.values(answers).filter(Boolean).length}문제 × 5XP + 완료 50XP`}
+                                        detailText={`${Object.values(answers).filter(Boolean).length}개 정답 × 5XP + 완료 50XP`}
                                         missionXp={isAlreadyCompleted ? 0 : 50}
                                     />
                                 </div>
@@ -650,6 +659,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     const [showAllDoneModal, setShowAllDoneModal] = useState(false);
     const [completedStudyIds, setCompletedStudyIds] = useState(() => loadCompletedStudyIds(currentDay));
     const [totalQuizXp, setTotalQuizXp] = useState(0);
+    const allDoneClearMsg = useMemo(() => pickClearMessage(), [showAllDoneModal]);
     const stageClearFiredRef = useRef(false);
     
     // 백업 스타일 싱글 카드 모드용 상태
@@ -664,10 +674,11 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
 
     const unlockedIds = useMemo(() => new Set(unlockedHanjaIds || []), [unlockedHanjaIds]);
 
-    const contentPoolIds = useMemo(() => {
+    // 마운트 시 한 번만 스냅샷 — contentPool이 재빌드돼도 복습 목록이 바뀌지 않음
+    const [contentPoolIds] = useState(() => {
         if (!contentPool) return null;
         return new Set([...(contentPool.main?.hanjaIds || []), ...(contentPool.review?.hanjaIds || [])]);
-    }, [contentPool]);
+    });
 
     // 무조건 이번 스테이지 한자(contentPoolIds)만 보여줍니다. (사전 모드 제거됨)
     const effectiveIds = useMemo(() => {
@@ -869,7 +880,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             <div className="text-center flex flex-col gap-1">
                                 <span className="result-subtitle">모든 한자를 완료했어요!</span>
                                 <h1 className="text-h2-res leading-tight result-title result-title--clear">
-                                    와우! 참 잘했어요!
+                                    {allDoneClearMsg}
                                 </h1>
                             </div>
                             <RewardBreakdown
@@ -877,7 +888,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                                 correctXp={totalQuizXp}
                                 clearXp={50}
                                 correctLabel="학습지"
-                                detailText={`${Math.round(totalQuizXp / 5)}문제 × 5XP + 완료 50XP`}
+                                detailText={`${Math.round(totalQuizXp / 5)}개 정답 × 5XP + 완료 50XP`}
                                 missionXp={50}
                             />
                             <div className="w-full flex flex-col gap-3">

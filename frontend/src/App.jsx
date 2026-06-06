@@ -358,40 +358,44 @@ const App = () => {
         const hanjaWrongCount = Object.values(hanjaData).filter(m => (m.wrongCount || 0) > 0).length;
         const wordWrongCount = Object.values(wordData).filter(v => (v.wrongCount || 0) > 0).length;
         const currentWrongCount = hanjaWrongCount + wordWrongCount;
+        const timers = [];
 
         try {
             const lastNotified = Number(localStorage.getItem('last_notified_wrong_count')) || 0;
-            
-            // 오답 개수가 줄어들면 알림 카운트 하향 동기화 (나중에 다시 쌓일 때 알림이 오도록 함)
             if (currentWrongCount < lastNotified) {
                 localStorage.setItem('last_notified_wrong_count', String(currentWrongCount));
             }
 
+            let baseDelay = 800;
+            let showedReview = false;
+
             // 오답이 5개 이상이고, 마지막으로 안내했던 개수보다 오답이 더 많아졌을 때만 팝업 노출
             if (currentWrongCount >= 5 && currentWrongCount > lastNotified) {
-                const t = setTimeout(() => {
+                timers.push(setTimeout(() => {
                     setCharToast('review_reminder');
                     localStorage.setItem('last_notified_wrong_count', String(currentWrongCount));
-                }, 800);
-                return () => clearTimeout(t);
+                }, baseDelay));
+                showedReview = true;
+                baseDelay += 5500; // review_reminder 자동 닫힘(4s) 후 여유
             }
 
-            // 진화 예고: 진화 2레벨 전 구간이면 하루 1번
+            // 진화 예고: 진화 2레벨 전 구간이면 하루 1번 (review와 독립적으로 순차 표시)
             const level = getLevel(userXp);
             if (isInRankSoonZone(level)) {
                 const today = new Date().toDateString();
                 const lastShown = localStorage.getItem(RANK_SOON_KEY);
                 if (lastShown !== today) {
-                    const t = setTimeout(() => {
+                    timers.push(setTimeout(() => {
                         setCharToast('rank_soon');
                         localStorage.setItem(RANK_SOON_KEY, today);
-                    }, 1200);
-                    return () => clearTimeout(t);
+                    }, showedReview ? baseDelay : 1200));
                 }
             }
         } catch {
-            return undefined;
+            // ignore
         }
+
+        return () => timers.forEach(clearTimeout);
     }, [currentScreen, hanjaData, wordData, selectedCharacter]);
 
     // 미션 전체 완료 시: 팡파레 토스트만 표시한다. +200 XP는 updateMissionProgress에서 1회 지급.

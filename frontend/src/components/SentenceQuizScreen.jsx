@@ -7,6 +7,7 @@ import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
+import { pickClearMessage } from '../constants/messages.js';
 
 const CELEB_MESSAGES = [
     "대단해요! 정답이에요",
@@ -99,6 +100,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
     const [totalAnswered, setTotalAnswered] = useState(0);
     const totalAnsweredRef = useRef(0); // stale 클로저 방지
     const [resultStats, setResultStats] = useState(null);
+    const resultClearMsg = useMemo(() => pickClearMessage(), [resultStats]);
     const [plannedQuizTotal, setPlannedQuizTotal] = useState(quizCount);
     const [wrongAttempts, setWrongAttempts] = useState([]);
     const wrongMarkedRef = useRef(false); // 문제당 오답 기록 최초 1회만
@@ -479,7 +481,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             <div className="text-center flex flex-col gap-1 w-full">
                                 <span className="result-subtitle">{isClear ? '문장 퀴즈 완료!' : '아쉬운 결과네요...'}</span>
                                 <h1 className={`text-3xl leading-tight mt-1 result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                                    {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                    {isClear ? resultClearMsg : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                 </h1>
                                 <p className="body-muted break-keep mt-2">
                                     {isClear
@@ -497,7 +499,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                 reward={reward}
                                 correctXp={correctXp}
                                 clearXp={clearXp}
-                                detailText={`${resultCorrect}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
+                                detailText={`${resultCorrect}개 정답 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
                                 missionXp={(clearCountRef.current >= 1) ? 30 : 0}
                             />
 
@@ -544,7 +546,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                         <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
                             <span className="result-subtitle">{isClear ? '문장 퀴즈 완료!' : '아쉬운 결과네요...'}</span>
                             <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                                {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br />다시 도전해봐요!</>}
+                                {isClear ? resultClearMsg : <>괜찮아요,<br />다시 도전해봐요!</>}
                             </h1>
                             <p className="body-muted break-keep">
                                 {isClear
@@ -557,7 +559,7 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                             reward={reward}
                             correctXp={correctXp}
                             clearXp={clearXp}
-                            detailText={`${resultCorrect}문제 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
+                            detailText={`${resultCorrect}개 정답 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
                             missionXp={(clearCountRef.current === 1) ? 30 : 0}
                         />
 
@@ -705,12 +707,12 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                 </div>
 
                 {/* 본문 */}
-                <div className="flex-1 overflow-y-auto pb-6">
-                    <div className="w-full max-w-xl mx-auto px-4 pt-3 flex flex-col gap-7">
+                <div className="quiz-scroll-body">
+                    <div className="quiz-scroll-inner">
 
                         {/* 문제 카드 (플립) */}
                         <div
-                            className="relative w-full aspect-[21/9] sm:aspect-[16/10] card-flip-perspective"
+                            className="relative w-full aspect-[21/9] sm:aspect-[16/9] card-flip-perspective"
                             onClick={() => {
                                 if (isCorrectSelected && currentQuiz?.type === 'sentence') {
                                     setIsWordCardFlipped(f => !f);
@@ -818,8 +820,6 @@ const SentenceQuizScreen = ({ onBack, onHanjaAcquired, onMarkCorrect, onMarkWron
                                         className={`quiz-choice-btn ${isCorrect ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : isCorrectSelected ? 'quiz-choice-btn--dimmed' : ''}`}
                                     >
                                         <span>{opt}</span>
-                                        {isCorrect && <span className="text-[#7C83FF] shrink-0 ml-2">✓</span>}
-                                        {isWrong && <span className="text-[#FF8D72] shrink-0 ml-2">✕</span>}
 
                                         {/* 정답 축하 3D 스피치 버블 및 별 쏟아짐 효과 */}
                                         {isCorrect && celebrationMsg && (

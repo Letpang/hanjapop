@@ -11,6 +11,7 @@ import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import { SK } from '../constants/storageKeys.js';
 import CtaButton from './common/CtaButton.jsx';
+import { pickClearMessage } from '../constants/messages.js';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
 
 const getStoredXp = () => {
@@ -278,6 +279,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const gameWrongHanjasRef = useRef(new Set());
     const gameWrongWordsRef = useRef(new Map()); // wordId → { hanjaId, reading, meaning }
     const [wrongItemsForRender, setWrongItemsForRender] = useState([]);
+    const resultClearMsg = useMemo(() => pickClearMessage(), []);
 
     const flushWrongItems = useCallback(() => {
         gameWrongHanjasRef.current.forEach(pairId => {
@@ -852,6 +854,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     // 게임 화면
     // ─────────────────────────────────────────
     return (
+        <>
         <div className={`fixed inset-0 w-full h-full z-50 flex flex-col overflow-hidden transition-all duration-1000 ease-out shoot-game-theme-container ${isResult ? 'result-active' : ''}`}>
 
             {/* Twinkling Stars */}
@@ -1063,7 +1066,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         {isClear ? '몬스터 슈팅 완료!' : '아쉬운 결과네요...'}
                                     </span>
                                     <h1 className={`text-3xl leading-tight mt-1 result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                                        {isClear ? '와우! 참 잘했어요!' : <>괜찮아요,<br/>다시 도전해봐요!</>}
+                                        {isClear ? resultClearMsg : <>괜찮아요,<br/>다시 도전해봐요!</>}
                                     </h1>
                                     {!isClear && (
                                         <div className="flex flex-col items-center gap-1 mt-3">
@@ -1155,38 +1158,39 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     </div>
                 )}
             </div>
-            {showExitModal && (
-                <div className="modal-overlay">
-                    <div className="quiz-result-card">
-                        <img
-                            src={getCharacterImage(selectedCharacter, 'keep_going')}
-                            alt="exit confirm"
-                            className="quiz-char-img"
-                            className="img-shadow-sm"
-                        />
-                        <div className="quiz-result-content">
-                            <h2 className="quiz-result-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요?'}
-                            </h2>
-                            <p className="body-muted break-keep">
-                                {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}
-                            </p>
-                        </div>
-                        <div className="w-full flex flex-col gap-3">
-                            <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
-                                <span className="quiz-cta-text">계속 플레이하기</span>
-                            </CtaButton>
-                            <button
-                                onClick={handleExitConfirm}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
-                            >
-                                {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
-                            </button>
-                        </div>
+        </div>
+        {showExitModal && (
+            <div className="modal-overlay" style={{ zIndex: 400 }}>
+                <div className="quiz-result-card">
+                    <img
+                        src={getCharacterImage(selectedCharacter, 'keep_going')}
+                        alt="exit confirm"
+                        className="quiz-char-img"
+                        className="img-shadow-sm"
+                    />
+                    <div className="quiz-result-content">
+                        <h2 className="quiz-result-title">
+                            {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요?'}
+                        </h2>
+                        <p className="body-muted break-keep">
+                            {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}
+                        </p>
+                    </div>
+                    <div className="w-full flex flex-col gap-3">
+                        <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
+                            <span className="quiz-cta-text">계속 플레이하기</span>
+                        </CtaButton>
+                        <button
+                            onClick={handleExitConfirm}
+                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                        >
+                            {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
+                        </button>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
+        )}
+        </>
     );
 };
 
