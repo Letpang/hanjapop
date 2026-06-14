@@ -329,20 +329,9 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
 
 const IdiomScreen = ({ onBack, onComplete, onHanjaAcquired, contentPool, grade, day, userXp, selectedCharacter, getRewardPreview }) => {
     const idioms = useMemo(() => {
-        const normalizedGrade = grade ? grade.replace(/II/g, 'Ⅱ') : null;
         const mainIds = contentPool?.main?.hanjaIds || [];
-        
-        // 1. 해당 일차(단계)의 한자를 포함하는 사자성어 추출
-        let result = collectIdioms(mainIds);
-        
-        // 2. 다른 급수의 사자성어가 섞이는 것을 방지하기 위해 현재 급수 필터링
-        if (normalizedGrade) {
-            result = result.filter(i => i.grade === normalizedGrade);
-        }
-
-        console.log("IdiomScreen: idioms calculated.", result.length, "grade:", normalizedGrade, "mainIds:", mainIds.length);
-        return result;
-    }, [contentPool, grade]);
+        return collectIdioms(mainIds);
+    }, [contentPool]);
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F8FAF9]">
