@@ -134,4 +134,29 @@ export const getCharacterImage = (charType, status) => {
     return '/assets/images/icons/timeout_new.webp';
 };
 
+// Per-image scale factors computed from actual non-transparent content bounding box.
+// Target = average fill across all 4 characters for each image type.
+// Expression images: per-status scale. Rank images: per-character single scale (rank_5 avg reference).
+const CHAR_IMG_SCALE = {
+    garae:    { success: 1.047, failure: 1.029, keep_going: 0.910, rank1: 1.022, rank2: 1.019, rank3: 1.013, rank4: 1.025, rank5: 0.821 },
+    jeolmi:   { success: 0.930, failure: 0.880, keep_going: 1.008, rank1: 0.843, rank2: 0.900, rank3: 1.020, rank4: 0.921, rank5: 1.05  },
+    chapssal: { success: 0.942, failure: 0.945, keep_going: 0.911, rank1: 1.278, rank2: 1.193, rank3: 1.292, rank4: 1.192, rank5: 1.35  },
+    muzi:     { success: 0.929, failure: 0.902, keep_going: 1.014, rank1: 0.950, rank2: 0.809, rank3: 0.795, rank4: 0.909, rank5: 0.854 },
+};
+
+export const getCharacterScale = (charType, status = 'rank1') => {
+    const s = ['success', 'failure', 'keep_going', 'rank1', 'rank2', 'rank3', 'rank4', 'rank5'].includes(status) ? status : 'rank1';
+    return CHAR_IMG_SCALE[charType]?.[s] ?? 1.0;
+};
+
+export const getCharacterRankScale = (charType, rankNum) =>
+    getCharacterScale(charType, `rank${rankNum}`);
+
+// 찹쌀은 이미지 구도상 아래쪽에 여백이 많아 수직 위치 보정 필요
+// large=true: 176px 결과카드처럼 큰 컨테이너에서는 절댓값이 커지므로 보정량 축소
+const CHAR_TRANSLATE_Y = { chapssal: '-18%' };
+const CHAR_TRANSLATE_Y_LARGE = { chapssal: '-8%' };
+export const getCharacterTranslateY = (charType, large = false) =>
+    (large ? CHAR_TRANSLATE_Y_LARGE : CHAR_TRANSLATE_Y)[charType] ?? '0px';
+
 export { LEVEL_THRESHOLDS, levelToImageRank };

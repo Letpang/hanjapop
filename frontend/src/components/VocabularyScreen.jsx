@@ -21,6 +21,10 @@ const readWordData = () => {
   try { return JSON.parse(localStorage.getItem(SK.WORD_DATA) || '{}'); } catch { return {}; }
 };
 
+const readHanjaData = () => {
+  try { return JSON.parse(localStorage.getItem(SK.HANJA_DATA) || '{}'); } catch { return {}; }
+};
+
 const readIdiomWrongData = () => {
   try { return JSON.parse(localStorage.getItem(IDIOM_WRONG_KEY) || '{}'); } catch { return {}; }
 };
@@ -28,6 +32,7 @@ const readIdiomWrongData = () => {
 const collectVocabulary = () => {
   const log = readStudyLog();
   const wordData = readWordData();
+  const hanjaData = readHanjaData();
   const idiomWrongData = readIdiomWrongData();
   const days = log.days || {};
   const wordIds = new Set();
@@ -65,31 +70,22 @@ const collectVocabulary = () => {
       };
     })
     .filter(Boolean)
-    .sort((a, b) => {
-      const today = new Date().toISOString().slice(0, 10);
-      const aToday = a.lastWrong?.slice(0, 10) === today;
-      const bToday = b.lastWrong?.slice(0, 10) === today;
-      // 1순위: 오늘 틀린 것 (최신순)
-      if (aToday && !bToday) return -1;
-      if (!aToday && bToday) return 1;
-      if (aToday && bToday) return b.lastWrong.localeCompare(a.lastWrong);
-      // 2순위: SRS 복습 기한 초과 (더 오래 밀린 것 먼저)
-      const now = new Date();
-      const aOverdue = a.nextReview ? Math.max(0, now - new Date(a.nextReview)) : 0;
-      const bOverdue = b.nextReview ? Math.max(0, now - new Date(b.nextReview)) : 0;
-      if (aOverdue > 0 && bOverdue === 0) return -1;
-      if (bOverdue > 0 && aOverdue === 0) return 1;
-      if (aOverdue > 0 && bOverdue > 0) return bOverdue - aOverdue;
-      // 3순위: 틀린 횟수 → 최근 오답 순
-      return b.wrongCount - a.wrongCount
-        || (b.lastWrong && a.lastWrong ? b.lastWrong.localeCompare(a.lastWrong) : 0)
-        || a.word.localeCompare(b.word, 'ko');
-    });
+    .sort((a, b) => (b.day ?? -1) - (a.day ?? -1));
 
   const hanjas = [...hanjaIds]
-    .map(id => hanjaById[id])
+    .map(id => {
+      const h = hanjaById[id];
+      if (!h) return null;
+      const memory = hanjaData[String(id)] || {};
+      return {
+        ...h,
+        wrongCount: memory.wrongCount || 0,
+        correctCount: memory.correctCount || 0,
+        day: hanjaIdToDay[id] ?? null,
+      };
+    })
     .filter(Boolean)
-    .sort((a, b) => a.id - b.id);
+    .sort((a, b) => (b.day ?? -1) - (a.day ?? -1));
 
   const seenIdioms = new Set();
   const unlockedIdiomsList = [];
@@ -135,11 +131,7 @@ const collectVocabulary = () => {
       lastWrongAt: memory.lastWrongAt || null,
       day,
     };
-  }).sort((a, b) => {
-    return b.wrongCount - a.wrongCount
-      || (b.lastWrongAt && a.lastWrongAt ? b.lastWrongAt.localeCompare(a.lastWrongAt) : 0)
-      || a.hanja.localeCompare(b.hanja, 'ko');
-  });
+  }).sort((a, b) => (b.day ?? -1) - (a.day ?? -1));
 
   return { words, hanjas, idioms };
 };
@@ -178,12 +170,14 @@ const VocabularyScreen = ({
 
   const filteredHanjas = useMemo(() => {
     return hanjas.filter(item => {
+      if (filter === 'wrong' && item.wrongCount <= 0) return false;
+      if (filter === 'correct' && (item.correctCount <= 0 || item.wrongCount > 0)) return false;
       if (!normalizedQuery) return true;
       return [item.hanja, item.sound, item.meaning, item.category]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(normalizedQuery));
     });
-  }, [hanjas, normalizedQuery]);
+  }, [hanjas, filter, normalizedQuery]);
 
   const filteredIdioms = useMemo(() => {
     return idioms.filter(item => {
@@ -198,8 +192,8 @@ const VocabularyScreen = ({
 
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
   const idiomWrongCount = idioms.filter(w => w.wrongCount > 0).length;
+  const hanjaWrongCount = hanjas.filter(h => h.wrongCount > 0).length;
   const totalCount = words.length + idioms.length;
-  // 정답 = 오답 기록 없는 것 전체 (미학습 포함) → 오답 + 정답 = 총합
   const correctCount = totalCount - wrongCount - idiomWrongCount;
 
   return (
@@ -208,13 +202,13 @@ const VocabularyScreen = ({
         <header className={`flex min-h-[64px] items-center justify-between rounded-[2rem] border px-4 shadow-sm ${isDarkMode ? 'bg-slate-800/90 border-slate-700' : 'bg-white/90 border-white'}`}>
           <button
             onClick={onBack}
-            className={`h-10 w-10 rounded-2xl border font-black shadow-sm active:scale-95 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-100 text-[#5B677A]'}`}
+            className={`h-10 w-10 rounded-2xl border font-normal shadow-sm active:scale-95 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-100 text-[#5B677A]'}`}
           >
             ←
           </button>
           <div className="text-center">
-            <h2 className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>{title}</h2>
-            <p className={`text-[11px] font-extrabold ${isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'}`}>
+            <h2 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>{title}</h2>
+            <p className={`text-[11px] font-normal ${isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'}`}>
               {subtitle}
             </p>
           </div>
@@ -224,16 +218,16 @@ const VocabularyScreen = ({
         <section className={`rounded-[2rem] border p-4 shadow-sm ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-[#E8FAF7] px-3 py-3">
-              <p className="text-[11px] font-black text-[#00A994]">단어 · 사자성어</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{totalCount}</p>
+              <p className="text-[11px] font-normal text-[#00A994]">단어 · 사자성어</p>
+              <p className="mt-0.5 text-xl font-normal text-[#334155]">{totalCount}</p>
             </div>
             <div className="rounded-2xl bg-[#FFF1EE] px-3 py-3">
-              <p className="text-[11px] font-black text-[#E8664F]">오답</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{wrongCount + idiomWrongCount}</p>
+              <p className="text-[11px] font-normal text-[#E8664F]">오답</p>
+              <p className="mt-0.5 text-xl font-normal text-[#334155]">{wrongCount + idiomWrongCount}</p>
             </div>
             <div className="rounded-2xl bg-[#F5F3FF] px-3 py-3">
-              <p className="text-[11px] font-black text-[#7C83FF]">정답</p>
-              <p className="mt-0.5 text-xl font-black text-[#334155]">{correctCount}</p>
+              <p className="text-[11px] font-normal text-[#7C83FF]">정답</p>
+              <p className="mt-0.5 text-xl font-normal text-[#334155]">{correctCount}</p>
             </div>
           </div>
         </section>
@@ -248,7 +242,7 @@ const VocabularyScreen = ({
               <button
                 key={item.id}
                 onClick={() => setTab(item.id)}
-                className={`rounded-xl px-3 py-2 text-sm font-black transition-all ${tab === item.id ? 'bg-white text-[#334155] shadow-sm' : 'text-[#8D9CAE]'}`}
+                className={`rounded-xl px-3 py-2 text-sm font-normal transition-all ${tab === item.id ? 'bg-white text-[#334155] shadow-sm' : 'text-[#8D9CAE]'}`}
               >
                 {item.label}
               </button>
@@ -259,16 +253,16 @@ const VocabularyScreen = ({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="검색"
-            className={`mb-3 w-full rounded-2xl border px-4 py-3 text-sm font-bold outline-none ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500' : 'bg-[#F8FAF9] border-slate-100 text-[#334155] placeholder:text-[#AEB7C5]'}`}
+            className={`mb-3 w-full rounded-2xl border px-4 py-3 text-sm font-normal outline-none ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white placeholder:text-slate-500' : 'bg-[#F8FAF9] border-slate-100 text-[#334155] placeholder:text-[#AEB7C5]'}`}
           />
 
-          {(tab === 'words' || tab === 'idioms') && (
+          {(tab === 'words' || tab === 'hanja' || tab === 'idioms') && (
             <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
               {FILTERS.map(item => (
                 <button
                   key={item.id}
                   onClick={() => setFilter(item.id)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-black transition-all ${filter === item.id ? 'bg-[#334155] text-white' : 'bg-[#F4F6F8] text-[#7A8798]'}`}
+                  className={`shrink-0 rounded-full px-4 py-2 text-xs font-normal transition-all ${filter === item.id ? 'bg-[#334155] text-white' : 'bg-[#F4F6F8] text-[#7A8798]'}`}
                 >
                   {item.label}
                 </button>
@@ -279,7 +273,7 @@ const VocabularyScreen = ({
           {tab === 'words' && (
             <div className="flex flex-col gap-2">
               {filteredWords.length === 0 ? (
-                <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-extrabold text-[#AEB7C5]">
+                <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-normal text-[#AEB7C5]">
                   표시할 단어가 없어요
                 </div>
               ) : filteredWords.map(item => (
@@ -287,18 +281,18 @@ const VocabularyScreen = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-black text-[#334155]">{item.word}</span>
-                        <span className="text-xs font-extrabold text-[#94A3B8]">{item.reading}</span>
+                        <span className="text-lg font-normal text-[#334155]">{item.word}</span>
+                        <span className="text-xs font-normal text-[#94A3B8]">{item.reading}</span>
                       </div>
-                      <p className="mt-1 text-sm font-bold text-[#64748B]">{item.meaning}</p>
+                      <p className="mt-1 text-sm font-normal text-[#64748B]">{item.meaning}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-black text-[#334155]">{item.hanja}</span>
-                      {item.day && <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-black text-[#7C83FF]">{item.day}단계</span>}
+                      <span className="rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-normal text-[#334155]">{item.hanja}</span>
+                      {item.day && <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}단계</span>}
                     </div>
                   </div>
                   {(item.wrongCount > 0 || item.correctCount > 0) && (
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-normal">
                       {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
                       {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
                     </div>
@@ -311,18 +305,29 @@ const VocabularyScreen = ({
           {tab === 'hanja' && (
             <div className="grid grid-cols-2 gap-2">
               {filteredHanjas.length === 0 ? (
-                <div className="col-span-2 rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-extrabold text-[#AEB7C5]">
+                <div className="col-span-2 rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-normal text-[#AEB7C5]">
                   표시할 한자가 없어요
                 </div>
               ) : filteredHanjas.map(item => (
-                <div key={item.id} className="rounded-[1.5rem] border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black text-[#334155]">{item.hanja}</span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-black text-[#334155]">{item.sound}</p>
-                      <p className="truncate text-xs font-bold text-[#94A3B8]">{item.meaning}</p>
+                <div key={item.id} className={`rounded-[1.5rem] border px-4 py-3 shadow-sm ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-2xl font-normal text-[#334155] shrink-0">{item.hanja}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-normal text-[#334155]">{item.sound}</p>
+                      <p className="truncate text-xs font-normal text-[#94A3B8]">{item.meaning}</p>
                     </div>
                   </div>
+                  {item.day && (
+                    <div className="mt-1.5">
+                      <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}단계</span>
+                    </div>
+                  )}
+                  {(item.wrongCount > 0 || item.correctCount > 0) && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-normal">
+                      {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2 py-0.5 text-[#00A994]">정답 {item.correctCount}</span>}
+                      {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2 py-0.5 text-[#E8664F]">오답 {item.wrongCount}</span>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -331,7 +336,7 @@ const VocabularyScreen = ({
           {tab === 'idioms' && (
             <div className="flex flex-col gap-2">
               {filteredIdioms.length === 0 ? (
-                <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-extrabold text-[#AEB7C5]">
+                <div className="rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-normal text-[#AEB7C5]">
                   표시할 사자성어가 없어요
                 </div>
               ) : filteredIdioms.map(item => (
@@ -339,26 +344,26 @@ const VocabularyScreen = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="hanja-char text-xl font-black tracking-wider text-[#334155]">{item.hanja}</span>
-                        <span className="text-xs font-extrabold text-[#94A3B8]">{item.reading}</span>
+                        <span className="hanja-char text-xl font-normal tracking-wider text-[#334155]">{item.hanja}</span>
+                        <span className="text-xs font-normal text-[#94A3B8]">{item.reading}</span>
                       </div>
-                      <p className="mt-1 text-sm font-bold leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>
+                      <p className="mt-1 text-sm font-normal leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       {item.relatedHanjas?.length > 0 && (
                         <div className="flex flex-wrap justify-end gap-1">
                           {item.relatedHanjas.map(h => (
-                            <span key={h.hanjaChar} className="rounded-lg bg-[#F4F6F8] px-1.5 py-0.5 text-xs font-black text-[#334155]">{h.hanjaChar}</span>
+                            <span key={h.hanjaChar} className="rounded-lg bg-[#F4F6F8] px-1.5 py-0.5 text-xs font-normal text-[#334155]">{h.hanjaChar}</span>
                           ))}
                         </div>
                       )}
                       {item.day && (
-                        <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-black text-[#7C83FF]">{item.day}단계</span>
+                        <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}단계</span>
                       )}
                     </div>
                   </div>
                   {(item.wrongCount > 0 || item.correctCount > 0) && (
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black">
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-normal">
                       {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
                       {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
                     </div>

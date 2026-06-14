@@ -4,7 +4,7 @@ import {
     MONSTER_COMPONENTS, IconTarget, IconHpDrop, IconExplosionBig
 } from './Icons.jsx';
 import { useLang } from '../hooks/useLang.js';
-import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
+import { getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 import { buildHanjaStage, getSRSWeightedPool } from '../utils/learningPool.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
@@ -63,10 +63,17 @@ const getWrongOptions = (target, allChars, mode, targetCategory) => {
         if (otherTheme.length >= 3) pool = otherTheme;
     }
 
-    return pool
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3)
-        .map(h => h.meaning + ' ' + (h.sound || ''));
+    const seen = new Set([targetAnswer]);
+    const result = [];
+    for (const h of pool.sort(() => 0.5 - Math.random())) {
+        const key = h.meaning + ' ' + (h.sound || '');
+        if (!seen.has(key)) {
+            seen.add(key);
+            result.push(key);
+        }
+        if (result.length >= 3) break;
+    }
+    return result;
 };
 
 // ─────────────────────────────────────────────
@@ -183,6 +190,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const selectedDifficulty = 'normal';
 
     const [status, setStatus] = useState((contentPool || autoStart) ? 'loading' : 'idle');
+    const [isPaused, setIsPaused] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
     const handleExitConfirm = () => {
         setShowExitModal(false);
@@ -279,7 +287,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const gameWrongHanjasRef = useRef(new Set());
     const gameWrongWordsRef = useRef(new Map()); // wordId → { hanjaId, reading, meaning }
     const [wrongItemsForRender, setWrongItemsForRender] = useState([]);
-    const resultClearMsg = useMemo(() => pickClearMessage(), []);
+    const [resultClearMsg] = useState(() => pickClearMessage());
 
     const flushWrongItems = useCallback(() => {
         gameWrongHanjasRef.current.forEach(pairId => {
@@ -472,7 +480,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     // 낙하 + 스폰 루프
     useEffect(() => {
-        if (status !== 'playing' || waveTransition) return;
+        if (status !== 'playing' || waveTransition || isPaused) return;
 
         const dropInterval = setInterval(() => {
             setWords(prev => {
@@ -552,6 +560,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     wordId: nextItem.wordId || null,
                     hanja: nextItem.hanja,
                     answer: (nextItem.meaning || getMeaning(nextItem) || "") + " " + (nextItem.sound || ""),
+                    meaning: nextItem.meaning || getMeaning(nextItem) || "",
                     sound: nextItem.sound || "",
                     category: nextItem.category || "",
                     x: Math.floor(Math.random() * 80) + 10,
@@ -565,7 +574,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         }, getSpawnInterval(wave));
 
         return () => { clearInterval(dropInterval); clearInterval(spawnInterval); };
-    }, [status, wave, waveTransition, gamePoolData, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig, refillWordQueue]);
+    }, [status, wave, waveTransition, isPaused, gamePoolData, masteryData, getDropSpeed, getSpawnInterval, getMeaning, diffConfig, refillWordQueue]);
 
     // 타겟 & 보기 갱신
     useEffect(() => {
@@ -638,7 +647,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             if (!isExist) {
                 setWrongItemsForRender(prev => [...prev, {
                     hanja: target.hanja,
-                    answer: target.answer,
+                    sound: target.sound,
+                    meaning: target.meaning,
                     isWord: target.isWord
                 }]);
             }
@@ -702,7 +712,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         className="h-16 w-16 rounded-[1.4rem] border-4 border-white shadow-lg animate-pulse"
                         style={{ backgroundColor: themeConfig.accentColor }}
                     />
-                    <p className="text-body-lg font-black text-[#5B677A] break-keep">몬스터를 불러오는 중...</p>
+                    <p className="text-body-lg font-normal text-[#5B677A] break-keep">몬스터를 불러오는 중...</p>
                 </div>
             </div>
         );
@@ -710,7 +720,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     if (status === 'idle') {
         return (
-            <div className="quiz-screen quiz-screen--plain" className="bg-[#F8FAF9]">
+            <div className="quiz-screen quiz-screen--plain bg-[#F8FAF9]">
                 {/* 헤더 */}
                 <div className="quiz-header-wrap quiz-header-wrap--sm">
                     <div className="quiz-header-card quiz-header-card--wide">
@@ -733,13 +743,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-2 shadow-inner">
                             <button
                                 onClick={() => setViewMode('grade')}
-                                className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
+                                className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                             >
                                 급수별
                             </button>
                             <button
                                 onClick={() => setViewMode('topic')}
-                                className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
+                                className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                             >
                                 주제별
                             </button>
@@ -755,7 +765,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         <button
                                             key={g}
                                             onClick={isLocked ? undefined : () => setSelectedGrade(g)}
-                                            className={`relative py-4 rounded-3xl font-bold text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
+                                            className={`relative py-4 rounded-3xl font-normal text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
                                                 isLocked 
                                                 ? 'bg-[#F8FAF9] border-[#E9EDF2] text-slate-200 cursor-not-allowed' 
                                                 : isSelected
@@ -808,7 +818,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             {/* 말풍선 (우측 밀착 배치) */}
                             <div className="absolute top-4 left-[60%] z-20">
                                 <div className="quiz-bubble">
-                                    <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">출동!</span>
+                                    <span className="text-body font-normal text-[#5B677A] whitespace-nowrap break-keep">출동!</span>
                                     {/* 말풍선 꼬리 (왼쪽 하단으로 이동) */}
                                     <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
                                 </div>
@@ -828,7 +838,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     // 급수가 선택되어 있지 않으면 8급 혹은 전체로 시작 로직을 보완할 수 있음
                                     startGame(selectedDifficulty);
                                 }}
-                                className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
+                                className="w-full py-5 rounded-[2rem] font-normal text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
                                 style={{ 
                                     backgroundColor: '#FF9B73',
                                     borderBottom: '6px solid #E0735A'
@@ -947,15 +957,26 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         <div className="flex-1 h-2 bg-[#F4F7F8] rounded-full overflow-hidden">
                             <div className="quiz-progress-fill" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
                         </div>
-                        <span className="text-xs font-black text-[#AEB7C5] tabular-nums whitespace-nowrap">{waveKills}/{diffConfig.killsPerWave}</span>
+                        <span className="text-xs font-normal text-[#AEB7C5] tabular-nums whitespace-nowrap">{waveKills}/{diffConfig.killsPerWave}</span>
                     </div>
 
                     {/* 3. 스코어 */}
                     <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center justify-center shrink-0 min-w-[2.5rem]">
-                        <span className="font-bold text-[#AEB7C5] text-sm leading-none tabular-nums">{score}</span>
+                        <span className="font-normal text-[#AEB7C5] text-sm leading-none tabular-nums">{score}</span>
                     </div>
 
-                    {/* 4. 종료 */}
+                    {/* 4. 일시정지 */}
+                    <button
+                        onClick={() => setIsPaused(true)}
+                        className="hp-nav-button hp-nav-button--compact shrink-0"
+                    >
+                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-slate-400">
+                            <rect x="5" y="4" width="4" height="16" rx="1.5" />
+                            <rect x="15" y="4" width="4" height="16" rx="1.5" />
+                        </svg>
+                    </button>
+
+                    {/* 5. 종료 */}
                     <button 
                         onClick={() => setShowExitModal(true)} 
                         className="hp-nav-button hp-nav-button--compact shrink-0"
@@ -978,11 +999,17 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     </svg>
 
                     {/* 캐릭터 */}
-                    <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-30" ref={shipRef}>
-                        <div className="w-14 h-14 md:w-24 md:h-24 transition-transform duration-100 drop-shadow-2xl" style={{ transform: 'rotate(' + (turretAngle + 90) + 'deg)' }}>
-                            <img src={characterAvatar} className="w-full h-full object-contain" />
-                        </div>
-                    </div>
+                    {(() => {
+                        const charSize = { garae: 'w-20 h-20', jeolmi: 'w-24 h-24', chapssal: 'w-24 h-24', muzi: 'w-20 h-20' };
+                        const sz = charSize[selectedCharacter] || 'w-20 h-20';
+                        return (
+                            <div className="absolute bottom-[4%] left-1/2 -translate-x-1/2 z-30" ref={shipRef}>
+                                <div className={`${sz} transition-transform duration-100 drop-shadow-2xl`} style={{ transform: 'rotate(' + (turretAngle + 90) + 'deg)' }}>
+                                    <img src={characterAvatar} className="w-full h-full object-contain" />
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* 몬스터 */}
                     {words.map(w => {
@@ -997,7 +1024,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         <div className={`w-14 h-14 md:w-20 md:h-20 animate-bounce ${w.isWrongItem ? "drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]" : "drop-shadow-md"}`}>
                                             <MonsterIcon />
                                         </div>
-                                        <div className={`font-extrabold text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
+                                        <div className={`font-normal text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
                                             w.isWrongItem ? "bg-white/95 border-rose-200" : w.id === targetId ? "bg-[#FFB433]/15 border-[#FFB433] scale-110 shadow-[#FFB433]/15/50" : "bg-white/95 border-[#E9EDF2]"
                                         }`}>
                                             <span className="text-center break-keep leading-tight">{w.hanja}</span>
@@ -1010,7 +1037,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
                     {/* 획득 애니메이션 */}
                     {acquisitions.map(a => (
-                        <div key={a.id} className="absolute pointer-events-none z-30 animate-float font-extrabold text-[#FFB433] text-2xl drop-shadow-lg" style={{ left: a.x + '%', top: a.y + '%', transform: 'translate(-50%, -50%)' }}>
+                        <div key={a.id} className="absolute pointer-events-none z-30 animate-float font-normal text-[#FFB433] text-2xl drop-shadow-lg" style={{ left: a.x + '%', top: a.y + '%', transform: 'translate(-50%, -50%)' }}>
                             +3 XP ✨
                         </div>
                     ))}
@@ -1024,7 +1051,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             <button
                                 key={i}
                                 onClick={() => handleOptionClick(opt)}
-                                className={`bg-white/95 px-4 py-1.5 rounded-[1.2rem] md:rounded-[1.8rem] font-extrabold border-4 border-white shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
+                                className={`bg-white/95 px-4 py-1.5 rounded-[1.2rem] md:rounded-[1.8rem] font-normal border-4 border-white shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
                             >
                                 {isWordTarget ? (
                                     <span className="text-slate-700 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
@@ -1039,25 +1066,50 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     })}
                 </div>
 
+                {/* 일시정지 오버레이 */}
+                {isPaused && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center" style={{ background: 'rgba(10,15,30,0.72)', backdropFilter: 'blur(8px)' }}>
+                        <div className="bg-white/10 border border-white/20 rounded-3xl px-8 py-10 flex flex-col items-center gap-6 shadow-2xl max-w-xs w-full mx-4">
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-4xl mb-1">⏸</span>
+                                <h2 className="text-white text-2xl font-bold tracking-tight">일시정지</h2>
+                                <p className="text-white/60 text-sm text-center break-keep">게임이 멈췄어요. 준비되면 계속해요!</p>
+                            </div>
+                            <button
+                                onClick={() => setIsPaused(false)}
+                                className="w-full py-4 rounded-2xl text-white font-bold text-lg transition-all active:scale-95"
+                                style={{ background: 'linear-gradient(135deg, #7C83FF, #4F56D9)', boxShadow: '0 4px 20px rgba(124,131,255,0.4)' }}
+                            >
+                                ▶ 계속하기
+                            </button>
+                            <button
+                                onClick={() => { setIsPaused(false); setShowExitModal(true); }}
+                                className="text-white/50 text-sm hover:text-white/80 transition-colors"
+                            >
+                                나가기
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* 결과 모달 (매칭 게임과 동일한 팝업 방식) */}
                 {isResult && (
                     <div
-                        className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
-                        style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
+                        className={`daily-session-result-backdrop${isClear ? '' : ' daily-session-result-backdrop--fail'}`}
                     >
-                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
+                        <div className="activity-result-card">
                             <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {(!dailyMapNode || !isClear) && (
-                                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" className="char-bg-glow" />
+                                    <div className="activity-result-glow" />
                                 )}
 
                                 {(!dailyMapNode || !isClear) && (
                                     <img
                                         src={isClear ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
                                         alt={isClear ? 'clear' : 'over'}
-                                        className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
-                                        className="img-shadow-lg"
+                                        className="activity-result-char img-shadow-lg"
+                                        style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, isClear ? 'success' : 'failure')})` }}
                                     />
                                 )}
                                 
@@ -1070,7 +1122,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     </h1>
                                     {!isClear && (
                                         <div className="flex flex-col items-center gap-1 mt-3">
-                                            <p className="font-extrabold text-lg tracking-tight" style={{ color: '#A5AFBF', lineHeight: '1.4' }}>
+                                            <p className="result-fail-desc">
                                                 {score}마리의 몬스터 퇴치!<span className="text-[0.85em] inline-block ml-1">🔥</span>
                                             </p>
                                         </div>
@@ -1090,25 +1142,26 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     clearXp={shootClearXp}
                                     correctLabel="몬스터 처치"
                                     detailText={`${score}마리 x 3XP${isClear ? ` + 완료 20XP` : ''}`}
-                                    missionXp={(isClear && clearCountRef.current >= 1) ? 20 : 0}
+                                    missionXp={(isClear && clearCountRef.current === 1) ? 20 : 0}
                                 />
 
                                 {/* 몬스터 오답 노트 (Review Note) */}
                                 {wrongItemsForRender.length > 0 && (
                                     <div className="w-full flex flex-col gap-2 relative z-10 mt-1 max-h-[140px] overflow-y-auto px-1">
-                                        <p className="text-xs font-black text-[#FF6B6B] text-center mb-1">몬스터 오답 노트</p>
+                                        <p className="text-xs font-normal text-[#FF6B6B] text-center mb-1">몬스터 오답 노트</p>
                                         <div className="flex flex-wrap gap-2 justify-center">
                                             {wrongItemsForRender.map((w, idx) => (
                                                 <div key={idx} className="bg-rose-50 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 shadow-sm">
-                                                    <span className="font-extrabold text-rose-500 text-sm">{w.hanja}</span>
-                                                    <span className="text-[10px] font-bold text-slate-400">{w.answer}</span>
+                                                    <span className="font-normal text-rose-500 text-sm">{w.hanja}</span>
+                                                    <span className="text-[11px] font-normal text-rose-400">({w.sound})</span>
+                                                    <span className="text-[10px] font-normal text-slate-400">{w.meaning}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="w-full flex flex-col gap-3 relative z-10">
+                                <div className="result-btn-area">
                                     {!hideRetry && (
                                         <CtaButton
                                             theme="indigo"
@@ -1134,7 +1187,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                             }}
                                         >
                                             <span className="quiz-cta-text">다음 단계로 이동</span>
-                                            <span className="quiz-cta-text ml-2">▶</span>
+                                            <span className="quiz-cta-text ml-2">›</span>
                                         </CtaButton>
                                     ) : (
                                         <button
@@ -1147,7 +1200,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                                     setStatus('idle');
                                                 }
                                             }}
-                                            className="w-full py-5 rounded-2xl font-black text-[1.5rem] active:scale-95 transition-all shadow-sm back-quiz-button"
+                                            className="back-quiz-button"
                                         >
                                             돌아가기
                                         </button>
@@ -1161,28 +1214,28 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
         </div>
         {showExitModal && (
             <div className="modal-overlay" style={{ zIndex: 400 }}>
-                <div className="quiz-result-card">
+                <div className="exit-confirm-card">
                     <img
                         src={getCharacterImage(selectedCharacter, 'keep_going')}
                         alt="exit confirm"
-                        className="quiz-char-img"
                         className="img-shadow-sm"
+                        style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'keep_going')})` }}
                     />
-                    <div className="quiz-result-content">
-                        <h2 className="quiz-result-title">
+                    <div className="exit-confirm-content">
+                        <h2 className="exit-confirm-title">
                             {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요?'}
                         </h2>
                         <p className="body-muted break-keep">
                             {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}
                         </p>
                     </div>
-                    <div className="w-full flex flex-col gap-3">
+                    <div className="result-btn-area">
                         <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
                             <span className="quiz-cta-text">계속 플레이하기</span>
                         </CtaButton>
                         <button
                             onClick={handleExitConfirm}
-                            className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                            className="back-quiz-button"
                         >
                             {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
                         </button>

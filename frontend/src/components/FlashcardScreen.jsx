@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { speakKorean } from '../utils/speakUtils.js';
 import { QuizCard } from './WritingScreen.jsx';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
@@ -6,11 +7,12 @@ import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import IDIOMS from '../data/idioms.js';
 import { usePremium } from '../hooks/usePremium.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
-import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
+import { getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
 import CtaButton from './common/CtaButton.jsx';
 import { pickClearMessage } from '../constants/messages.js';
+import QuizProgressBar from './QuizProgressBar.jsx';
 
 const CATEGORIES = ['전체', '숫자와 기초 개념', '자연과 시간', '나와 가족 신체', '공간과 위치', '학교와 일상생활', '행동과 상태', '사회와 문화'];
 const STUDY_SHEET_CLEAR_XP = 25;
@@ -51,32 +53,6 @@ const shuffle = (arr) => {
 
 const HANJA_MAP = Object.fromEntries(HANJA_DATA.map(h => [h.hanja, h]));
 
-const speakKorean = (text, onEnd) => {
-    if (!text) { if (onEnd) onEnd(); return; }
-    const synth = window.speechSynthesis;
-    if (!synth) { if (onEnd) onEnd(); return; }
-    synth.cancel();
-    const trySpeak = () => {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'ko-KR';
-        utter.rate = 0.8;
-        utter.pitch = 0.95;
-        if (onEnd) utter.onend = onEnd;
-        const voices = synth.getVoices();
-        const koVoice = voices.find(v => v.lang.startsWith('ko') && (
-            v.name.toLowerCase().includes('yuna') || v.name.toLowerCase().includes('sora') ||
-            v.name.toLowerCase().includes('hyerim') || v.name.toLowerCase().includes('heami')
-        )) || voices.find(v => v.lang.startsWith('ko'));
-        if (koVoice) utter.voice = koVoice;
-        synth.speak(utter);
-    };
-    // iOS에서 첫 호출 시 voices가 비어있는 경우 onvoiceschanged 후 재시도
-    if (synth.getVoices().length === 0 && synth.onvoiceschanged !== undefined) {
-        synth.onvoiceschanged = () => { synth.onvoiceschanged = null; trySpeak(); };
-    } else {
-        trySpeak();
-    }
-};
 
 const playCardSound = (item, onEnd) => {
     if (!item) return;
@@ -137,6 +113,7 @@ const buildWorksheetQuiz = (item) => {
         questions.push({
             id: `q_reverse_${i}`,
             type: 'choice',
+            choiceType: 'hanja',
             prompt: `"${w.meaning}"을 뜻하는 한자어는?`,
             choices: shuffle([w.word, ...revDistractors]),
             answer: w.word,
@@ -202,18 +179,54 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
     return (
         <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-[#F4F7F8] flex items-center justify-center text-xs-res font-bold text-[#AEB7C5] border border-[#E9EDF2] uppercase tracking-widest">Q{idx + 1}</span>
-                <p className="font-extrabold text-[#3C3C3C] text-h3 tracking-tight break-keep leading-standard">{q.prompt}</p>
+                <span className="w-8 h-8 rounded-xl bg-[#F4F7F8] flex items-center justify-center text-xs-res font-normal text-[#AEB7C5] border border-[#E9EDF2] uppercase tracking-widest shrink-0">Q{idx + 1}</span>
+                <p className="font-normal text-[#3C3C3C] text-h4 tracking-tight break-keep leading-tight flex-1">
+                    {(q.id === 'q_syn' || q.id === 'q_ant') && q.prompt.match(/^([^\(]+)\((.+?)\)(.*)$/) ? (
+                        (() => {
+                            const match = q.prompt.match(/^([^\(]+)\((.+?)\)(.*)$/);
+                            return (
+                                <>
+                                    <span className="hanja-char text-[#4F56D9] text-2xl align-middle mr-1">{match[1]}</span>
+                                    <span className="text-sm text-[#7882A0] align-middle mr-1">({match[2]})</span>
+                                    <span className="align-middle">{match[3]}</span>
+                                </>
+                            );
+                        })()
+                    ) : (
+                        q.prompt
+                    )}
+                </p>
             </div>
-            <div className={`grade-test-choice-grid ${twoCol ? '' : 'grade-test-choice-grid--single'}`}>
+            <div className="quiz-choice-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
                 {q.choices.map((c, i) => {
                     const isWrong = wrongChoices.includes(c);
                     const isRight = isCorrect && c === q.answer;
-                    const cls = `quiz-choice-btn ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
+                    const cls = `quiz-choice-btn ${q.choiceType === 'hanja' ? 'quiz-choice-btn--hanja' : ''} ${isRight ? 'quiz-choice-btn--correct' : isWrong ? 'quiz-choice-btn--wrong' : ''}`;
+
+                    let content = <span className="break-keep">{c}</span>;
+                    let customStyle = {};
+
+                    if (typeof c === 'string' && (q.id === 'q_syn' || q.id === 'q_ant')) {
+                        const match = c.match(/^([^\(]+)\((.+)\)$/);
+                        if (match) {
+                            content = (
+                                <div className="flex flex-col items-center justify-center w-full gap-1.5 py-2">
+                                    <span className={`hanja-char text-[2rem] leading-none ${isRight ? 'text-[#4F56D9]' : isWrong ? 'text-[#FF8D72]' : 'text-[#3C3C3C]'}`}>{match[1]}</span>
+                                    <span className={`text-[0.9rem] font-normal tracking-tight ${isRight ? 'text-[#7C83FF]' : isWrong ? 'text-[#FFA88D]' : 'text-[#7882A0]'}`}>{match[2]}</span>
+                                </div>
+                            );
+                        }
+                    } else if (typeof c === 'string' && c.length >= 6) {
+                        customStyle = { fontSize: '1.25rem', justifyContent: 'center', textAlign: 'center' };
+                    } else if (typeof c === 'string' && c.length >= 4) {
+                        customStyle = { fontSize: '1.5rem', justifyContent: 'center', textAlign: 'center' };
+                    } else {
+                        customStyle = { justifyContent: 'center', textAlign: 'center' };
+                    }
 
                     return (
-                        <button key={i} className={cls} onClick={() => handleSelect(c)}>
-                            <span className="break-keep">{c}</span>
+                        <button key={i} className={cls} style={customStyle} onClick={() => handleSelect(c)}>
+                            {content}
                         </button>
                     );
                 })}
@@ -223,7 +236,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
 };
 
 // ─── 풀 학습지 화면 ──────────────────────────────────────────────────────
-const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, isAlreadyCompleted = false, onStudySheetComplete, onQuizXp, selectedCharacter, getRewardPreview }) => {
+const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, onHanjaAcquired, isSequence, onNext, isLast, isAlreadyCompleted = false, onStudySheetComplete, onQuizXp, selectedCharacter, getRewardPreview, characterAvatar }) => {
     const questions = useMemo(() => buildWorksheetQuiz(item), [item]);
     const [answers, setAnswers] = useState({});
     const refWords   = useRef(null);
@@ -253,6 +266,11 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [isSpeaking, setIsSpeaking] = useState(false);
     const completionAwardedRef = useRef(false);
+
+    useEffect(() => {
+        setIsSpeaking(true);
+        playCardSound(item, () => setIsSpeaking(false));
+    }, [item.id]);
     const completionLabel = isSequence ? (isLast ? '전체 학습 완료하기' : '다음 한자로 이동') : '학습지 완료하기';
 
     const handleWritingComplete = useCallback((hanjaId, score) => {
@@ -329,6 +347,13 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </div>
                     <div className="w-11" />
                 </div>
+                <QuizProgressBar
+                    current={Object.keys(answers).length}
+                    total={questions.length}
+                    completing={Object.keys(answers).length >= questions.length && questions.length > 0}
+                    avatar={characterAvatar}
+                    charType={selectedCharacter}
+                />
             </div>
 
 
@@ -340,8 +365,8 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <div className="flex flex-col items-center gap-1">
                         <div className="hanja-char text-[#3C3C3C] leading-tight drop-shadow-sm text-display">{item.hanja}</div>
                         <div className="flex items-baseline gap-4 mt-2">
-                            <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.meaning}</span>
-                            <span className="font-black text-[#7C83FF] text-h2 tracking-tighter">{item.sound}</span>
+                            <span className="font-normal text-[#7C83FF] text-h2 tracking-tighter">{item.meaning}</span>
+                            <span className="font-normal text-[#7C83FF] text-h2 tracking-tighter">{item.sound}</span>
                         </div>
                         <button
                             onClick={() => {
@@ -358,7 +383,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </div>
                     {item.etymology_short && (
                         <div className="mt-6 pt-6 border-t border-[#E9EDF2]">
-                            <p className="font-extrabold text-[#3C3C3C] leading-relaxed tracking-tight break-keep text-body">{item.etymology_short}</p>
+                            <p className="font-normal text-[#3C3C3C] leading-relaxed tracking-tight break-keep text-body">{item.etymology_short}</p>
                         </div>
                     )}
                 </div>
@@ -388,11 +413,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {regularWords.map((w, i) => (
                                     <div key={i} className="flashcard-word-item">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="hanja-char font-extrabold text-body-lg break-keep text-[#34383F]">{w.word}</span>
-                                            <span className="text-sm-res break-keep text-[#9AA4B5]">({w.reading})</span>
+                                        <div className="flashcard-word-item__hanja">
+                                            <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{w.word}</span>
+                                            <span className="text-xs text-[#9AA4B5] whitespace-nowrap ml-2">{w.reading}</span>
                                         </div>
-                                        <span className="text-body break-keep mt-1 text-[#5B677A]">{w.meaning}</span>
+                                        <div className="flashcard-word-item__divider" />
+                                        <div className="flashcard-word-item__meaning">
+                                            <span className="text-body break-keep text-[#5B677A]">{w.meaning}</span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -425,11 +453,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {relatedIdioms.map((idiom, i) => (
                                     <div key={i} className="flashcard-word-item">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="hanja-char font-extrabold text-body-lg break-keep text-[#34383F]">{idiom.hanja}</span>
-                                            <span className="text-sm-res break-keep text-[#9AA4B5]">({idiom.reading})</span>
+                                        <div className="flashcard-word-item__hanja flashcard-word-item__hanja--col">
+                                            <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{idiom.hanja}</span>
+                                            <span className="text-xs text-[#9AA4B5]">{idiom.reading}</span>
                                         </div>
-                                        <span className="text-body break-keep mt-1 text-[#5B677A]">{idiom.meaning}</span>
+                                        <div className="flashcard-word-item__divider" />
+                                        <div className="flashcard-word-item__meaning">
+                                            <span className="text-body break-keep text-[#5B677A]">{idiom.meaning}</span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -463,14 +494,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <div className="flex flex-col gap-5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {item.syn && item.syn.length > 0 && (
                                     <div className="flex flex-col gap-3">
-                                        <span className="font-bold text-sm px-1 text-[#7C83FF]">유사어 — 비슷한 뜻</span>
+                                        <span className="font-normal text-sm px-1 text-[#7C83FF]">유사어 — 비슷한 뜻</span>
                                         <div className="flex flex-wrap gap-3">
                                             {item.syn.map(h => {
                                                 const d = HANJA_MAP[h];
                                                 return d ? (
                                                     <div key={h} className="syn-chip">
-                                                        <span className="hanja-char font-black text-h3 text-[#7C83FF]">{h}</span>
-                                                        <span className="text-sm font-bold text-[#9AA4B5]">{d.meaning} {d.sound}</span>
+                                                        <span className="hanja-char font-normal text-h3 text-[#7C83FF]">{h}</span>
+                                                        <span className="text-sm font-normal text-[#9AA4B5]">{d.meaning} {d.sound}</span>
                                                     </div>
                                                 ) : null;
                                             })}
@@ -480,14 +511,14 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
                                 {item.ant && item.ant.length > 0 && (
                                     <div className="flex flex-col gap-3">
-                                        <span className="font-bold text-sm px-1 text-[#FF8D72]">반대어 — 반대 뜻</span>
+                                        <span className="font-normal text-sm px-1 text-[#FF8D72]">반대어 — 반대 뜻</span>
                                         <div className="flex flex-wrap gap-3">
                                             {item.ant.map(h => {
                                                 const d = HANJA_MAP[h];
                                                 return d ? (
                                                     <div key={h} className="ant-chip">
-                                                        <span className="hanja-char font-black text-h3 text-[#FF8D72]">{h}</span>
-                                                        <span className="text-sm font-bold text-[#9AA4B5]">{d.meaning} {d.sound}</span>
+                                                        <span className="hanja-char font-normal text-h3 text-[#FF8D72]">{h}</span>
+                                                        <span className="text-sm font-normal text-[#9AA4B5]">{d.meaning} {d.sound}</span>
                                                     </div>
                                                 ) : null;
                                             })}
@@ -521,7 +552,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </button>
 
                     {isQuizOpen && (
-                        <div className="flex flex-col gap-10 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                             {questions.map((q, idx) => (
                                 <div key={q.id} className="minimal-card-studio p-5 bg-white border border-[#E9EDF2] shadow-xl !rounded-[3rem]">
                                     <QuizItem
@@ -555,15 +586,17 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
                             <div className="pt-4 pb-8 px-6 flex flex-col items-center gap-2 w-full relative">
                                 {/* 메인 비주얼 */}
-                                <img 
-                                    src={getCharacterImage(selectedCharacter, 'success')} 
-                                    alt="celebration" 
-                                    className="w-52 h-52 object-contain drop-shadow-xl mt-4" 
+                                <div className="activity-result-glow" />
+                                <img
+                                    src={getCharacterImage(selectedCharacter, 'success')}
+                                    alt="celebration"
+                                    className="activity-result-char img-shadow-lg"
+                                    style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }}
                                 />
 
                                 {/* 텍스트 정보 */}
                                 <div className="text-center flex flex-col gap-2">
-                                    <h1 className="text-h1 font-black text-[#3C3C3C] tracking-tighter break-keep">
+                                    <h1 className="text-h1 font-medium text-[#3C3C3C] tracking-tighter break-keep">
                                         모든 한자 학습 완료!
                                     </h1>
                                     
@@ -607,9 +640,9 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
 
     if (isLocked) {
         return (
-            <div className="minimal-card-studio !rounded-3xl relative w-full flex flex-col items-center justify-center p-8 bg-white/40 border-[#E9EDF2] !min-h-[200px] opacity-40 grayscale">
+            <div className="hanja-grid-card hanja-grid-card--locked">
                 <span className="text-h1-res opacity-20 mb-3">🔒</span>
-                <span className="hanja-char text-[#5D544F] font-extrabold text-h3-res tracking-tighter uppercase">{item.hanja}</span>
+                <span className="hanja-char text-[#5D544F] font-normal text-h3-res tracking-tighter uppercase">{item.hanja}</span>
                 <div className="absolute bottom-0 left-0 right-0 h-1.5 opacity-30" style={{ backgroundColor: barColor }} />
             </div>
         );
@@ -618,17 +651,13 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
     return (
         <button
             onClick={onClick}
-            className="minimal-card-studio !rounded-3xl group relative w-full flex flex-col items-center justify-center p-5 bg-white border-[#E9EDF2] hover:border-[#7C83FF] hover:shadow-xl hover:shadow-[#C3C6FF]/40 active:scale-95 transition-all duration-300 !min-h-[200px]"
+            className={`hanja-grid-card group ${isCompleted ? 'hanja-grid-card--completed' : ''}`}
         >
-            {isCompleted && (
-                <div className="absolute top-3 right-3 z-30 w-10 h-10 rounded-full bg-[#2ED6C5] flex items-center justify-center text-xl font-black text-white shadow-lg shadow-[#2ED6C5]/25 border-[3px] border-white">
-                    ✓
-                </div>
-            )}
+            {isCompleted && <div className="hanja-grid-card__check">✓</div>}
             <div className="w-24 h-24 mb-3 flex items-center justify-center relative z-10 group-hover:scale-110 transition-transform duration-500">
-                <div 
-                  className="absolute inset-0 rounded-[2.5rem] opacity-5 group-hover:opacity-10 transition-opacity"
-                  style={{ backgroundColor: barColor }}
+                <div
+                    className="absolute inset-0 rounded-[2.5rem] opacity-5 group-hover:opacity-10 transition-opacity"
+                    style={{ backgroundColor: barColor }}
                 />
                 <img
                     src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
@@ -641,7 +670,7 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
                 />
             </div>
             <div className="flex flex-col items-center relative z-10">
-                <span className="hanja-char text-h2-res font-extrabold text-[#5D544F] tracking-tighter uppercase">{item.hanja}</span>
+                <span className="hanja-char text-h2-res font-normal text-[#5D544F] tracking-tighter uppercase">{item.hanja}</span>
             </div>
         </button>
     );
@@ -659,11 +688,12 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     const [showAllDoneModal, setShowAllDoneModal] = useState(false);
     const [completedStudyIds, setCompletedStudyIds] = useState(() => loadCompletedStudyIds(currentDay));
     const [totalQuizXp, setTotalQuizXp] = useState(0);
-    const allDoneClearMsg = useMemo(() => pickClearMessage(), [showAllDoneModal]);
+    const [allDoneClearMsg] = useState(() => pickClearMessage());
     const stageClearFiredRef = useRef(false);
     
     // 백업 스타일 싱글 카드 모드용 상태
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [completing, setCompleting] = useState(false);
 
     const handleExitConfirm = () => {
         setShowExitModal(false);
@@ -730,11 +760,15 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     }, [contentPool, currentItems, onStageClear, onStudySheetComplete]);
 
     const handleNext = () => {
+        if (completing) return;
         if (currentIndex < currentItems.length - 1) {
             setCurrentIndex(prev => prev + 1);
         } else {
-            if (onStageClear) onStageClear();
-            onBack();
+            setCompleting(true);
+            setTimeout(() => {
+                if (onStageClear) onStageClear();
+                onBack();
+            }, 750);
         }
     };
 
@@ -754,6 +788,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 onQuizXp={(xp) => setTotalQuizXp(prev => prev + xp)}
                 selectedCharacter={selectedCharacter}
                 getRewardPreview={getRewardPreview}
+                characterAvatar={characterAvatar}
             />
         )}
             {/* 헤더 */}
@@ -779,18 +814,13 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                 </div>
                 {/* 진행 바 */}
                 {(studyItem || (hanjaFilter && hanjaFilter.length > 0)) && (
-                    <div className="w-full h-[10px] bg-[#F4F7F8] rounded-full mt-2 relative px-1 mx-auto max-w-[90%]">
-                        <div
-                            className="h-full transition-all duration-700 rounded-full bg-[#7C83FF] relative"
-                            style={{ width: `${(hanjaFilter && hanjaFilter.length > 0) ? ((currentIndex + 1) / currentItems.length) * 100 : 100}%` }}
-                        >
-                            {characterAvatar && (
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-9 h-9 bg-white rounded-full shadow-xl border-2 border-[#7C83FF] flex items-center justify-center overflow-hidden z-10 transition-all duration-700">
-                                    <img src={characterAvatar} className="w-7 h-7 object-contain" alt="progress-pawn" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    <QuizProgressBar
+                        current={hanjaFilter && hanjaFilter.length > 0 ? currentIndex : currentItems.length}
+                        total={currentItems.length}
+                        completing={completing}
+                        avatar={characterAvatar}
+                        charType={selectedCharacter}
+/>
                 )}
             </div>
 
@@ -817,6 +847,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             onQuizXp={(xp) => setTotalQuizXp(prev => prev + xp)}
                             selectedCharacter={selectedCharacter}
                             getRewardPreview={getRewardPreview}
+                            characterAvatar={characterAvatar}
                         />
                     </div>
                 ) : (
@@ -838,15 +869,15 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
             </div>
             {showExitModal && (
                 <div className="modal-overlay">
-                    <div className="quiz-result-card">
+                    <div className="exit-confirm-card">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
-                            className="quiz-char-img"
                             className="img-shadow-sm"
+                            style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'keep_going')})` }}
                         />
-                        <div className="quiz-result-content">
-                            <h2 className="quiz-result-title">
+                        <div className="exit-confirm-content">
+                            <h2 className="exit-confirm-title">
                                 정말 학습을 중단할까요?
                             </h2>
                             <p className="body-muted break-keep">
@@ -859,7 +890,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                             </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                className="back-quiz-button"
                             >
                                 그만하고 나가기
                             </button>
@@ -876,6 +907,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
                                 src={getCharacterImage(selectedCharacter, 'success')}
                                 alt="clear"
                                 className="w-44 h-44 object-contain drop-shadow-xl"
+                                style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }}
                             />
                             <div className="text-center flex flex-col gap-1">
                                 <span className="result-subtitle">모든 한자를 완료했어요!</span>

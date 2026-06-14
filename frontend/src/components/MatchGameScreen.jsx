@@ -3,7 +3,7 @@ import { pickClearMessage } from '../constants/messages.js';
 import HANJA_DATA_RAW from '../hanja_unified.json';
 import { getSRSWeightedPool } from '../utils/learningPool.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
-import { getRankDetails, getCharacterImage } from '../utils/rankUtils.js';
+import { getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
 import { useUnlockedHanja } from '../hooks/useUnlockedHanja.js';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
@@ -82,22 +82,30 @@ let globalStagePoolIndex = 0;
 // ── 카드 컴포넌트 ─────────────────────────────────────────────────────────────
 const getCardTextClass = (type, totalCards) => {
     if (type === 'hanja') {
-        if (totalCards <= 4)  return 'text-h1-res font-extrabold text-slate-700';
-        if (totalCards <= 8)  return 'text-h2-res font-extrabold text-slate-700';
-        return                       'text-h3-res font-extrabold text-slate-700';
+        if (totalCards <= 4)  return 'text-h1-res font-normal text-slate-700';
+        if (totalCards <= 8)  return 'text-h2-res font-normal text-slate-700';
+        return                       'text-h3-res font-normal text-slate-700';
     }
     if (type === 'word') {
-        if (totalCards <= 4)  return 'text-h2-res font-extrabold text-[#4A51D4]';
-        if (totalCards <= 8)  return 'text-h3-res font-extrabold text-[#4A51D4]';
-        return                       'text-body-lg-res font-extrabold text-[#4A51D4]';
+        if (totalCards <= 4)  return 'text-h2-res font-normal text-[#4A51D4]';
+        if (totalCards <= 8)  return 'text-h3-res font-normal text-[#4A51D4]';
+        return                       'text-body-lg-res font-normal text-[#4A51D4]';
     }
     // meaning
-    if (totalCards <= 4)  return 'text-h3-res font-bold text-[#5B677A]';
-    if (totalCards <= 8)  return 'text-body-lg-res font-bold text-[#5B677A]';
-    return                       'text-body-res font-bold text-[#5B677A]';
+    if (totalCards <= 4)  return 'text-h3-res font-normal text-[#5B677A]';
+    if (totalCards <= 8)  return 'text-body-lg-res font-normal text-[#5B677A]';
+    return                       'text-body-res font-normal text-[#5B677A]';
+}
+
+const getMeaningFontSize = (text = '', totalCards) => {
+    if (totalCards <= 8) return undefined;
+    const len = text.length;
+    if (len > 18) return 'clamp(0.58rem, 1.6vw, 0.72rem)';
+    if (len > 12) return 'clamp(0.65rem, 1.8vw, 0.8rem)';
+    return undefined;
 };
 
-const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
+const CardItem = memo(({ card, onClick, totalCards, backChar, backSrc }) => {
     const isFlipped = card.isFlipped || card.isMatched;
 
     return (
@@ -109,9 +117,10 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
             {/* 앞면 — 캐릭터 이미지 */}
             <div className={`card-face-front absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] bg-white border-2 border-[#E9EDF2] shadow-md flex items-center justify-center overflow-hidden ${isFlipped ? 'is-flipped' : ''}`}>
                 <img
-                    src={cardBackImg || '/assets/images/characters/garae/rank_2.webp'}
+                    src={backSrc}
                     alt="?"
-                    className="w-[65%] h-[65%] object-contain"
+                    className="w-[85%] h-[85%] object-contain"
+                    style={{ transform: `translateY(${getCharacterTranslateY(backChar)}) scale(${getCharacterScale(backChar, 'rank5')})` }}
                     onError={(e) => { e.target.style.opacity = '0'; }}
                 />
             </div>
@@ -120,10 +129,13 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
             <div className={`card-face-back absolute inset-0 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center p-3 shadow-2xl ${card.isMatched ? 'bg-white border-2 border-[#FF9B73]' : 'bg-white border-2 border-[#7C83FF]'} ${isFlipped ? 'is-flipped' : ''}`}>
                 {card.isMatched && (
                     <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#FF9B73] flex items-center justify-center shadow-lg">
-                        <span className="text-white text-xs-res font-extrabold leading-none">✓</span>
+                        <span className="text-white text-xs-res font-normal leading-none">✓</span>
                     </div>
                 )}
-                <span className={`${getCardTextClass(card.type, totalCards)} text-center leading-tight tracking-tight w-full break-keep px-1 ${card.isMatched ? '!text-[#FF9B73]' : ''}`}>
+                <span
+                    className={`${getCardTextClass(card.type, totalCards)} text-center leading-[1.15] tracking-tight w-full break-keep px-1 ${card.isMatched ? '!text-[#FF9B73]' : ''}`}
+                    style={card.type === 'meaning' ? { fontSize: getMeaningFontSize(card.content, totalCards) } : undefined}
+                >
                     {card.content}
                 </span>
             </div>
@@ -131,15 +143,12 @@ const CardItem = memo(({ card, onClick, totalCards, cardBackImg }) => {
     );
 });
 
+const CARD_BACK_CHARS = ['muzi', 'chapssal', 'jeolmi', 'garae'];
+
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false }) => {
-    // 16단계 캐릭터 로테이션 이미지 생성
-    const cardBackSequence = useMemo(() => [
-        '/assets/images/characters/muzi/rank_5.webp',
-        '/assets/images/characters/chapssal/rank_5.webp',
-        '/assets/images/characters/jeolmi/rank_5.webp',
-        '/assets/images/characters/garae/rank_5.webp',
-    ], []);
+    const [cardBackChar] = useState(() => CARD_BACK_CHARS[Math.floor(Math.random() * CARD_BACK_CHARS.length)]);
+    const cardBackSrc = `/assets/images/characters/${cardBackChar}/rank_5.webp`;
 
     // ── 선택 화면 상태 ──────────────────────────────────────────────────────
     const [viewMode, setViewMode] = useState('grade'); // 'grade' | 'topic'
@@ -161,10 +170,11 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
     const [targetMatches, setTargetMatches] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
     const [gameState, setGameState] = useState('idle');
-    const resultClearMsg = useMemo(() => pickClearMessage(), [gameState]); // 'idle'|'playing'|'clear'|'over'|'allClear'
+    const [resultClearMsg] = useState(() => pickClearMessage()); // 'idle'|'playing'|'clear'|'over'|'allClear'
     const clearCombo = 0; // Legacy display value; combo scoring was removed.
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [showExitModal, setShowExitModal] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
 
     const handleExitConfirm = () => {
         setShowExitModal(false);
@@ -330,7 +340,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
     // ── 타이머 ──────────────────────────────────────────────────────────────
     useEffect(() => {
-        if (gameState !== 'playing') return;
+        if (gameState !== 'playing' || isPaused) return;
         const timer = setInterval(() => {
             setTimeLeft(prev => {
                 if (roundResolvedRef.current) return prev;
@@ -339,7 +349,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
             });
         }, 1000);
         return () => clearInterval(timer);
-    }, [gameState, currentRound]);
+    }, [gameState, currentRound, isPaused]);
 
     // ── 카드 클릭 ───────────────────────────────────────────────────────────
     const handleCardClick = useCallback((clickedCard) => {
@@ -538,12 +548,12 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
         return (
             <div className="fixed inset-0 flex flex-col items-center justify-center p-6 z-[100] backdrop-blur-md" style={{ background: 'rgba(255,245,200,0.35)' }}>
                 <div className="premium-card-base p-12 flex flex-col items-center gap-8 max-w-md w-full bg-white border-[#E9EDF2] shadow-2xl !rounded-2xl animate-in zoom-in duration-500 relative overflow-hidden">
-                    <img src={getCharacterImage(selectedCharacter, 'success')} alt="great" className="w-28 h-28 object-contain animate-bounce drop-shadow-xl relative z-10" />
+                    <img src={getCharacterImage(selectedCharacter, 'success')} alt="great" className="w-28 h-28 object-contain animate-bounce drop-shadow-xl relative z-10" style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }} />
                     <div className="flex flex-col items-center gap-2 text-center relative z-10">
-                        <h2 className="text-h2-res font-extrabold tracking-tighter" style={{ color: '#FF9B73' }}>
+                        <h2 className="text-h2-res font-medium tracking-tighter" style={{ color: '#FF9B73' }}>
                             {viewMode === 'grade' ? GRADE_LABELS[selectedGrade] : viewMode === 'topic' ? selectedCategory : ''} 마스터!
                         </h2>
-                        <p className="text-[#AEB7C5] font-extrabold text-xs mt-2">총 {totalRounds}라운드 전부 클리어!</p>
+                        <p className="text-[#AEB7C5] font-normal text-xs mt-2">총 {totalRounds}라운드 전부 클리어!</p>
                     </div>
                     <CtaButton
                         theme="indigo"
@@ -585,8 +595,20 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                             <h2 className="quiz-screen-title">메모리 게임</h2>
                         <p className="screen-subtitle">같은 한자 카드 쌍을 기억해서 맞춰보세요</p>
                         </div>
-                        <div className="quiz-header-right">
+                        <div className="quiz-header-right flex items-center gap-2">
                             <span className="quiz-counter-text">{currentRound + 1}/{totalRounds}</span>
+                            {gameState === 'playing' && (
+                                <button
+                                    onClick={() => setIsPaused(true)}
+                                    className="hp-nav-button hp-nav-button--compact"
+                                    style={{ width: '2rem', height: '2rem', minWidth: '2rem' }}
+                                >
+                                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-slate-400">
+                                        <rect x="5" y="4" width="4" height="16" rx="1.5" />
+                                        <rect x="15" y="4" width="4" height="16" rx="1.5" />
+                                    </svg>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -607,7 +629,8 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                         card={card}
                                         onClick={handleCardClick}
                                         totalCards={cards.length}
-                                        cardBackImg={cardBackSequence[currentRound % 16]}
+                                        backChar={cardBackChar}
+                                        backSrc={cardBackSrc}
                                     />
                                 ))}
                             </div>
@@ -627,24 +650,49 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     }}
                                 />
                             </div>
-                            <span className={`font-black text-[13px] min-w-[32px] text-right ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-[#8F99AD]'}`}>{timeLeft}s</span>
+                            <span className={`font-normal text-[13px] min-w-[32px] text-right ${timeLeft <= 10 ? 'text-rose-500 animate-pulse' : 'text-[#8F99AD]'}`}>{timeLeft}s</span>
                         </div>
                     )}
 
                 </div>
 
+                {/* 일시정지 오버레이 */}
+                {isPaused && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center" style={{ background: 'rgba(248,250,249,0.90)', backdropFilter: 'blur(12px)' }}>
+                        <div className="bg-white border border-[#E9EDF2] rounded-3xl px-8 py-10 flex flex-col items-center gap-6 shadow-2xl max-w-xs w-full mx-4">
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-4xl mb-1">⏸</span>
+                                <h2 className="text-[#334155] text-2xl font-bold tracking-tight">일시정지</h2>
+                                <p className="text-[#8F99AD] text-sm text-center break-keep">준비되면 계속해요.</p>
+                            </div>
+                            <button
+                                onClick={() => setIsPaused(false)}
+                                className="w-full py-4 rounded-2xl text-white font-bold text-lg transition-all active:scale-95"
+                                style={{ background: 'linear-gradient(135deg, #7C83FF, #4F56D9)', boxShadow: '0 4px 20px rgba(124,131,255,0.35)' }}
+                            >
+                                ▶ 계속하기
+                            </button>
+                            <button
+                                onClick={() => { setIsPaused(false); setShowExitModal(true); }}
+                                className="text-[#AEB7C5] text-sm hover:text-[#5B677A] transition-colors"
+                            >
+                                나가기
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* 클리어 / 타임오버 모달 */}
                 {(gameState === 'clear' || gameState === 'over') && (
                     <div
-                        className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
-                        style={{ background: gameState === 'clear' ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
+                        className={`daily-session-result-backdrop${gameState !== 'clear' ? ' daily-session-result-backdrop--fail' : ''}`}
                     >
-                        <div className="w-full max-w-sm flex flex-col items-center result-card-container overflow-visible my-auto">
+                        <div className="activity-result-card">
                             {dailyMapNode}
                             <div className={`pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {!dailyMapNode && (
-                                    <div className="absolute top-[28px] w-[140px] h-[140px] rounded-full blur-xl z-0" className="char-bg-glow" />
+                                    <div className="activity-result-glow" />
                                 )}
 
                                 {/* 아이콘 */}
@@ -652,8 +700,8 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     <img
                                         src={gameState === 'clear' ? getCharacterImage(selectedCharacter, 'success') : getCharacterImage(selectedCharacter, 'failure')}
                                         alt=""
-                                        className="w-[176px] h-[176px] object-contain relative z-10 mt-4"
-                                        className="img-shadow-lg"
+                                        className="activity-result-char img-shadow-lg"
+                                        style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, gameState === 'clear' ? 'success' : 'failure')})` }}
                                         onError={(e) => {
                                             e.currentTarget.onerror = null;
                                             e.currentTarget.src = gameState === 'clear'
@@ -664,13 +712,13 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                 )}
 
                                 {/* 텍스트 */}
-                                <div className="text-center flex flex-col gap-2 relative z-10 -mt-5">
+                                <div className="result-text-area -mt-5">
                                     <span className="result-subtitle">{gameState === 'clear' ? '메모리 게임 완료!' : '아쉬운 결과네요...'}</span>
                                     <h1 className={`text-h2-res leading-snug result-title ${gameState === 'clear' ? 'result-title--clear' : 'result-title--fail'}`}>
                                         {gameState === 'clear' ? resultClearMsg : '시간이 다 됐어요!'}
                                     </h1>
                                     {gameState !== 'clear' && (
-                                        <p className="body-muted break-keep">
+                                        <p className="result-fail-desc">
                                             조금만 더 빨리 하면 성공할 수 있어요!
                                         </p>
                                     )}
@@ -682,33 +730,31 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     clearXp={clearXp}
                                     correctLabel="카드 매칭"
                                     detailText={`${matches}쌍 x ${xpPerMatch}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
-                                    missionXp={(gameState === 'clear' && clearCountRef.current >= 1 && !missionDoneAtStartRef.current) ? 20 : 0}
+                                    missionXp={(gameState === 'clear' && clearCountRef.current === 1 && !missionDoneAtStartRef.current) ? 20 : 0}
                                 />
 
                                 {/* 버튼 2단 */}
-                                <div className="w-full flex flex-col gap-3 relative z-10">
-                                    {(!hideRetry || gameState === 'clear') && (
-                                        <CtaButton
-                                            theme={gameState === 'clear' && contentPool == null ? 'coral' : 'indigo'}
-                                            onClick={gameState === 'clear' && contentPool == null ? goNextRound : retryRound}
-                                        >
-                                            <span className="quiz-cta-text">
-                                                {gameState === 'clear' && contentPool == null ? '다음 라운드' : '다시하기'}
-                                            </span>
-                                            {gameState === 'clear' && contentPool == null && (
-                                                <span className="quiz-cta-text ml-2">▶</span>
-                                            )}
-                                        </CtaButton>
-                                    )}
+                                <div className="result-btn-area">
+                                    <CtaButton
+                                        theme={gameState === 'clear' && contentPool == null ? 'coral' : 'indigo'}
+                                        onClick={gameState === 'clear' && contentPool == null ? goNextRound : retryRound}
+                                    >
+                                        <span className="quiz-cta-text">
+                                            {gameState === 'clear' && contentPool == null ? '다음 라운드' : '다시하기'}
+                                        </span>
+                                        {gameState === 'clear' && contentPool == null && (
+                                            <span className="quiz-cta-text ml-2">›</span>
+                                        )}
+                                    </CtaButton>
                                     {(dailyMapNode && gameState === 'clear') ? (
                                         <CtaButton theme="coral" onClick={onGameFinish || onBack}>
                                             <span className="quiz-cta-text">다음 단계로 이동</span>
-                                            <span className="quiz-cta-text ml-2">▶</span>
+                                            <span className="quiz-cta-text ml-2">›</span>
                                         </CtaButton>
                                     ) : (
                                         <button
                                             onClick={gameState === 'clear' ? onBack : (contentPool ? onBack : () => { setGameStarted(false); setGameState('idle'); })}
-                                            className="w-full py-5 rounded-2xl font-black text-[1.5rem] active:scale-95 transition-all shadow-sm back-quiz-button"
+                                            className="back-quiz-button"
                                         >
                                             돌아가기
                                         </button>
@@ -721,28 +767,28 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
                 {showExitModal && (
                     <div className="modal-overlay">
-                        <div className="quiz-result-card">
+                        <div className="exit-confirm-card">
                             <img
                                 src={getCharacterImage(selectedCharacter, 'keep_going')}
                                 alt="exit confirm"
-                                className="quiz-char-img"
                                 className="img-shadow-sm"
+                                style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'keep_going')})` }}
                             />
-                            <div className="quiz-result-content">
-                                <h2 className="quiz-result-title">
+                            <div className="exit-confirm-content">
+                                <h2 className="exit-confirm-title">
                                     {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
                                 </h2>
                                 <p className="body-muted break-keep">
                                     {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
                                 </p>
                             </div>
-                            <div className="w-full flex flex-col gap-3">
+                            <div className="result-btn-area">
                                 <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
                                     <span className="quiz-cta-text">계속 플레이하기</span>
                                 </CtaButton>
                                 <button
                                     onClick={handleExitConfirm}
-                                    className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                    className="back-quiz-button"
                                 >
                                     {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
                                 </button>
@@ -756,7 +802,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
     // ── 선택 화면 UI ────────────────────────────────────────────────────────
     return (
-        <div className="quiz-screen quiz-screen--plain" className="bg-[#F8FAF9]">
+        <div className="quiz-screen quiz-screen--plain bg-[#F8FAF9]">
             {/* 헤더 */}
             <div className="quiz-header-wrap quiz-header-wrap--sm">
                 <div className="quiz-header-card quiz-header-card--wide">
@@ -779,13 +825,13 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                     <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-2 shadow-inner">
                         <button
                             onClick={() => setViewMode('grade')}
-                            className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
+                            className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                         >
                             급수별
                         </button>
                         <button
                             onClick={() => setViewMode('topic')}
-                            className={`flex-1 px-8 py-3 rounded-full font-bold text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
+                            className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
                         >
                             주제별
                         </button>
@@ -801,7 +847,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     <button
                                         key={g}
                                         onClick={isLocked ? undefined : () => setSelectedGrade(g)}
-                                        className={`relative py-4 rounded-3xl font-bold text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
+                                        className={`relative py-4 rounded-3xl font-normal text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
                                             isLocked 
                                             ? 'bg-[#F8FAF9] border-[#E9EDF2] text-slate-200 cursor-not-allowed' 
                                             : isSelected
@@ -852,7 +898,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                     <div className="flex flex-col items-center mt-4 mb-5 relative">
                         <div className="absolute top-4 left-[60%] z-20">
                             <div className="quiz-bubble">
-                                <span className="text-body font-bold text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
+                                <span className="text-body font-normal text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
                                 <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
                             </div>
                         </div>
@@ -866,7 +912,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                     <div className="w-full max-w-sm px-4 pb-4 -mt-2.5">
                         <button
                             onClick={() => startGame()}
-                            className="w-full py-5 rounded-[2rem] font-bold text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
+                            className="w-full py-5 rounded-[2rem] font-normal text-h3 text-white transition-all active:scale-95 shadow-xl shadow-[#FF9B73]/20/50 flex items-center justify-center gap-3 active:translate-y-1 active:shadow-none"
                             style={{ 
                                 backgroundColor: '#FF9B73',
                                 borderBottom: '6px solid #E0735A'
@@ -879,28 +925,28 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
             </div>
             {showExitModal && (
                 <div className="modal-overlay">
-                    <div className="quiz-result-card">
+                    <div className="exit-confirm-card">
                         <img
                             src={getCharacterImage(selectedCharacter, 'keep_going')}
                             alt="exit confirm"
-                            className="quiz-char-img"
                             className="img-shadow-sm"
+                            style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'keep_going')})` }}
                         />
-                        <div className="quiz-result-content">
-                            <h2 className="quiz-result-title">
+                        <div className="exit-confirm-content">
+                            <h2 className="exit-confirm-title">
                                 {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
                             </p>
                         </div>
-                        <div className="w-full flex flex-col gap-3">
+                        <div className="result-btn-area">
                             <CtaButton theme="indigo" onClick={() => setShowExitModal(false)}>
                                 <span className="quiz-cta-text">계속 플레이하기</span>
                             </CtaButton>
                             <button
                                 onClick={handleExitConfirm}
-                                className="w-full py-3.5 rounded-2xl font-extrabold text-body-lg active:scale-95 transition-all shadow-sm back-quiz-button"
+                                className="back-quiz-button"
                             >
                                 {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
                             </button>
