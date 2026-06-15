@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { openCheckout } from '../utils/paymentUtils.js';
 import { useRevenueCat } from '../hooks/useRevenueCat.js';
+import { getPlatform } from '../hooks/useAuth.js';
 
 const PACKS = [
     {
@@ -34,29 +36,38 @@ const PACKS = [
     },
 ];
 
-export default function PremiumModal({ onClose, onPurchaseSuccess }) {
+export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }) {
     const [selected, setSelected] = useState('fullpack');
     const [errorMsg, setErrorMsg] = useState('');
     const { initialized, loading, purchasePackage, restorePurchases } = useRevenueCat();
+    const isNative = getPlatform() !== 'web';
 
     const handleBuy = async () => {
         setErrorMsg('');
-        if (!initialized) {
-            setErrorMsg('결제 시스템 준비 중입니다. 잠시 후 다시 시도해 주세요.');
-            return;
-        }
-        const result = await purchasePackage(selected);
-        if (result.success) {
-            localStorage.setItem('unlocked_pack', String(result.pack));
-            onPurchaseSuccess?.(result.pack);
-            onClose();
-        } else if (!result.cancelled) {
-            setErrorMsg('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+        if (isNative) {
+            // 네이티브(iOS/Android): RevenueCat 인앱결제
+            if (!initialized) {
+                setErrorMsg('결제 시스템 준비 중입니다. 잠시 후 다시 시도해 주세요.');
+                return;
+            }
+            const result = await purchasePackage(selected);
+            if (result.success) {
+                // localStorage 업데이트 후 App.jsx에 알림
+                localStorage.setItem('unlocked_pack', String(result.pack));
+                onPurchaseSuccess?.(result.pack);
+                onClose();
+            } else if (!result.cancelled) {
+                setErrorMsg('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
+            }
+        } else {
+            // 웹: 기존 Lemon Squeezy 결제
+            openCheckout(selected);
         }
     };
 
     const handleRestore = async () => {
         setErrorMsg('');
+        if (!isNative) return;
         const result = await restorePurchases();
         if (result.success && result.pack > 0) {
             localStorage.setItem('unlocked_pack', String(result.pack));
@@ -71,8 +82,7 @@ export default function PremiumModal({ onClose, onPurchaseSuccess }) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }}
+            className="fixed inset-0 z-50 flex items-end justify-center modal-dim"
             onClick={onClose}
         >
             <div
@@ -87,8 +97,37 @@ export default function PremiumModal({ onClose, onPurchaseSuccess }) {
 
                 {/* 헤더 */}
                 <div className="px-6 pt-3 pb-4 text-center">
-                    <h2 className="text-2xl font-extrabold text-gray-800 tracking-tight">단계 잠금 해제</h2>
-                    <p className="text-sm font-semibold text-slate-400 mt-1">일회성 구매 · 광고 없이 평생 이용 · 기기 복원 가능</p>
+                    <h2 className="text-2xl font-medium text-gray-800 tracking-tight">단계 잠금 해제</h2>
+                    <p className="text-sm font-normal text-slate-400 mt-1">일회성 구매 · 광고 없이 평생 이용 · 기기 복원 가능</p>
+                </div>
+
+                <div className="px-5 mb-4">
+                    <div
+                        className="rounded-2xl px-4 py-3.5 flex items-center gap-3"
+                        style={{
+                            background: 'linear-gradient(135deg, #F0FEFA 0%, #F7F5FF 100%)',
+                            border: '1px solid rgba(46, 214, 197, 0.28)',
+                            boxShadow: '0 10px 24px rgba(46,214,197,0.08)',
+                        }}
+                    >
+                        <div
+                            className="w-14 h-14 rounded-[1.25rem] bg-white flex flex-col items-center justify-center shrink-0 shadow-sm"
+                            style={{ border: '1px solid rgba(226,232,240,0.9)' }}
+                        >
+                            <div className="text-[19px] leading-none font-normal text-slate-700">學</div>
+                            <div className="mt-1 flex gap-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#2ED6C5]" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#7C83FF]" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#FF9B73]" />
+                            </div>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="text-[15px] font-normal text-slate-800">프리미엄 홈 위젯 포함</div>
+                            <div className="text-[12px] font-normal text-slate-400 mt-0.5 leading-snug break-keep">
+                                현재 탐험 중인 3개 한자 묶음을 홈 화면에서 바로 확인해요
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 팩 선택 */}
@@ -105,23 +144,26 @@ export default function PremiumModal({ onClose, onPurchaseSuccess }) {
                                     border: isSel ? `2px solid ${pack.color}` : '2px solid transparent',
                                 }}
                             >
+                                {/* 라디오 */}
                                 <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
                                     style={{ borderColor: isSel ? pack.color : '#CBD5E1' }}>
                                     {isSel && <div className="w-2.5 h-2.5 rounded-full" style={{ background: pack.color }} />}
                                 </div>
+                                {/* 텍스트 */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-extrabold text-[15px] text-slate-800">{pack.title}</span>
-                                        <span className="text-[12px] font-bold" style={{ color: pack.color }}>{pack.subtitle}</span>
+                                        <span className="font-normal text-[15px] text-slate-800">{pack.title}</span>
+                                        <span className="text-[12px] font-normal" style={{ color: pack.color }}>{pack.subtitle}</span>
                                         {pack.badge && (
-                                            <span className="text-[10px] font-black text-white px-2 py-0.5 rounded-full" style={{ background: pack.color }}>
+                                            <span className="text-[10px] font-normal text-white px-2 py-0.5 rounded-full" style={{ background: pack.color }}>
                                                 {pack.badge}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-[12px] text-slate-400 font-semibold mt-0.5">{pack.desc}</div>
+                                    <div className="text-[12px] text-slate-400 font-normal mt-0.5">{pack.desc}</div>
                                 </div>
-                                <div className="text-[15px] font-extrabold shrink-0" style={{ color: pack.color }}>
+                                {/* 가격 */}
+                                <div className="text-[15px] font-normal shrink-0" style={{ color: pack.color }}>
                                     {pack.price}
                                 </div>
                             </button>
@@ -131,7 +173,7 @@ export default function PremiumModal({ onClose, onPurchaseSuccess }) {
 
                 {/* 에러 메시지 */}
                 {errorMsg && (
-                    <p className="px-6 mb-3 text-center text-[13px] text-red-500 font-semibold">{errorMsg}</p>
+                    <p className="px-6 mb-3 text-center text-[13px] text-red-500 font-normal">{errorMsg}</p>
                 )}
 
                 {/* CTA */}
@@ -139,23 +181,33 @@ export default function PremiumModal({ onClose, onPurchaseSuccess }) {
                     <button
                         onClick={handleBuy}
                         disabled={loading}
-                        className="w-full py-4 rounded-full font-black text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
+                        className="w-full py-4 rounded-full font-normal text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
                         style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
                     >
                         {loading ? '처리 중...' : `${PACKS.find(p => p.id === selected)?.price} · 지금 구매하기`}
                     </button>
 
-                    <button
-                        onClick={handleRestore}
-                        disabled={loading}
-                        className="w-full py-3 mt-1 text-[13px] text-gray-400 font-medium disabled:opacity-60"
-                    >
-                        이미 구매했어요 → 구매 복원하기
-                    </button>
+                    {/* 네이티브: 구매 복원 / 웹: 로그인 복원 */}
+                    {isNative ? (
+                        <button
+                            onClick={handleRestore}
+                            disabled={loading}
+                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-normal disabled:opacity-60"
+                        >
+                            이미 구매했어요 → 구매 복원하기
+                        </button>
+                    ) : (
+                        <button
+                            onClick={onShowLogin}
+                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-normal"
+                        >
+                            이미 구매했어요 → 로그인으로 복원
+                        </button>
+                    )}
 
                     <button
                         onClick={onClose}
-                        className="w-full py-2 text-[13px] text-gray-300 font-medium"
+                        className="w-full py-2 text-[13px] text-gray-300 font-normal"
                     >
                         나중에 하기
                     </button>

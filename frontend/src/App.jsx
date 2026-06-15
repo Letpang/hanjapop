@@ -35,7 +35,7 @@ const GradeTest62Screen        = lazy(() => import('./components/GradeTest62Scre
 const GradeTest6Screen         = lazy(() => import('./components/GradeTest6Screen.jsx'));
 const IdiomScreen              = lazy(() => import('./components/IdiomScreen.jsx'));
 const GradeExamSelectScreen    = lazy(() => import('./components/GradeExamSelectScreen.jsx'));
-import { getLevel, getRankDetails, LEVEL_THRESHOLDS, levelToImageRank } from './utils/rankUtils.js';
+import { getLevel, getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY, LEVEL_THRESHOLDS, levelToImageRank } from './utils/rankUtils.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
@@ -44,16 +44,19 @@ import { useAuth } from './hooks/useAuth.js';
 import { PremiumProvider } from './context/PremiumContext.jsx';
 import { canAccessStage } from './utils/premiumAccess.js';
 import { useAdMob } from './hooks/useAdMob.js';
+import { buildPremiumWidgetPayload, savePremiumWidgetPayload } from './utils/premiumWidget.js';
 
 const LoginModal             = lazy(() => import('./components/LoginModal.jsx'));
 const PremiumModal           = lazy(() => import('./components/PremiumModal.jsx'));
 const GradeTestAlertModal    = lazy(() => import('./components/GradeTestAlertModal.jsx'));
 
 import { incrementTodaySessionCount } from './utils/sessionUtils.js';
-import { fetchUnlockedPack } from './lib/supabase.js';
+import { fetchUnlockedPack, signOut, resetUnlockedPack, activateTestPack } from './lib/supabase.js';
 
 const App = () => {
-    const { user, platform, signInWithApple, signInWithGoogle } = useAuth();
+    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao } = useAuth();
+    const userRef = useRef(user);
+    useEffect(() => { userRef.current = user; }, [user]);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const { showInterstitial } = useAdMob({ onAfterInterstitial: () => { if (!isPremium) setShowPremiumModal(true); } });
@@ -131,6 +134,7 @@ const App = () => {
 
     // Persistence
     useEffect(() => { localStorage.setItem(SK.USER_XP, userXp); }, [userXp]);
+
     useEffect(() => { localStorage.setItem(SK.DARK_MODE, isDarkMode); }, [isDarkMode]);
     useEffect(() => { if (selectedCharacter) localStorage.setItem(SK.SELECTED_CHARACTER, selectedCharacter); }, [selectedCharacter]);
     useEffect(() => { if (userNickname) localStorage.setItem(SK.USER_NICKNAME, userNickname); }, [userNickname]);
@@ -236,8 +240,26 @@ const App = () => {
 
     // 과거 스테이지 선택 플레이
     const [selectedPastStage, setSelectedPastStage] = useState(null);
+    const backToMain = useCallback(() => {
+        setCurrentScreen('main');
+        setSelectedPastStage(null);
+    }, []);
     const activeStage = selectedPastStage || currentDay;
     const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission(sessionDoneToday, activeStage);
+    useEffect(() => {
+        const nextDayData = DAILY_CURRICULUM[currentDay] || null;
+        savePremiumWidgetPayload(buildPremiumWidgetPayload({
+            isPremium,
+            currentDay,
+            currentDayData,
+            nextDayData,
+            doneCount,
+            missionTotal: missions?.length || 6,
+            allDone,
+        }));
+    }, [isPremium, currentDay, currentDayData, missions, doneCount, allDone]);
+    // 과거 단계 복습 시 DailySession에서만 미션을 미달성으로 표시 (메인 메뉴 퀘스트는 오늘 실제 데이터 유지)
+    const sessionMissions = selectedPastStage ? (missions || []).map(m => ({ ...m, done: false })) : missions;
     const pastStagePool = useMemo(() => {
         if (!selectedPastStage) return null;
         const dayData = DAILY_CURRICULUM[selectedPastStage - 1];
@@ -329,6 +351,7 @@ const App = () => {
     // 캐릭터 토스트 메시지
     const [charToast, setCharToast] = useState(null);
     const [showRankUpModal, setShowRankUpModal] = useState(false);
+    const [showSaveModal, setShowSaveModal] = useState(false);
     const missionToastShownRef = useRef(false);
     const dismissToast = useCallback(() => setCharToast(null), []);
 
@@ -343,7 +366,7 @@ const App = () => {
         if (newRank > oldRank) setShowRankUpModal(true);
     }, [userXp]);
 
-    // 진화 예고 토스트: 메인 화면 진입 시, 하루 1번, 진화 2레벨 전 구간에서
+    // 캐릭터 토스트: 메인 화면 진입 시 하루 1번, 진화 임박 구간이면 rank_soon 메시지, 아니면 일반 응원 메시지
     const RANK_SOON_KEY = 'rank_soon_last_shown';
     const isInRankSoonZone = (level) => [3, 4, 7, 8, 11, 12, 15, 16].includes(level);
     const nextRankAvatar = useMemo(() => {
@@ -355,6 +378,8 @@ const App = () => {
     // 메인화면 진입할 때마다 오답 5개 이상이고 개수가 늘어났을 때만 복습 토스트
     useEffect(() => {
         if (currentScreen !== 'main' || !selectedCharacter) return;
+        // DailySession이 실제로 보이는 중이면 스킵 (currentScreen이 'main'이더라도 DailySession이 렌더됨)
+        if (!sessionDoneToday && canAccessStage(unlockedPack, currentDay)) return;
         const hanjaWrongCount = Object.values(hanjaData).filter(m => (m.wrongCount || 0) > 0).length;
         const wordWrongCount = Object.values(wordData).filter(v => (v.wrongCount || 0) > 0).length;
         const currentWrongCount = hanjaWrongCount + wordWrongCount;
@@ -379,24 +404,22 @@ const App = () => {
                 baseDelay += 5500; // review_reminder 자동 닫힘(4s) 후 여유
             }
 
-            // 진화 예고: 진화 2레벨 전 구간이면 하루 1번 (review와 독립적으로 순차 표시)
+            // 캐릭터 토스트: 하루 1번, 항상 노출 (진화 임박이면 rank_soon 메시지, 아니면 일반 응원)
             const level = getLevel(userXp);
-            if (isInRankSoonZone(level)) {
-                const today = new Date().toDateString();
-                const lastShown = localStorage.getItem(RANK_SOON_KEY);
-                if (lastShown !== today) {
-                    timers.push(setTimeout(() => {
-                        setCharToast('rank_soon');
-                        localStorage.setItem(RANK_SOON_KEY, today);
-                    }, showedReview ? baseDelay : 1200));
-                }
+            const today = new Date().toDateString();
+            const lastShown = localStorage.getItem(RANK_SOON_KEY);
+            if (lastShown !== today) {
+                timers.push(setTimeout(() => {
+                    setCharToast('rank_soon');
+                    localStorage.setItem(RANK_SOON_KEY, today);
+                }, showedReview ? baseDelay : 1200));
             }
         } catch {
             // ignore
         }
 
         return () => timers.forEach(clearTimeout);
-    }, [currentScreen, hanjaData, wordData, selectedCharacter]);
+    }, [currentScreen, hanjaData, wordData, selectedCharacter, sessionDoneToday, unlockedPack, currentDay]);
 
     // 미션 전체 완료 시: 팡파레 토스트만 표시한다. +200 XP는 updateMissionProgress에서 1회 지급.
     useEffect(() => {
@@ -427,9 +450,12 @@ const App = () => {
                         currentDay={currentDay}
                         completedDay={completedDay}
                         onStartNextStage={() => {
-                            if (!selectedPastStage && !selectedGrade && !canAccessStage(unlockedPack, currentDay)) { 
-                                setShowPremiumModal(true); 
-                                return; 
+                            if (!selectedGrade) {
+                                const targetStage = selectedPastStage || (completedDay + 1);
+                                if (!canAccessStage(unlockedPack, targetStage)) {
+                                    setShowPremiumModal(true);
+                                    return;
+                                }
                             }
                             setCurrentScreen('flashcard');
                             setSessionDoneToday(false);
@@ -445,7 +471,7 @@ const App = () => {
                 );
             case 'flashcard':
                 return <FlashcardScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={backToMain}
                     isPremium={isPremium}
                     contentPool={effectivePool}
                     currentDay={currentDay}
@@ -475,7 +501,7 @@ const App = () => {
                 return <WritingScreen
                     onBack={() => {
                         setWriteTargetHanja(null);
-                        setCurrentScreen('main');
+                        backToMain();
                     }}
                     onWritingComplete={(id, score) => {
                         const writingXp = 10;
@@ -501,7 +527,7 @@ const App = () => {
                 />;
             case 'matchGame':
                 return <MatchGameScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={backToMain}
                     onHanjaAcquired={handleHanjaAcquired}
                     onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 20); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
                     onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
@@ -522,7 +548,7 @@ const App = () => {
                 />;
             case 'shootGame':
                 return <ShootGameScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={backToMain}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
                     onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
@@ -559,11 +585,11 @@ const App = () => {
                     return (
                         <div className="min-h-screen bg-[#F7FAF9] flex flex-col items-center justify-center gap-6 px-8">
                             <div className="text-6xl">🎉</div>
-                            <h2 className="font-extrabold text-2xl text-slate-800 tracking-tighter text-center">오답 한자가 없어요!</h2>
-                            <p className="text-[#AEB7C5] font-bold text-center text-sm break-keep">퀴즈를 틀린 한자나 단어가 생기면<br/>여기서 몬스터로 나타납니다</p>
+                            <h2 className="font-medium text-2xl text-slate-800 tracking-tighter text-center">오답 한자가 없어요!</h2>
+                            <p className="text-[#AEB7C5] font-normal text-center text-sm break-keep">퀴즈를 틀린 한자나 단어가 생기면<br/>여기서 몬스터로 나타납니다</p>
                             <button
                                 onClick={() => setCurrentScreen('main')}
-                                className="px-8 py-3 bg-emerald-500 text-white font-extrabold rounded-2xl border-b-4 border-emerald-700 active:translate-y-1 active:border-b-0 transition-all"
+                                className="px-8 py-3 bg-emerald-500 text-white font-normal rounded-2xl border-b-4 border-emerald-700 active:translate-y-1 active:border-b-0 transition-all"
                             >
                                 메인으로
                             </button>
@@ -589,13 +615,14 @@ const App = () => {
                     srsData={hanjaData}
                     wordData={wordData}
                     userLevel={currentLevel}
+                    userXp={userXp}
                     contentPool={reviewPool}
                     isPremium={isPremium}
                 />;
             }
             case 'sentenceQuiz':
                 return <SentenceQuizScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={backToMain}
                     onStageClear={(correct, total, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
                         handleHanjaAcquired(null, 20);
@@ -624,7 +651,7 @@ const App = () => {
                 />;
             case 'wordQuiz':
                 return <WordQuizScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={backToMain}
                     onStageClear={(correct, total, maxCombo, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
                         handleHanjaAcquired(null, 20);
@@ -682,10 +709,17 @@ const App = () => {
                     selectedCharacter={selectedCharacter}
                     onComplete={({ passed }) => { if (passed) handleHanjaAcquired(null, 600); }}
                 />;
-            case 'idiomQuiz':
+            case 'idiomQuiz': {
+                const activeHanja = HANJA_DATA.find(h => effectivePool?.main?.hanjaIds?.includes(h.id));
+                const idiomGrade = selectedGrade || activeHanja?.grade || localStorage.getItem(SK.UNLOCKED_GRADE) || '8급';
                 return <IdiomScreen
-                    onBack={() => setCurrentScreen('main')}
+                    onBack={backToMain}
                     contentPool={effectivePool}
+                    grade={idiomGrade}
+                    day={activeStage}
+                    userXp={userXp}
+                    selectedCharacter={selectedCharacter}
+                    getRewardPreview={getRewardPreview}
                     onHanjaAcquired={handleHanjaAcquired}
                     onComplete={() => {
                         handleHanjaAcquired(null, 25);
@@ -695,6 +729,7 @@ const App = () => {
                     selectedCharacter={selectedCharacter}
                     getRewardPreview={getRewardPreview}
                 />;
+            }
             case 'gradeExamSelect':
                 return <GradeExamSelectScreen
                     onBack={() => setCurrentScreen('main')}
@@ -726,6 +761,14 @@ const App = () => {
                     setSelectedCharacter={setSelectedCharacter}
                     restoreFromCloud={restoreFromCloud}
                     isRestoring={isRestoring}
+                    user={user}
+                    onLogin={() => setShowLoginModal(true)}
+                    onLogout={async () => {
+                        await signOut();
+                        setUnlockedPack(0);
+                        localStorage.setItem('unlocked_pack', '0');
+                        setCurrentScreen('main');
+                    }}
                 />;
             case 'mypage':
                 return <MyPageScreen
@@ -797,7 +840,7 @@ const App = () => {
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.7)' }}>
                         <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: '#fff' }}>
                             <div className="text-4xl mb-4">🆕</div>
-                            <h2 className="text-xl font-extrabold text-gray-800 mb-2">업데이트 필요</h2>
+                            <h2 className="text-xl font-medium text-gray-800 mb-2">업데이트 필요</h2>
                             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
                                 새 버전({versionInfo.latestVersion})이 출시됐어요.<br />
                                 계속하려면 앱을 업데이트해 주세요.
@@ -806,7 +849,7 @@ const App = () => {
                                 href={versionInfo.storeUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="block w-full py-4 rounded-full font-black text-white text-[17px]"
+                                className="block w-full py-4 rounded-full font-normal text-white text-[17px]"
                                 style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
                             >
                                 지금 업데이트
@@ -816,19 +859,6 @@ const App = () => {
                 )}
 
                 <div className="content-area relative z-10">
-                    {charToast && selectedCharacter && (
-                        <CharacterToast
-                            type={charToast}
-                            selectedCharacter={selectedCharacter}
-                            userXp={userXp}
-                            nextRankAvatar={nextRankAvatar}
-                            onDismiss={dismissToast}
-                            onAction={charToast === 'review_reminder' ? () => {
-                                setCharToast(null);
-                                setCurrentScreen('wrongVocabulary');
-                            } : undefined}
-                        />
-                    )}
                     {showRankUpModal && (
                         <Suspense fallback={null}>
                             <RankUpModal
@@ -839,7 +869,7 @@ const App = () => {
                         </Suspense>
                     )}
 
-                    <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+                    <Suspense fallback={<div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' }} />}>
                         {!onboardingDone
                         ? <OnboardingScreen onComplete={(grade, xp) => {
                             setOnboardingDone(true);
@@ -857,10 +887,14 @@ const App = () => {
                                   />
                                 : !sessionDoneToday && canAccessStage(unlockedPack, currentDay)
                                     ? <DailySessionScreen
-                                        onComplete={() => {
+                                        onComplete={({ skipLoginModal } = {}) => {
                                             setSessionDoneToday(true);
                                             addBonusXp(200);
-                                            setCurrentScreen('main');
+                                            if (userRef.current || skipLoginModal) {
+                                                setCurrentScreen('main');
+                                            } else {
+                                                setShowSaveModal(true);
+                                            }
                                         }}
                                         onNavigate={setCurrentScreen}
                                         onAdvanceDay={() => { advanceDay(); incrementTodaySessionCount(); }}
@@ -879,26 +913,153 @@ const App = () => {
                                         updateMissionProgress={updateMissionProgress}
                                         addBonusXp={addBonusXp}
                                         getRewardPreview={getRewardPreview}
-                                        missions={missions}
+                                        missions={sessionMissions}
                                         doneCount={doneCount}
                                       />
                                     : renderScreen()
                         )}
                     </Suspense>
                 </div>
+                {charToast && selectedCharacter && (
+                    <CharacterToast
+                        type={charToast}
+                        selectedCharacter={selectedCharacter}
+                        userXp={userXp}
+                        nextRankAvatar={nextRankAvatar}
+                        nearRankUp={isInRankSoonZone(getLevel(userXp))}
+                        onDismiss={dismissToast}
+                        onAction={charToast === 'review_reminder' ? () => {
+                            setCharToast(null);
+                            setCurrentScreen('wrongVocabulary');
+                        } : undefined}
+                    />
+                )}
+                {showSaveModal && !user && selectedCharacter && (
+                    <div
+                        className="fixed inset-0 z-[350] flex flex-col items-center justify-center px-6 animate-in fade-in duration-400 overflow-hidden"
+                        style={{ background: 'linear-gradient(180deg, #C8EDE6 0%, #DDF1EA 40%, #EEF8F5 100%)' }}
+                    >
+                        {/* 배경 장식 원 */}
+                        <div className="absolute top-[-60px] left-[-60px] w-52 h-52 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #2ED6C5, transparent)' }} />
+                        <div className="absolute top-[10%] right-[-40px] w-36 h-36 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, #0D9488, transparent)' }} />
+                        <div className="absolute bottom-[30%] left-[-30px] w-28 h-28 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #2ED6C5, transparent)' }} />
+
+                        {/* 캐릭터 */}
+                        <img
+                            src={getCharacterImage(selectedCharacter, 'success')}
+                            alt="save progress"
+                            className="w-32 h-32 object-contain drop-shadow-2xl mb-2 animate-in zoom-in duration-500"
+                            style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }}
+                        />
+
+                        {/* 텍스트 */}
+                        <div className="text-center mb-5 px-2">
+                            <h2 className="text-[1.6rem] font-medium text-slate-800 leading-tight mb-2">
+                                오늘 학습을 저장해두세요!
+                            </h2>
+                            <p className="text-[0.9rem] font-normal text-slate-600 leading-relaxed break-keep">
+                                로그인하면 스트릭, XP, 학습 기록이<br/>사라지지 않고 안전하게 보관돼요
+                            </p>
+                        </div>
+
+                        {/* 오늘 획득 카드 */}
+                        <div className="w-full max-w-xs mb-5 rounded-2xl px-5 py-4 flex justify-around"
+                            style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)', border: '1px solid rgba(46,214,197,0.25)' }}>
+                            <div className="flex flex-col items-center gap-0.5">
+                                <span className="text-[1.3rem] font-medium text-teal-600">+200</span>
+                                <span className="text-[0.7rem] font-normal text-slate-400">오늘 XP</span>
+                            </div>
+                            <div className="w-px bg-slate-200" />
+                            <div className="flex flex-col items-center gap-0.5">
+                                <span className="text-[1.3rem] font-medium text-teal-600">{streak?.count ?? 0}일</span>
+                                <span className="text-[0.7rem] font-normal text-slate-400">연속 학습</span>
+                            </div>
+                            <div className="w-px bg-slate-200" />
+                            <div className="flex flex-col items-center gap-0.5">
+                                <span className="text-[1.3rem] font-medium text-teal-600">{currentDay}일차</span>
+                                <span className="text-[0.7rem] font-normal text-slate-400">학습 진도</span>
+                            </div>
+                        </div>
+
+                        {/* 소셜 로그인 버튼 직접 노출 */}
+                        <div className="w-full max-w-xs flex flex-col gap-3">
+                            {(platform === 'ios' || platform === 'web') && (
+                                <button
+                                    onClick={async () => {
+                                        const result = await signInWithApple();
+                                        if (result.success) { setShowSaveModal(false); setCurrentScreen('main'); setTimeout(() => setCharToast('rank_soon'), 1200); }
+                                    }}
+                                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-normal text-white text-base active:scale-95 transition-all"
+                                    style={{ background: '#111', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                                    </svg>
+                                    Apple로 계속하기
+                                </button>
+                            )}
+                            {(platform === 'android' || platform === 'web') && (
+                                <button
+                                    onClick={async () => {
+                                        const result = await signInWithGoogle();
+                                        if (result.success) { setShowSaveModal(false); setCurrentScreen('main'); setTimeout(() => setCharToast('rank_soon'), 1200); }
+                                    }}
+                                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-normal text-slate-700 text-base active:scale-95 transition-all border"
+                                    style={{ background: '#fff', borderColor: 'rgba(0,0,0,0.12)', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                    Google로 계속하기
+                                </button>
+                            )}
+                            {/* 카카오 — 모든 플랫폼 (웹 OAuth 리디렉트) */}
+                            <button
+                                onClick={async () => {
+                                    const result = await signInWithKakao();
+                                    if (result.success) { setShowSaveModal(false); setCurrentScreen('main'); setTimeout(() => setCharToast('rank_soon'), 1200); }
+                                }}
+                                className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-normal text-[#191919] text-base active:scale-95 transition-all"
+                                style={{ background: '#FEE500', boxShadow: '0 4px 16px rgba(254,229,0,0.4)' }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="#191919">
+                                    <path d="M12 3C7.03 3 3 6.36 3 10.5c0 2.64 1.68 4.95 4.2 6.3L6.3 20.1c-.09.27.21.48.45.33L11.1 17.7c.29.03.59.05.9.05 4.97 0 9-3.36 9-7.5S16.97 3 12 3z"/>
+                                </svg>
+                                카카오로 계속하기
+                            </button>
+                            <button
+                                onClick={() => { setShowSaveModal(false); setCurrentScreen('main'); setTimeout(() => setCharToast('rank_soon'), 800); }}
+                                className="w-full py-3 rounded-2xl font-normal text-slate-400 text-[0.95rem] active:scale-95 transition-all"
+                            >
+                                나중에 할게요
+                            </button>
+                        </div>
+                    </div>
+                )}
                 <Suspense fallback={null}>
                     {showLoginModal && (
                         <LoginModal
                             platform={platform}
                             signInWithApple={signInWithApple}
                             signInWithGoogle={signInWithGoogle}
+                            signInWithKakao={signInWithKakao}
                             onClose={() => setShowLoginModal(false)}
                         />
                     )}
                     {showPremiumModal && (
                         <PremiumModal
                             onClose={() => setShowPremiumModal(false)}
-                            onShowLogin={() => { setShowPremiumModal(false); setShowLoginModal(true); }}
+                            onShowLogin={() => {
+                            setShowPremiumModal(false);
+                            if (user) {
+                                restoreFromCloud();
+                            } else {
+                                setShowLoginModal(true);
+                            }
+                        }}
                             avatarUrl={selectedCharacter ? getRankDetails(userXp, selectedCharacter).avatar : '/assets/images/characters/default_3d.webp'}
                             onPurchaseSuccess={(pack) => {
                                 setUnlockedPack(pack);

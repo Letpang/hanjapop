@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     GoogleAuth: {
       scopes: ['profile', 'email'],
       // Google Cloud Console > OAuth 2.0 > 웹 애플리케이션 클라이언트 ID
-      serverClientId: 'REPLACE_WITH_YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+      serverClientId: '1050279254864-1hgfqf17ve0sc2nlit7kojuace89mond.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
     },
     SplashScreen: {

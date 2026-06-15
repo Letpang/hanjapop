@@ -1,32 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Purchases } from '@revenuecat/purchases-capacitor';
-import { Capacitor } from '@capacitor/core';
-
-const RC_API_KEY_IOS     = 'appl_pNzDkEyCUTMxnvWJuQzrpYocFeN';
-const RC_API_KEY_ANDROID = 'goog_WZvGTzxNuyrupdLpaCxoIUZyqgF';
-
-export const RC_PRODUCT_IDS = {
-    pack1:    'com.soujinne.hanjaexplorer.pack1',
-    pack2:    'com.soujinne.hanjaexplorer.pack2',
-    fullpack: 'com.soujinne.hanjaexplorer.fullpack',
-};
-
-const RC_ENTITLEMENTS = { pack1: 'pack1', pack2: 'pack2', fullpack: 'fullpack' };
-
-export const entitlementsToPack = (active) => {
-    if (active[RC_ENTITLEMENTS.fullpack]) return 3;
-    if (active[RC_ENTITLEMENTS.pack2])    return 2;
-    if (active[RC_ENTITLEMENTS.pack1])    return 1;
-    return 0;
-};
+import { getPlatform } from './useAuth.js';
+import { RC_API_KEY_IOS, RC_API_KEY_ANDROID, RC_PRODUCT_IDS, entitlementsToPack } from '../utils/rcConfig.js';
 
 export const useRevenueCat = () => {
     const [initialized, setInitialized] = useState(false);
-    const [packages, setPackages] = useState({});
+    const [packages, setPackages] = useState({});   // { pack1: pkg, pack2: pkg, fullpack: pkg }
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const platform = Capacitor.getPlatform();
+        const platform = getPlatform();
         if (platform === 'web') return;
 
         (async () => {
@@ -37,6 +20,7 @@ export const useRevenueCat = () => {
                 const { current } = await Purchases.getOfferings();
                 if (!current) return;
 
+                // package identifier → pack ID 매핑
                 const pkgMap = {};
                 for (const pkg of current.availablePackages) {
                     const match = Object.entries(RC_PRODUCT_IDS).find(
@@ -52,9 +36,11 @@ export const useRevenueCat = () => {
         })();
     }, []);
 
+    // pack1 / pack2 / fullpack 구매
     const purchasePackage = useCallback(async (packId) => {
         const pkg = packages[packId];
         if (!pkg) return { success: false, error: 'package_not_found' };
+
         setLoading(true);
         try {
             const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
@@ -68,6 +54,7 @@ export const useRevenueCat = () => {
         }
     }, [packages]);
 
+    // 구매 복원 (기기 변경 / 재설치 시)
     const restorePurchases = useCallback(async () => {
         setLoading(true);
         try {

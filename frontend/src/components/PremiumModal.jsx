@@ -97,8 +97,46 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
 
                 {/* 헤더 */}
                 <div className="px-6 pt-3 pb-4 text-center">
-                    <h2 className="text-2xl font-extrabold text-gray-800 tracking-tight">단계 잠금 해제</h2>
-                    <p className="text-sm font-semibold text-slate-400 mt-1">일회성 구매 · 광고 없이 평생 이용 · 기기 복원 가능</p>
+                    <h2 className="text-2xl font-medium text-gray-800 tracking-tight">단계 잠금 해제</h2>
+                    <p className="text-sm font-normal text-slate-400 mt-1">일회성 구매 · 광고 없이 평생 이용 · 기기 복원 가능</p>
+                </div>
+
+                <div className="px-5 mb-5 relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#2ED6C5] via-[#7C83FF] to-[#FF9B73] opacity-25 blur-xl rounded-full scale-y-[0.8]" />
+                    <div
+                        className="rounded-2xl p-[2px] relative overflow-hidden"
+                        style={{ background: 'linear-gradient(135deg, #2ED6C5 0%, #7C83FF 50%, #FF9B73 100%)' }}
+                    >
+                        {/* Shimmer overlay on the gradient border */}
+                        <div className="absolute inset-0 bg-white/20" />
+                        
+                        <div className="relative rounded-[14px] px-4 py-3.5 flex items-center gap-3.5 h-full"
+                             style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
+                             
+                            {/* Icon Container */}
+                            <div className="w-14 h-14 rounded-[1rem] bg-gradient-to-br from-[#F5F7FA] to-[#E9EEF5] flex flex-col items-center justify-center shrink-0 shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),_0_2px_8px_rgba(124,131,255,0.15)] border border-white/60 relative overflow-hidden">
+                                <div className="absolute top-0 inset-x-0 h-1/2 bg-white/50" />
+                                <div className="text-[20px] leading-none font-medium text-[#7C83FF] z-10 drop-shadow-sm">學</div>
+                                <div className="mt-1.5 flex gap-[3px] z-10">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#2ED6C5] shadow-sm" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#7C83FF] shadow-sm" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF9B73] shadow-sm" />
+                                </div>
+                            </div>
+                            
+                            <div className="min-w-0 flex flex-col justify-center">
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-gradient-to-r from-[#7C83FF] to-[#FF9B73] text-white tracking-widest shadow-[0_2px_4px_rgba(124,131,255,0.3)]">NEW</span>
+                                    <div className="text-[15px] font-medium text-slate-800 leading-tight">
+                                        프리미엄 홈 위젯 포함
+                                    </div>
+                                </div>
+                                <div className="text-[12px] font-normal text-slate-500 leading-snug break-keep mt-0.5">
+                                    앱을 켜지 않고 홈 화면에서 현재 탐험 중인 한자를 확인해요!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* 팩 선택 */}
@@ -123,18 +161,18 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                                 {/* 텍스트 */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-extrabold text-[15px] text-slate-800">{pack.title}</span>
-                                        <span className="text-[12px] font-bold" style={{ color: pack.color }}>{pack.subtitle}</span>
+                                        <span className="font-normal text-[15px] text-slate-800">{pack.title}</span>
+                                        <span className="text-[12px] font-normal" style={{ color: pack.color }}>{pack.subtitle}</span>
                                         {pack.badge && (
-                                            <span className="text-[10px] font-black text-white px-2 py-0.5 rounded-full" style={{ background: pack.color }}>
+                                            <span className="text-[10px] font-normal text-white px-2 py-0.5 rounded-full" style={{ background: pack.color }}>
                                                 {pack.badge}
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-[12px] text-slate-400 font-semibold mt-0.5">{pack.desc}</div>
+                                    <div className="text-[12px] text-slate-400 font-normal mt-0.5">{pack.desc}</div>
                                 </div>
                                 {/* 가격 */}
-                                <div className="text-[15px] font-extrabold shrink-0" style={{ color: pack.color }}>
+                                <div className="text-[15px] font-normal shrink-0" style={{ color: pack.color }}>
                                     {pack.price}
                                 </div>
                             </button>
@@ -144,7 +182,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
 
                 {/* 에러 메시지 */}
                 {errorMsg && (
-                    <p className="px-6 mb-3 text-center text-[13px] text-red-500 font-semibold">{errorMsg}</p>
+                    <p className="px-6 mb-3 text-center text-[13px] text-red-500 font-normal">{errorMsg}</p>
                 )}
 
                 {/* CTA */}
@@ -152,7 +190,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                     <button
                         onClick={handleBuy}
                         disabled={loading}
-                        className="w-full py-4 rounded-full font-black text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
+                        className="w-full py-4 rounded-full font-normal text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
                         style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
                     >
                         {loading ? '처리 중...' : `${PACKS.find(p => p.id === selected)?.price} · 지금 구매하기`}
@@ -163,14 +201,14 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                         <button
                             onClick={handleRestore}
                             disabled={loading}
-                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-medium disabled:opacity-60"
+                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-normal disabled:opacity-60"
                         >
                             이미 구매했어요 → 구매 복원하기
                         </button>
                     ) : (
                         <button
                             onClick={onShowLogin}
-                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-medium"
+                            className="w-full py-3 mt-1 text-[13px] text-gray-400 font-normal"
                         >
                             이미 구매했어요 → 로그인으로 복원
                         </button>
@@ -178,7 +216,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
 
                     <button
                         onClick={onClose}
-                        className="w-full py-2 text-[13px] text-gray-300 font-medium"
+                        className="w-full py-2 text-[13px] text-gray-300 font-normal"
                     >
                         나중에 하기
                     </button>

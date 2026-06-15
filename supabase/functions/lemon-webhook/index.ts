@@ -19,9 +19,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // variant_id → unlocked_pack 번호
 const VARIANT_TO_PACK: Record<string, number> = {
-    '1085100': 1,   // 기초 팩  (18~51단계)  ₩9,900
-    '1700393': 2,   // 심화 팩  (52~124단계) ₩13,900
-    '1711552': 3,   // 전체 팩  (18~124단계) ₩19,900
+    '1763592': 1,   // 기초 팩  (18~51단계)  ₩9,900
+    '1763593': 2,   // 심화 팩  (52~124단계) ₩13,900
+    '1763594': 3,   // 전체 팩  (18~124단계) ₩19,900
 }
 
 // pack1 + pack2 동시 보유 → fullpack(3) 승격
