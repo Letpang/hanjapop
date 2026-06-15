@@ -134,6 +134,22 @@ const SentenceQuizScreen = ({
         return next;
     }, []);
 
+    const endQuiz = useCallback(() => {
+        if (completingRef.current) return;
+        const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
+        if (finalStats.correct / Math.max(finalStats.total, 1) >= 0.7) clearCountRef.current += 1;
+        stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
+        if (!dailyMapNode) {
+            onStageClear?.(...stageClearArgsRef.current);
+            stageClearDeliveredRef.current = true;
+            stageClearArgsRef.current = null;
+        }
+        setResultStats(finalStats);
+        completingRef.current = true;
+        setCompleting(true);
+        setTimeout(() => setGameState('result'), 750);
+    }, [dailyMapNode, onStageClear]);
+
     const generateQuiz = useCallback(() => {
         if (activeHanjaSet.length === 0) return;
         setQuestionKey(k => k + 1);
@@ -166,19 +182,7 @@ const SentenceQuizScreen = ({
                 selectedHanja = pickNextFromPool();
             }
             if (!selectedHanja) {
-                const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
-                stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
-                if (!dailyMapNode) {
-                    onStageClear?.(...stageClearArgsRef.current);
-                    stageClearDeliveredRef.current = true;
-                    stageClearArgsRef.current = null;
-                }
-                setResultStats(finalStats);
-                if (!completingRef.current) {
-                    completingRef.current = true;
-                    setCompleting(true);
-                    setTimeout(() => setGameState('result'), 750);
-                }
+                endQuiz();
                 return;
             }
             const queueItem = selectedHanja;
@@ -213,7 +217,7 @@ const SentenceQuizScreen = ({
             setOptions([...distractors, targetWord.word].sort(() => 0.5 - Math.random()));
         }
         setGameState('playing');
-    }, [sessionPlan, activeHanjaSet, pickNextFromPool, seenWordIds, onWordSeen, dailyMapNode, onStageClear]);
+    }, [sessionPlan, activeHanjaSet, pickNextFromPool, seenWordIds, onWordSeen, endQuiz]);
 
     function startQuiz(overridePlan) {
         if (stageClearArgsRef.current && !stageClearDeliveredRef.current) {
@@ -309,24 +313,11 @@ const SentenceQuizScreen = ({
         setCurrentAnswered(false);
         const poolExhausted = reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0;
         if (totalAnsweredRef.current >= plannedQuizTotal || poolExhausted) {
-            const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
-            if (finalStats.correct / Math.max(finalStats.total, 1) >= 0.7) clearCountRef.current += 1;
-            stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
-            if (!dailyMapNode) {
-                onStageClear?.(...stageClearArgsRef.current);
-                stageClearDeliveredRef.current = true;
-                stageClearArgsRef.current = null;
-            }
-            setResultStats(finalStats);
-            if (!completingRef.current) {
-                completingRef.current = true;
-                setCompleting(true);
-                setTimeout(() => setGameState('result'), 750);
-            }
+            endQuiz();
         } else {
             generateQuiz();
         }
-    }, [plannedQuizTotal, dailyMapNode, onStageClear, generateQuiz]);
+    }, [plannedQuizTotal, endQuiz, generateQuiz]);
 
     // ── 결과 오버레이 ─────────────────────────────────────────────────────
     const resultOverlay = (() => {
