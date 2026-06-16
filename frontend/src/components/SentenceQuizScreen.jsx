@@ -137,7 +137,7 @@ const SentenceQuizScreen = ({
     const endQuiz = useCallback(() => {
         if (completingRef.current) return;
         const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
-        if (finalStats.correct / Math.max(finalStats.total, 1) >= 0.7) clearCountRef.current += 1;
+        clearCountRef.current += 1;
         stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
         if (!dailyMapNode) {
             onStageClear?.(...stageClearArgsRef.current);
@@ -262,6 +262,7 @@ const SentenceQuizScreen = ({
         lastSimpleHanjaIdRef.current = null;
         stageClearDeliveredRef.current = false;
         completingRef.current = false;
+        clearCountRef.current = 0;
         setCompleting(false);
         setScore(0); scoreRef.current = 0;
         setTotalAnswered(0); totalAnsweredRef.current = 0;

@@ -12,7 +12,7 @@ const QuizProgressBar = ({ current, total, answered = false, completing = false,
                 {avatar && (
                     <div className="quiz-progress-avatar">
                         <img src={avatar} className="w-full h-full object-contain" alt="progress-pawn"
-                            style={{ transform: `translateY(${getCharacterTranslateY(charType)}) scale(${getCharacterScale(charType, 'rank1') * 1.15})` }} />
+                            style={{ transform: `translateY(${getCharacterTranslateY(charType)}) scale(${getCharacterScale(charType, 'rank1') * (charType === 'muzi' ? 1.0 : 1.15)})` }} />
                     </div>
                 )}
             </div>

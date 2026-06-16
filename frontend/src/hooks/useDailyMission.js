@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getTodayStr, getYesterdayStr } from '../utils/sessionUtils.js';
 import { SK } from '../constants/storageKeys.js';
 
@@ -64,6 +64,8 @@ export const useDailyMission = (sessionDoneToday, activeStage) => {
     // 단계별 미션 초기화 (동기화)
     const [currentStageKey, setCurrentStageKey] = useState(stageMissionKey);
     const [missions, setMissions] = useState(() => loadStageMissions(stageMissionKey));
+    const missionsRef = useRef(missions);
+    missionsRef.current = missions;
 
     if (stageMissionKey !== currentStageKey) {
         setCurrentStageKey(stageMissionKey);
@@ -124,22 +126,22 @@ export const useDailyMission = (sessionDoneToday, activeStage) => {
     }, [sessionDoneToday, today]);
 
     const updateMissionProgress = useCallback((type, amount = 1, onBonusXp) => {
-        let bonusXpToGrant = 0;
-        setMissions(prev => {
-            let bonusXp = 0;
-            const next = prev.map(m => {
-                if (m.done || m.type !== type) return m;
-                const newProgress = Math.min(m.target, (m.progress || 0) + amount);
-                const done = newProgress >= m.target;
-                if (done && !m.done) bonusXp += m.xp;
-                return { ...m, progress: newProgress, done };
-            });
-            const wasAllDone = prev.every(m => m.done);
-            if (!wasAllDone && next.every(m => m.done)) bonusXp += 200;
-            bonusXpToGrant = bonusXp;
-            return next;
+        // missionsRef.current를 사용해 동기적으로 계산 — React 18 자동 배칭 환경에서
+        // setMissions(updaterFn)의 updater는 pending update가 있을 때 즉시 실행되지 않아
+        // bonusXpToGrant가 항상 0으로 체크되는 버그를 방지한다.
+        const prev = missionsRef.current;
+        let bonusXp = 0;
+        const next = prev.map(m => {
+            if (m.done || m.type !== type) return m;
+            const newProgress = Math.min(m.target, (m.progress || 0) + amount);
+            const done = newProgress >= m.target;
+            if (done && !m.done) bonusXp += m.xp;
+            return { ...m, progress: newProgress, done };
         });
-        if (bonusXpToGrant > 0 && onBonusXp) setTimeout(() => onBonusXp(bonusXpToGrant), 0);
+        const wasAllDone = prev.every(m => m.done);
+        if (!wasAllDone && next.every(m => m.done)) bonusXp += 200;
+        setMissions(next);
+        if (bonusXp > 0 && onBonusXp) setTimeout(() => onBonusXp(bonusXp), 0);
     }, []);
 
     const allDone  = missions.every(m => m.done);

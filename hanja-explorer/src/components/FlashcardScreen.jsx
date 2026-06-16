@@ -76,9 +76,18 @@ const playCardSound = (item, onEnd) => {
 
 // 4지선다 오답 보기 생성
 const pickDistractors = (correctId, field, count = 3) => {
-    const correctValue = HANJA_DATA.find(h => h.id === correctId)?.[field];
-    const pool = HANJA_DATA.filter(h => h.id !== correctId && h[field] && h[field] !== correctValue);
-    return shuffle(pool).slice(0, count).map(h => h[field]);
+    const correctValue = HANJA_DATA.find(h => h.id === correctId)?.[field]?.trim();
+    const seen = new Set([correctValue]);
+    const result = [];
+    for (const h of shuffle([...HANJA_DATA])) {
+        if (h.id === correctId || !h[field]) continue;
+        const val = h[field].trim();
+        if (seen.has(val)) continue;
+        seen.add(val);
+        result.push(val);
+        if (result.length >= count) break;
+    }
+    return result;
 };
 
 // 학습지용 퀴즈 생성
@@ -122,7 +131,7 @@ const buildWorksheetQuiz = (item) => {
     });
 
     // 유사어 문제
-    const synList = (item.syn || []).filter(h => HANJA_MAP[h]);
+    const synList = (item.syn || []).filter(h => HANJA_MAP[h] && h !== item.hanja);
     if (synList.length > 0) {
         const correct = synList[Math.floor(Math.random() * synList.length)];
         const correctData = HANJA_MAP[correct];
@@ -140,7 +149,7 @@ const buildWorksheetQuiz = (item) => {
     }
 
     // 반대어 문제
-    const antList = (item.ant || []).filter(h => HANJA_MAP[h]);
+    const antList = (item.ant || []).filter(h => HANJA_MAP[h] && h !== item.hanja);
     if (antList.length > 0) {
         const correct = antList[Math.floor(Math.random() * antList.length)];
         const correctData = HANJA_MAP[correct];

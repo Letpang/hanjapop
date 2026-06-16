@@ -140,7 +140,7 @@ const buildQuiz = (idioms) => {
     return questions;
 };
 
-const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview }) => {
+const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview, missionDone = false }) => {
     const questions = useMemo(() => buildQuiz(idioms), [idioms]);
     const [idx, setIdx] = useState(0);
     const [resultClearMsg] = useState(() => pickClearMessage());
@@ -150,6 +150,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
     const [currentAnswered, setCurrentAnswered] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
     const clearCountRef = useRef(0);
+    const missionXpGrantedRef = useRef(0);
 
     const characterAvatar = useMemo(() => {
         if (!selectedCharacter) return null;
@@ -175,15 +176,19 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
         setCurrentAnswered(false);
         if (idx + 1 >= questions.length) {
             setCompleting(true);
+            // onComplete 호출 전에 missionDone 스냅샷 — setMissions + setDone이 배칭되어
+            // overlay render 시점에 missionDone이 이미 true로 바뀌는 문제 방지
+            const willGrantMission = !missionDone && clearCountRef.current === 0;
             setTimeout(() => {
                 clearCountRef.current += 1;
+                missionXpGrantedRef.current = willGrantMission ? 25 : 0;
                 onComplete?.();
                 setDone(true);
             }, 750);
         } else {
             setIdx(i => i + 1);
         }
-    }, [idx, questions.length, onComplete]);
+    }, [idx, questions.length, onComplete, missionDone]);
 
     const handlePrev = useCallback(() => {
         if (idx === 0) return;
@@ -216,7 +221,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                 correctXp={correctXp}
                 clearXp={clearXp}
                 detailText={`${score}개 정답 x 5XP + 완료 ${clearXp}XP`}
-                missionXp={clearCountRef.current === 1 ? 25 : 0}
+                missionXp={missionXpGrantedRef.current}
                 onRetry={() => { setIdx(0); setScore(0); setDone(false); setCompleting(false); setCurrentAnswered(false); }}
                 onBack={onBack}
                 backLabel="목록으로 돌아가기"
@@ -327,7 +332,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
     );
 };
 
-const IdiomScreen = ({ onBack, onComplete, onHanjaAcquired, contentPool, grade, day, userXp, selectedCharacter, getRewardPreview }) => {
+const IdiomScreen = ({ onBack, onComplete, onHanjaAcquired, contentPool, grade, day, userXp, selectedCharacter, getRewardPreview, missionDone = false }) => {
     const idioms = useMemo(() => {
         const mainIds = contentPool?.main?.hanjaIds || [];
         return collectIdioms(mainIds);
@@ -336,7 +341,7 @@ const IdiomScreen = ({ onBack, onComplete, onHanjaAcquired, contentPool, grade, 
     return (
         <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F8FAF9]">
             <div className="w-full shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }} />
-            <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} onHanjaAcquired={onHanjaAcquired} userXp={userXp} selectedCharacter={selectedCharacter} getRewardPreview={getRewardPreview} />
+            <IdiomQuiz idioms={idioms} onBack={onBack} onComplete={onComplete} onHanjaAcquired={onHanjaAcquired} userXp={userXp} selectedCharacter={selectedCharacter} getRewardPreview={getRewardPreview} missionDone={missionDone} />
         </div>
     );
 };

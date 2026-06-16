@@ -721,13 +721,11 @@ const App = () => {
                     selectedCharacter={selectedCharacter}
                     getRewardPreview={getRewardPreview}
                     onHanjaAcquired={handleHanjaAcquired}
+                    missionDone={missions?.find(m => m.type === 'idiomQuiz')?.done ?? false}
                     onComplete={() => {
                         handleHanjaAcquired(null, 25);
                         updateMissionProgress('idiomQuiz', 1, addBonusXp);
                     }}
-                    userXp={userXp}
-                    selectedCharacter={selectedCharacter}
-                    getRewardPreview={getRewardPreview}
                 />;
             }
             case 'gradeExamSelect':
