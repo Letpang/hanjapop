@@ -114,15 +114,10 @@ const buildWorksheetQuiz = (item) => {
         answer: item.sound,
     });
 
-    // Q3~Q5: 역방향 — 뜻 보고 한자어 고르기 (단어마다 1개, 최대 3개)
-    // freq 우선순위(매일>자주>가끔)로 정렬 후 그룹 내 랜덤 — 중요도 낮은 단어가 탈락하도록
-    const FREQ_ORDER = { '매일': 0, '자주': 1, '가끔': 2 };
-    const wordPool = (item.words || [])
-        .filter(w => w.word && w.meaning && w.type !== 'idiom')
-        .map(w => ({ ...w, _s: (FREQ_ORDER[w.freq] ?? 3) * 100 + Math.random() }))
-        .sort((a, b) => a._s - b._s);
+    // Q3~: 역방향 — 뜻 보고 한자어 고르기 (단어마다 1개, 전체)
+    const wordPool = (item.words || []).filter(w => w.word && w.meaning && w.type !== 'idiom');
     const allWords = HANJA_DATA.flatMap(h => h.words || []).filter(w => w.type !== 'idiom');
-    wordPool.slice(0, 3).forEach((w, i) => {
+    wordPool.forEach((w, i) => {
         const revDistractors = shuffle(allWords.filter(x => x.word && x.word !== w.word)).slice(0, 3).map(x => x.word);
         questions.push({
             id: `q_reverse_${i}`,
