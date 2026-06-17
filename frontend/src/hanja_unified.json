@@ -5816,7 +5816,7 @@
     "syn": [
       "堂",
       "室",
-      "宅"
+      "宅"
     ],
     "ant": []
   },
@@ -24993,5 +24993,25 @@
       "法"
     ],
     "ant": []
-  }
+  },
+  { "id": 371, "hanja": "圓", "meaning": "둥글", "sound": "원", "words": [], "syn": [], "ant": [] },
+  { "id": 372, "hanja": "曲", "meaning": "굽을", "sound": "곡", "words": [], "syn": [], "ant": [] },
+  { "id": 373, "hanja": "壤", "meaning": "흙", "sound": "양", "words": [], "syn": [], "ant": [] },
+  { "id": 374, "hanja": "岳", "meaning": "큰산", "sound": "악", "words": [], "syn": [], "ant": [] },
+  { "id": 375, "hanja": "原", "meaning": "근원", "sound": "원", "words": [], "syn": [], "ant": [] },
+  { "id": 376, "hanja": "郊", "meaning": "들", "sound": "교", "words": [], "syn": [], "ant": [] },
+  { "id": 377, "hanja": "碧", "meaning": "푸를", "sound": "벽", "words": [], "syn": [], "ant": [] },
+  { "id": 378, "hanja": "素", "meaning": "흴", "sound": "소", "words": [], "syn": [], "ant": [] },
+  { "id": 379, "hanja": "宅", "meaning": "집", "sound": "택", "words": [], "syn": [], "ant": [] },
+  { "id": 380, "hanja": "途", "meaning": "길", "sound": "도", "words": [], "syn": [], "ant": [] },
+  { "id": 381, "hanja": "降", "meaning": "내릴", "sound": "강", "words": [], "syn": [], "ant": [] },
+  { "id": 382, "hanja": "暑", "meaning": "더울", "sound": "서", "words": [], "syn": [], "ant": [] },
+  { "id": 383, "hanja": "福", "meaning": "복", "sound": "복", "words": [], "syn": [], "ant": [] },
+  { "id": 384, "hanja": "邦", "meaning": "나라", "sound": "방", "words": [], "syn": [], "ant": [] },
+  { "id": 385, "hanja": "爭", "meaning": "다툴", "sound": "쟁", "words": [], "syn": [], "ant": [] },
+  { "id": 386, "hanja": "鬪", "meaning": "싸울", "sound": "투", "words": [], "syn": [], "ant": [] },
+  { "id": 387, "hanja": "律", "meaning": "법칙", "sound": "률", "words": [], "syn": [], "ant": [] },
+  { "id": 388, "hanja": "濁", "meaning": "흐릴", "sound": "탁", "words": [], "syn": [], "ant": [] },
+  { "id": 389, "hanja": "克", "meaning": "이길", "sound": "극", "words": [], "syn": [], "ant": [] },
+  { "id": 390, "hanja": "敗", "meaning": "질", "sound": "패", "words": [], "syn": [], "ant": [] }
 ]
