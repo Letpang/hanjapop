@@ -254,7 +254,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const refQuiz    = useRef(null);
     const refWriting = useRef(null);
     const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    const hasSynAnt = (item.syn && item.syn.some(h => HANJA_MAP[h])) || (item.ant && item.ant.some(h => HANJA_MAP[h]));
+    const hasSynAnt = (item.syn && item.syn.length > 0) || (item.ant && item.ant.length > 0);
 
     const [isWordsOpen, setIsWordsOpen] = useState(false);
     const [isIdiomsOpen, setIsIdiomsOpen] = useState(false);
@@ -501,35 +501,35 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         
                         {isSynAntOpen && (
                             <div className="flex flex-col gap-5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
-                                {item.syn && item.syn.some(h => HANJA_MAP[h]) && (
+                                {item.syn && item.syn.length > 0 && (
                                     <div className="flex flex-col gap-3">
                                         <span className="font-normal text-sm px-1 text-[#7C83FF]">유사어 — 비슷한 뜻</span>
                                         <div className="flex flex-wrap gap-3">
                                             {item.syn.map(h => {
                                                 const d = HANJA_MAP[h];
-                                                return d ? (
+                                                return (
                                                     <div key={h} className="syn-chip">
                                                         <span className="hanja-char font-normal text-h3 text-[#7C83FF]">{h}</span>
-                                                        <span className="text-sm font-normal text-[#9AA4B5]">{d.meaning} {d.sound}</span>
+                                                        {d && <span className="text-sm font-normal text-[#9AA4B5]">{d.meaning} {d.sound}</span>}
                                                     </div>
-                                                ) : null;
+                                                );
                                             })}
                                         </div>
                                     </div>
                                 )}
 
-                                {item.ant && item.ant.some(h => HANJA_MAP[h]) && (
+                                {item.ant && item.ant.length > 0 && (
                                     <div className="flex flex-col gap-3">
                                         <span className="font-normal text-sm px-1 text-[#FF8D72]">반대어 — 반대 뜻</span>
                                         <div className="flex flex-wrap gap-3">
                                             {item.ant.map(h => {
                                                 const d = HANJA_MAP[h];
-                                                return d ? (
+                                                return (
                                                     <div key={h} className="ant-chip">
                                                         <span className="hanja-char font-normal text-h3 text-[#FF8D72]">{h}</span>
-                                                        <span className="text-sm font-normal text-[#9AA4B5]">{d.meaning} {d.sound}</span>
+                                                        {d && <span className="text-sm font-normal text-[#9AA4B5]">{d.meaning} {d.sound}</span>}
                                                     </div>
-                                                ) : null;
+                                                );
                                             })}
                                         </div>
                                     </div>
