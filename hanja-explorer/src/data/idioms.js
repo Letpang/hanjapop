@@ -292,6 +292,7 @@ const IDIOMS = [
   { grade: 'NON', hanja: '因循陋習', reading: '인순누습', meaning: '낡은 풍습이나 관습을 그대로 따르고 고치려 하지 않음.' },
   { grade: 'NON', hanja: '商山四皓', reading: '상산사호', meaning: '상산에 은거한 네 명의 현인. 세속을 피해 절개를 지키는 고결한 은자를 이르는 말.' },
   { grade: 'NON', hanja: '三墳五典', reading: '삼분오전', meaning: '삼황오제의 책. 가장 오래된 고전을 이르는 말.' },
+  { grade: 'NON', hanja: '位卑言高', reading: '위비언고', meaning: '사람의 지위는 비록 낮으나 그가 내는 의견이나 주장은 아주 훌륭하고 이치에 맞음.' },
 ];
 
 export default IDIOMS;
