@@ -60,7 +60,10 @@ export const useAuth = () => {
             if (getPlatform() === 'web') {
                 const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'apple',
-                    options: { redirectTo: window.location.origin },
+                    options: { 
+                        redirectTo: window.location.origin,
+                        queryParams: { prompt: 'login' }
+                    },
                 });
                 if (error) throw error;
                 return { success: true };
@@ -89,7 +92,10 @@ export const useAuth = () => {
             if (getPlatform() === 'web') {
                 const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
-                    options: { redirectTo: window.location.origin },
+                    options: { 
+                        redirectTo: window.location.origin,
+                        queryParams: { prompt: 'select_account' }
+                    },
                 });
                 if (error) throw error;
                 return { success: true };

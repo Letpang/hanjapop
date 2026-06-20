@@ -82,19 +82,19 @@ let globalStagePoolIndex = 0;
 // ── 카드 컴포넌트 ─────────────────────────────────────────────────────────────
 const getCardTextClass = (type, totalCards) => {
     if (type === 'hanja') {
-        if (totalCards <= 4)  return 'text-h1-res font-normal text-slate-700';
-        if (totalCards <= 8)  return 'text-h2-res font-normal text-slate-700';
-        return                       'text-h3-res font-normal text-slate-700';
+        if (totalCards <= 4)  return 'text-[clamp(2.5rem,7vw,3.4rem)] font-bold text-slate-700';
+        if (totalCards <= 8)  return 'text-[clamp(2.25rem,5.5vw,3.5rem)] font-bold text-slate-700';
+        return                       'text-[clamp(1.75rem,4.25vw,2.5rem)] font-bold text-slate-700';
     }
     if (type === 'word') {
-        if (totalCards <= 4)  return 'text-h2-res font-normal text-[#4A51D4]';
-        if (totalCards <= 8)  return 'text-h3-res font-normal text-[#4A51D4]';
-        return                       'text-body-lg-res font-normal text-[#4A51D4]';
+        if (totalCards <= 4)  return 'text-[clamp(1.6rem,4.5vw,2.25rem)] font-normal text-[#4A51D4]';
+        if (totalCards <= 8)  return 'text-[clamp(1.6rem,4vw,2.5rem)] font-normal text-[#4A51D4]';
+        return                       'text-[clamp(1.3rem,3vw,1.75rem)] font-normal text-[#4A51D4]';
     }
     // meaning
-    if (totalCards <= 4)  return 'text-h3-res font-normal text-[#5B677A]';
-    if (totalCards <= 8)  return 'text-body-lg-res font-normal text-[#5B677A]';
-    return                       'text-body-res font-normal text-[#5B677A]';
+    if (totalCards <= 4)  return 'text-[clamp(1.4rem,4.5vw,1.8rem)] font-normal text-[#5B677A]';
+    if (totalCards <= 8)  return 'text-[clamp(1.4rem,4vw,2.1rem)] font-normal text-[#5B677A]';
+    return                       'text-[clamp(1.2rem,3.5vw,1.6rem)] font-normal text-[#5B677A]';
 }
 
 const getMeaningFontSize = (text = '', totalCards) => {
@@ -490,11 +490,21 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                 globalStagePool = [...globalStagePool].sort(() => Math.random() - 0.5);
                 globalStagePoolIndex = 0;
             }
+            // pool이 비어있으면 startGame으로 풀 재생성
+            if (globalStagePool.length === 0) {
+                startGame();
+                return;
+            }
             slice = globalStagePool.slice(globalStagePoolIndex, globalStagePoolIndex + pairsPerRound);
             if (slice.length < pairsPerRound) {
-                globalStagePool = [...globalStagePool].sort(() => Math.random() - 0.5);
-                globalStagePoolIndex = pairsPerRound - slice.length;
-                slice = [...slice, ...globalStagePool.slice(0, globalStagePoolIndex)];
+                // 잔여 페어 부족 → 사이클 재시작 (중복 방지)
+                const recentIds = new Set(slice.map(p => p.pairId));
+                globalStagePool = moveRecentPairsToBack(
+                    [...globalStagePool].sort(() => Math.random() - 0.5),
+                    recentIds
+                );
+                globalStagePoolIndex = Math.min(pairsPerRound, globalStagePool.length);
+                slice = globalStagePool.slice(0, globalStagePoolIndex);
             } else {
                 globalStagePoolIndex += pairsPerRound;
             }
@@ -534,7 +544,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
         setTimeLeft(slice.length * 10);
         roundStartTimeRef.current = Date.now();
         setGameState('playing');
-    }, [pairPool, poolIndex, contentPool]);
+    }, [pairPool, poolIndex, contentPool, startGame]);
 
     const xpPerMatch = 3;
     const matchXp = matches * xpPerMatch;

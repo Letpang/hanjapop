@@ -38,7 +38,7 @@ export default function LoginModal({ onClose, platform, signInWithApple, signInW
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
              style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <div className="w-full max-w-md rounded-t-3xl p-8 pb-12"
+            <div className="login-modal-card w-full max-w-md rounded-t-3xl p-8 pb-12"
                  style={{ background: 'var(--card-bg, #fff)' }}>
 
                 {/* 헤더 */}
@@ -71,7 +71,7 @@ export default function LoginModal({ onClose, platform, signInWithApple, signInW
                     <button
                         onClick={handleGoogle}
                         disabled={loading}
-                        className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl mb-3 font-normal border"
+                        className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl mb-3 font-normal border text-[#334155]"
                         style={{ background: '#fff', borderColor: '#ddd', opacity: loading ? 0.6 : 1 }}>
                         <svg width="20" height="20" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -98,7 +98,7 @@ export default function LoginModal({ onClose, platform, signInWithApple, signInW
                         <button
                             onClick={handleGoogle}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl mb-3 font-normal border"
+                            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl mb-3 font-normal border text-[#334155]"
                             style={{ background: '#fff', borderColor: '#ddd', opacity: loading ? 0.6 : 1 }}>
                             <svg width="20" height="20" viewBox="0 0 24 24">
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

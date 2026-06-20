@@ -190,17 +190,17 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                 <div className="quiz-header-wrap quiz-header-wrap--sm">
                     <div className="quiz-header-card quiz-header-card--wide">
                         <button onClick={onBack}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-normal text-[#5B677A] gap-1">
+                            className="flex items-center justify-center bg-white dark:bg-slate-800/90 border-2 border-white dark:border-slate-700 rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-normal text-[#5B677A] dark:text-slate-300 gap-1">
                             ←
                         </button>
                         <div className="flex items-center gap-2 overflow-hidden">
-                            <h2 className="text-lg font-medium text-slate-700 m-0">레벨 테스트</h2>
+                            <h2 className="text-lg font-medium text-slate-700 dark:text-slate-100 m-0">레벨 테스트</h2>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center gap-6 px-6 overflow-y-auto pt-8">
-                    <div className="clay-panel rounded-[3.5rem] p-6 sm:p-8 bg-white dark:bg-slate-800 border-4 border-white flex flex-col items-center gap-6 text-center max-w-md w-full shadow-2xl">
+                    <div className="clay-panel rounded-[3.5rem] p-6 sm:p-8 bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 flex flex-col items-center gap-6 text-center max-w-md w-full shadow-2xl">
                         
                         {/* 헤더: 트로피 축소 및 타이틀 결합 */}
                         <div className="flex flex-col items-center gap-2">
@@ -275,7 +275,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                 <div className="quiz-header-wrap">
                     <div className="quiz-header-card">
                         <button onClick={() => setPhase('intro')}
-                            className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-sm active:scale-95 transition-all px-3 py-1.5 font-normal text-[#5B677A] text-sm gap-1 shrink-0">
+                            className="flex items-center justify-center bg-white dark:bg-slate-800/90 border-2 border-white dark:border-slate-700 rounded-2xl shadow-sm active:scale-95 transition-all px-3 py-1.5 font-normal text-[#5B677A] dark:text-slate-300 text-sm gap-1 shrink-0">
                             <span>←</span>
                         </button>
                         <div className="flex-1">
@@ -344,7 +344,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
                     <div className="modal-backdrop" onClick={handleFinish} />
                     
-                    <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
+                    <div className="minimal-card-studio bg-white dark:bg-slate-800 w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
                         <div className="pt-1 pb-1 px-8 flex flex-col items-center gap-2 w-full relative">
                             
                             {/* 메인 비주얼 */}

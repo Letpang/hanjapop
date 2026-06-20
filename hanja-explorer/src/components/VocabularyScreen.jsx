@@ -46,6 +46,7 @@ const collectVocabulary = () => {
   });
 
   Object.keys(wordData).forEach(id => wordIds.add(Number(id)));
+  Object.keys(hanjaData).forEach(id => hanjaIds.add(Number(id)));
 
   const words = [...wordIds]
     .map(id => {
@@ -81,6 +82,7 @@ const collectVocabulary = () => {
         ...h,
         wrongCount: memory.wrongCount || 0,
         correctCount: memory.correctCount || 0,
+        level: memory.level || 0,
         day: hanjaIdToDay[id] ?? null,
       };
     })
@@ -160,7 +162,7 @@ const VocabularyScreen = ({
   const filteredWords = useMemo(() => {
     return words.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'correct' && (item.correctCount <= 0 || item.wrongCount > 0)) return false;
+      if (filter === 'correct' && item.correctCount <= 0) return false;
       if (!normalizedQuery) return true;
       return [item.word, item.reading, item.meaning, item.hanja]
         .filter(Boolean)
@@ -171,7 +173,7 @@ const VocabularyScreen = ({
   const filteredHanjas = useMemo(() => {
     return hanjas.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'correct' && (item.correctCount <= 0 || item.wrongCount > 0)) return false;
+      if (filter === 'correct' && item.correctCount <= 0 && item.level < 1) return false;
       if (!normalizedQuery) return true;
       return [item.hanja, item.sound, item.meaning, item.category]
         .filter(Boolean)
@@ -182,7 +184,7 @@ const VocabularyScreen = ({
   const filteredIdioms = useMemo(() => {
     return idioms.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'correct' && (item.correctCount <= 0 || item.wrongCount > 0)) return false;
+      if (filter === 'correct' && item.correctCount <= 0) return false;
       if (!normalizedQuery) return true;
       return [item.hanja, item.reading, item.meaning, item.grade]
         .filter(Boolean)
@@ -217,15 +219,15 @@ const VocabularyScreen = ({
 
         <section className={`rounded-[2rem] border p-4 shadow-sm ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-2xl bg-[#E8FAF7] px-3 py-3">
+            <div className="rounded-2xl bg-[#E8FAF7] px-3 py-3 flex flex-col items-center text-center">
               <p className="text-[11px] font-normal text-[#00A994]">단어 · 사자성어</p>
               <p className="mt-0.5 text-xl font-normal text-[#334155]">{totalCount}</p>
             </div>
-            <div className="rounded-2xl bg-[#FFF1EE] px-3 py-3">
+            <div className="rounded-2xl bg-[#FFF1EE] px-3 py-3 flex flex-col items-center text-center">
               <p className="text-[11px] font-normal text-[#E8664F]">오답</p>
               <p className="mt-0.5 text-xl font-normal text-[#334155]">{wrongCount + idiomWrongCount}</p>
             </div>
-            <div className="rounded-2xl bg-[#F5F3FF] px-3 py-3">
+            <div className="rounded-2xl bg-[#F5F3FF] px-3 py-3 flex flex-col items-center text-center">
               <p className="text-[11px] font-normal text-[#7C83FF]">정답</p>
               <p className="mt-0.5 text-xl font-normal text-[#334155]">{correctCount}</p>
             </div>
@@ -278,56 +280,38 @@ const VocabularyScreen = ({
                 </div>
               ) : filteredWords.map(item => (
                 <div key={item.id} className={`rounded-[1.5rem] border px-4 py-3 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-lg font-normal text-[#334155]">{item.word}</span>
-                        <span className="text-xs font-normal text-[#94A3B8]">{item.reading}</span>
-                      </div>
-                      <p className="mt-1 text-sm font-normal text-[#64748B]">{item.meaning}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-baseline gap-1.5 min-w-0">
+                      <span className="text-lg font-normal text-[#334155]">{item.word}</span>
+                      <span className="text-sm font-normal text-[#94A3B8]">{item.reading}</span>
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="rounded-xl bg-[#F4F6F8] px-2.5 py-1 text-sm font-normal text-[#334155]">{item.hanja}</span>
-                      {item.day && <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}단계</span>}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {item.hanja && <span className="rounded-lg bg-[#F4F6F8] px-1.5 py-0.5 text-xs font-normal text-[#334155]">{item.hanja}</span>}
+                      {item.day && <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}</span>}
                     </div>
                   </div>
-                  {(item.wrongCount > 0 || item.correctCount > 0) && (
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-normal">
-                      {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
-                      {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
-                    </div>
-                  )}
+                  <p className="mt-1 text-base font-normal leading-relaxed text-[#64748B]">{item.meaning}</p>
                 </div>
               ))}
             </div>
           )}
 
           {tab === 'hanja' && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {filteredHanjas.length === 0 ? (
-                <div className="col-span-2 rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-normal text-[#AEB7C5]">
+                <div className="col-span-3 rounded-[1.5rem] border border-dashed border-slate-200 py-10 text-center text-sm font-normal text-[#AEB7C5]">
                   표시할 한자가 없어요
                 </div>
               ) : filteredHanjas.map(item => (
-                <div key={item.id} className={`rounded-[1.5rem] border px-4 py-3 shadow-sm ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
-                  <div className="flex items-start gap-2">
-                    <span className="text-2xl font-normal text-[#334155] shrink-0">{item.hanja}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-normal text-[#334155]">{item.sound}</p>
-                      <p className="truncate text-xs font-normal text-[#94A3B8]">{item.meaning}</p>
-                    </div>
-                  </div>
+                <div key={item.id} className={`relative rounded-[1.5rem] border px-2 py-3 shadow-sm flex flex-col items-center text-center gap-1 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
                   {item.day && (
-                    <div className="mt-1.5">
-                      <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}단계</span>
-                    </div>
+                    <span className="absolute top-2 right-2 rounded-full bg-[#EEF0FF] px-1.5 py-0.5 text-[9px] font-normal text-[#7C83FF]">{item.day}</span>
                   )}
-                  {(item.wrongCount > 0 || item.correctCount > 0) && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-normal">
-                      {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2 py-0.5 text-[#00A994]">정답 {item.correctCount}</span>}
-                      {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2 py-0.5 text-[#E8664F]">오답 {item.wrongCount}</span>}
-                    </div>
-                  )}
+                  <span className="text-2xl font-normal text-[#334155]">{item.hanja}</span>
+                  <p className="text-[13px] font-normal leading-tight text-center px-1">
+                    <span className="text-[#94A3B8]">{item.meaning}</span>
+                    <span className="text-[#334155]"> {item.sound}</span>
+                  </p>
                 </div>
               ))}
             </div>
@@ -340,34 +324,20 @@ const VocabularyScreen = ({
                   표시할 사자성어가 없어요
                 </div>
               ) : filteredIdioms.map(item => (
-                <div key={item.id || item.hanja} className={`rounded-[1.5rem] border px-4 py-3 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <span className="hanja-char text-xl font-normal tracking-wider text-[#334155]">{item.hanja}</span>
-                        <span className="text-xs font-normal text-[#94A3B8]">{item.reading}</span>
-                      </div>
-                      <p className="mt-1 text-sm font-normal leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {item.relatedHanjas?.length > 0 && (
-                        <div className="flex flex-wrap justify-end gap-1">
-                          {item.relatedHanjas.map(h => (
-                            <span key={h.hanjaChar} className="rounded-lg bg-[#F4F6F8] px-1.5 py-0.5 text-xs font-normal text-[#334155]">{h.hanjaChar}</span>
-                          ))}
-                        </div>
-                      )}
-                      {item.day && (
-                        <span className="rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[10px] font-normal text-[#7C83FF]">{item.day}단계</span>
-                      )}
+                <div key={item.id || item.hanja} className={`relative rounded-[1.5rem] border px-4 py-3 ${item.wrongCount > 0 ? 'border-[#FFD4CC] bg-[#FFF7F5]' : 'border-slate-100 bg-white'}`}>
+                  {item.day && (
+                    <span className="absolute top-3 right-3 rounded-full bg-[#EEF0FF] px-1.5 py-0.5 text-[9px] font-normal text-[#7C83FF]">{item.day}</span>
+                  )}
+                  <div className="flex items-center justify-between gap-2 pr-8">
+                    <span className="hanja-char text-xl font-normal tracking-wider text-[#334155] shrink-0">{item.hanja}</span>
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                      <span className="text-sm font-normal text-[#94A3B8]">{item.reading}</span>
+                      {item.relatedHanjas?.map(h => (
+                        <span key={h.hanjaChar} className="rounded-lg bg-[#E8FAF7] px-1.5 py-0.5 text-xs font-normal text-[#00A994]">{h.hanjaChar}</span>
+                      ))}
                     </div>
                   </div>
-                  {(item.wrongCount > 0 || item.correctCount > 0) && (
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-normal">
-                      {item.correctCount > 0 && <span className="rounded-full bg-[#E8FAF7] px-2.5 py-1 text-[#00A994]">정답 {item.correctCount}</span>}
-                      {item.wrongCount > 0 && <span className="rounded-full bg-[#FFF1EE] px-2.5 py-1 text-[#E8664F]">오답 {item.wrongCount}</span>}
-                    </div>
-                  )}
+                  <p className="mt-1 text-base font-normal leading-relaxed text-[#64748B] break-keep">{item.meaning}</p>
                 </div>
               ))}
             </div>

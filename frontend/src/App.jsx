@@ -35,6 +35,7 @@ const GradeTest62Screen        = lazy(() => import('./components/GradeTest62Scre
 const GradeTest6Screen         = lazy(() => import('./components/GradeTest6Screen.jsx'));
 const IdiomScreen              = lazy(() => import('./components/IdiomScreen.jsx'));
 const GradeExamSelectScreen    = lazy(() => import('./components/GradeExamSelectScreen.jsx'));
+const GradeStudyDashboardScreen = lazy(() => import('./components/GradeStudyDashboardScreen.jsx'));
 import { getLevel, getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY, LEVEL_THRESHOLDS, levelToImageRank } from './utils/rankUtils.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
@@ -42,7 +43,7 @@ import { useCloudSync } from './hooks/useCloudSync.js';
 import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
 import { useAuth } from './hooks/useAuth.js';
 import { PremiumProvider } from './context/PremiumContext.jsx';
-import { canAccessStage } from './utils/premiumAccess.js';
+import { canAccessStage, canAccessGrade } from './utils/premiumAccess.js';
 import { useAdMob } from './hooks/useAdMob.js';
 import { buildPremiumWidgetPayload, savePremiumWidgetPayload } from './utils/premiumWidget.js';
 
@@ -240,10 +241,17 @@ const App = () => {
 
     // 과거 스테이지 선택 플레이
     const [selectedPastStage, setSelectedPastStage] = useState(null);
+    // 급수별 학습관 대시보드 상태
+    const [selectedDashboardGrade, setSelectedDashboardGrade] = useState(null);
     const backToMain = useCallback(() => {
-        setCurrentScreen('main');
-        setSelectedPastStage(null);
-    }, []);
+        if (selectedDashboardGrade) {
+            setCurrentScreen('gradeStudyDashboard');
+        } else {
+            setCurrentScreen('main');
+            setSelectedPastStage(null);
+            setSelectedGrade(null);
+        }
+    }, [selectedDashboardGrade]);
     const activeStage = selectedPastStage || currentDay;
     const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission(sessionDoneToday, activeStage);
     useEffect(() => {
@@ -271,12 +279,39 @@ const App = () => {
 
     // 급수별 선택 플레이
     const [selectedGrade, setSelectedGrade] = useState(null);
+    const getCumulativeGrades = (targetGrade) => {
+        const grades = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
+        const normTarget = targetGrade === '7급II' ? '7급Ⅱ' : targetGrade === '6급II' ? '6급Ⅱ' : targetGrade;
+        const idx = grades.indexOf(normTarget);
+        if (idx === -1) return [normTarget];
+        return grades.slice(0, idx + 1);
+    };
     const gradePool = useMemo(() => {
         if (!selectedGrade) return null;
-        const hanjaIds = HANJA_DATA.filter(h => h.grade === selectedGrade && clearedHanjaIds.includes(h.id)).map(h => h.id);
-        // eslint-disable-next-line react-hooks/refs
+        const norm = selectedGrade.replace('II', 'Ⅱ');
+        const hanjaIds = HANJA_DATA.filter(h => h.grade && h.grade.replace('II', 'Ⅱ') === norm).map(h => h.id);
         return buildUnifiedPool(hanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, [], 0, wordDataRef.current);
-    }, [selectedGrade, clearedHanjaIds]);
+    }, [selectedGrade]);
+
+    const gradeWordCount = useMemo(() => {
+        if (!selectedGrade) return null;
+        const norm = selectedGrade.replace('II', 'Ⅱ');
+        return HANJA_DATA
+            .filter(h => h.grade && h.grade.replace('II', 'Ⅱ') === norm)
+            .flatMap(h => (h.words || []).filter(w => w.type !== 'idiom'))
+            .length || 10;
+    }, [selectedGrade]);
+
+    const gradeSentenceCount = useMemo(() => {
+        if (!selectedGrade) return null;
+        const norm = selectedGrade.replace('II', 'Ⅱ');
+        return HANJA_DATA
+            .filter(h => h.grade && h.grade.replace('II', 'Ⅱ') === norm)
+            .flatMap(h => (h.words || []).filter(w =>
+                w.type !== 'idiom' && typeof w.example === 'string' && w.example.trim().length > 0
+            ))
+            .length || 5;
+    }, [selectedGrade]);
 
     const effectivePool = selectedPastStage ? pastStagePool : selectedGrade ? gradePool : sessionContentPool;
 
@@ -421,12 +456,19 @@ const App = () => {
         return () => timers.forEach(clearTimeout);
     }, [currentScreen, hanjaData, wordData, selectedCharacter, sessionDoneToday, unlockedPack, currentDay]);
 
-    // 미션 전체 완료 시: 팡파레 토스트만 표시한다. +200 XP는 updateMissionProgress에서 1회 지급.
-    useEffect(() => {
+    const checkAndShowMissionToast = useCallback(() => {
         if (!allDone || missionToastShownRef.current) return;
         missionToastShownRef.current = true;
         setCharToast('mission_complete');
     }, [allDone]);
+
+    // 미션 전체 완료 시: 팡파레 토스트만 표시한다. +200 XP는 updateMissionProgress에서 1회 지급.
+    useEffect(() => {
+        // 게임/학습 도중 팝업이 뜨면 안 보이거나 방해될 수 있으므로, 메인 화면이거나 데일리 세션 맵일 때 호출
+        if (currentScreen === 'main') {
+            checkAndShowMissionToast();
+        }
+    }, [allDone, currentScreen, checkAndShowMissionToast]);
 
     const handleHanjaAcquired = (id, xpAmount = 10) => {
         const finalXp = getRewardXp(xpAmount);
@@ -529,7 +571,7 @@ const App = () => {
                 return <MatchGameScreen
                     onBack={backToMain}
                     onHanjaAcquired={handleHanjaAcquired}
-                    onStageClear={(round, elapsedSec) => { handleHanjaAcquired(null, 20); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
+                    onStageClear={(round, elapsedSec, matches = 0) => { handleHanjaAcquired(null, 20 + matches * 3); updateMissionProgress('matchGame', 1, addBonusXp); addTodayStat('matchGame'); if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec); }}
                     onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                     onMarkWrong={() => {}}
                     srsData={hanjaData}
@@ -549,6 +591,7 @@ const App = () => {
             case 'shootGame':
                 return <ShootGameScreen
                     onBack={backToMain}
+                    missionDone={missions?.find(m => m.type === 'shootGame')?.done ?? false}
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
                     onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
@@ -583,10 +626,10 @@ const App = () => {
                     : Object.entries(wordData).filter(([, v]) => (v.wrongCount || 0) > 0).map(([id]) => Number(id));
                 if (wrongHanjaIds.length === 0 && wrongWordIds.length === 0) {
                     return (
-                        <div className="min-h-screen bg-[#F7FAF9] flex flex-col items-center justify-center gap-6 px-8">
+                        <div className="min-h-screen bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center gap-6 px-8">
                             <div className="text-6xl">🎉</div>
-                            <h2 className="font-medium text-2xl text-slate-800 tracking-tighter text-center">오답 한자가 없어요!</h2>
-                            <p className="text-[#AEB7C5] font-normal text-center text-sm break-keep">퀴즈를 틀린 한자나 단어가 생기면<br/>여기서 몬스터로 나타납니다</p>
+                            <h2 className="font-medium text-2xl text-slate-800 dark:text-slate-100 tracking-tighter text-center">오답 한자가 없어요!</h2>
+                            <p className="text-[#AEB7C5] dark:text-slate-400 font-normal text-center text-sm break-keep">퀴즈를 틀린 한자나 단어가 생기면<br/>여기서 몬스터로 나타납니다</p>
                             <button
                                 onClick={() => setCurrentScreen('main')}
                                 className="px-8 py-3 bg-emerald-500 text-white font-normal rounded-2xl border-b-4 border-emerald-700 active:translate-y-1 active:border-b-0 transition-all"
@@ -625,7 +668,7 @@ const App = () => {
                     onBack={backToMain}
                     onStageClear={(correct, total, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
-                        handleHanjaAcquired(null, 20);
+                        handleHanjaAcquired(null, 20 + correct * 10);
                         updateMissionProgress('sentenceQuiz', 1, addBonusXp);
                         addTodayStat('sentenceQuiz', total || 1);
                     }}
@@ -646,7 +689,7 @@ const App = () => {
                     currentDayHanjaIds={currentDayHanjaIds}
                     contentPool={effectivePool}
                     onGetNextWordIds={getNextWordIds}
-                    quizCount={5}
+                    quizCount={selectedGrade ? gradeSentenceCount : 5}
                     clearXp={20}
                 />;
             case 'wordQuiz':
@@ -654,7 +697,7 @@ const App = () => {
                     onBack={backToMain}
                     onStageClear={(correct, total, maxCombo, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
-                        handleHanjaAcquired(null, 20);
+                        handleHanjaAcquired(null, 20 + correct * 5);
                         updateMissionProgress('wordQuiz', 1, addBonusXp);
                         addTodayStat('wordQuiz', total || 1);
                         updateRecord('wordBestScore', correct);
@@ -676,7 +719,7 @@ const App = () => {
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     contentPool={effectivePool}
                     onGetNextWordIds={getNextWordIds}
-                    quizCount={6}
+                    quizCount={selectedGrade ? gradeWordCount : 6}
                     clearXp={20}
                 />;
             case 'gradeTest':
@@ -722,8 +765,8 @@ const App = () => {
                     getRewardPreview={getRewardPreview}
                     onHanjaAcquired={handleHanjaAcquired}
                     missionDone={missions?.find(m => m.type === 'idiomQuiz')?.done ?? false}
-                    onComplete={() => {
-                        handleHanjaAcquired(null, 25);
+                    onComplete={(score = 0) => {
+                        handleHanjaAcquired(null, 25 + score * 5);
                         updateMissionProgress('idiomQuiz', 1, addBonusXp);
                     }}
                 />;
@@ -731,9 +774,52 @@ const App = () => {
             case 'gradeExamSelect':
                 return <GradeExamSelectScreen
                     onBack={() => setCurrentScreen('main')}
-                    onNavigate={(screen) => {
-                        setGradeTestBackScreen('gradeExamSelect');
-                        setCurrentScreen(screen);
+                    onSelectGrade={(gradeName) => {
+                        setSelectedDashboardGrade(gradeName);
+                        setCurrentScreen('gradeStudyDashboard');
+                    }}
+                />;
+            case 'gradeStudyDashboard':
+                return <GradeStudyDashboardScreen
+                    grade={selectedDashboardGrade}
+                    onBack={() => {
+                        setSelectedGrade(null);
+                        setSelectedDashboardGrade(null);
+                        setCurrentScreen('gradeExamSelect');
+                    }}
+                    onStartFocusStudy={() => {
+                        setSelectedGrade(selectedDashboardGrade);
+                        setCurrentScreen('flashcard');
+                    }}
+                    onStartWordQuiz={() => {
+                        setSelectedGrade(selectedDashboardGrade);
+                        setCurrentScreen('wordQuiz');
+                    }}
+                    onStartSentenceQuiz={() => {
+                        setSelectedGrade(selectedDashboardGrade);
+                        setCurrentScreen('sentenceQuiz');
+                    }}
+                    onStartMockTest={() => {
+                        const getMockTestScreenId = (g) => {
+                            if (g === '8급') return 'gradeTest';
+                            if (g === '7급Ⅱ' || g === '7급II') return 'gradeTest72';
+                            if (g === '7급') return 'gradeTest7';
+                            if (g === '6급Ⅱ' || g === '6급II') return 'gradeTest62';
+                            if (g === '6급') return 'gradeTest6';
+                            return 'gradeTest';
+                        };
+                        setGradeTestBackScreen('gradeStudyDashboard');
+                        setCurrentScreen(getMockTestScreenId(selectedDashboardGrade));
+                    }}
+                    unlockedPack={unlockedPack}
+                    onShowPremiumModal={() => setShowPremiumModal(true)}
+                    clearedHanjaIds={clearedHanjaIds}
+                    hanjaData={hanjaData}
+                    selectedCharacter={selectedCharacter}
+                    onWriteHanja={(hanja) => {
+                        setWriteTargetHanja(hanja);
+                        setGradeTestBackScreen('gradeStudyDashboard');
+                        setCurrentScreen('writing');
                     }}
                 />;
             case 'levelTest':
@@ -836,7 +922,7 @@ const App = () => {
                 {/* 강제 업데이트 모달 */}
                 {versionInfo.needsUpdate && (
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.7)' }}>
-                        <div className="w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: '#fff' }}>
+                        <div className="update-modal-card w-full max-w-sm rounded-3xl p-8 text-center" style={{ background: '#fff' }}>
                             <div className="text-4xl mb-4">🆕</div>
                             <h2 className="text-xl font-medium text-gray-800 mb-2">업데이트 필요</h2>
                             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
@@ -856,7 +942,7 @@ const App = () => {
                     </div>
                 )}
 
-                <div className="content-area relative z-10">
+                <div className={`content-area relative z-10 ${currentScreen === 'matchGame' ? 'content-area--match-game' : ''}`}>
                     {showRankUpModal && (
                         <Suspense fallback={null}>
                             <RankUpModal
@@ -904,6 +990,7 @@ const App = () => {
                                         userXp={userXp}
                                         onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                                         onMarkWrong={(id) => { markWrong(id); logHanja(id); }}
+                                        onMarkSeen={(id) => { markSeen(id); logHanja(id); }}
                                         onMarkWordWrong={(wordId, hanjaId, reading, meaning) => { markWordWrong(wordId, hanjaId, reading, meaning); logWrongWord(wordId); }}
                                         onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
                                         onWordSeen={(wordId) => logWord(wordId)}
@@ -913,6 +1000,7 @@ const App = () => {
                                         getRewardPreview={getRewardPreview}
                                         missions={sessionMissions}
                                         doneCount={doneCount}
+                                        onMapIdle={checkAndShowMissionToast}
                                       />
                                     : renderScreen()
                         )}
@@ -934,7 +1022,7 @@ const App = () => {
                 )}
                 {showSaveModal && !user && selectedCharacter && (
                     <div
-                        className="fixed inset-0 z-[350] flex flex-col items-center justify-center px-6 animate-in fade-in duration-400 overflow-hidden"
+                        className="save-progress-modal fixed inset-0 z-[350] flex flex-col items-center justify-center px-6 animate-in fade-in duration-400 overflow-hidden"
                         style={{ background: 'linear-gradient(180deg, #C8EDE6 0%, #DDF1EA 40%, #EEF8F5 100%)' }}
                     >
                         {/* 배경 장식 원 */}

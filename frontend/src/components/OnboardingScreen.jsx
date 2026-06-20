@@ -84,22 +84,22 @@ const clampLevel = (level) => Math.min(5, Math.max(1, level));
 const Intro = ({ slideIdx, onNext, onSkip }) => {
   const slide = INTRO_SLIDES[slideIdx];
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col overflow-hidden bg-[#F7FAF9]">
+    <div className="flex min-h-[100dvh] w-full flex-col overflow-hidden bg-[#F7FAF9] dark:bg-slate-900">
       <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-10">
         <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_50%_0%,rgba(46,214,197,0.22),transparent_60%)]" />
         <div className="relative flex w-full max-w-sm flex-col items-center gap-5">
           <div className="relative h-48 w-48">
-            <div className="absolute inset-6 rounded-full bg-[#DDF8F4]" />
-            <div className="absolute inset-0 rounded-full border-[14px] border-white/70" />
+            <div className="absolute inset-6 rounded-full bg-[#DDF8F4] dark:bg-teal-950/50" />
+            <div className="absolute inset-0 rounded-full border-[14px] border-white dark:border-slate-700/70" />
             <img src={GUIDE} alt="가래뭉치" className="relative h-full w-full object-contain drop-shadow-2xl" />
           </div>
 
-          <div className="w-full rounded-[2rem] border border-white bg-white/95 p-6 text-center shadow-xl">
+          <div className="w-full rounded-[2rem] border border-white dark:border-slate-700 bg-white dark:bg-slate-800/95 p-6 text-center shadow-xl">
             <p className="mb-2 text-[11px] font-normal tracking-[0.18em] text-[#00A994]">{slide.kicker}</p>
-            <h1 className="text-[28px] font-medium leading-tight tracking-tight text-[#334155] break-keep">
+            <h1 className="text-[28px] font-medium leading-tight tracking-tight text-[#334155] dark:text-slate-200 break-keep">
               {slide.title}
             </h1>
-            <p className="mt-3 text-sm font-normal leading-relaxed text-[#7A8798] break-keep">
+            <p className="mt-3 text-sm font-normal leading-relaxed text-[#7A8798] dark:text-slate-400 break-keep">
               {slide.body}
             </p>
           </div>
@@ -118,7 +118,7 @@ const Intro = ({ slideIdx, onNext, onSkip }) => {
           </button>
           <button
             onClick={onSkip}
-            className="w-full rounded-[1.4rem] border-2 border-[#E5ECF3] bg-white py-3.5 text-sm font-normal text-[#7A8798] active:scale-95"
+            className="w-full rounded-[1.4rem] border-2 border-[#E5ECF3] dark:border-slate-700 bg-white dark:bg-slate-800 py-3.5 text-sm font-normal text-[#7A8798] dark:text-slate-300 active:scale-95"
           >
             8급부터 바로 시작
           </button>
@@ -129,7 +129,7 @@ const Intro = ({ slideIdx, onNext, onSkip }) => {
 };
 
 const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
-  <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] px-5 py-6 safe-top">
+  <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
       <div className="flex items-center gap-3">
         <div className="quiz-progress-track flex-1">
@@ -146,7 +146,7 @@ const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
         <div className={`grade-test-hanja-box ${question.hanja.length > 1 ? 'grade-test-hanja-box--compound' : 'grade-test-hanja-box--single'}`}>
           <span className="grade-test-hanja-char hanja-char">{question.hanja}</span>
         </div>
-        <p className="text-center font-normal text-[#334155] text-xl">이 한자의 뜻은?</p>
+        <p className="text-center font-normal text-[#334155] dark:text-slate-200 text-xl">이 한자의 뜻은?</p>
         <p className="body-muted text-center">{question.hint}</p>
       </div>
 
@@ -209,27 +209,27 @@ const ShootMiniGame = ({ items, onFinish }) => {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] px-5 py-6 safe-top">
+    <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
-        <div className="flex items-start gap-3 rounded-[1.75rem] bg-white p-4 shadow-sm">
+        <div className="flex items-start gap-3 rounded-[1.75rem] bg-white dark:bg-slate-800 p-4 shadow-sm">
           <img src={GUIDE} alt="가래뭉치" className="h-14 w-14 object-contain" />
           <div>
             <p className="text-[11px] font-normal tracking-wider text-[#FF9B73]">MONSTER SHOOT</p>
-            <h2 className="text-lg font-medium text-[#334155]">몬스터를 잡아라!</h2>
+            <h2 className="text-lg font-medium text-[#334155] dark:text-slate-200">몬스터를 잡아라!</h2>
             <p className="mt-1 text-xs font-normal text-[#8D9CAE]">한자 뜻이 적힌 몬스터를 빠르게 잡아요.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E8EEF4]">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E8EEF4] dark:bg-slate-700">
             <div className="h-full rounded-full bg-[#FF9B73] transition-all duration-500" style={{ width: `${((qIdx + 1) / questions.length) * 100}%` }} />
           </div>
           <span className="text-xs font-normal text-[#8D9CAE]">{qIdx + 1}/{questions.length}</span>
         </div>
 
-        <div className="flex flex-col items-center justify-center rounded-[2rem] bg-white p-6 shadow-sm gap-2">
+        <div className="flex flex-col items-center justify-center rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-sm gap-2">
           <p className="text-xs font-normal text-[#8D9CAE]">이 한자의 뜻은?</p>
-          <span className={`${q.hanja.length > 2 ? 'text-5xl' : 'text-8xl'} font-normal text-[#334155]`}>{q.hanja}</span>
+          <span className={`${q.hanja.length > 2 ? 'text-5xl' : 'text-8xl'} font-normal text-[#334155] dark:text-slate-200`}>{q.hanja}</span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -245,8 +245,8 @@ const ShootMiniGame = ({ items, onFinish }) => {
                 className={`min-h-[72px] rounded-[1.35rem] border-2 px-3 text-base font-normal transition-all active:scale-95 ${
                   right ? 'border-[#00C7AE] bg-[#E8FAF7] text-[#00A994]' :
                   wrong ? 'border-[#FFB5A8] bg-[#FFF1EE] text-[#E8664F]' :
-                  answered ? 'border-[#EDF2F7] bg-white text-[#CBD5E1]' :
-                  'border-[#FFD5B8] bg-[#FFF8F4] text-[#4B5A6D] shadow-sm'
+                  answered ? 'border-[#EDF2F7] bg-white dark:bg-slate-800 text-[#CBD5E1]' :
+                  'border-[#FFD5B8] dark:border-slate-600 bg-[#FFF8F4] dark:bg-slate-800 text-[#4B5A6D] dark:text-slate-200 shadow-sm'
                 }`}
               >
                 <div className="flex flex-col items-center gap-1">
@@ -258,7 +258,7 @@ const ShootMiniGame = ({ items, onFinish }) => {
           })}
         </div>
 
-        <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 text-xs font-normal text-[#8D9CAE]">
+        <div className="flex items-center justify-between rounded-2xl bg-white dark:bg-slate-800 px-4 py-3 text-xs font-normal text-[#8D9CAE]">
           <span>진행 {qIdx + 1}/{questions.length}</span>
           <span>실수 {mistakes}</span>
         </div>
@@ -274,26 +274,26 @@ const Result = ({ score, finalLevel, skillStats, memoryMistakes, onComplete }) =
   const currentGradeIndex = Math.max(0, GRADE_STEPS.indexOf(profile.grade));
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col overflow-y-auto bg-[#F7FAF9] px-5 py-6 safe-top">
+    <div className="flex min-h-[100dvh] w-full flex-col overflow-y-auto bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
       <div className="mx-auto flex w-full max-w-sm flex-col gap-5 safe-bottom">
-        <div className="rounded-[2.4rem] border border-white bg-white p-6 text-center shadow-xl">
+        <div className="rounded-[2.4rem] border border-white dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-center shadow-xl">
           <img src={GUIDE} alt="가래뭉치" className="mx-auto h-36 w-36 object-contain drop-shadow-xl" />
           <p className="mt-2 text-[11px] font-normal tracking-[0.18em] text-[#00A994]">DIAGNOSIS COMPLETE</p>
-          <h1 className="mt-1 text-[29px] font-medium leading-tight tracking-tight text-[#334155] break-keep">
+          <h1 className="mt-1 text-[29px] font-medium leading-tight tracking-tight text-[#334155] dark:text-slate-200 break-keep">
             {profile.grade} {profile.title}
           </h1>
-          <p className="mt-3 text-sm font-normal leading-relaxed text-[#7A8798] break-keep">{profile.message}</p>
+          <p className="mt-3 text-sm font-normal leading-relaxed text-[#7A8798] dark:text-slate-400 break-keep">{profile.message}</p>
         </div>
 
-        <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+        <div className="rounded-[2rem] bg-white dark:bg-slate-800 p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <span className="text-sm font-normal text-[#334155]">급수 탐험 경로</span>
+            <span className="text-sm font-normal text-[#334155] dark:text-slate-200">급수 탐험 경로</span>
             <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-xs font-normal text-[#00A994]">{score}/8 정답</span>
           </div>
           <div className="flex items-center gap-1.5">
             {GRADE_STEPS.map((grade, idx) => (
               <div key={grade} className="flex flex-1 flex-col items-center gap-2">
-                <div className={`h-3 w-full rounded-full ${idx <= currentGradeIndex ? 'bg-[#00C7AE]' : 'bg-[#E5ECF3]'}`} />
+                <div className={`h-3 w-full rounded-full ${idx <= currentGradeIndex ? 'bg-[#00C7AE]' : 'bg-[#E5ECF3] dark:bg-slate-700'}`} />
                 <span className={`text-[10px] font-normal ${idx === currentGradeIndex ? 'text-[#00A994]' : 'text-[#AEB7C5]'}`}>{grade}</span>
               </div>
             ))}
@@ -306,21 +306,21 @@ const Result = ({ score, finalLevel, skillStats, memoryMistakes, onComplete }) =
             ['단어 감각', skillStats.word],
             ['문장 추론', skillStats.context],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-[1.35rem] bg-white p-3 text-center shadow-sm">
+            <div key={label} className="rounded-[1.35rem] bg-white dark:bg-slate-800 p-3 text-center shadow-sm">
               <p className="text-[10px] font-normal text-[#8D9CAE]">{label}</p>
               <p className="mt-1 text-xl font-normal text-[#7C83FF]">{value}</p>
             </div>
           ))}
         </div>
 
-        <div className="rounded-[2rem] bg-white p-5 shadow-sm">
+        <div className="rounded-[2rem] bg-white dark:bg-slate-800 p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-normal text-[#334155]">진단 보상</span>
+            <span className="text-sm font-normal text-[#334155] dark:text-slate-200">진단 보상</span>
             <span className="text-2xl font-normal text-[#FF9B73]">+{totalXp} XP</span>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-normal">
-            <span className="rounded-xl bg-[#FFF1EA] px-3 py-2 text-[#E8664F]">진단 +{profile.xp}</span>
-            <span className="rounded-xl bg-[#FFF1EA] px-3 py-2 text-[#FF9B73]">슈팅 보너스 +{memoryBonus}</span>
+            <span className="rounded-xl bg-[#FFF1EA] dark:bg-rose-950/30 px-3 py-2 text-[#E8664F] dark:text-rose-300">진단 +{profile.xp}</span>
+            <span className="rounded-xl bg-[#FFF1EA] dark:bg-rose-950/30 px-3 py-2 text-[#FF9B73] dark:text-orange-300">슈팅 보너스 +{memoryBonus}</span>
           </div>
         </div>
 

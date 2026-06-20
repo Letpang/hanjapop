@@ -4,6 +4,8 @@ import { SK } from '../constants/storageKeys.js';
 import { updateRecord } from '../utils/recordUtils.js';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import HANJA_DATA from '../hanja_unified.json';
+import IDIOMS from '../data/idioms.js';
+const IDIOM_MEANING_MAP = Object.fromEntries(IDIOMS.map(x => [x.hanja, x.meaning]));
 import { getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 import { getTodayStr } from '../utils/sessionUtils.js';
 import { buildUnifiedPool } from '../utils/learningPool.js';
@@ -78,7 +80,7 @@ const DailyFlashcard = ({ item, onFlip }) => {
 
     return (
         <div className="relative w-full max-w-[190px] aspect-[3/4] cursor-pointer shrink-0" onClick={handleFlip}>
-            <div className={"card-face-front clay-panel !rounded-[2.5rem] flex flex-col items-center p-4 justify-between border-4 border-white overflow-hidden " + (flipped ? "is-flipped" : "")}>
+            <div className={"card-face-front clay-panel !rounded-[2.5rem] flex flex-col items-center p-4 justify-between border-4 border-white dark:border-slate-700 overflow-hidden " + (flipped ? "is-flipped" : "")}>
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/40 to-transparent pointer-events-none z-10" />
                 <div className="flex-1 flex items-center justify-center w-full min-h-0 py-2 relative z-0">
                     <img
@@ -88,17 +90,17 @@ const DailyFlashcard = ({ item, onFlip }) => {
                         alt={item.hanja}
                     />
                 </div>
-                <div className="w-full bg-white/90 rounded-2xl py-3 text-center border-2 border-[#E9EDF2] shadow-inner shrink-0 mt-2 relative z-20">
-                    <span className="text-h1-res text-slate-700 font-normal">{item.hanja}</span>
+                <div className="w-full bg-white dark:bg-slate-800/90 rounded-2xl py-3 text-center border-2 border-[#E9EDF2] shadow-inner shrink-0 mt-2 relative z-20">
+                    <span className="text-h1-res text-slate-700 dark:text-slate-100 font-normal">{item.hanja}</span>
                 </div>
             </div>
-            <div className={"card-face-back clay-panel !rounded-[2.5rem] flex flex-col items-center justify-center p-4 border-4 border-white !bg-[#F8FAF9] " + (flipped ? "is-flipped" : "")}>
+            <div className={"card-face-back clay-panel !rounded-[2.5rem] flex flex-col items-center justify-center p-4 border-4 border-white dark:border-slate-700 !bg-[#F8FAF9] dark:bg-slate-900 " + (flipped ? "is-flipped" : "")}>
                 <span className="text-[#FF9B73] font-normal text-h2-res">{item.sound}</span>
-                <span className="text-[#5B677A] font-normal text-base text-center mt-1 break-keep">{item.meaning}</span>
+                <span className="text-[#5B677A] dark:text-slate-300 font-normal text-base text-center mt-1 break-keep">{item.meaning}</span>
                 <div className="w-12 h-1 bg-[#FF9B73]/15 rounded-full mt-3" />
                 {item.words?.length > 0 && (
                     <button onClick={e => { e.stopPropagation(); setShowWords(v => !v); }}
-                        className="mt-4 bg-white px-3 py-2.5 rounded-2xl border-2 border-[#FF9B73] shadow-lg active:scale-95 transition-all flex items-center gap-1.5">
+                        className="mt-4 bg-white dark:bg-slate-800 px-3 py-2.5 rounded-2xl border-2 border-[#FF9B73] shadow-lg active:scale-95 transition-all flex items-center gap-1.5">
                         <span className="text-lg">📖</span>
                         <span className="text-xs font-normal text-[#FF9B73] uppercase tracking-wider">단어</span>
                     </button>
@@ -107,7 +109,7 @@ const DailyFlashcard = ({ item, onFlip }) => {
             {showWords && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center"
                     onClick={e => { e.stopPropagation(); setShowWords(false); }}>
-                    <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white flex flex-col shadow-2xl shadow-[#7C83FF]/20"
+                    <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white dark:bg-slate-800 flex flex-col shadow-2xl shadow-[#7C83FF]/20"
                         style={{ width: 'calc(100% - 8px)', maxHeight: '320px' }} onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-3">
                             <span className="text-sm font-normal text-[#7C83FF] uppercase tracking-widest">단어장</span>
@@ -120,14 +122,14 @@ const DailyFlashcard = ({ item, onFlip }) => {
                                     className="bg-[#7C83FF]/10 px-3 py-2.5 rounded-xl border border-[#7C83FF]/30 cursor-pointer hover:bg-[#7C83FF]/20 active:scale-[0.98] transition-all flex flex-col justify-between">
                                     <div className="flex items-baseline justify-between gap-2">
                                         <div className="flex items-center gap-1.5">
-                                            <span className="font-normal text-base text-slate-700">{w.word}</span>
+                                            <span className="font-normal text-base text-slate-700 dark:text-slate-100">{w.word}</span>
                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#7C83FF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                             </svg>
                                         </div>
                                         <span className="text-sm font-normal text-[#7C83FF] shrink-0">{w.reading}</span>
                                     </div>
-                                    <div className="text-sm text-[#5B677A] font-normal mt-0.5">{w.meaning}</div>
+                                    <div className="text-sm text-[#5B677A] dark:text-slate-300 font-normal mt-0.5">{w.meaning || IDIOM_MEANING_MAP[w.word]}</div>
                                 </div>
                             ))}
                         </div>
@@ -177,7 +179,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
 
     return (
         <>
-            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center px-6 overflow-y-auto bg-[#F7FAF9]">
+            <div className="fixed inset-0 w-full h-full z-50 flex flex-col items-center px-6 overflow-y-auto bg-[#F7FAF9] dark:bg-slate-900">
                 <div className="w-full max-w-sm mx-auto flex flex-col relative z-10 safe-top pt-4" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 2rem)' }}>
 
                     {/* Header */}
@@ -196,10 +198,9 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                     {/* Progress dots */}
                     <div className="flex gap-2 justify-center mb-2">
                         {items.map((_, i) => (
-                            <div key={i} className="rounded-full transition-all duration-300" style={{
+                            <div key={i} className={`daily-progress-dot rounded-full transition-all duration-300 ${flippedSet.has(i) ? 'is-flipped' : i === currentIndex ? 'is-current' : ''}`} style={{
                                 width: i === currentIndex ? '24px' : '10px',
                                 height: '10px',
-                                backgroundColor: flippedSet.has(i) ? '#7C83FF' : i === currentIndex ? '#99E6DF' : '#e2e8f0',
                             }} />
                         ))}
                     </div>
@@ -210,7 +211,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                             <div className={`relative w-full h-full flashcard-preserve-3d transition-all duration-500 ${isFlipped ? 'rotate-y-180' : ''}`}>
 
                                 {/* FRONT */}
-                                <div className="flashcard-face-front flex flex-col items-center justify-center overflow-hidden"
+                                <div className="daily-study-card flashcard-face-front flex flex-col items-center justify-center overflow-hidden"
                                     style={{ background: '#ffffff', border: '6px solid #ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.07)', padding: '1.5rem' }}>
                                     <img
                                         src={`/assets/images/hanja_all/${item.id}_${encodeURIComponent(item.hanja)}.webp`}
@@ -218,25 +219,25 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                         className="w-[clamp(100px,26vw,140px)] h-[clamp(100px,26vw,140px)] object-contain"
                                         alt={item.hanja}
                                     />
-                                    <span className="font-normal text-[#3C3C3C] tracking-tighter leading-none" style={{ fontSize: 'clamp(2.5rem, 12vw, 4rem)', marginTop: '1rem' }}>
+                                    <span className="font-normal text-[#3C3C3C] dark:text-slate-100 tracking-tighter leading-none" style={{ fontSize: 'clamp(2.5rem, 12vw, 4rem)', marginTop: '1rem' }}>
                                         {item.hanja}
                                     </span>
-                                    <div className="px-6 py-2 rounded-full bg-[#F8FAF9] border-2 border-transparent" style={{ marginTop: '1.8rem' }}>
+                                    <div className="px-6 py-2 rounded-full bg-[#F8FAF9] dark:bg-slate-900 border-2 border-transparent" style={{ marginTop: '1.8rem' }}>
                                         <span className="font-normal text-xs uppercase tracking-[0.2em] text-[#AEB7C5]">탭해서 확인</span>
                                     </div>
                                 </div>
 
                                 {/* BACK */}
-                                <div className="flashcard-face-back flex flex-col items-center justify-center overflow-hidden"
+                                <div className="daily-study-card flashcard-face-back flex flex-col items-center justify-center overflow-hidden"
                                     style={{ background: '#ffffff', border: '6px solid #ffffff', boxShadow: '0 20px 50px rgba(0,0,0,0.09)', padding: '2rem 1.25rem' }}>
                                     {/* 중앙: 한자 + 구분선 + 음/뜻 */}
                                     <div className="flex flex-col items-center text-center">
-                                        <span className="font-normal tracking-tighter leading-none" style={{ fontSize: 'clamp(5.5rem, 24vw, 8rem)', color: '#1e293b' }}>
+                                        <span className="daily-study-main-character font-normal tracking-tighter leading-none" style={{ fontSize: 'clamp(5.5rem, 24vw, 8rem)', color: '#1e293b' }}>
                                             {item.hanja}
                                         </span>
                                         <div className="w-12 h-1 rounded-full bg-slate-300" style={{ margin: '1.4rem 0' }} />
                                         <div className="flex flex-row items-baseline gap-3">
-                                            <span className="font-normal leading-none" style={{ fontSize: 'clamp(2.5rem, 11vw, 3.5rem)', color: '#AEB7C5' }}>
+                                            <span className="daily-study-meaning font-normal leading-none" style={{ fontSize: 'clamp(2.5rem, 11vw, 3.5rem)', color: '#AEB7C5' }}>
                                                 {item.meaning}
                                             </span>
                                             <span className="font-normal tracking-tighter leading-none" style={{ fontSize: 'clamp(2.5rem, 11vw, 3.5rem)', color: topicColor }}>
@@ -248,7 +249,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                     {item.words?.length > 0 && (
                                         <div className="mt-8">
                                             <button onClick={e => { e.stopPropagation(); setShowWords(true); }}
-                                                className="bg-white px-4 py-2 rounded-2xl border border-[#E9EDF2] shadow-sm active:scale-95 transition-all flex items-center gap-2">
+                                                className="bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl border border-[#E9EDF2] shadow-sm active:scale-95 transition-all flex items-center gap-2">
                                                 <img src="/assets/images/icons/related_words.webp" className="w-8 h-8 object-contain" alt="관련단어" />
                                                 <span className="text-lg font-normal text-[#AEB7C5] uppercase tracking-wider">관련단어</span>
                                             </button>
@@ -261,7 +262,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                         {/* Words popup */}
                         {showWords && (
                             <div className="fixed inset-0 z-[200] flex items-center justify-center" onClick={() => setShowWords(false)}>
-                                <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white flex flex-col shadow-2xl shadow-[#7C83FF]/20"
+                                <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white dark:bg-slate-800 flex flex-col shadow-2xl shadow-[#7C83FF]/20"
                                     style={{ width: 'calc(100% - 8px)', maxHeight: '320px' }} onClick={e => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-3">
                                         <span className="text-sm font-normal text-[#7C83FF] uppercase tracking-widest">단어장</span>
@@ -274,14 +275,14 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                                 className="bg-[#7C83FF]/10 px-3 py-2.5 rounded-xl border border-[#7C83FF]/30 cursor-pointer hover:bg-[#7C83FF]/20 active:scale-[0.98] transition-all flex flex-col justify-between">
                                                 <div className="flex items-baseline justify-between gap-2">
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="font-normal text-base text-slate-700">{w.word}</span>
+                                                        <span className="font-normal text-base text-slate-700 dark:text-slate-100">{w.word}</span>
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#7C83FF] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                                                         </svg>
                                                     </div>
                                                     <span className="text-sm font-normal text-[#7C83FF] shrink-0">{w.reading}</span>
                                                 </div>
-                                                <div className="text-sm text-[#5B677A] font-normal mt-1">{w.meaning}</div>
+                                                <div className="text-sm text-[#5B677A] dark:text-slate-300 font-normal mt-1">{w.meaning || IDIOM_MEANING_MAP[w.word]}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -322,7 +323,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
 
             {showClearPopup && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overlay-success">
-                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative">
+                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative">
                         <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
                         
                         <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-7 w-full relative z-10">
@@ -345,9 +346,9 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                 <div className="flex items-start justify-between w-full relative">
                                     {/* 1. 한자 카드 (완료) */}
                                     <div className="flex flex-col items-center gap-2 relative z-10">
-                                        <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#E0F2FE] to-[#7DD3FC] shadow-md border-[3px] border-white flex items-center justify-center relative transform transition-transform hover:scale-105">
+                                        <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#E0F2FE] to-[#7DD3FC] shadow-md border-[3px] border-white dark:border-slate-700 flex items-center justify-center relative transform transition-transform hover:scale-105">
                                             <img src="/assets/images/icons/study.webp" className="w-7 h-7 object-contain opacity-90 drop-shadow-sm" alt="Study" />
-                                            <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-normal shadow-sm border border-white">✓</div>
+                                            <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-normal shadow-sm border border-white dark:border-slate-700">✓</div>
                                         </div>
                                         <span className="text-[11px] font-normal text-[#FF9B73]">한자 카드</span>
                                     </div>
@@ -355,7 +356,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                     {/* 2. 퀴즈 (현재) */}
                                     <div className="flex flex-col items-center gap-2 relative z-10">
                                         <div className="absolute -top-7 text-xl animate-bounce drop-shadow-sm">📍</div>
-                                        <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#A7F3D0] to-[#10B981] shadow-[0_8px_16px_rgba(16,185,129,0.3)] border-[3px] border-white flex items-center justify-center transform scale-110">
+                                        <div className="w-14 h-14 rounded-[1.2rem] bg-gradient-to-br from-[#A7F3D0] to-[#10B981] shadow-[0_8px_16px_rgba(16,185,129,0.3)] border-[3px] border-white dark:border-slate-700 flex items-center justify-center transform scale-110">
                                             <img src="/assets/images/icons/sentence.webp" className="w-7 h-7 object-contain drop-shadow-md" alt="Quiz" />
                                         </div>
                                         <span className="text-[12px] font-normal text-[#10B981] mt-0.5">퀴즈</span>
@@ -363,7 +364,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
 
                                     {/* 3. 게임 (잠김) */}
                                     <div className="flex flex-col items-center gap-2 relative z-10">
-                                        <div className="w-14 h-14 rounded-[1.2rem] bg-[#F1F5F9] shadow-inner border-[3px] border-white flex items-center justify-center grayscale opacity-50">
+                                        <div className="w-14 h-14 rounded-[1.2rem] bg-[#F1F5F9] shadow-inner border-[3px] border-white dark:border-slate-700 flex items-center justify-center grayscale opacity-50">
                                             <img src="/assets/images/icons/monster.webp" className="w-7 h-7 object-contain" alt="Game" />
                                         </div>
                                         <span className="text-[11px] font-normal text-[#94A3B8]">게임</span>
@@ -411,7 +412,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
     }, [resumeStep]);
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-5">
+        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center px-5">
             <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#2ED6C5] blur-[100px] opacity-15 pointer-events-none" />
             <div className="absolute -bottom-24 right-0 w-96 h-96 rounded-full bg-[#FF9B73] blur-[100px] opacity-15 pointer-events-none" />
 
@@ -420,10 +421,10 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                 ←
             </button>
 
-            <div className="w-full max-w-sm rounded-[2rem] px-4 pt-5 pb-5 border border-white/60 mb-8"
+            <div className="daily-stage-panel w-full max-w-sm rounded-[2rem] px-4 pt-5 pb-5 border border-white dark:border-slate-700/60 mb-8"
                 style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', boxShadow: '0 8px 32px rgba(46,214,197,0.10), 0 2px 8px rgba(0,0,0,0.05)' }}>
                 <div className="flex flex-col items-center gap-2 mb-4">
-                    <div className="rounded-full px-5 py-1.5 mt-[-2.5rem] bg-white border-2 border-[#F1F5F9] shadow-sm z-10 flex items-center gap-2.5">
+                    <div className="rounded-full px-5 py-1.5 mt-[-2.5rem] bg-white dark:bg-slate-800 border-2 border-[#F1F5F9] shadow-sm z-10 flex items-center gap-2.5">
                         <span className="w-2 h-2 rounded-full bg-[#9FA5FF]"></span>
                         <h1 className="font-medium text-[#6168EB] tracking-tight leading-none pt-0.5" style={{ fontSize: '1.25rem' }}>
                             한자 탐험 {dayNumber}단계
@@ -436,15 +437,15 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                 </div>
                 {todayHanja.length > 0 && (
                     <div className="flex flex-col gap-3 w-full">
-                        <p className="text-center font-normal" style={{ fontSize: '1.2rem', color: '#3C3C3C' }}>다음의 한자를 배워요!</p>
+                        <p className="daily-stage-caption text-center font-normal" style={{ fontSize: '1.2rem', color: '#3C3C3C' }}>다음의 한자를 배워요!</p>
                         <div className="flex gap-3 w-full">
                             {todayHanja.map((h, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center rounded-[1.3rem] px-2 py-4"
+                                <div key={i} className="daily-stage-hanja flex-1 flex flex-col items-center rounded-[1.3rem] px-2 py-4"
                                     style={{ background: '#FFFFFF' }}>
                                     <img src={`/assets/images/hanja_all/${h.id}_${encodeURIComponent(h.hanja)}.webp`}
                                         onError={e => { e.target.src = '/assets/images/hanja_placeholder.webp'; }}
-                                        className="w-20 h-20 object-contain mix-blend-multiply" alt={h.hanja} />
-                                    <span className="text-[42px] font-normal text-[#334155] leading-none mt-2">{h.hanja}</span>
+                                        className="w-20 h-20 object-contain mix-blend-multiply dark:mix-blend-normal" alt={h.hanja} />
+                                    <span className="text-[42px] font-normal text-[#334155] dark:text-slate-200 leading-none mt-2">{h.hanja}</span>
                                 </div>
                             ))}
                         </div>
@@ -477,15 +478,15 @@ const GamePickScreen = ({ onResult, onBack }) => {
     const game = useMemo(() => pickDailyOption(GAMES, 'game'), []);
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-6">
+        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center px-6">
             <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10 !text-slate-400">←</button>
             <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#2ED6C5] blur-[100px] opacity-10 pointer-events-none" />
             <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
 
             <p className="font-normal text-sm text-[#94A3B8] mb-3 tracking-wide">오늘의 게임</p>
-            <h2 className="font-medium text-[#3C3C3C] mb-10 text-center" style={{ fontSize: '1.7rem' }}>{game.label}</h2>
+            <h2 className="font-medium text-[#3C3C3C] dark:text-slate-100 mb-10 text-center" style={{ fontSize: '1.7rem' }}>{game.label}</h2>
 
-            <div className="flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
+            <div className="daily-pick-card flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
                 style={{ background: game.bg, borderColor: game.color + '55', boxShadow: `0 12px 32px ${game.color}33` }}>
                 <img src={game.icon} className="w-28 h-28 object-contain" alt={game.label} />
             </div>
@@ -518,15 +519,15 @@ const QuizPickScreen = ({ onResult, onBack }) => {
     const quiz = useMemo(() => pickDailyOption(QUIZZES, 'quiz'), []);
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col items-center justify-center px-6">
+        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center px-6">
             <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10 !text-slate-400">←</button>
             <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#7C83FF] blur-[100px] opacity-10 pointer-events-none" />
             <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
 
             <p className="font-normal text-sm text-[#94A3B8] mb-3 tracking-wide">오늘의 퀴즈</p>
-            <h2 className="font-medium text-[#3C3C3C] mb-10 text-center" style={{ fontSize: '1.7rem' }}>{quiz.label}</h2>
+            <h2 className="font-medium text-[#3C3C3C] dark:text-slate-100 mb-10 text-center" style={{ fontSize: '1.7rem' }}>{quiz.label}</h2>
 
-            <div className="flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
+            <div className="daily-pick-card flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
                 style={{ background: quiz.bg, borderColor: quiz.color + '55', boxShadow: `0 12px 32px ${quiz.color}33` }}>
                 <img src={quiz.icon} className="w-28 h-28 object-contain" alt={quiz.label} />
             </div>
@@ -607,16 +608,16 @@ const GameNodeButton = ({ status, icon }) => {
     
     if (isLocked) {
         bgStyle = "bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0]";
-        shadowStyle = "shadow-[inset_0_-6px_0_rgba(148,163,184,0.4),0_8px_16px_rgba(0,0,0,0.05)] border-white";
+        shadowStyle = "shadow-[inset_0_-6px_0_rgba(148,163,184,0.4),0_8px_16px_rgba(0,0,0,0.05)] border-white dark:border-slate-700";
         ringStyle = "ring-4 ring-[#E2E8F0]/40";
     } else if (isDone) {
         bgStyle = "bg-gradient-to-br from-[#E0F2FE] to-[#7DD3FC]"; // Sky blue
-        shadowStyle = "shadow-[inset_0_-8px_0_rgba(2,132,199,0.3),0_12px_24px_rgba(56,189,248,0.3)] border-white";
+        shadowStyle = "shadow-[inset_0_-8px_0_rgba(2,132,199,0.3),0_12px_24px_rgba(56,189,248,0.3)] border-white dark:border-slate-700";
         ringStyle = "ring-4 ring-[#38bdf8]/40";
     } else {
         // Active
         bgStyle = "bg-gradient-to-br from-[#A7F3D0] to-[#10B981]"; // Emerald / Mint
-        shadowStyle = "shadow-[inset_0_-8px_0_rgba(4,120,87,0.3),0_16px_32px_rgba(16,185,129,0.4)] border-white";
+        shadowStyle = "shadow-[inset_0_-8px_0_rgba(4,120,87,0.3),0_16px_32px_rgba(16,185,129,0.4)] border-white dark:border-slate-700";
         ringStyle = "ring-4 ring-[#10B981]/40";
     }
 
@@ -659,7 +660,7 @@ const MapNode = ({ label, icon, isLeft, activeColor, status, charImg, charId, on
                     >
                         <GameNodeButton status={status} icon={icon} activeColor={activeColor} />
                         {isDone && (
-                            <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-9 h-9 rounded-full flex items-center justify-center text-xl font-normal shadow-lg border-2 border-white z-30 transform rotate-12">✓</div>
+                            <div className="absolute -top-2 -right-2 bg-[#FF9B73] text-white w-9 h-9 rounded-full flex items-center justify-center text-xl font-normal shadow-lg border-2 border-white dark:border-slate-700 z-30 transform rotate-12">✓</div>
                         )}
                     </button>
                     {/* Stars for completed nodes */}
@@ -673,7 +674,7 @@ const MapNode = ({ label, icon, isLeft, activeColor, status, charImg, charId, on
 
             {/* Label Underneath */}
             <div className="mt-3 flex flex-col items-center">
-                <span className={`font-normal tracking-tight leading-tight text-center ${isLocked ? 'text-[#94A3B8]' : 'text-[#334155]'} text-[clamp(20px,5.5vw,26px)] drop-shadow-sm`}>
+                <span className={`font-normal tracking-tight leading-tight text-center ${isLocked ? 'text-[#94A3B8]' : 'text-[#334155] dark:text-slate-200'} text-[clamp(20px,5.5vw,26px)] drop-shadow-sm`}>
                     {label}
                 </span>
             </div>
@@ -695,9 +696,9 @@ const BranchOption = ({ node, status, activeColor, onTap }) => {
                     ${isActive ? 'active:scale-95 scale-105 hover:scale-110' : ''}`}
             >
                 <GameNodeButton status={status} icon={node.icon} activeColor={activeColor} />
-                {isDone && <div className="absolute -top-1.5 -right-1.5 bg-[#FF9B73] text-white w-8 h-8 rounded-full flex items-center justify-center text-base font-normal shadow-lg border-2 border-white z-30 transform rotate-12">✓</div>}
+                {isDone && <div className="absolute -top-1.5 -right-1.5 bg-[#FF9B73] text-white w-8 h-8 rounded-full flex items-center justify-center text-base font-normal shadow-lg border-2 border-white dark:border-slate-700 z-30 transform rotate-12">✓</div>}
             </button>
-            <span className={`mt-2 text-[clamp(17px,4.5vw,21px)] font-normal text-center break-keep leading-tight ${isDisabled ? 'text-[#94A3B8]' : isDone ? 'text-[#FF9B73]' : 'text-[#334155]'}`}>
+            <span className={`mt-2 text-[clamp(17px,4.5vw,21px)] font-normal text-center break-keep leading-tight ${isDisabled ? 'text-[#94A3B8]' : isDone ? 'text-[#FF9B73]' : 'text-[#334155] dark:text-slate-200'}`}>
                 {node.label}
             </span>
         </div>
@@ -725,8 +726,8 @@ const BranchSection = ({ activeColor, leftNode, rightNode, available, chosen, st
 
             {/* 선택 힌트 */}
             {isCurrent && (
-                <div className="mb-4 px-4 py-1.5 rounded-full bg-white/80 border border-white/60 shadow-sm backdrop-blur-sm">
-                    <span className="text-[13px] font-normal text-[#5B677A]">둘 중 하나만 골라요!</span>
+                <div className="mb-4 px-4 py-1.5 rounded-full bg-white dark:bg-slate-800/80 border border-white dark:border-slate-700/60 shadow-sm backdrop-blur-sm">
+                    <span className="text-[13px] font-normal text-[#5B677A] dark:text-slate-300">둘 중 하나만 골라요!</span>
                 </div>
             )}
 
@@ -738,7 +739,7 @@ const BranchSection = ({ activeColor, leftNode, rightNode, available, chosen, st
                 </div>
 
                 {/* VS divider */}
-                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center z-20 ${isCurrent ? 'bg-white shadow-md border-2 border-slate-100' : 'opacity-0'}`}>
+                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center z-20 ${isCurrent ? 'bg-white dark:bg-slate-800 shadow-md border-2 border-slate-100' : 'opacity-0'}`}>
                     <span className="text-[11px] font-normal text-[#94A3B8]">VS</span>
                 </div>
 
@@ -763,11 +764,11 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                     : 'done';
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] flex flex-col overflow-y-auto">
+        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col overflow-y-auto">
             <style>{PULSE_CSS}</style>
 
             {/* Background Layers */}
-            <div className="fixed inset-0 pointer-events-none z-0 bg-[#F7FAF9]">
+            <div className="fixed inset-0 pointer-events-none z-0 bg-[#F7FAF9] dark:bg-slate-900">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#E0F7FA]/50 via-[#F1F8E9]/50 to-[#E0F7FA]/50" />
                 
                 {/* Floating Elements */}
@@ -792,7 +793,7 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                 <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10">←</button>
 
                 {/* 제목 + 한자카드 통합 패널 */}
-                <div className="w-full max-w-sm mt-1 rounded-[2rem] px-4 pt-5 pb-5 border border-white/60"
+                <div className="daily-stage-panel w-full max-w-sm mt-1 rounded-[2rem] px-4 pt-5 pb-5 border border-white dark:border-slate-700/60"
                     style={{
                         background: 'rgba(255,255,255,0.55)',
                         backdropFilter: 'blur(18px)',
@@ -809,10 +810,10 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                     </div>
                     {todayHanja.length > 0 && (
                         <div className="flex flex-col gap-3 w-full">
-                        <p className="text-center font-normal" style={{ fontSize: '1.2rem', letterSpacing: '-0.01em', color: '#3C3C3C' }}>다음의 한자를 배워요!</p>
+                        <p className="daily-stage-caption text-center font-normal" style={{ fontSize: '1.2rem', letterSpacing: '-0.01em', color: '#3C3C3C' }}>다음의 한자를 배워요!</p>
                         <div className="flex gap-3 w-full">
                             {todayHanja.map((h, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center rounded-[1.3rem] px-2 py-4"
+                                <div key={i} className="daily-stage-hanja flex-1 flex flex-col items-center rounded-[1.3rem] px-2 py-4"
                                     style={{
                                         background: 'rgba(255,255,255,0.70)',
                                         border: '1px solid rgba(46,214,197,0.18)',
@@ -821,10 +822,10 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
                                     <img
                                         src={`/assets/images/hanja_all/${h.id}_${encodeURIComponent(h.hanja)}.webp`}
                                         onError={e => { e.target.src = '/assets/images/hanja_placeholder.webp'; }}
-                                        className="w-20 h-20 object-contain mix-blend-multiply"
+                                        className="w-20 h-20 object-contain mix-blend-multiply dark:mix-blend-normal"
                                         alt={h.hanja}
                                     />
-                                    <span className="text-[42px] font-normal text-[#334155] leading-none mt-2">{h.hanja}</span>
+                                    <span className="text-[42px] font-normal text-[#334155] dark:text-slate-200 leading-none mt-2">{h.hanja}</span>
                                 </div>
                             ))}
                         </div>
@@ -952,8 +953,7 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-5 backdrop-blur-lg animate-in fade-in duration-300 overflow-y-auto"
-            style={{ background: 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-5 backdrop-blur-lg animate-in fade-in duration-300 overflow-y-auto bg-gradient-to-b from-[#DDF1EA] to-[#EAF6F2] dark:from-slate-900 dark:to-slate-800"
         >
             <div className="w-full max-w-sm flex flex-col items-center result-card-container my-2 relative">
                 {/* Decorative glow background */}
@@ -963,11 +963,11 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
 
                     {/* 캐릭터 이미지 */}
                     <div className="relative flex items-center justify-center mt-7">
-                        <div className="absolute w-[100px] h-[100px] bg-[#2ED6C5]/10 rounded-full blur-md z-0" />
+                        <div className="absolute w-[160px] h-[160px] bg-[#2ED6C5]/10 rounded-full blur-md z-0" />
                         <img
                             src={charImg}
                             alt="great"
-                            className="w-[108px] h-[108px] object-contain drop-shadow-[0_12px_20px_rgba(46,214,197,0.3)] animate-bounce relative z-10"
+                            className="w-[168px] h-[168px] object-contain drop-shadow-[0_12px_20px_rgba(46,214,197,0.3)] animate-bounce relative z-10"
                             style={{ animationDuration: '3s', transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }}
                             onError={e => { e.target.src = '/assets/images/characters/default_3d.webp'; }}
                         />
@@ -990,8 +990,8 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                         <p className="text-[13px] font-medium text-slate-500 text-center uppercase tracking-widest">오늘 배운 한자</p>
                         <div className="flex gap-2 w-full">
                             {todayHanja.filter(h => h.id).map((h, i) => (
-                                <div key={i} className="flex-1 clay-panel !rounded-[1.3rem] flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 border-[2px] border-white !bg-[#F8FAF9] shadow-sm">
-                                    <span className="text-4xl font-normal text-slate-700 leading-none">{h.hanja}</span>
+                                <div key={i} className="flex-1 clay-panel !rounded-[1.3rem] flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 border-[2px] border-white dark:border-slate-700 !bg-[#F8FAF9] dark:bg-slate-900 shadow-sm">
+                                    <span className="text-4xl font-normal text-slate-700 dark:text-slate-100 leading-none">{h.hanja}</span>
                                     <span className="text-sm font-normal text-[#8F99AD] text-center break-keep leading-tight">{h.meaning} {h.sound}</span>
                                 </div>
                             ))}
@@ -1002,10 +1002,10 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                     <div className="w-full rounded-[1.4rem] bg-[#F4F7F8]/80 border border-[#E9EDF2] p-4 flex flex-col gap-2 shadow-inner">
                         <div className="flex items-center justify-between">
                             <div className="flex flex-col text-left">
-                                <span className="font-normal text-[15px] text-slate-700 leading-none">오늘의 퀘스트 현황</span>
+                                <span className="font-normal text-[15px] text-slate-700 dark:text-slate-100 leading-none">오늘의 퀘스트 현황</span>
                                 <span className="font-normal text-[12px] text-slate-400 mt-1">올클리어 시 +200 XP!</span>
                             </div>
-                            <span className={`px-2.5 py-0.5 rounded-full font-normal text-[11px] ${allDone ? 'bg-[#2ED6C5] text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                            <span className={`px-2.5 py-0.5 rounded-full font-normal text-[11px] ${allDone ? 'bg-[#2ED6C5] text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-400 border border-slate-100'}`}>
                                 {missionDone} / {missionTotal}
                             </span>
                         </div>
@@ -1052,6 +1052,7 @@ const DailySessionScreen = ({
     wordData,
     onMarkCorrect,
     onMarkWrong,
+    onMarkSeen,
     onMarkWordWrong,
     onWordCorrect,
     onWordSeen,
@@ -1064,6 +1065,7 @@ const DailySessionScreen = ({
     userXp,
     missions,
     doneCount,
+    onMapIdle,
 }) => {
     const continuedNextRef = useRef(false);
     const [dayNumber, setDayNumber] = useState(() => currentDay || getTodayDayNumber());
@@ -1144,6 +1146,12 @@ const DailySessionScreen = ({
     const sessionDoneTypesRef = useRef(new Set());
     const [sessionDoneCount, setSessionDoneCount] = useState(0);
 
+    useEffect(() => {
+        if (step === 'dice' && onMapIdle) {
+            onMapIdle();
+        }
+    }, [step, onMapIdle]);
+
     const markHanjaSeen = (ids) => {
         if (!ids?.length) return;
         setSeenHanjaIds(prev => { const s = new Set(prev); ids.forEach(id => { if (id != null) s.add(id); }); return prev.length === s.size ? prev : [...s]; });
@@ -1188,15 +1196,15 @@ const DailySessionScreen = ({
                         const isDone = i <= currentStepIndex;
                         const els = [
                             <div key={`step-${i}`} className={`flex flex-col items-center gap-1.5 shrink-0 ${isDone ? '' : 'opacity-50 grayscale'}`}>
-                                <div className="relative w-12 h-12 rounded-[1rem] flex items-center justify-center shadow-md border-[2px] border-white"
+                                <div className="relative w-12 h-12 rounded-[1rem] flex items-center justify-center shadow-md border-[2px] border-white dark:border-slate-700"
                                     style={{ background: isDone ? s.color + '22' : '#f1f5f9' }}>
                                     <img src={s.icon} className="w-7 h-7 object-contain" alt={s.label} />
                                     {isDone && (
-                                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-normal shadow-md border-2 border-white"
+                                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-normal shadow-md border-2 border-white dark:border-slate-700"
                                             style={{ background: '#FF9B73' }}>✓</div>
                                     )}
                                 </div>
-                                <span className="text-[9px] font-normal text-[#5B677A] text-center leading-tight max-w-[56px]">{s.label}</span>
+                                <span className="text-[9px] font-normal text-[#5B677A] dark:text-slate-300 text-center leading-tight max-w-[56px]">{s.label}</span>
                             </div>,
                         ];
                         if (i < mapSteps.length - 1) {
@@ -1273,8 +1281,9 @@ const DailySessionScreen = ({
                 items={todayFullHanja}
                 getRewardPreview={getRewardPreview}
                 onBack={() => setStep('intro')}
-                onCardFlip={() => {
+                onCardFlip={(id) => {
                     if (addTodayStat) addTodayStat('flashcard');
+                    if (id && onMarkSeen) onMarkSeen(id);
                 }}
                 onStageClear={() => {
                     if (onHanjaAcquired) onHanjaAcquired(null, 30);
@@ -1292,13 +1301,14 @@ const DailySessionScreen = ({
 
     if (step === 'sentenceQuiz') {
         return (
-            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9] dark:bg-slate-900" />}>
                 <SentenceQuizScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(1)}
                     onBack={() => setStep('quizPick')}
                     contentPool={contentPool}
                     onGetNextWordIds={getNextWordIds}
                     selectedCharacter={selectedCharacter}
+                    missionDone={missions?.find(m => m.type === 'sentenceQuiz')?.done ?? false}
                     userXp={userXp}
                     getRewardPreview={getRewardPreview}
                     onHanjaAcquired={onHanjaAcquired}
@@ -1310,7 +1320,7 @@ const DailySessionScreen = ({
                     onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
                     onStageClear={(correct, total, newSeenIds) => {
                         if (newSeenIds) markHanjaSeen(newSeenIds);
-                        if (onHanjaAcquired) onHanjaAcquired(null, 20);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 20 + correct * 10);
                         trackMission('sentenceQuiz', 1, addBonusXp);
                         if (addTodayStat) addTodayStat('sentenceQuiz', total || 1);
                         setResumeStep('dice');
@@ -1325,13 +1335,14 @@ const DailySessionScreen = ({
 
     if (step === 'wordQuiz') {
         return (
-            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9] dark:bg-slate-900" />}>
                 <WordQuizScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(1)}
                     onBack={() => setStep('quizPick')}
                     contentPool={contentPool}
                     onGetNextWordIds={getNextWordIds}
                     selectedCharacter={selectedCharacter}
+                    missionDone={missions?.find(m => m.type === 'wordQuiz')?.done ?? false}
                     userXp={userXp}
                     getRewardPreview={getRewardPreview}
                     onHanjaAcquired={onHanjaAcquired}
@@ -1342,7 +1353,7 @@ const DailySessionScreen = ({
                     seenHanjaIds={seenHanjaIds} seenWordIds={seenWordIds}
                     onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
                     onStageClear={(correct, total) => {
-                        if (onHanjaAcquired) onHanjaAcquired(null, 20);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 20 + correct * 5);
                         trackMission('wordQuiz', 1, addBonusXp);
                         if (addTodayStat) addTodayStat('wordQuiz', total || 1);
                         setResumeStep('dice');
@@ -1361,10 +1372,11 @@ const DailySessionScreen = ({
 
     if (step === 'shoot') {
         return (
-            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9] dark:bg-slate-900" />}>
                 <ShootGameScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
                     onBack={() => setStep('dice')}
+                    missionDone={missions?.find(m => m.type === 'shootGame')?.done ?? false}
                     getRewardPreview={getRewardPreview}
                     onHanjaAcquired={onHanjaAcquired}
                     onGameFinish={() => { trackMission('shootGame', 1, addBonusXp); finishSession(); }}
@@ -1384,19 +1396,20 @@ const DailySessionScreen = ({
 
     if (step === 'match') {
         return (
-            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9]" />}>
+            <Suspense fallback={<div className="min-h-screen bg-[#F7FAF9] dark:bg-slate-900" />}>
                 <MatchGameScreen
                     autoStart={true} hideRetry={true} dailyMapNode={renderMiniMap(2)}
                     onBack={() => setStep('dice')}
                     onGameFinish={() => finishSession()}
                     contentPool={contentPool}
                     onHanjaAcquired={onHanjaAcquired}
-                    onStageClear={(round, elapsedSec) => {
+                    onStageClear={(round, elapsedSec, matches = 0) => {
                         trackMission('matchGame', 1, addBonusXp);
-                        if (onHanjaAcquired) onHanjaAcquired(null, 20);
+                        if (onHanjaAcquired) onHanjaAcquired(null, 20 + matches * 3);
                         if (addTodayStat) addTodayStat('matchGame');
                         if (elapsedSec != null) updateRecord('matchBestTime', elapsedSec);
                     }}
+                    missionDone={missions?.find(m => m.type === 'matchGame')?.done ?? false}
                     onMarkCorrect={(id) => onMarkCorrect(id)}
                     onMarkWrong={() => { }}
                     srsData={srsData} masteryData={masteryData}

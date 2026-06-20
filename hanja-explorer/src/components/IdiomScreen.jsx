@@ -295,10 +295,13 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                         {q.type === 'idiom_from_meaning' && (
                             <p className="grade-exam-guide-text text-center">{q.displayMeaning}</p>
                         )}
+                        {q.origin && (
+                            <p className="text-xs text-[#9AA4B5] text-center px-4 leading-relaxed break-keep border-t border-[#E9EDF2] pt-5 mt-4 pb-2">{q.origin}</p>
+                        )}
                     </div>
                 )}
                 renderBack={({ isSpeaking, onSpeak }) => (
-                    <div className="grade-test-question-card flex flex-col items-center justify-center gap-3 py-12">
+                    <div className="grade-test-question-card flex flex-col items-center justify-center gap-3 py-10">
                         <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }}
                             className="absolute top-4 right-4" />
                         <span className="text-5xl font-normal text-[#4F56D9] tracking-tighter mt-2">{q.hanja}</span>

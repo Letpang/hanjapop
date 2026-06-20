@@ -16,10 +16,10 @@ const GradeGrid = ({ selected, onSelect, lockedGrades = [] }) => {
                     onClick={locked ? undefined : () => { if (!isPremium) { showPremiumGate(); return; } onSelect(g); }}
                     className={`relative h-[5.2rem] rounded-3xl font-normal text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
                         locked 
-                        ? 'bg-[#F8FAF9] border-[#E9EDF2] text-slate-200 cursor-not-allowed'
+                        ? 'bg-[#F8FAF9] dark:bg-slate-800/60 border-[#E9EDF2] dark:border-slate-700 text-slate-200 dark:text-slate-600 cursor-not-allowed'
                         : isSel
-                            ? 'bg-white border-[#FFA88D] text-[#5B677A] shadow-lg'
-                            : 'bg-white border-[#E9EDF2] text-[#5B677A] hover:border-[#E9EDF2]'
+                            ? 'dm-selected-glow bg-white dark:bg-slate-800 border-[#FFA88D] text-[#5B677A] dark:text-slate-100 shadow-lg'
+                            : 'bg-white dark:bg-slate-800 border-[#E9EDF2] dark:border-slate-700 text-[#5B677A] dark:text-slate-200 hover:border-[#E9EDF2] dark:hover:border-slate-600'
                     }`}
                 >
                     {locked ? (
@@ -54,10 +54,10 @@ export const TopicCard = ({ name, isSelected, onClick, locked }) => {
         onClick={handleClick}
         className={`relative h-[5.2rem] rounded-3xl font-normal text-h3 transition-all border-4 flex items-center justify-center shadow-sm active:scale-95 px-2 ${
             locked
-            ? 'bg-[#F8FAF9] border-[#E9EDF2] text-slate-200 cursor-not-allowed'
+            ? 'bg-[#F8FAF9] dark:bg-slate-800/60 border-[#E9EDF2] dark:border-slate-700 text-slate-200 dark:text-slate-600 cursor-not-allowed'
             : isSelected
-                ? 'bg-white border-[#FFA88D] text-[#5B677A] shadow-lg'
-                : 'bg-white border-[#E9EDF2] text-[#5B677A] hover:border-[#E9EDF2]'
+                ? 'dm-selected-glow bg-white dark:bg-slate-800 border-[#FFA88D] text-[#5B677A] dark:text-slate-100 shadow-lg'
+                : 'bg-white dark:bg-slate-800 border-[#E9EDF2] dark:border-slate-700 text-[#5B677A] dark:text-slate-200 hover:border-[#E9EDF2] dark:hover:border-slate-600'
         }`}
     >
         {locked ? (

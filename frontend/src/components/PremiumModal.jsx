@@ -86,7 +86,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
             onClick={onClose}
         >
             <div
-                className="w-full max-w-md rounded-t-[32px] pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]"
+                className="premium-modal-card w-full max-w-md rounded-t-[32px] pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]"
                 style={{ background: '#FFFFFF' }}
                 onClick={e => e.stopPropagation()}
             >
@@ -110,7 +110,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                         {/* Shimmer overlay on the gradient border */}
                         <div className="absolute inset-0 bg-white/20" />
                         
-                        <div className="relative rounded-[14px] px-4 py-3.5 flex items-center gap-3.5 h-full"
+                        <div className="premium-widget-card relative rounded-[14px] px-4 py-3.5 flex items-center gap-3.5 h-full"
                              style={{ background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
                              
                             {/* Icon Container */}
@@ -127,11 +127,11 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                             <div className="min-w-0 flex flex-col justify-center">
                                 <div className="flex items-center gap-2 mb-0.5">
                                     <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-gradient-to-r from-[#7C83FF] to-[#FF9B73] text-white tracking-widest shadow-[0_2px_4px_rgba(124,131,255,0.3)]">NEW</span>
-                                    <div className="text-[15px] font-medium text-slate-800 leading-tight">
+                                    <div className="text-[15px] font-medium text-slate-800 dark:text-slate-100 leading-tight">
                                         프리미엄 홈 위젯 포함
                                     </div>
                                 </div>
-                                <div className="text-[12px] font-normal text-slate-500 leading-snug break-keep mt-0.5">
+                                <div className="text-[12px] font-normal text-slate-500 dark:text-slate-300 leading-snug break-keep mt-0.5">
                                     앱을 켜지 않고 홈 화면에서 현재 탐험 중인 한자를 확인해요!
                                 </div>
                             </div>
@@ -147,7 +147,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                             <button
                                 key={pack.id}
                                 onClick={() => setSelected(pack.id)}
-                                className="w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] text-left relative"
+                                className={`premium-pack-option w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] text-left relative ${isSel ? 'is-selected' : ''}`}
                                 style={{
                                     background: isSel ? pack.bg : '#F8F9FA',
                                     border: isSel ? `2px solid ${pack.color}` : '2px solid transparent',
@@ -161,7 +161,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                                 {/* 텍스트 */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-normal text-[15px] text-slate-800">{pack.title}</span>
+                                        <span className="font-normal text-[15px] text-slate-800 dark:text-slate-100">{pack.title}</span>
                                         <span className="text-[12px] font-normal" style={{ color: pack.color }}>{pack.subtitle}</span>
                                         {pack.badge && (
                                             <span className="text-[10px] font-normal text-white px-2 py-0.5 rounded-full" style={{ background: pack.color }}>
@@ -169,7 +169,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                                             </span>
                                         )}
                                     </div>
-                                    <div className="text-[12px] text-slate-400 font-normal mt-0.5">{pack.desc}</div>
+                                    <div className="text-[12px] text-slate-400 dark:text-slate-300 font-normal mt-0.5">{pack.desc}</div>
                                 </div>
                                 {/* 가격 */}
                                 <div className="text-[15px] font-normal shrink-0" style={{ color: pack.color }}>

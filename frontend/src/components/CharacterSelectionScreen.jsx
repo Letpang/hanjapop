@@ -114,7 +114,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                                 className={`group relative flex flex-col items-center justify-between rounded-[2.5rem] overflow-hidden transition-all duration-500 focus:outline-none h-[280px] md:h-[340px] ${
                                     isSelected
                                         ? "glass-panel scale-[1.03] z-10"
-                                        : "glass-panel hover:-translate-y-2 hover:bg-white/70 opacity-90 hover:opacity-100"
+                                        : "glass-panel hover:-translate-y-2 hover:bg-white dark:bg-slate-800/70 opacity-90 hover:opacity-100"
                                 }`}
                                 style={{
                                     borderColor: isSelected ? char.color : 'rgba(255,255,255,0.9)',
@@ -178,7 +178,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                             onKeyDown={handleNicknameKeyDown}
                             placeholder="캐릭터의 닉네임을 지어주세요"
                             maxLength={10}
-                            className="w-full rounded-full glass-panel !bg-white/80 text-slate-800 font-medium text-center text-lg px-6 py-4 focus:outline-none focus:ring-4 focus:ring-white/50 transition-all placeholder:text-slate-400 placeholder:font-normal"
+                            className="w-full rounded-full glass-panel !bg-white dark:bg-slate-800/80 text-slate-800 font-medium text-center text-lg px-6 py-4 focus:outline-none focus:ring-4 focus:ring-white/50 transition-all placeholder:text-slate-400 placeholder:font-normal"
                         />
                     </div>
 

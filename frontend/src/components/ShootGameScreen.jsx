@@ -226,7 +226,7 @@ const getGameThemeKey = (currentDay, selectedGrade) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart, missionDone = false }) => {
     const { lang } = useLang();
     const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
     
@@ -257,6 +257,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const [clearCombo, setClearCombo] = useState(0); // 연속 웨이브 클리어 콤보
     const [score, setScore] = useState(0);
     const [sessionXp, setSessionXp] = useState(0);
+    const missionXpGrantedRef = useRef(0);
 
     const { unlockedIds, unlockedGrades } = useUnlockedHanja(unlockedHanjaIds);
 
@@ -515,6 +516,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             }
             setSessionXp(prev => prev + xpEarned);
             if (onWaveClear) onWaveClear(waveKills);
+            if (wave === 1 && !missionDone) missionXpGrantedRef.current = 20;
             setWaveTransition(true); // <-- 무한 루프 방지
             
             if (wave >= diffConfig.wavesTotal) {
@@ -745,8 +747,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 100% { filter: hue-rotate(360deg); }
             }
             @keyframes starSparkle {
-                0%, 100% { opacity: 0.18; transform: scale(0.7); }
-                50% { opacity: 1; transform: scale(1.4); }
+                0%, 100% { opacity: 0.25; transform: translateY(0px) scale(0.6) rotate(0deg); }
+                50%      { opacity: 1;    transform: translateY(-6px) scale(1.15) rotate(15deg); }
+            }
+            @keyframes driftBokeh {
+                0%, 100% { opacity: 0.15; transform: translate(0, 0) scale(1); }
+                50%      { opacity: 0.55; transform: translate(8px, -12px) scale(1.2); }
             }
             @keyframes particleDrift {
                 0%   { opacity: 0; transform: translateY(0px) scale(0.5); }
@@ -763,13 +769,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     // ─────────────────────────────────────────
     if (status === 'loading') {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F7FAF9] px-8">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F7FAF9] dark:bg-slate-900 px-8">
                 <div className="flex flex-col items-center gap-4 text-center">
                     <div
-                        className="h-16 w-16 rounded-[1.4rem] border-4 border-white shadow-lg animate-pulse"
+                        className="h-16 w-16 rounded-[1.4rem] border-4 border-white dark:border-slate-700 shadow-lg animate-pulse"
                         style={{ backgroundColor: themeConfig.accentColor }}
                     />
-                    <p className="text-body-lg font-normal text-[#5B677A] break-keep">몬스터를 불러오는 중...</p>
+                    <p className="text-body-lg font-normal text-[#5B677A] dark:text-slate-300 break-keep">몬스터를 불러오는 중...</p>
                 </div>
             </div>
         );
@@ -777,7 +783,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     if (status === 'idle') {
         return (
-            <div className="quiz-screen quiz-screen--plain bg-[#F8FAF9]">
+            <div className="quiz-screen quiz-screen--plain bg-[#F8FAF9] dark:bg-slate-900">
                 {/* 헤더 */}
                 <div className="quiz-header-wrap quiz-header-wrap--sm">
                     <div className="quiz-header-card quiz-header-card--wide">
@@ -800,13 +806,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                         <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-2 shadow-inner">
                             <button
                                 onClick={() => setViewMode('grade')}
-                                className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
+                                className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}
                             >
                                 급수별
                             </button>
                             <button
                                 onClick={() => setViewMode('topic')}
-                                className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}
+                                className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}
                             >
                                 주제별
                             </button>
@@ -824,10 +830,10 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                             onClick={isLocked ? undefined : () => setSelectedGrade(g)}
                                             className={`relative py-4 rounded-3xl font-normal text-h3 transition-all border-4 flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 ${
                                                 isLocked 
-                                                ? 'bg-[#F8FAF9] border-[#E9EDF2] text-slate-200 cursor-not-allowed' 
+                                                ? 'bg-[#F8FAF9] dark:bg-slate-900 border-[#E9EDF2] text-slate-200 cursor-not-allowed'
                                                 : isSelected
-                                                    ? 'bg-white border-[#FF9B73] text-[#5B677A] shadow-lg'
-                                                    : 'bg-white border-[#E9EDF2] text-[#5B677A] hover:border-[#E9EDF2]'
+                                                    ? 'bg-white dark:bg-slate-800 border-[#FF9B73] text-[#5B677A] dark:text-slate-300 shadow-lg'
+                                                    : 'bg-white dark:bg-slate-800 border-[#E9EDF2] text-[#5B677A] dark:text-slate-300 hover:border-[#E9EDF2]'
                                             }`}
                                         >
                                             {isLocked ? (
@@ -875,9 +881,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             {/* 말풍선 (우측 밀착 배치) */}
                             <div className="absolute top-4 left-[60%] z-20">
                                 <div className="quiz-bubble">
-                                    <span className="text-body font-normal text-[#5B677A] whitespace-nowrap break-keep">출동!</span>
+                                    <span className="text-body font-normal text-[#5B677A] dark:text-slate-300 whitespace-nowrap break-keep">출동!</span>
                                     {/* 말풍선 꼬리 (왼쪽 하단으로 이동) */}
-                                    <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
+                                    <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white dark:bg-slate-800 border-r border-b border-white dark:border-slate-700" />
                                 </div>
                             </div>
                             
@@ -914,8 +920,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const isClear = status === 'clear';
     const isResult = status === 'over' || status === 'clear';
     const killXp = score * 3;
-    const shootClearXp = isClear ? 20 : 0;
-    const reward = getRewardPreview?.(killXp + shootClearXp);
+    const shootClearXp = sessionXp - killXp;
+    const reward = getRewardPreview?.(sessionXp);
 
     // ─────────────────────────────────────────
     // 게임 화면
@@ -928,16 +934,42 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             {COSMIC_STARS.map(star => (
                 <div
                     key={star.id}
-                    className="absolute rounded-full pointer-events-none z-0"
+                    className="absolute pointer-events-none z-0"
                     style={{
                         left: star.left,
                         top: star.top,
-                        width: `${star.size}px`,
-                        height: `${star.size}px`,
-                        backgroundColor: themeConfig.accentColor,
-                        boxShadow: `0 0 6px ${themeConfig.accentColor}, 0 0 14px ${themeConfig.accentColor}, 0 0 28px ${themeConfig.accentColor}`,
+                        width: `${star.size * 3}px`,
+                        height: `${star.size * 3}px`,
+                        background: 'linear-gradient(135deg, #ffffff 0%, #fff0f5 40%, #d8f3ff 100%)',
+                        clipPath: 'polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%)',
+                        filter: `drop-shadow(0 0 5px rgba(255,255,255,0.9)) drop-shadow(0 0 10px ${themeConfig.accentColor}88)`,
+                        willChange: 'transform, opacity',
                         animation: `starSparkle ${star.speed} ease-in-out infinite`,
                         animationDelay: star.delay,
+                    }}
+                />
+            ))}
+
+            {/* Bokeh Lights */}
+            {[
+                { id: 'b1', left: '12%', top: '28%', size: 36, delay: '0s',   speed: '8s'  },
+                { id: 'b2', left: '72%', top: '18%', size: 52, delay: '2.5s', speed: '10s' },
+                { id: 'b3', left: '42%', top: '62%', size: 44, delay: '1.2s', speed: '9s'  },
+                { id: 'b4', left: '85%', top: '55%', size: 30, delay: '3.8s', speed: '7s'  },
+            ].map(b => (
+                <div
+                    key={b.id}
+                    className="absolute rounded-full pointer-events-none z-0"
+                    style={{
+                        left: b.left,
+                        top: b.top,
+                        width: `${b.size}px`,
+                        height: `${b.size}px`,
+                        background: `radial-gradient(circle, rgba(255,255,255,0.7) 0%, ${themeConfig.accentColor}44 60%, transparent 100%)`,
+                        filter: 'blur(4px)',
+                        willChange: 'transform, opacity',
+                        animation: `driftBokeh ${b.speed} ease-in-out infinite`,
+                        animationDelay: b.delay,
                     }}
                 />
             ))}
@@ -1003,14 +1035,14 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 {/* 상단 HUD */}
                 <div className="absolute top-0 left-2 right-2 z-40 safe-top pt-3 flex items-center gap-1.5">
                     {/* 1. HP */}
-                    <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center gap-1.5 shrink-0">
+                    <div className="h-9 bg-white dark:bg-slate-800/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white dark:border-slate-700/50 flex items-center gap-1.5 shrink-0">
                         {Array.from({ length: diffConfig.hp }).map((_, i) => (
                             <div key={i} className={`w-2 h-2 rounded-full transition-all duration-300 ${i < hp ? "bg-rose-300" : "bg-[#F4F7F8]"}`} />
                         ))}
                     </div>
 
                     {/* 2. 진행도 */}
-                    <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center gap-2 flex-1 min-w-0">
+                    <div className="h-9 bg-white dark:bg-slate-800/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white dark:border-slate-700/50 flex items-center gap-2 flex-1 min-w-0">
                         <div className="flex-1 h-2 bg-[#F4F7F8] rounded-full overflow-hidden">
                             <div className="quiz-progress-fill" style={{ width: `${Math.min(100, (waveKills / diffConfig.killsPerWave) * 100)}%`, backgroundColor: themeConfig.accentColor }} />
                         </div>
@@ -1018,7 +1050,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     </div>
 
                     {/* 3. 스코어 */}
-                    <div className="h-9 bg-white/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white/50 flex items-center justify-center shrink-0 min-w-[2.5rem]">
+                    <div className="h-9 bg-white dark:bg-slate-800/90 backdrop-blur-md rounded-2xl px-3 shadow-md border border-white dark:border-slate-700/50 flex items-center justify-center shrink-0 min-w-[2.5rem]">
                         <span className="font-normal text-[#AEB7C5] text-sm leading-none tabular-nums">{score}</span>
                     </div>
 
@@ -1082,7 +1114,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                             <MonsterIcon />
                                         </div>
                                         <div className={`font-normal text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
-                                            w.isWrongItem ? "bg-white/95 border-rose-200" : w.id === targetId ? "bg-[#FFB433]/15 border-[#FFB433] scale-110 shadow-[#FFB433]/15/50" : "bg-white/95 border-[#E9EDF2]"
+                                            w.isWrongItem ? "bg-white dark:bg-slate-800/95 border-rose-200" : w.id === targetId ? "bg-[#FFB433]/15 border-[#FFB433] scale-110 shadow-[#FFB433]/15/50" : "bg-white dark:bg-slate-800/95 border-[#E9EDF2]"
                                         }`}>
                                             <span className="text-center break-keep leading-tight">{w.hanja}</span>
                                         </div>
@@ -1108,13 +1140,13 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             <button
                                 key={i}
                                 onClick={() => handleOptionClick(opt)}
-                                className={`bg-white/95 px-4 py-1.5 rounded-[1.2rem] md:rounded-[1.8rem] font-normal border-4 border-white shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
+                                className={`bg-white dark:bg-slate-800/95 px-4 py-1.5 rounded-[1.2rem] md:rounded-[1.8rem] font-normal border-4 border-white dark:border-slate-700 shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
                             >
                                 {isWordTarget ? (
-                                    <span className="text-slate-700 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
+                                    <span className="text-slate-700 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
                                 ) : (
                                     <>
-                                        <span className="text-slate-700 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
+                                        <span className="text-slate-700 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
                                         <span className="text-[#7C83FF] text-sm sm:text-base md:text-lg leading-tight">{sound}</span>
                                     </>
                                 )}
@@ -1126,7 +1158,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 {/* 일시정지 오버레이 */}
                 {isPaused && (
                     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center" style={{ background: 'rgba(10,15,30,0.72)', backdropFilter: 'blur(8px)' }}>
-                        <div className="bg-white/10 border border-white/20 rounded-3xl px-8 py-10 flex flex-col items-center gap-6 shadow-2xl max-w-xs w-full mx-4">
+                        <div className="bg-white dark:bg-slate-800/10 border border-white dark:border-slate-700/20 rounded-3xl px-8 py-10 flex flex-col items-center gap-6 shadow-2xl max-w-xs w-full mx-4">
                             <div className="flex flex-col items-center gap-1">
                                 <span className="text-4xl mb-1">⏸</span>
                                 <h2 className="text-white text-2xl font-bold tracking-tight">일시정지</h2>
@@ -1198,8 +1230,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     correctXp={killXp}
                                     clearXp={shootClearXp}
                                     correctLabel="몬스터 처치"
-                                    detailText={`${score}마리 x 3XP${isClear ? ` + 완료 20XP` : ''}`}
-                                    missionXp={(isClear && clearCountRef.current === 1) ? 20 : 0}
+                                    detailText={`${score}마리 x 3XP${shootClearXp > 0 ? ` + 웨이브 클리어 ${shootClearXp}XP` : ''}`}
+                                    missionXp={missionXpGrantedRef.current}
                                 />
 
                                 {/* 몬스터 오답 노트 (Review Note) */}

@@ -232,7 +232,7 @@ const StudyGraph = ({ days, isDarkMode }) => {
               {items.map(item => <StackedBar key={item.date} item={item} max={maxQuestions} />)}
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] font-normal">
+          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] font-normal text-center">
             <span className="rounded-xl bg-[#E8FAF7] px-2 py-2 text-[#00A994]">학습지 {items.reduce((sum, item) => sum + item.flashcard, 0)}</span>
             <span className="rounded-xl bg-[#F0EFFF] px-2 py-2 text-[#6F63E8]">단어 {items.reduce((sum, item) => sum + item.wordQuiz, 0)}</span>
             <span className="rounded-xl bg-[#FFF1EA] px-2 py-2 text-[#E8664F]">문장 {items.reduce((sum, item) => sum + item.sentenceQuiz, 0)}</span>
@@ -256,7 +256,7 @@ const StudyGraph = ({ days, isDarkMode }) => {
           <div className="rounded-[1.5rem] bg-[#FBFCFD] px-3 py-4">
             <DoubleBars items={items} max={maxWords} />
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-normal">
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-normal text-center">
             <span className="rounded-xl bg-[#E8FAF7] px-2 py-2 text-[#00A994]">한자 {totals.hanja}</span>
             <span className="rounded-xl bg-[#F0EFFF] px-2 py-2 text-[#6F63E8]">단어 {totals.words}</span>
           </div>

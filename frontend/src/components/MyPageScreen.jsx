@@ -225,21 +225,22 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
   const characterImage = selectedCharacter ? rankDetails.avatar : '/assets/images/characters/default_3d.webp';
 
   return (
-    <div className={`min-h-screen flex flex-col ${isDarkMode ? 'bg-slate-900' : 'bg-[#F7FAF9]'}`}>
+    <div className={`min-h-screen flex flex-col bg-[#F7FAF9] dark:bg-slate-900`}>
 
       {/* 헤더 */}
       <div className="w-full shrink-0 safe-top pt-4 px-4 mb-2">
           <div className="quiz-header-card quiz-header-card--wide">
               <button onClick={onBack}
-                  className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-normal text-[#5B677A] gap-1">
+                  aria-label="뒤로 가기"
+                  className="flex items-center justify-center bg-white/90 dark:bg-slate-700 border-2 border-white dark:border-slate-600 rounded-2xl shadow-lg active:scale-95 transition-all px-3 py-2 font-normal text-[#5B677A] dark:text-slate-200 gap-1">
                   ←
               </button>
               <div className="flex items-center gap-2 overflow-hidden">
-                  <h2 className="text-lg font-medium text-slate-700 m-0">마이페이지</h2>
+                  <h2 className="text-lg font-medium text-slate-700 dark:text-slate-100 m-0">마이페이지</h2>
               </div>
               <button onClick={() => onNavigate('settings')}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all ${isDarkMode ? 'bg-slate-800 text-[#AEB7C5]' : 'bg-white text-[#AEB7C5]'}`}
-                  style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,1), inset 0 -2px 4px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  aria-label="설정 열기"
+                  className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-all bg-white text-[#AEB7C5] border border-slate-100 shadow-[0_4px_12px_rgba(80,96,120,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 dark:shadow-[0_8px_18px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)]">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
                       className="w-5 h-5">
@@ -253,8 +254,8 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
       <div className="flex flex-col gap-6 px-5 pt-6 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 3rem)' }}>
 
         {/* 프로필 카드 */}
-        <div className={`w-full rounded-[2rem] border-4 shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-5 flex items-center gap-4 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className={`relative shrink-0 w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-visible ${isDarkMode ? 'bg-slate-700/60 border border-slate-600' : 'bg-white/40 backdrop-blur-sm border-2 border-white shadow-lg'}`}>
+        <div className={`w-full rounded-[2rem] border-4 shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-5 flex items-center gap-4 bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>
+          <div className={`relative shrink-0 w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-visible bg-white/40 backdrop-blur-sm border-2 border-white shadow-lg dark:bg-slate-700/60 dark:border dark:border-slate-600`}>
             <img src={characterImage} alt="character" className="w-full h-full object-contain filter drop-shadow-2xl translate-y-[-8%] z-10"
               style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${1.25 * getCharacterScale(selectedCharacter, `rank${rankDetails.imageRank}`)})` }}
               onError={e => { e.target.src = '/assets/images/characters/default_3d.webp'; }} />
@@ -264,13 +265,13 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           </div>
           <div className="flex-1 flex flex-col gap-1.5">
             <div className="flex items-center gap-2 flex-nowrap">
-              <span className={`font-normal text-xl tracking-tight leading-none truncate max-w-[150px] ${isDarkMode ? 'text-slate-100' : 'text-[#3C3C3C]'}`}>
+              <span className={`font-normal text-xl tracking-tight leading-none truncate max-w-[150px] text-[#3C3C3C] dark:text-slate-100`}>
                 {userNickname || 'Explorer'}
               </span>
               {currentGradeBadge ? (
                 <div
                   onClick={() => setShowGradeModal(true)}
-                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white shadow-sm border border-slate-100/40 active:scale-95 transition-transform cursor-pointer"
+                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white dark:bg-slate-700 shadow-sm border border-slate-100/40 dark:border-slate-600 active:scale-95 transition-transform cursor-pointer"
                   style={{
                     width: '32px',
                     height: '32px',
@@ -288,7 +289,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               ) : (
                 <div
                   onClick={() => setShowGradeModal(true)}
-                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white/70 shadow-sm border border-slate-100/30 active:scale-95 transition-transform cursor-pointer"
+                  className="relative flex items-center justify-center shrink-0 rounded-full bg-white/70 dark:bg-slate-700 shadow-sm border border-slate-100/30 dark:border-slate-600 active:scale-95 transition-transform cursor-pointer"
                   style={{
                     width: '32px',
                     height: '32px',
@@ -312,7 +313,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className={`flex-1 relative rounded-full h-5 overflow-hidden ${isDarkMode ? 'bg-slate-600' : 'bg-slate-200/80'}`} style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.12)' }}>
+              <div className={`flex-1 relative rounded-full h-5 overflow-hidden bg-slate-200/80 dark:bg-slate-600`} style={{ boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.12)' }}>
                 <div
                   className="h-full rounded-full transition-all duration-1000 ease-out relative"
                   style={{ width: `${xpProgress}%`, background: 'linear-gradient(to right, #FFB38A, #FF7E8A)', boxShadow: '0 0 18px rgba(255,126,138,0.35)' }}
@@ -320,15 +321,15 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                   <div className="absolute top-0.5 left-1 right-1 h-2 bg-white/25 rounded-full" />
                 </div>
               </div>
-              <span className={`font-normal text-xs whitespace-nowrap ${isDarkMode ? 'text-[#AEB7C5]' : 'text-[#3E4A5C]'}`}>{xp.toLocaleString()} XP</span>
+              <span className={`font-normal text-xs whitespace-nowrap text-[#3E4A5C] dark:text-[#AEB7C5]`}>{xp.toLocaleString()} XP</span>
             </div>
           </div>
         </div>
 
         {/* 뱃지 창고 */}
-        <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className={`px-5 pt-4 pb-3 border-b rounded-t-[1.8rem] ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-[#E5EAF2] bg-white'}`}>
-            <h3 className={`font-medium text-base tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-[#3C3C3C]'}`}>뱃지 창고</h3>
+        <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>
+          <div className={`px-5 pt-4 pb-3 border-b rounded-t-[1.8rem] border-[#E5EAF2] bg-white dark:border-slate-700 dark:bg-slate-800`}>
+            <h3 className={`font-medium text-base tracking-tight text-[#3C3C3C] dark:text-slate-100`}>뱃지 창고</h3>
           </div>
 
           <div className="grid grid-cols-3 px-4 pt-4 pb-6" style={{ columnGap: '10px', rowGap: '20px' }}>
@@ -359,19 +360,11 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                     }}
                     className="whitespace-nowrap"
                   >
-                    <div className={`px-3 py-1.5 rounded-xl text-[11px] font-normal shadow-lg border ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700 text-slate-100' 
-                        : 'bg-[#2D3142] border-[#2D3142] text-white'
-                    }`}>
+                    <div className={`px-3 py-1.5 rounded-xl text-[11px] font-normal shadow-lg border bg-[#2D3142] border-[#2D3142] text-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100`}>
                       {badge.label}
                     </div>
                     {/* 화살표 꼬리 */}
-                    <div className={`w-1.5 h-1.5 rotate-45 mx-auto -mt-[3.5px] border-r border-b ${
-                      isDarkMode 
-                        ? 'bg-slate-800 border-slate-700' 
-                        : 'bg-[#2D3142] border-[#2D3142]'
-                    }`} />
+                    <div className={`w-1.5 h-1.5 rotate-45 mx-auto -mt-[3.5px] border-r border-b bg-[#2D3142] border-[#2D3142] dark:bg-slate-800 dark:border-slate-700`} />
                   </div>
 
                   {/* 아이콘 영역 — bottom align */}
@@ -404,9 +397,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                   <div className={`mt-3.5 px-3 py-1 rounded-full text-[clamp(11px,2.8vw,13px)] font-normal leading-none transition-all ${
                     stage === 5 
                       ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm shadow-orange-500/20 active:from-amber-500 active:to-orange-600' 
-                      : isDarkMode 
-                        ? 'bg-slate-700 text-slate-300' 
-                        : 'bg-[#F0F3F5] text-[#5A6E85] group-hover:bg-[#E2E6E9] group-hover:text-[#3C4A5A]'
+                      : 'bg-[#F0F3F5] text-[#5A6E85] group-hover:bg-[#E2E6E9] group-hover:text-[#3C4A5A] dark:bg-slate-700 dark:text-slate-300'
                   }`}>
                     Lv.{stage} {false}
                   </div>
@@ -417,9 +408,9 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
         </div>
 
         {/* 나의 학습 현황 */}
-        <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className={`px-5 pt-4 pb-3 border-b rounded-t-[1.8rem] ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-[#E5EAF2] bg-white'}`}>
-            <h3 className={`font-medium text-base tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-[#3C3C3C]'}`}>나의 학습 현황</h3>
+        <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>
+          <div className={`px-5 pt-4 pb-3 border-b rounded-t-[1.8rem] border-[#E5EAF2] bg-white dark:border-slate-700 dark:bg-slate-800`}>
+            <h3 className={`font-medium text-base tracking-tight text-[#3C3C3C] dark:text-slate-100`}>나의 학습 현황</h3>
           </div>
           <div className="grid grid-cols-2 p-4 gap-3">
             {STATUS_ITEMS.map((item) => {
@@ -436,7 +427,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                 >
                   {/* 왼쪽: 둥근 소프트 박스에 아이콘 배치 */}
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm ${
-                    isDarkMode ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white ' + item.iconBorder
+                    'bg-white dark:bg-slate-800/80 dark:border-slate-700/60 ' + item.iconBorder
                   }`}>
                     <img 
                       src={item.imgSrc} 
@@ -447,26 +438,16 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                   
                   {/* 오른쪽: 텍스트 정보 */}
                   <div className="flex-1 min-w-0">
-                    <span className={`text-xs font-normal tracking-tight whitespace-nowrap block mb-0.5 ${
-                      isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'
-                    }`}>
+                    <span className={`text-xs font-normal tracking-tight whitespace-nowrap block mb-0.5 text-[#8D9CAE] dark:text-slate-400`}>
                       {item.label}
                     </span>
                     <div className="flex flex-col">
                       <div className="flex items-baseline gap-0.5 flex-nowrap">
-                        <span className={`text-xl font-normal tracking-tight leading-none whitespace-nowrap ${
-                          isDarkMode 
-                            ? 'text-white' 
-                            : 'bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent'
-                        }`} style={{ fontFamily: "'GenJyuuGothic', sans-serif" }}>
+                        <span className={`text-xl font-normal tracking-tight leading-none whitespace-nowrap bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent dark:text-white`} style={{ fontFamily: "'GenJyuuGothic', sans-serif" }}>
                           {display}
                         </span>
                         {item.unit && !isEmpty && (
-                          <span className={`text-[13px] font-normal leading-none whitespace-nowrap shrink-0 ml-1 ${
-                            isDarkMode 
-                              ? 'text-slate-400' 
-                              : 'text-[#8D9CAE]'
-                          }`}>
+                          <span className={`text-[13px] font-normal leading-none whitespace-nowrap shrink-0 ml-1 text-[#8D9CAE] dark:text-slate-400`}>
                             {item.unit}
                           </span>
                         )}
@@ -480,33 +461,25 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
         </div>
 
         {/* 상세 기록 */}
-        <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'}`}>
-          <div className={`px-5 pt-4 pb-3 border-b rounded-t-[1.8rem] ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-[#E5EAF2] bg-white'}`}>
-            <h3 className={`font-medium text-base tracking-tight ${isDarkMode ? 'text-slate-100' : 'text-[#3C3C3C]'}`}>상세 기록</h3>
+        <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>
+          <div className={`px-5 pt-4 pb-3 border-b rounded-t-[1.8rem] border-[#E5EAF2] bg-white dark:border-slate-700 dark:bg-slate-800`}>
+            <h3 className={`font-medium text-base tracking-tight text-[#3C3C3C] dark:text-slate-100`}>상세 기록</h3>
           </div>
           <div className="grid grid-cols-2 p-4 gap-3">
             <button
               onClick={() => onNavigate('calendar')}
-              className={`rounded-[1.5rem] border p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all duration-300 ${
-                isDarkMode 
-                  ? 'bg-purple-950/20 border-purple-900/30' 
-                  : 'bg-[#F5F3FF]/70 border-purple-100/60'
-              }`}
+              className={`rounded-[1.5rem] border p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all duration-300 bg-[#F5F3FF]/70 border-purple-100/60 dark:bg-purple-950/20 dark:border-purple-900/30`}
             >
               {/* 왼쪽: 둥근 소프트 박스에 아이콘 배치 */}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm ${
-                isDarkMode ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-purple-100/30'
-              }`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm bg-white border-purple-100/30 dark:bg-slate-800/80 dark:border-slate-700/60`}>
                 <img src="/assets/images/icons/icon_calendar.webp" alt="달력" className="w-8 h-8 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)] transform hover:scale-110 transition-transform duration-300" />
               </div>
               {/* 오른쪽: 텍스트 정보 */}
               <div className="flex-1 min-w-0 text-left">
-                <span className={`text-xs font-normal tracking-wider uppercase block mb-1 whitespace-nowrap ${
-                  isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'
-                }`}>
+                <span className={`text-xs font-normal tracking-wider uppercase block mb-1 whitespace-nowrap text-[#8D9CAE] dark:text-slate-400`}>
                   날짜별 현황
                 </span>
-                <div className={`text-[clamp(11px,2.8vw,13px)] font-normal tracking-tight leading-none whitespace-nowrap ${isDarkMode ? 'text-slate-100' : 'text-slate-600'}`}>
+                <div className={`text-[clamp(11px,2.8vw,13px)] font-normal tracking-tight leading-none whitespace-nowrap text-slate-600 dark:text-slate-100`}>
                   일별 학습 리포트
                 </div>
               </div>
@@ -514,26 +487,18 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
 
             <button
               onClick={() => onNavigate('vocabulary')}
-              className={`rounded-[1.5rem] border p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all duration-300 ${
-                isDarkMode 
-                  ? 'bg-amber-950/20 border-amber-900/30' 
-                  : 'bg-[#FFFBEB]/70 border-amber-100/60'
-              }`}
+              className={`rounded-[1.5rem] border p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all duration-300 bg-[#FFFBEB]/70 border-amber-100/60 dark:bg-amber-950/20 dark:border-amber-900/30`}
             >
               {/* 왼쪽: 둥근 소프트 박스에 아이콘 배치 */}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm ${
-                isDarkMode ? 'bg-slate-800/80 border-slate-700/60' : 'bg-white border-amber-100/30'
-              }`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm bg-white border-amber-100/30 dark:bg-slate-800/80 dark:border-slate-700/60`}>
                 <img src="/assets/images/icons/icon_vocab.webp" alt="단어장" className="w-8 h-8 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)] transform hover:scale-110 transition-transform duration-300" />
               </div>
               {/* 오른쪽: 텍스트 정보 */}
               <div className="flex-1 min-w-0 text-left">
-                <span className={`text-xs font-normal tracking-wider uppercase block mb-1 whitespace-nowrap ${
-                  isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'
-                }`}>
+                <span className={`text-xs font-normal tracking-wider uppercase block mb-1 whitespace-nowrap text-[#8D9CAE] dark:text-slate-400`}>
                   단어장
                 </span>
-                <div className={`text-[clamp(11px,2.8vw,13px)] font-normal tracking-tight leading-none whitespace-nowrap ${isDarkMode ? 'text-slate-100' : 'text-slate-600'}`}>
+                <div className={`text-[clamp(11px,2.8vw,13px)] font-normal tracking-tight leading-none whitespace-nowrap text-slate-600 dark:text-slate-100`}>
                   오답과 복습 단어
                 </div>
               </div>
@@ -548,13 +513,11 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
       {/* 뱃지 상세 모달 */}
       {selectedBadge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setSelectedBadge(null)}>
-          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 ${isDarkMode ? 'bg-slate-800' : 'bg-[#F7FAF9]'}`} onClick={e => e.stopPropagation()}>
+          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 bg-[#F7FAF9] dark:bg-slate-800`} onClick={e => e.stopPropagation()}>
             {/* 왼쪽 상단 닫기(X) 버튼 */}
             <button 
               onClick={() => setSelectedBadge(null)}
-              className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm ${
-                isDarkMode ? 'bg-slate-700/80 text-slate-300 border border-slate-600' : 'bg-white text-slate-400 border border-slate-200'
-              }`}
+              className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm bg-white text-slate-400 border border-slate-200 dark:bg-slate-700/80 dark:text-slate-300 dark:border dark:border-slate-600`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -566,11 +529,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               return (
                 <>
                   <div className="text-center flex flex-col items-center">
-                    <h2 className={`text-2xl font-medium uppercase tracking-tight ${
-                      isDarkMode 
-                        ? 'text-white drop-shadow-md' 
-                        : 'bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent drop-shadow-sm'
-                    }`} style={{ paddingBottom: '2px' }}>
+                    <h2 className={`text-2xl font-medium uppercase tracking-tight bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent drop-shadow-sm dark:text-white dark:drop-shadow-md`} style={{ paddingBottom: '2px' }}>
                       {selectedBadge.label}
                     </h2>
                     <div className="mt-2 px-3 py-1 rounded-full text-xs font-normal bg-gradient-to-r from-[#7C83FF] to-[#9B8CFF] text-white shadow-md">
@@ -613,11 +572,9 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                 // 만렙(Lv.5) 달성 시에는 축하 메시지 렌더링
                 if (stage >= 5) {
                   return (
-                    <div className={`rounded-2xl p-4 border border-amber-200/50 flex flex-col items-center gap-1.5 bg-gradient-to-r from-amber-50/50 to-orange-50/30 text-center ${
-                      isDarkMode ? 'from-amber-950/20 to-orange-950/10 border-amber-900/30' : ''
-                    }`}>
+                    <div className={`rounded-2xl p-4 border border-amber-200/50 flex flex-col items-center gap-1.5 bg-gradient-to-r from-amber-50/50 to-orange-50/30 text-center dark:from-amber-950/20 dark:to-orange-950/10 dark:border-amber-900/30`}>
                       
-                      <span className={`font-normal text-sm break-keep ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                      <span className={`font-normal text-sm break-keep text-amber-700 dark:text-amber-300`}>
                         축하합니다! 최고 등급을 완수했습니다.
                       </span>
                     </div>
@@ -650,42 +607,36 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                 const guide = BADGE_GUIDES[selectedBadge.id] || { desc: '', menu: '' };
 
                 return (
-                  <div className={`rounded-2xl p-4 border flex flex-col gap-2.5 ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-[#E9EDF2]'}`}>
+                  <div className={`rounded-2xl p-4 border flex flex-col gap-2.5 bg-white border-[#E9EDF2] dark:bg-slate-700 dark:border-slate-600`}>
                     <div className="flex flex-col gap-1.5">
                       <div className="flex justify-between items-center text-xs font-normal tracking-wider uppercase">
-                        <span className={`${isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'}`}>
+                        <span className={`text-[#8D9CAE] dark:text-slate-400`}>
                           다음 단계 (Lv.{stage + 1}) 도전 중
                         </span>
                         <span className="text-[#FF7E8A]">
                           {leftVal.toLocaleString()} 남음
                         </span>
                       </div>
-                      <p className={`text-sm font-normal break-keep ${isDarkMode ? 'text-slate-200' : 'text-[#5B677A]'}`}>
+                      <p className={`text-sm font-normal break-keep text-[#5B677A] dark:text-slate-200`}>
                         앞으로 <span className="text-[#6D6FF2] font-normal text-[15px]">{leftVal.toLocaleString()}</span>{getBadgeActionText(selectedBadge.id)} 등급업!
                       </p>
                     </div>
-                    <div className={`w-full h-2.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-[#F4F7F8]'}`}>
+                    <div className={`w-full h-2.5 rounded-full overflow-hidden bg-[#F4F7F8] dark:bg-slate-800`}>
                       <div className="h-full bg-gradient-to-r from-[#FFB433] to-[#FF7E8A] rounded-full transition-all duration-700 ease-out"
                         style={{ width: `${percent}%` }} />
                     </div>
 
                     {/* 프리미엄 안내 가이드 패널 */}
-                    <div className={`mt-3 p-4 rounded-2xl flex flex-col gap-2.5 relative transition-all duration-300 ${
-                      isDarkMode 
-                        ? 'bg-slate-800/60 border border-slate-700 shadow-inner' 
-                        : 'bg-[#F9FAFB] border border-[#F1F5F9] shadow-[0_2px_10px_rgba(0,0,0,0.02)]'
-                    }`}>
+                    <div className={`mt-3 p-4 rounded-2xl flex flex-col gap-2.5 relative transition-all duration-300 bg-[#F9FAFB] border border-[#F1F5F9] shadow-[0_2px_10px_rgba(0,0,0,0.02)] dark:bg-slate-800/60 dark:border dark:border-slate-700 dark:shadow-inner`}>
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className={`text-xs font-normal px-2.5 py-1 rounded-md tracking-widest uppercase ${
-                          isDarkMode ? 'bg-indigo-900/40 text-indigo-300' : 'bg-indigo-50 text-indigo-600'
-                        }`}>
+                        <span className={`text-xs font-normal px-2.5 py-1 rounded-md tracking-widest uppercase bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300`}>
                           획득 경로
                         </span>
-                        <span className={`text-sm font-normal tracking-tight break-keep ${isDarkMode ? 'text-white' : 'text-[#334155]'}`}>
+                        <span className={`text-sm font-normal tracking-tight break-keep text-[#334155] dark:text-white`}>
                           {guide.menu}
                         </span>
                       </div>
-                      <p className={`text-sm font-normal leading-relaxed break-keep text-left ${isDarkMode ? 'text-slate-300' : 'text-[#64748B]'}`}>
+                      <p className={`text-sm font-normal leading-relaxed break-keep text-left text-[#64748B] dark:text-slate-300`}>
                         {guide.desc}
                       </p>
                     </div>
@@ -697,12 +648,10 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
       )}
       {showGradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowGradeModal(false)}>
-          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 ${isDarkMode ? 'bg-slate-800' : 'bg-[#F7FAF9]'}`} onClick={e => e.stopPropagation()}>
+          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 bg-[#F7FAF9] dark:bg-slate-800`} onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setShowGradeModal(false)}
-              className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm ${
-                isDarkMode ? 'bg-slate-700/80 text-slate-300 border border-slate-600' : 'bg-white text-slate-400 border border-slate-200'
-              }`}
+              className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm bg-white text-slate-400 border border-slate-200 dark:bg-slate-700/80 dark:text-slate-300 dark:border dark:border-slate-600`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -711,9 +660,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
             </button>
 
             <div className="text-center flex flex-col items-center">
-              <h2 className={`text-2xl font-medium tracking-tight ${
-                isDarkMode ? 'text-white' : 'bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent'
-              }`} style={{ paddingBottom: '2px' }}>
+              <h2 className={`text-2xl font-medium tracking-tight bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent dark:text-white`} style={{ paddingBottom: '2px' }}>
                 급수 인증 뱃지
               </h2>
               <div className="mt-2 px-3 py-1 rounded-full text-xs font-normal bg-gradient-to-r from-[#7C83FF] to-[#9B8CFF] text-white shadow-md">
@@ -741,7 +688,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                       unlocked
                         ? 'bg-[#7C83FF] text-white shadow-sm'
                         : isCurrent
-                          ? `font-normal ${isDarkMode ? 'text-slate-300' : 'text-[#5B677A]'}`
+                          ? `font-normal text-[#5B677A] dark:text-slate-300`
                           : 'text-[#AEB7C5]'
                     }`}>
                       {b.label}
@@ -751,17 +698,17 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               })}
             </div>
 
-            <div className={`rounded-2xl p-4 border flex flex-col gap-1.5 ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-[#E9EDF2]'}`}>
+            <div className={`rounded-2xl p-4 border flex flex-col gap-1.5 bg-white border-[#E9EDF2] dark:bg-slate-700 dark:border-slate-600`}>
               {unlockedIdx >= GRADE_BADGES.length - 1 ? (
-                <p className={`text-sm font-normal text-center break-keep ${isDarkMode ? 'text-amber-300' : 'text-amber-700'}`}>
+                <p className={`text-sm font-normal text-center break-keep text-amber-700 dark:text-amber-300`}>
                   🎉 모든 급수 인증을 완료했습니다!
                 </p>
               ) : (
                 <>
-                  <p className={`text-xs font-normal uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-[#8D9CAE]'}`}>
+                  <p className={`text-xs font-normal uppercase tracking-wider text-[#8D9CAE] dark:text-slate-400`}>
                     다음 도전
                   </p>
-                  <p className={`text-sm font-normal break-keep ${isDarkMode ? 'text-slate-200' : 'text-[#5B677A]'}`}>
+                  <p className={`text-sm font-normal break-keep text-[#5B677A] dark:text-slate-200`}>
                     <span className="text-[#6D6FF2] font-normal">{GRADE_BADGES[Math.min(unlockedIdx + 1, GRADE_BADGES.length - 1)].label} 인증 시험</span>을 통과하면 뱃지를 획득합니다.
                   </p>
                 </>

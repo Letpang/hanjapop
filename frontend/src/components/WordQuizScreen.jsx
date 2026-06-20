@@ -113,7 +113,7 @@ const WordQuizScreen = ({
     srsData, masteryData, wordData, userLevel, userXp, selectedCharacter,
     getRewardPreview, contentPool, onGetNextWordIds, unlockedHanjaIds,
     seenWordIds, dailyMapNode, hideRetry,
-    quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP,
+    missionDone = false, quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP,
 }) => {
     const [viewMode, setViewMode] = useState('grade');
     const [gradeFilter, setGradeFilter] = useState('전체');
@@ -136,6 +136,7 @@ const WordQuizScreen = ({
     const [currentAnswered, setCurrentAnswered] = useState(false);
     const stageClearArgsRef = useRef(null);
     const stageClearDeliveredRef = useRef(false);
+    const missionXpGrantedRef = useRef(0);
     const [resultClearMsg] = useState(() => pickClearMessage());
 
     const characterAvatar = useMemo(() => getRankDetails(userXp, selectedCharacter).avatar, [userXp, selectedCharacter]);
@@ -191,7 +192,7 @@ const WordQuizScreen = ({
             comboRef.current = 0;
             setCombo(0);
         }
-        if (onHanjaAcquired && q?.hanja_id) onHanjaAcquired(q.hanja_id, 5);
+        if (onHanjaAcquired && q?.hanja_id) onHanjaAcquired(q.hanja_id, 0);
         if (onMarkCorrect && q?.hanja_id) onMarkCorrect(q.hanja_id);
         if (onWordCorrect) onWordCorrect(q.id);
     }, [questions, currentIdx, onHanjaAcquired, onMarkCorrect, onWordCorrect, onWordSeen]);
@@ -211,7 +212,13 @@ const WordQuizScreen = ({
             setCurrentIdx(next);
         } else {
             const seenWords = [...new Set(questions.map(q => q.id).filter(v => v != null))];
-            if (correctCountRef.current / questions.length >= 0.7) clearCountRef.current += 1;
+            if (correctCountRef.current / questions.length >= 0.7) {
+                const isFirstClear = clearCountRef.current === 0;
+                clearCountRef.current += 1;
+                missionXpGrantedRef.current = (isFirstClear && !missionDone) ? 30 : 0;
+            } else {
+                missionXpGrantedRef.current = 0;
+            }
             stageClearArgsRef.current = [correctCountRef.current, questions.length, maxComboRef.current, seenWords];
             if (!dailyMapNode) {
                 onStageClear?.(...stageClearArgsRef.current);
@@ -220,7 +227,7 @@ const WordQuizScreen = ({
             }
             completingRef.current = true;
             setCompleting(true);
-            setTimeout(() => setPhase('result'), 750);
+            setPhase('result');
         }
     }, [questions, currentIdx, dailyMapNode, onStageClear]);
 
@@ -235,8 +242,7 @@ const WordQuizScreen = ({
         : 'text-[6rem] sm:text-[8rem]';
 
     return (
-        <div className="w-full min-h-[100dvh] flex flex-col max-w-screen-xl mx-auto"
-            style={{ backgroundColor: phase === 'select' ? '#F7FAF9' : '#F8FAFC' }}>
+        <div className={`w-full min-h-[100dvh] flex flex-col max-w-screen-xl mx-auto ${phase === 'select' ? 'bg-[#F7FAF9] dark:bg-slate-900' : 'bg-[#F8FAFC] dark:bg-slate-900'}`}>
 
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-2 px-4 mb-1">
@@ -258,19 +264,19 @@ const WordQuizScreen = ({
             </div>
 
             {/* Body */}
-            <div className="pb-6">
-                <div className="w-full max-w-2xl mx-auto px-4 flex flex-col items-center gap-6 pt-5">
+            <div className="flex-1 flex flex-col pb-6">
+                <div className="flex-1 w-full max-w-2xl mx-auto px-4 flex flex-col items-center gap-4 sm:gap-6 pt-3 sm:pt-5">
 
                     {/* 선택 화면 */}
                     {phase === 'select' && (
                         <div className="flex flex-col items-center w-full animate-in fade-in duration-500">
                             <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-4 shadow-inner">
                                 <button onClick={() => setViewMode('grade')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}>
+                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}>
                                     급수별
                                 </button>
                                 <button onClick={() => setViewMode('topic')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}>
+                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}>
                                     주제별
                                 </button>
                             </div>
@@ -292,9 +298,9 @@ const WordQuizScreen = ({
                             )}
                             <div className="flex flex-col items-center mt-4 mb-5 relative">
                                 <div className="absolute top-4 left-[60%] z-20">
-                                    <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
-                                        <span className="text-body font-normal text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
-                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
+                                    <div className="px-5 py-2 rounded-2xl shadow-xl border border-white dark:border-slate-700 relative bg-white dark:bg-slate-800/90 backdrop-blur-md">
+                                        <span className="text-body font-normal text-[#5B677A] dark:text-slate-300 whitespace-nowrap break-keep">준비됐어!</span>
+                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white dark:bg-slate-800 border-r border-b border-white dark:border-slate-700" />
                                     </div>
                                 </div>
                                 <div className="relative z-10 w-36 h-36 flex items-center justify-center mt-10">
@@ -332,7 +338,7 @@ const WordQuizScreen = ({
                             onPrev={handlePrev}
                             onCorrectSelected={() => setCurrentAnswered(true)}
                             renderFront={() => (
-                                <span className={`hanja-char ${wordFontSize} font-normal text-[#1e293b] tracking-tighter drop-shadow-sm text-center leading-none`}>
+                                <span className={`hanja-char ${wordFontSize} font-normal text-[#1e293b] dark:text-slate-50 tracking-tighter drop-shadow-sm text-center leading-none`}>
                                     {q.word}
                                 </span>
                             )}
@@ -376,7 +382,7 @@ const WordQuizScreen = ({
                                 correctXp={correctXp}
                                 clearXp={clearXp}
                                 detailText={`${correctCount}개 정답 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
-                                missionXp={clearCountRef.current === 1 ? 30 : 0}
+                                missionXp={missionXpGrantedRef.current}
                                 onRetry={startQuiz}
                                 onBack={() => {
                                     if (stageClearArgsRef.current && !stageClearDeliveredRef.current) {

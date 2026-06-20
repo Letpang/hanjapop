@@ -166,13 +166,13 @@ const QuizCard = ({
     ) : (
         // 단어/문장: 고정 비율 컨테이너, 양면 absolute
         <div className={`relative w-full ${cardAspect} card-flip-perspective`} onClick={handleCardClick}>
-            <div className={`relative w-full h-full transition-all duration-700 ${isCorrectSelected ? 'cursor-pointer shadow-2xl' : ''} rounded-[4rem]`} style={flipStyle}>
-                <div className="absolute inset-0 bg-white rounded-[2.5rem] border-[10px] border-white flex flex-col items-center justify-center px-8 overflow-hidden"
+            <div className={`relative w-full h-full transition-all duration-700 ${isCorrectSelected ? 'cursor-pointer shadow-2xl dark:shadow-slate-900/50' : ''} rounded-[4rem]`} style={flipStyle}>
+                <div className="quiz-card-front absolute inset-0 bg-white dark:bg-slate-800 rounded-[2.5rem] border-[10px] border-white dark:border-slate-700 flex flex-col items-center justify-center px-8 overflow-hidden"
                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isFlipped ? 0 : 1 }}>
                     {renderFront?.({ isAnswered: isCorrectSelected, hasWrong: wrongChoices.length > 0 })}
                 </div>
                 {isCorrectSelected && (
-                    <div className="quiz-card-back" style={{ zIndex: isFlipped ? 1 : 0 }}>
+                    <div className="quiz-card-back dark:bg-slate-800 dark:border-slate-800" style={{ zIndex: isFlipped ? 1 : 0 }}>
                         {renderBack?.({ isSpeaking, onSpeak: doSpeak })}
                     </div>
                 )}
@@ -183,7 +183,7 @@ const QuizCard = ({
     const gridClass = choiceGridClassName !== undefined ? choiceGridClassName : 'quiz-choice-grid';
 
     return (
-        <div className="flex flex-col gap-3 w-full animate-in fade-in duration-500">
+        <div className="flex-1 flex flex-col gap-3 w-full max-w-2xl mx-auto animate-in fade-in duration-500">
 
             {showXPPopup && (
                 <div key={xpAnimKey}
@@ -201,7 +201,7 @@ const QuizCard = ({
                 </div>
             )}
 
-            <div className={`flex flex-col gap-5 w-full animate-in slide-in-from-bottom-6 duration-400 ${completing ? 'pointer-events-none' : ''}`}>
+            <div className={`flex-1 flex flex-col gap-4 sm:gap-5 w-full animate-in slide-in-from-bottom-6 duration-400 ${completing ? 'pointer-events-none' : ''}`}>
                 {card}
 
                 <div className={gridClass}
@@ -236,7 +236,7 @@ const QuizCard = ({
                     })}
                 </div>
 
-                <div className={`w-full flex gap-3 transition-opacity duration-300 ${isCorrectSelected && !completing ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`pt-2 sm:pt-4 w-full flex gap-3 transition-opacity duration-300 ${isCorrectSelected && !completing ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     {!isFirst && <button onClick={onPrev} className="quiz-prev-btn flex-[1.5]">이전</button>}
                     <button onClick={handleNext} className={`quiz-next-btn ${isFirst ? 'w-full' : 'flex-[2.5]'}`}>
                         {isLast ? '결과 보기' : '다음'}

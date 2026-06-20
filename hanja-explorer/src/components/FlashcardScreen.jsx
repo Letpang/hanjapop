@@ -367,7 +367,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
 
 
-            <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 flex flex-col gap-10 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' }}>
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-8 flex flex-col gap-10 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' }}>
 
                 {/* ── 섹션 1: 한자 정보 ── */}
                 <div className="minimal-card-studio bg-white border border-[#E9EDF2] shadow-xl px-5 py-3 !rounded-[2rem]">
@@ -392,7 +392,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </div>
                     {item.etymology_short && (
                         <div className="mt-6 pt-6 border-t border-[#E9EDF2]">
-                            <p className="font-normal text-[#3C3C3C] leading-relaxed tracking-tight break-keep text-body">{item.etymology_short}</p>
+                            <p className="font-normal text-[#3C3C3C] leading-relaxed tracking-tight break-keep text-body text-center">{item.etymology_short}</p>
                         </div>
                     )}
                 </div>
@@ -422,9 +422,9 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {regularWords.map((w, i) => (
                                     <div key={i} className="flashcard-word-item">
-                                        <div className="flashcard-word-item__hanja">
+                                        <div className={`flashcard-word-item__hanja${w.word.length >= 4 ? ' flashcard-word-item__hanja--col' : ''}`}>
                                             <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{w.word}</span>
-                                            <span className="text-xs text-[#9AA4B5] whitespace-nowrap ml-2">{w.reading}</span>
+                                            <span className={`text-xs text-[#9AA4B5]${w.word.length < 4 ? ' whitespace-nowrap ml-2' : ''}`}>{w.reading}</span>
                                         </div>
                                         <div className="flashcard-word-item__divider" />
                                         <div className="flashcard-word-item__meaning">
@@ -461,15 +461,23 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         {isIdiomsOpen && (
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {relatedIdioms.map((idiom, i) => (
-                                    <div key={i} className="flashcard-word-item">
-                                        <div className="flashcard-word-item__hanja flashcard-word-item__hanja--col">
-                                            <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{idiom.hanja}</span>
-                                            <span className="text-xs text-[#9AA4B5]">{idiom.reading}</span>
+                                    <div key={i} className="flashcard-word-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                                        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                                            <div className="flashcard-word-item__hanja flashcard-word-item__hanja--col">
+                                                <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{idiom.hanja}</span>
+                                                <span className="text-xs text-[#9AA4B5]">{idiom.reading}</span>
+                                            </div>
+                                            <div className="flashcard-word-item__divider" />
+                                            <div className="flashcard-word-item__meaning py-3">
+                                                <span className="text-body break-keep text-[#5B677A]">{idiom.meaning}</span>
+                                            </div>
                                         </div>
-                                        <div className="flashcard-word-item__divider" />
-                                        <div className="flashcard-word-item__meaning">
-                                            <span className="text-body break-keep text-[#5B677A]">{idiom.meaning}</span>
-                                        </div>
+                                        {idiom.origin && (
+                                            <div className="flex items-start gap-2 px-4 pb-3 pt-2 border-t border-[#E9EDF2]">
+                                                <span className="shrink-0 mt-0.5 text-[10px] leading-none text-[#AEB7C5] bg-[#F2F4F6] border border-[#E2E6EA] rounded px-1.5 py-0.5">유래</span>
+                                                <p className="text-xs text-[#9AA4B5] leading-relaxed break-keep">{idiom.origin}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -500,13 +508,17 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         </button>
                         
                         {isSynAntOpen && (
-                            <div className="flex flex-col gap-5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                            <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {item.syn && item.syn.length > 0 && (
-                                    <div className="flex flex-col gap-3">
-                                        <span className="font-normal text-sm px-1 text-[#7C83FF]">유사어 — 비슷한 뜻</span>
+                                    <div className="minimal-card-studio p-5 bg-white dark:bg-slate-800 border border-[#E9EDF2] shadow-sm !rounded-[2.5rem] flex flex-col gap-4">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-1.5 h-4 rounded-full bg-[#7C83FF]" />
+                                            <span className="font-semibold text-sm-res text-[#4F56D9] dark:text-[#7C83FF]">유사어 — 비슷한 뜻</span>
+                                        </div>
                                         <div className="flex flex-wrap gap-3">
-                                            {item.syn.map(h => {
-                                                const d = HANJA_MAP[h];
+                                            {item.syn.map(entry => {
+                                                const h = typeof entry === 'string' ? entry : entry.hanja;
+                                                const d = typeof entry === 'object' ? entry : HANJA_MAP[h];
                                                 return (
                                                     <div key={h} className="syn-chip">
                                                         <span className="hanja-char font-normal text-h3 text-[#7C83FF]">{h}</span>
@@ -519,8 +531,11 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 )}
 
                                 {item.ant && item.ant.length > 0 && (
-                                    <div className="flex flex-col gap-3">
-                                        <span className="font-normal text-sm px-1 text-[#FF8D72]">반대어 — 반대 뜻</span>
+                                    <div className="minimal-card-studio p-5 bg-white dark:bg-slate-800 border border-[#E9EDF2] shadow-sm !rounded-[2.5rem] flex flex-col gap-4">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-1.5 h-4 rounded-full bg-[#FF8D72]" />
+                                            <span className="font-semibold text-sm-res text-[#E06D53] dark:text-[#FF8D72]">반대어 — 반대 뜻</span>
+                                        </div>
                                         <div className="flex flex-wrap gap-3">
                                             {item.ant.map(h => {
                                                 const d = HANJA_MAP[h];

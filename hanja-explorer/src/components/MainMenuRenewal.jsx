@@ -408,12 +408,12 @@ const MainMenuRenewal = ({
                     </div>
                 </div>
 
-                {/* 5 ── 한자 급수시험 준비 ── */}
+                {/* 5 ── 한자 급수별 학습관 ── */}
                 <section className="w-full max-w-md" style={up(0.18)}>
                     <div className="flex items-center justify-between mb-3 px-2">
                         <div className="flex flex-col">
-                            <span className="font-semibold text-lg text-slate-700 tracking-tight">한자 급수시험 준비</span>
-                            <span className="font-normal text-xs mt-0.5" style={{ color: '#7C83FF' }}>급수별 시험문제 · 오답 단어장</span>
+                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-100 tracking-tight">한자 급수별 학습관</span>
+                            <span className="font-normal text-xs mt-0.5" style={{ color: '#7C83FF' }}>급수별 집중 대비 · 모의고사 · 오답노트</span>
                         </div>
                     </div>
                     <div className="mm-cert-shortcut-grid">
@@ -423,8 +423,8 @@ const MainMenuRenewal = ({
                         >
                             <span className="mm-cert-shortcut-mark" aria-hidden="true">級</span>
                             <span className="mm-cert-shortcut-copy">
-                                <span className="mm-cert-shortcut-title">급수별 시험</span>
-                                <span className="mm-cert-shortcut-desc">8급부터 6급까지 모의시험</span>
+                                <span className="mm-cert-shortcut-title">급수별 학습관</span>
+                                <span className="mm-cert-shortcut-desc">8급부터 6급까지 집중 대비 및 평가</span>
                             </span>
                             <span className="mm-cert-shortcut-action">
                                 <span>바로가기</span>

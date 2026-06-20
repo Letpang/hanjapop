@@ -5,6 +5,10 @@ import { getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js
 const Toggle = ({ value, onToggle }) => (
     <button
         onClick={onToggle}
+        type="button"
+        role="switch"
+        aria-checked={value}
+        aria-label="다크 모드"
         className={`w-12 h-7 rounded-full transition-all duration-300 flex items-center px-0.5 shrink-0 ${value ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'}`}
     >
         <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -72,6 +76,7 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
             <div className="sticky top-0 z-50 w-full flex items-center gap-3 px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg">
                 <button
                     onClick={onBack}
+                    aria-label="뒤로 가기"
                     className="w-10 h-10 flex items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 active:scale-90 transition-all"
                 >
                     <span className="text-slate-500 dark:text-slate-300 text-base font-normal">←</span>

@@ -213,7 +213,7 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
         <div className="quiz-header-wrap">
           <div className="quiz-header-card">
             <button onClick={onBack}
-              className="flex items-center justify-center bg-white/90 border-2 border-white rounded-2xl shadow-sm active:scale-95 transition-all px-3 py-1.5 font-normal text-[#5B677A] text-sm gap-1 shrink-0">
+              className="flex items-center justify-center bg-white dark:bg-slate-800/90 border-2 border-white dark:border-slate-700 rounded-2xl shadow-sm active:scale-95 transition-all px-3 py-1.5 font-normal text-[#5B677A] dark:text-slate-300 text-sm gap-1 shrink-0">
               <span>←</span>
             </button>
             <div className="flex-1">

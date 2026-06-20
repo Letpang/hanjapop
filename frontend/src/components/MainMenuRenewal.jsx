@@ -87,7 +87,7 @@ const MainMenuRenewal = ({
     });
 
     return (
-        <div className="flex flex-col w-full max-w-[600px] mx-auto h-[100dvh] overflow-hidden relative bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0]">
+        <div className="main-menu-shell flex flex-col w-full max-w-[600px] mx-auto h-[100dvh] overflow-hidden relative bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] dark:from-[#0F172A] dark:to-[#1E293B]">
             <style>{FLOAT_CSS}</style>
 
             {/* ── 배경 ── */}
@@ -143,12 +143,12 @@ const MainMenuRenewal = ({
                         return (
                             <button 
                                 onClick={() => onNavigate('mypage')}
-                                className="relative w-full text-left rounded-[1.5rem] py-3.5 px-5 shadow-xl overflow-hidden flex items-center gap-4 active:scale-[0.98] hover:shadow-2xl transition-all group"
-                                style={{ background: 'linear-gradient(135deg, #ffffff 0%, #F4F7F8 100%)' }}>
+                                className="mm-profile-card relative w-full text-left rounded-[1.5rem] py-3.5 px-5 shadow-xl overflow-hidden flex items-center gap-4 active:scale-[0.98] hover:shadow-2xl transition-all group dark:bg-slate-800 dark:border-slate-700 dark:border"
+                                style={isDarkMode ? { background: '#1e293b' } : { background: 'linear-gradient(135deg, #ffffff 0%, #F4F7F8 100%)' }}>
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#2ED6C5] rounded-full blur-[50px] opacity-10 group-hover:opacity-20 transition-opacity" />
 
                                 <div className="shrink-0 relative">
-                                    <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center bg-white shadow-inner relative z-10 border-4 border-slate-50">
+                                    <div className="w-[80px] h-[80px] rounded-full flex items-center justify-center bg-white dark:bg-slate-800 shadow-inner relative z-10 border-4 border-slate-50 dark:border-slate-700">
                                         <img
                                             src={rank.avatar}
                                             alt="character"
@@ -163,7 +163,7 @@ const MainMenuRenewal = ({
                                 </div>
 
                                 <div className="flex-1 flex flex-col items-start min-w-0 z-10 pr-6">
-                                    <h1 className="font-medium text-[18px] truncate w-full text-slate-700 tracking-tight leading-tight group-hover:text-[#2ED6C5] transition-colors">
+                                    <h1 className="font-medium text-[18px] truncate w-full text-slate-700 dark:text-slate-100 tracking-tight leading-tight group-hover:text-[#2ED6C5] dark:group-hover:text-[#4FD1C5] transition-colors">
                                         {userNickname || '탐험가'}님
                                     </h1>
                                     
@@ -186,7 +186,7 @@ const MainMenuRenewal = ({
                                 </div>
 
                                 {/* 프로필 화살표 아이콘 (Chevron Right) */}
-                                <div className="absolute right-5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-[#8f99ad] group-hover:bg-[#E0F7FA] group-hover:text-[#0D9488] transition-colors z-20">
+                                <div className="absolute right-5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-[#8f99ad] dark:text-slate-300 group-hover:bg-[#E0F7FA] group-hover:text-[#0D9488] transition-colors z-20">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 ml-0.5">
                                         <polyline points="9 18 15 12 9 6"></polyline>
                                     </svg>
@@ -259,7 +259,7 @@ const MainMenuRenewal = ({
                             <CtaButton
                                 theme={(selectedPastStage || isDailyComplete) ? 'coral' : 'cream'}
                                 onClick={onStartNextStage}
-                                className="relative overflow-hidden"
+                                className="mm-primary-cta relative overflow-hidden"
                                 style={{ borderRadius: 0 }}
                             >
                                 {isDailyComplete && (
@@ -306,7 +306,7 @@ const MainMenuRenewal = ({
                             <button
                                 onClick={() => setShowModal(true)}
                                 className="w-full px-4 py-2.5 flex items-center gap-3 active:scale-[0.98] transition-all"
-                                style={{ background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.08)' : 'linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%)', borderRadius: 0 }}
+                                style={isDarkMode ? { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.15)' : '#1e293b', borderRadius: 0 } : { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.08)' : 'linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%)', borderRadius: 0 }}
                             >
                                 <span className={`font-normal text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-[#FF6B6B]' : 'text-[#8f99ad]'}`}>급수진행도</span>
                                 <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -314,8 +314,7 @@ const MainMenuRenewal = ({
                                         <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
                                     </div>
                                     <div
-                                        className="flex items-center gap-1.5 pl-3 pr-2.5 py-1 rounded-xl shadow-sm shrink-0"
-                                        style={{ background: 'rgba(255,241,234,0.8)', border: '1px solid rgba(255,225,200,0.6)' }}
+                                        className="flex items-center gap-1.5 pl-3 pr-2.5 py-1 rounded-xl shadow-sm shrink-0 bg-[#FFF1EA]/80 dark:bg-rose-950/30 border border-orange-100 dark:border-rose-900/40"
                                     >
                                         <span className="font-normal text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>
                                             {completedDay}/{TOTAL_STAGES}
@@ -335,7 +334,7 @@ const MainMenuRenewal = ({
                 <div className={`w-full max-w-md relative${allDone ? ' quest-section-done' : ''}`} style={up(0.15)}>
                     <div className="flex flex-wrap items-end justify-between gap-2 mb-3 px-2">
                         <div className="flex flex-col">
-                            <span className={`font-semibold text-lg tracking-tight${allDone ? ' quest-title-done' : ' text-slate-700'}`}>
+                            <span className={`font-semibold text-lg tracking-tight${allDone ? ' quest-title-done' : ' text-slate-700 dark:text-slate-100'}`}>
                                 오늘의 퀘스트
                             </span>
                             {allDone ? (
@@ -368,8 +367,12 @@ const MainMenuRenewal = ({
                             const meta = MISSION_META[m.type] || {};
                             const firstUndoneIdx = (missions || []).findIndex(x => !x.done);
                             const isRecommended = !m.done && idx === firstUndoneIdx;
-                            const maxXp = Math.max(...(missions || []).map(x => x.xp));
-                            const isCorал = !m.done && !isRecommended && m.xp === maxXp;
+                            const otherUndoneMissions = (missions || []).filter((x, missionIdx) => !x.done && missionIdx !== firstUndoneIdx);
+                            const maxUndoneXp = otherUndoneMissions.length > 0
+                                ? Math.max(...otherUndoneMissions.map(x => x.xp))
+                                : 0;
+                            const isHighXp = !m.done && !isRecommended && m.xp === maxUndoneXp;
+                            const isChallenge = !m.done && !isRecommended && !isHighXp;
                             
                             return (
                                 <button
@@ -384,12 +387,13 @@ const MainMenuRenewal = ({
                                     />
                                     <div className="flex-1 flex items-center justify-between min-w-0 relative z-10 pl-1">
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <span className="font-normal text-[20px] truncate text-slate-700">
+                                            <span className="font-normal text-[20px] truncate text-slate-700 dark:text-slate-100">
                                                 {meta.label || m.label}
                                             </span>
-                                            {m.done && <span className="bg-[#E0FBF7] text-[#0D9488] text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">✓ 완료</span>}
-                                            {!m.done && isRecommended && <span className="bg-[#FFFBEB] text-[#D97706] text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">추천</span>}
-                                            {!m.done && isCorал && <span className="bg-[#FFF0EB] text-[#FF6B6B] text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">고XP</span>}
+                                            {m.done && <span className="bg-[#E0FBF7] dark:bg-teal-950/50 text-[#0D9488] dark:text-teal-300 text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">✓ 완료</span>}
+                                            {!m.done && isRecommended && <span className="bg-[#FFFBEB] dark:bg-amber-950/50 text-[#D97706] dark:text-amber-300 text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">추천</span>}
+                                            {isHighXp && <span className="bg-[#FFF0EB] dark:bg-rose-950/50 text-[#FF6B6B] dark:text-rose-300 text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">고XP</span>}
+                                            {isChallenge && <span className="bg-[#F1F5F9] dark:bg-slate-700 text-[#64748B] dark:text-slate-300 text-[11px] font-normal px-1.5 py-0.5 rounded-md shrink-0">도전</span>}
                                         </div>
                                         <span className={`font-normal text-xs shrink-0 ml-2 ${m.done ? 'text-slate-300' : 'text-[#FF9B73]'}`}>
                                             미션 +{m.xp}XP
@@ -412,8 +416,8 @@ const MainMenuRenewal = ({
                 <section className="w-full max-w-md" style={up(0.18)}>
                     <div className="flex items-center justify-between mb-3 px-2">
                         <div className="flex flex-col">
-                            <span className="font-semibold text-lg text-slate-700 tracking-tight">한자 급수시험 준비</span>
-                            <span className="font-normal text-xs mt-0.5" style={{ color: '#7C83FF' }}>급수별 시험문제 · 오답 단어장</span>
+                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-100 tracking-tight">한자 급수별 학습관</span>
+                            <span className="font-normal text-xs mt-0.5" style={{ color: '#7C83FF' }}>급수별 집중 대비 · 모의고사 · 오답노트</span>
                         </div>
                     </div>
                     <div className="mm-cert-shortcut-grid">
@@ -423,8 +427,8 @@ const MainMenuRenewal = ({
                         >
                             <span className="mm-cert-shortcut-mark" aria-hidden="true">級</span>
                             <span className="mm-cert-shortcut-copy">
-                                <span className="mm-cert-shortcut-title">급수별 시험</span>
-                                <span className="mm-cert-shortcut-desc">8급부터 6급까지 모의시험</span>
+                                <span className="mm-cert-shortcut-title">급수별 학습관</span>
+                                <span className="mm-cert-shortcut-desc">8급부터 6급까지 집중 대비 및 평가</span>
                             </span>
                             <span className="mm-cert-shortcut-action">
                                 <span>바로가기</span>
@@ -540,12 +544,12 @@ const MainMenuRenewal = ({
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)' }}
                     onClick={() => setShowModal(false)}>
-                    <div className="w-full max-w-lg flex flex-col p-6 pb-10 gap-6 shadow-2xl" style={{ background: '#ffffff', borderRadius: '2rem 2rem 0 0' }}
+                    <div className="w-full max-w-lg flex flex-col p-6 pb-10 gap-6 shadow-2xl dark:bg-slate-900" style={isDarkMode ? { borderRadius: '2rem 2rem 0 0' } : { background: '#ffffff', borderRadius: '2rem 2rem 0 0' }}
                         onClick={e => e.stopPropagation()}>
                         
                         <div className="flex items-center justify-between">
-                            <h3 className="text-[19px] font-medium tracking-tight text-slate-800">단계 선택</h3>
-                            <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors">
+                            <h3 className="text-[19px] font-medium tracking-tight text-slate-800 dark:text-slate-100">단계 선택</h3>
+                            <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
@@ -553,7 +557,7 @@ const MainMenuRenewal = ({
                         {/* 전체 단계 복습 프리미엄 버튼 */}
                         <button
                             onClick={() => { setShowModal(false); showPremiumGate(); }}
-                            className="w-full flex items-center justify-between p-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 hover:shadow-md active:scale-[0.98] transition-all group"
+                            className="w-full flex items-center justify-between p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800/40 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/30 hover:shadow-md active:scale-[0.98] transition-all group"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center text-indigo-500 group-hover:scale-110 transition-transform">
@@ -582,7 +586,7 @@ const MainMenuRenewal = ({
                                                     ? 'text-white shadow-lg border-transparent' 
                                                     : locked 
                                                         ? 'bg-gradient-to-tr from-[#F8FAFC] to-[#F1F5F9] border-slate-200 text-slate-500 shadow-sm' 
-                                                        : 'bg-white border-slate-100 text-slate-700 hover:border-slate-200 hover:bg-slate-50'
+                                                        : 'bg-white border-slate-100 text-slate-700 hover:border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700'
                                             }`}
                                             style={{
                                                 background: sel ? color : locked ? 'linear-gradient(135deg, #F8FAFC 0%, #F5F3FF 100%)' : '',

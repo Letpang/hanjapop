@@ -130,6 +130,7 @@ export const useHanjaData = () => {
             return {
                 ...curr, ...srs,
                 level, streak,
+                correctCount: (curr.correctCount || 0) + 1,
                 wrongCount: streak >= 2 ? 0 : (curr.wrongCount || 0),
                 firstSeen: curr.firstSeen || now,
                 lastSeen: now,

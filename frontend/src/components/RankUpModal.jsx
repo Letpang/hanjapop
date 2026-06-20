@@ -29,8 +29,7 @@ const RankUpModal = ({ selectedCharacter, userXp, onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 z-[300] flex flex-col items-center justify-center animate-in fade-in duration-500"
-            style={{ background: `linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 60%, #fff 100%)` }}
+            className="rank-up-overlay fixed inset-0 z-[300] flex flex-col items-center justify-center animate-in fade-in duration-500"
             onClick={onClose}
         >
             <style>{`
@@ -98,12 +97,12 @@ const RankUpModal = ({ selectedCharacter, userXp, onClose }) => {
                     style={{ color: colors.to }}>
                     {rankLabel}
                 </span>
-                <h1 className="text-4xl font-medium leading-tight tracking-tight text-slate-800">
+                <h1 className="text-4xl font-medium leading-tight tracking-tight text-slate-800 dark:text-slate-100">
                     축하해요!
                 </h1>
-                <p className="text-base font-normal text-slate-500 mt-1">
+                <p className="text-base font-normal text-slate-500 dark:text-slate-300 mt-1">
                     <span className="font-normal" style={{ color: colors.to }}>{details.name}</span>이(가)<br/>
-                    <span className="font-normal text-slate-700">{details.rankName}</span> 단계로 진화했어요!
+                    <span className="font-normal text-slate-700 dark:text-slate-100">{details.rankName}</span> 단계로 진화했어요!
                 </p>
             </div>
 

@@ -35,6 +35,7 @@ const GradeTest62Screen        = lazy(() => import('./components/GradeTest62Scre
 const GradeTest6Screen         = lazy(() => import('./components/GradeTest6Screen.jsx'));
 const IdiomScreen              = lazy(() => import('./components/IdiomScreen.jsx'));
 const GradeExamSelectScreen    = lazy(() => import('./components/GradeExamSelectScreen.jsx'));
+const GradeStudyDashboardScreen = lazy(() => import('./components/GradeStudyDashboardScreen.jsx'));
 import { getLevel, getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY, LEVEL_THRESHOLDS, levelToImageRank } from './utils/rankUtils.js';
 import { useVersionCheck } from './hooks/useVersionCheck.js';
 import { useDailyMission } from './hooks/useDailyMission.js';
@@ -42,7 +43,7 @@ import { useCloudSync } from './hooks/useCloudSync.js';
 import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
 import { useAuth } from './hooks/useAuth.js';
 import { PremiumProvider } from './context/PremiumContext.jsx';
-import { canAccessStage } from './utils/premiumAccess.js';
+import { canAccessStage, canAccessGrade } from './utils/premiumAccess.js';
 import { useAdMob } from './hooks/useAdMob.js';
 import { buildPremiumWidgetPayload, savePremiumWidgetPayload } from './utils/premiumWidget.js';
 
@@ -240,10 +241,17 @@ const App = () => {
 
     // 과거 스테이지 선택 플레이
     const [selectedPastStage, setSelectedPastStage] = useState(null);
+    // 급수별 학습관 대시보드 상태
+    const [selectedDashboardGrade, setSelectedDashboardGrade] = useState(null);
     const backToMain = useCallback(() => {
-        setCurrentScreen('main');
-        setSelectedPastStage(null);
-    }, []);
+        if (selectedDashboardGrade) {
+            setCurrentScreen('gradeStudyDashboard');
+        } else {
+            setCurrentScreen('main');
+            setSelectedPastStage(null);
+            setSelectedGrade(null);
+        }
+    }, [selectedDashboardGrade]);
     const activeStage = selectedPastStage || currentDay;
     const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission(sessionDoneToday, activeStage);
     useEffect(() => {
@@ -271,12 +279,39 @@ const App = () => {
 
     // 급수별 선택 플레이
     const [selectedGrade, setSelectedGrade] = useState(null);
+    const getCumulativeGrades = (targetGrade) => {
+        const grades = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
+        const normTarget = targetGrade === '7급II' ? '7급Ⅱ' : targetGrade === '6급II' ? '6급Ⅱ' : targetGrade;
+        const idx = grades.indexOf(normTarget);
+        if (idx === -1) return [normTarget];
+        return grades.slice(0, idx + 1);
+    };
     const gradePool = useMemo(() => {
         if (!selectedGrade) return null;
-        const hanjaIds = HANJA_DATA.filter(h => h.grade === selectedGrade && clearedHanjaIds.includes(h.id)).map(h => h.id);
-        // eslint-disable-next-line react-hooks/refs
+        const norm = selectedGrade.replace('II', 'Ⅱ');
+        const hanjaIds = HANJA_DATA.filter(h => h.grade && h.grade.replace('II', 'Ⅱ') === norm).map(h => h.id);
         return buildUnifiedPool(hanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, [], 0, wordDataRef.current);
-    }, [selectedGrade, clearedHanjaIds]);
+    }, [selectedGrade]);
+
+    const gradeWordCount = useMemo(() => {
+        if (!selectedGrade) return null;
+        const norm = selectedGrade.replace('II', 'Ⅱ');
+        return HANJA_DATA
+            .filter(h => h.grade && h.grade.replace('II', 'Ⅱ') === norm)
+            .flatMap(h => (h.words || []).filter(w => w.type !== 'idiom'))
+            .length || 10;
+    }, [selectedGrade]);
+
+    const gradeSentenceCount = useMemo(() => {
+        if (!selectedGrade) return null;
+        const norm = selectedGrade.replace('II', 'Ⅱ');
+        return HANJA_DATA
+            .filter(h => h.grade && h.grade.replace('II', 'Ⅱ') === norm)
+            .flatMap(h => (h.words || []).filter(w =>
+                w.type !== 'idiom' && typeof w.example === 'string' && w.example.trim().length > 0
+            ))
+            .length || 5;
+    }, [selectedGrade]);
 
     const effectivePool = selectedPastStage ? pastStagePool : selectedGrade ? gradePool : sessionContentPool;
 
@@ -646,7 +681,7 @@ const App = () => {
                     currentDayHanjaIds={currentDayHanjaIds}
                     contentPool={effectivePool}
                     onGetNextWordIds={getNextWordIds}
-                    quizCount={5}
+                    quizCount={selectedGrade ? gradeSentenceCount : 5}
                     clearXp={20}
                 />;
             case 'wordQuiz':
@@ -676,7 +711,7 @@ const App = () => {
                     unlockedHanjaIds={clearedHanjaIds.length > 0 ? clearedHanjaIds : null}
                     contentPool={effectivePool}
                     onGetNextWordIds={getNextWordIds}
-                    quizCount={6}
+                    quizCount={selectedGrade ? gradeWordCount : 6}
                     clearXp={20}
                 />;
             case 'gradeTest':
@@ -731,9 +766,52 @@ const App = () => {
             case 'gradeExamSelect':
                 return <GradeExamSelectScreen
                     onBack={() => setCurrentScreen('main')}
-                    onNavigate={(screen) => {
-                        setGradeTestBackScreen('gradeExamSelect');
-                        setCurrentScreen(screen);
+                    onSelectGrade={(gradeName) => {
+                        setSelectedDashboardGrade(gradeName);
+                        setCurrentScreen('gradeStudyDashboard');
+                    }}
+                />;
+            case 'gradeStudyDashboard':
+                return <GradeStudyDashboardScreen
+                    grade={selectedDashboardGrade}
+                    onBack={() => {
+                        setSelectedGrade(null);
+                        setSelectedDashboardGrade(null);
+                        setCurrentScreen('gradeExamSelect');
+                    }}
+                    onStartFocusStudy={() => {
+                        setSelectedGrade(selectedDashboardGrade);
+                        setCurrentScreen('flashcard');
+                    }}
+                    onStartWordQuiz={() => {
+                        setSelectedGrade(selectedDashboardGrade);
+                        setCurrentScreen('wordQuiz');
+                    }}
+                    onStartSentenceQuiz={() => {
+                        setSelectedGrade(selectedDashboardGrade);
+                        setCurrentScreen('sentenceQuiz');
+                    }}
+                    onStartMockTest={() => {
+                        const getMockTestScreenId = (g) => {
+                            if (g === '8급') return 'gradeTest';
+                            if (g === '7급Ⅱ' || g === '7급II') return 'gradeTest72';
+                            if (g === '7급') return 'gradeTest7';
+                            if (g === '6급Ⅱ' || g === '6급II') return 'gradeTest62';
+                            if (g === '6급') return 'gradeTest6';
+                            return 'gradeTest';
+                        };
+                        setGradeTestBackScreen('gradeStudyDashboard');
+                        setCurrentScreen(getMockTestScreenId(selectedDashboardGrade));
+                    }}
+                    unlockedPack={unlockedPack}
+                    onShowPremiumModal={() => setShowPremiumModal(true)}
+                    clearedHanjaIds={clearedHanjaIds}
+                    hanjaData={hanjaData}
+                    selectedCharacter={selectedCharacter}
+                    onWriteHanja={(hanja) => {
+                        setWriteTargetHanja(hanja);
+                        setGradeTestBackScreen('gradeStudyDashboard');
+                        setCurrentScreen('writing');
                     }}
                 />;
             case 'levelTest':

@@ -19,11 +19,11 @@ export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-md rounded-t-[32px] bg-white pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]"
+                className="w-full max-w-md rounded-t-[32px] bg-white dark:bg-slate-800 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.35)]"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-center pt-4 pb-2">
-                    <div className="w-12 h-1.5 rounded-full bg-gray-200" />
+                    <div className="w-12 h-1.5 rounded-full bg-gray-200 dark:bg-slate-600" />
                 </div>
 
                 <div className="px-6 pt-4 pb-6 text-center">
@@ -31,7 +31,7 @@ export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
                     <h2 className="result-title result-title--clear text-[1.6rem] mt-1">
                         시험에 도전해볼까요?
                     </h2>
-                    <p className="text-sm font-normal text-slate-400 mt-2">
+                    <p className="text-sm font-normal text-slate-400 dark:text-slate-300 mt-2">
                         지금까지 배운 한자로 {grade} 시험에 도전해 보세요
                     </p>
                 </div>

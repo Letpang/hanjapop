@@ -4,6 +4,8 @@ import { SK } from '../constants/storageKeys.js';
 import { updateRecord } from '../utils/recordUtils.js';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import HANJA_DATA from '../hanja_unified.json';
+import IDIOMS from '../data/idioms.js';
+const IDIOM_MEANING_MAP = Object.fromEntries(IDIOMS.map(x => [x.hanja, x.meaning]));
 import { getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 import { getTodayStr } from '../utils/sessionUtils.js';
 import { buildUnifiedPool } from '../utils/learningPool.js';
@@ -127,7 +129,7 @@ const DailyFlashcard = ({ item, onFlip }) => {
                                         </div>
                                         <span className="text-sm font-normal text-[#7C83FF] shrink-0">{w.reading}</span>
                                     </div>
-                                    <div className="text-sm text-[#5B677A] font-normal mt-0.5">{w.meaning}</div>
+                                    <div className="text-sm text-[#5B677A] font-normal mt-0.5">{w.meaning || IDIOM_MEANING_MAP[w.word]}</div>
                                 </div>
                             ))}
                         </div>
@@ -281,7 +283,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
                                                     </div>
                                                     <span className="text-sm font-normal text-[#7C83FF] shrink-0">{w.reading}</span>
                                                 </div>
-                                                <div className="text-sm text-[#5B677A] font-normal mt-1">{w.meaning}</div>
+                                                <div className="text-sm text-[#5B677A] font-normal mt-1">{w.meaning || IDIOM_MEANING_MAP[w.word]}</div>
                                             </div>
                                         ))}
                                     </div>
@@ -963,11 +965,11 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
 
                     {/* 캐릭터 이미지 */}
                     <div className="relative flex items-center justify-center mt-7">
-                        <div className="absolute w-[100px] h-[100px] bg-[#2ED6C5]/10 rounded-full blur-md z-0" />
+                        <div className="absolute w-[160px] h-[160px] bg-[#2ED6C5]/10 rounded-full blur-md z-0" />
                         <img
                             src={charImg}
                             alt="great"
-                            className="w-[108px] h-[108px] object-contain drop-shadow-[0_12px_20px_rgba(46,214,197,0.3)] animate-bounce relative z-10"
+                            className="w-[168px] h-[168px] object-contain drop-shadow-[0_12px_20px_rgba(46,214,197,0.3)] animate-bounce relative z-10"
                             style={{ animationDuration: '3s', transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }}
                             onError={e => { e.target.src = '/assets/images/characters/default_3d.webp'; }}
                         />

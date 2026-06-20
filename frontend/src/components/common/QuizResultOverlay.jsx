@@ -35,8 +35,8 @@ const QuizResultOverlay = ({
     if (dailyMapNode) {
         return (
             <div className={`daily-session-result-backdrop${isClear ? '' : ' daily-session-result-backdrop--fail'}`}>
-                <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative animate-in zoom-in-95 duration-200">
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
+                <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative animate-in zoom-in-95 duration-200">
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] dark:bg-[#14b8a6] rounded-full blur-[80px] opacity-20 dark:opacity-10 pointer-events-none" />
                     <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
                         <div className="text-center flex flex-col gap-1 w-full">
                             <span className="result-subtitle">{subtitle}</span>
@@ -69,8 +69,7 @@ const QuizResultOverlay = ({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300"
-            style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'linear-gradient(180deg, #FDEAEA 0%, #FFF0F0 100%)' }}
+            className={`quiz-result-overlay fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300 ${isClear ? 'quiz-result-overlay--clear' : 'quiz-result-overlay--fail'}`}
         >
             <div className="activity-result-card">
                 <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">

@@ -58,13 +58,13 @@ const WritingHanjaCard = ({ item, isCompleted, onClick }) => {
         >
             {isCompleted && <div className="hanja-grid-card__check">✓</div>}
             <div
-                className="leading-none text-[#2C2C3A] flex items-center justify-center mb-2"
+                className="leading-none text-[#2C2C3A] dark:text-slate-100 flex items-center justify-center mb-2"
                 style={{ fontSize: 'clamp(3.2rem, 11vw, 5rem)', fontFamily: 'var(--font-hanja)' }}
             >
                 {item.hanja}
             </div>
             <div className="w-full pt-1 flex items-center justify-center">
-                <p className="text-center text-[#5B677A] text-[1.7rem] tracking-tight leading-snug break-keep">
+                <p className="text-center text-[#5B677A] dark:text-slate-300 text-[1.7rem] tracking-tight leading-snug break-keep">
                     <span className="font-normal">{item.meaning}</span>
                     <span className={`font-medium ml-1.5 ${isCompleted ? 'text-[#2ED6C5]' : 'text-[#7C83FF]'}`}>{item.sound}</span>
                 </p>
@@ -542,7 +542,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
         <div className="flex flex-col items-center w-full max-w-2xl mx-auto gap-3 sm:gap-4 animate-in fade-in duration-500">
             {/* 한자 및 훈음 표시 */}
             <div className="flex flex-row items-center justify-center gap-3 w-full">
-                <span className="text-[3.5rem] sm:text-[4rem] font-normal text-[#34383F] leading-none drop-shadow-sm">
+                <span className="text-[3.5rem] sm:text-[4rem] font-normal text-[#34383F] dark:text-slate-100 leading-none drop-shadow-sm">
                     {hanja.hanja}
                 </span>
                 <span className="text-[1.1rem] sm:text-[1.25rem] font-normal text-[#7C83FF] tracking-wider bg-[#F2F3FF] px-5 py-1.5 rounded-full shadow-sm whitespace-nowrap">
@@ -551,7 +551,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
             </div>
 
             {/* 연필 설정 */}
-            <div className="w-full rounded-[2rem] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-center gap-4 sm:gap-6" style={{ backgroundColor: '#F0F2F5' }}>
+            <div className="writing-toolbar w-full rounded-[2rem] px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-center gap-4 sm:gap-6" style={{ backgroundColor: '#F0F2F5' }}>
                 {/* 색상 */}
                 <div className="flex items-center gap-1.5 sm:gap-2">
                     {STROKE_COLORS.map(c => (
@@ -572,7 +572,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
                             className={`w-9 h-8 sm:w-11 sm:h-9 rounded-full flex items-center justify-center transition-all active:scale-90 active:translate-y-[2px] shrink-0 ${
                                 strokeWidth === w.value
                                     ? 'bg-[#7C83FF] shadow-lg ring-[3px] ring-white ring-offset-1'
-                                    : 'bg-white opacity-75 hover:opacity-100 shadow-sm'
+                                    : 'bg-white dark:bg-slate-800 opacity-75 hover:opacity-100 shadow-sm'
                             }`}
                             style={{ borderBottom: strokeWidth === w.value ? '4px solid #5A61D4' : '4px solid #D0D5E0' }}
                         >
@@ -589,15 +589,15 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
             </div>
 
             {/* 캔버스 */}
-            <div className={`relative w-full aspect-square max-w-[320px] sm:max-w-[380px] rounded-[3rem] sm:rounded-[4rem] overflow-hidden transition-all duration-500 shadow-2xl ${
+            <div className={`writing-canvas relative w-full aspect-square max-w-[320px] sm:max-w-[380px] rounded-[3rem] sm:rounded-[4rem] overflow-hidden transition-all duration-500 shadow-2xl ${
                 isComplete ? 'border-[8px] border-[#F5A58A] scale-[1.02]' :
-                mistakeOnStroke ? 'bg-rose-50 border-[8px] border-rose-100' : 'bg-white border-[8px] border-[#E9EDF2]'
+                mistakeOnStroke ? 'bg-rose-50 border-[8px] border-rose-100' : 'bg-white dark:bg-slate-800 border-[8px] border-[#E9EDF2]'
             }`}>
                 <div ref={quizContainerRef} className="w-full h-full flex items-center justify-center" />
                 {isAnimCJK && <canvas ref={drawingCanvasRef} className="absolute inset-0" style={{ width: '100%', height: '100%', touchAction: 'none' }} />}
                 {!isAnimCJK && <canvas ref={strokeNumberCanvasRef} className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%' }} />}
-                {!isReady && !noData && <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-md"><div className="w-10 h-10 border-4 border-[#7C83FF] border-t-transparent rounded-full animate-spin" /></div>}
-                {noData && <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/95"><span className="text-5xl">{hanja.hanja}</span><p className="text-sm text-[#AEB7C5] text-center px-4">이 한자는 획순 데이터가<br/>준비되지 않았어요</p></div>}
+                {!isReady && !noData && <div className="absolute inset-0 flex items-center justify-center bg-white dark:bg-slate-800/60 backdrop-blur-md"><div className="w-10 h-10 border-4 border-[#7C83FF] border-t-transparent rounded-full animate-spin" /></div>}
+                {noData && <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-800/95"><span className="text-5xl">{hanja.hanja}</span><p className="text-sm text-[#AEB7C5] text-center px-4">이 한자는 획순 데이터가<br/>준비되지 않았어요</p></div>}
                 {isComplete && (
                     <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg animate-in zoom-in duration-300" style={{ backgroundColor: '#F5A58A' }}>
                         <span className="text-white text-xs font-normal">✓ 완성!</span>
@@ -653,10 +653,10 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
                     onClick={() => setShowStrokeModal(false)}
                 >
                     <div
-                        className="bg-white rounded-[2rem] p-6 flex flex-col items-center gap-4 shadow-2xl mx-4"
+                        className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 flex flex-col items-center gap-4 shadow-2xl mx-4"
                         onClick={e => e.stopPropagation()}
                     >
-                        <p className="text-[#5B677A] font-normal text-sm">획순 동영상 — {hanja.hanja} ({hanja.meaning} {hanja.sound})</p>
+                        <p className="text-[#5B677A] dark:text-slate-300 font-normal text-sm">획순 동영상 — {hanja.hanja} ({hanja.meaning} {hanja.sound})</p>
                         <div
                             key={strokeOrderKey}
                             className="w-[260px] h-[260px]"
@@ -665,7 +665,7 @@ const QuizCard = ({ hanja, hanjaList, currentIndex, onWritingComplete, onNextHan
                         <div className="flex gap-3 w-full">
                             <button
                                 onClick={() => setStrokeOrderKey(k => k + 1)}
-                                className="flex-1 py-3 rounded-2xl bg-[#F0F2F5] text-[#5B677A] font-normal text-sm"
+                                className="flex-1 py-3 rounded-2xl bg-[#F0F2F5] text-[#5B677A] dark:text-slate-300 font-normal text-sm"
                             >
                                 다시 보기
                             </button>
@@ -829,7 +829,7 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
     }, [currentIndex, activeHanjaList, completedCount, onStageClear]);
 
     return (
-        <div className="quiz-screen quiz-screen--plain" style={{ backgroundColor: phase === 'select' ? '#F7FAF9' : '#F8FAFC' }}>
+        <div className={`quiz-screen quiz-screen--plain ${phase === 'select' ? 'bg-[#F7FAF9] dark:bg-slate-900' : 'bg-[#F8FAFC] dark:bg-slate-900'}`}>
             {/* 헤더 */}
             <div className="quiz-header-wrap quiz-header-wrap--sm">
                 <div className="quiz-header-card quiz-header-card--wide">
@@ -864,11 +864,11 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                             {/* 탭 */}
                             <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-4 shadow-inner">
                                 <button onClick={() => setViewMode('grade')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}>
+                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}>
                                     급수별
                                 </button>
                                 <button onClick={() => setViewMode('topic')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}>
+                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}>
                                     주제별
                                 </button>
                             </div>
@@ -890,8 +890,8 @@ const WritingScreen = ({ onBack, onWritingComplete, onStageClear, initialHanja, 
                             <div className="flex flex-col items-center mt-4 mb-5 relative">
                                 <div className="absolute top-4 left-[60%] z-20">
                                     <div className="quiz-bubble">
-                                        <span className="text-body font-normal text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
-                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
+                                        <span className="text-body font-normal text-[#5B677A] dark:text-slate-300 whitespace-nowrap break-keep">준비됐어!</span>
+                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white dark:bg-slate-800 border-r border-b border-white dark:border-slate-700" />
                                     </div>
                                 </div>
                                 <div className="relative z-10 w-36 h-36 flex items-center justify-center mt-10">

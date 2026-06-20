@@ -476,7 +476,7 @@ const SentenceQuizScreen = ({
                             choices={options}
                             correctAnswer={currentAnswer}
                             choiceClassName={currentQuiz.type === 'sentence' ? 'quiz-choice-btn--hanja' : ''}
-                            cardAspect="aspect-[21/9] sm:aspect-[16/9]"
+                            cardAspect="aspect-[16/8] sm:aspect-[16/7]"
                             isFirst={true}
                             isLast={isLastQuestion}
                             completing={completing}

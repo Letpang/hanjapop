@@ -8,14 +8,17 @@ const QuizProgressBar = ({ current, total, answered = false, completing = false,
             <div
                 className="quiz-progress-fill"
                 style={{ '--progress': `${pct}%`, ...(fillColor ? { backgroundColor: fillColor } : {}) }}
-            >
-                {avatar && (
-                    <div className="quiz-progress-avatar">
-                        <img src={avatar} className="w-full h-full object-contain" alt="progress-pawn"
-                            style={{ transform: `translateY(${getCharacterTranslateY(charType)}) scale(${getCharacterScale(charType, 'rank1') * (charType === 'muzi' ? 1.0 : 1.15)})` }} />
-                    </div>
-                )}
-            </div>
+            />
+            {avatar && (
+                <div className="quiz-progress-avatar" style={{
+                    left: `calc(${pct}% - (${pct / 100} * 2.25rem))`,
+                    right: 'auto',
+                    transform: 'translateY(-50%)',
+                }}>
+                    <img src={avatar} className="w-full h-full object-contain" alt="progress-pawn"
+                        style={{ transform: `translateY(${getCharacterTranslateY(charType)}) scale(${getCharacterScale(charType, 'rank1') * (charType === 'muzi' ? 1.0 : 1.15)})` }} />
+                </div>
+            )}
         </div>
     );
 };

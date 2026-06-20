@@ -95,7 +95,10 @@ export const signInWithKakao = async () => {
     if (!supabase) return { success: false, error: 'offline' };
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
-        options: { redirectTo: window.location.origin },
+        options: { 
+            redirectTo: window.location.origin,
+            queryParams: { prompt: 'login' }
+        },
     });
     if (error) return { success: false, error };
     return { success: true };

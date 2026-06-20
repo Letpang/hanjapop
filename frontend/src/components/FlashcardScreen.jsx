@@ -189,7 +189,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
         <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl bg-[#F4F7F8] flex items-center justify-center text-xs-res font-normal text-[#AEB7C5] border border-[#E9EDF2] uppercase tracking-widest shrink-0">Q{idx + 1}</span>
-                <p className="font-normal text-[#3C3C3C] text-h4 tracking-tight break-keep leading-tight flex-1">
+                <p className="font-normal text-[#3C3C3C] dark:text-slate-100 text-h4 tracking-tight break-keep leading-tight flex-1">
                     {(q.id === 'q_syn' || q.id === 'q_ant') && q.prompt.match(/^([^\(]+)\((.+?)\)(.*)$/) ? (
                         (() => {
                             const match = q.prompt.match(/^([^\(]+)\((.+?)\)(.*)$/);
@@ -220,7 +220,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                         if (match) {
                             content = (
                                 <div className="flex flex-col items-center justify-center w-full gap-1.5 py-2">
-                                    <span className={`hanja-char text-[2rem] leading-none ${isRight ? 'text-[#4F56D9]' : isWrong ? 'text-[#FF8D72]' : 'text-[#3C3C3C]'}`}>{match[1]}</span>
+                                    <span className={`hanja-char text-[2rem] leading-none ${isRight ? 'text-[#4F56D9]' : isWrong ? 'text-[#FF8D72]' : 'text-[#3C3C3C] dark:text-slate-100'}`}>{match[1]}</span>
                                     <span className={`text-[0.9rem] font-normal tracking-tight ${isRight ? 'text-[#7C83FF]' : isWrong ? 'text-[#FFA88D]' : 'text-[#7882A0]'}`}>{match[2]}</span>
                                 </div>
                             );
@@ -336,7 +336,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     }, [isSequence, isLast, finishStudySheet, onNext, onBack]);
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F8FAF9]">
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#F8FAF9] dark:bg-slate-900">
             {xpPopup.show && (
                 <div key={xpPopup.key} className="xp-popup-wrapper">
                     <div className="xp-popup-badge">
@@ -346,7 +346,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
             )}
             {/* 헤더 */}
             <div className="w-full px-4 shrink-0 relative z-50" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)', paddingBottom: '4px' }}>
-                <div className="minimal-card-studio w-full flex justify-between items-center p-4 px-6 bg-white border-[#E9EDF2] shadow-xl !rounded-[3rem] min-h-[72px]">
+                <div className="minimal-card-studio w-full flex justify-between items-center p-4 px-6 bg-white dark:bg-slate-800 border-[#E9EDF2] shadow-xl !rounded-[3rem] min-h-[72px]">
                     <button onClick={onBack} className="hp-nav-button">
                         ←
                     </button>
@@ -367,12 +367,12 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
 
 
-            <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-4 flex flex-col gap-10 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' }}>
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-8 flex flex-col gap-10 max-w-2xl w-full mx-auto" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8rem)' }}>
 
                 {/* ── 섹션 1: 한자 정보 ── */}
-                <div className="minimal-card-studio bg-white border border-[#E9EDF2] shadow-xl px-5 py-3 !rounded-[2rem]">
+                <div className="minimal-card-studio bg-white dark:bg-slate-800 border border-[#E9EDF2] shadow-xl px-5 py-3 !rounded-[2rem]">
                     <div className="flex flex-col items-center gap-1">
-                        <div className="hanja-char text-[#3C3C3C] leading-tight drop-shadow-sm text-display">{item.hanja}</div>
+                        <div className="hanja-char text-[#3C3C3C] dark:text-slate-100 leading-tight drop-shadow-sm text-display">{item.hanja}</div>
                         <div className="flex items-baseline gap-4 mt-2">
                             <span className="font-normal text-[#7C83FF] text-h2 tracking-tighter">{item.meaning}</span>
                             <span className="font-normal text-[#7C83FF] text-h2 tracking-tighter">{item.sound}</span>
@@ -382,7 +382,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 setIsSpeaking(true);
                                 playCardSound(item, () => setIsSpeaking(false));
                             }}
-                            className={`mt-3 w-11 h-11 rounded-2xl border-2 flex items-center justify-center active:scale-90 shadow-sm transition-all ${isSpeaking ? 'bg-[#7C83FF] border-[#7C83FF]' : 'bg-white border-[#E9EDF2]'}`}
+                            className={`mt-3 w-11 h-11 rounded-2xl border-2 flex items-center justify-center active:scale-90 shadow-sm transition-all ${isSpeaking ? 'bg-[#7C83FF] border-[#7C83FF]' : 'bg-white dark:bg-slate-800 border-[#E9EDF2]'}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke={isSpeaking ? '#fff' : '#7C83FF'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -392,7 +392,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     </div>
                     {item.etymology_short && (
                         <div className="mt-6 pt-6 border-t border-[#E9EDF2]">
-                            <p className="font-normal text-[#3C3C3C] leading-relaxed tracking-tight break-keep text-body">{item.etymology_short}</p>
+                            <p className="font-normal text-[#3C3C3C] dark:text-slate-100 leading-relaxed tracking-tight break-keep text-body text-center">{item.etymology_short}</p>
                         </div>
                     )}
                 </div>
@@ -422,13 +422,13 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {regularWords.map((w, i) => (
                                     <div key={i} className="flashcard-word-item">
-                                        <div className="flashcard-word-item__hanja">
+                                        <div className={`flashcard-word-item__hanja${w.word.length >= 4 ? ' flashcard-word-item__hanja--col' : ''}`}>
                                             <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{w.word}</span>
-                                            <span className="text-xs text-[#9AA4B5] whitespace-nowrap ml-2">{w.reading}</span>
+                                            <span className={`text-xs text-[#9AA4B5]${w.word.length < 4 ? ' whitespace-nowrap ml-2' : ''}`}>{w.reading}</span>
                                         </div>
                                         <div className="flashcard-word-item__divider" />
                                         <div className="flashcard-word-item__meaning">
-                                            <span className="text-body break-keep text-[#5B677A]">{w.meaning}</span>
+                                            <span className="text-body break-keep text-[#5B677A] dark:text-slate-300">{w.meaning}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -461,15 +461,23 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         {isIdiomsOpen && (
                             <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {relatedIdioms.map((idiom, i) => (
-                                    <div key={i} className="flashcard-word-item">
-                                        <div className="flashcard-word-item__hanja flashcard-word-item__hanja--col">
-                                            <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{idiom.hanja}</span>
-                                            <span className="text-xs text-[#9AA4B5]">{idiom.reading}</span>
+                                    <div key={i} className="flashcard-word-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                                        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                                            <div className="flashcard-word-item__hanja flashcard-word-item__hanja--col">
+                                                <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{idiom.hanja}</span>
+                                                <span className="text-xs text-[#9AA4B5]">{idiom.reading}</span>
+                                            </div>
+                                            <div className="flashcard-word-item__divider" />
+                                            <div className="flashcard-word-item__meaning py-3">
+                                                <span className="text-body break-keep text-[#5B677A] dark:text-slate-300">{idiom.meaning}</span>
+                                            </div>
                                         </div>
-                                        <div className="flashcard-word-item__divider" />
-                                        <div className="flashcard-word-item__meaning">
-                                            <span className="text-body break-keep text-[#5B677A]">{idiom.meaning}</span>
-                                        </div>
+                                        {idiom.origin && (
+                                            <div className="flex items-start gap-2 px-4 pb-3 pt-2 border-t border-[#E9EDF2]">
+                                                <span className="shrink-0 mt-0.5 text-[10px] leading-none text-[#AEB7C5] bg-[#F2F4F6] border border-[#E2E6EA] rounded px-1.5 py-0.5">유래</span>
+                                                <p className="text-xs text-[#9AA4B5] leading-relaxed break-keep">{idiom.origin}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -500,13 +508,17 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                         </button>
                         
                         {isSynAntOpen && (
-                            <div className="flex flex-col gap-5 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
+                            <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                                 {item.syn && item.syn.length > 0 && (
-                                    <div className="flex flex-col gap-3">
-                                        <span className="font-normal text-sm px-1 text-[#7C83FF]">유사어 — 비슷한 뜻</span>
+                                    <div className="minimal-card-studio p-5 bg-white dark:bg-slate-800 border border-[#E9EDF2] shadow-sm !rounded-[2.5rem] flex flex-col gap-4">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-1.5 h-4 rounded-full bg-[#7C83FF]" />
+                                            <span className="font-semibold text-sm-res text-[#4F56D9] dark:text-[#7C83FF]">유사어 — 비슷한 뜻</span>
+                                        </div>
                                         <div className="flex flex-wrap gap-3">
-                                            {item.syn.map(h => {
-                                                const d = HANJA_MAP[h];
+                                            {item.syn.map(entry => {
+                                                const h = typeof entry === 'string' ? entry : entry.hanja;
+                                                const d = typeof entry === 'object' ? entry : HANJA_MAP[h];
                                                 return (
                                                     <div key={h} className="syn-chip">
                                                         <span className="hanja-char font-normal text-h3 text-[#7C83FF]">{h}</span>
@@ -519,8 +531,11 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 )}
 
                                 {item.ant && item.ant.length > 0 && (
-                                    <div className="flex flex-col gap-3">
-                                        <span className="font-normal text-sm px-1 text-[#FF8D72]">반대어 — 반대 뜻</span>
+                                    <div className="minimal-card-studio p-5 bg-white dark:bg-slate-800 border border-[#E9EDF2] shadow-sm !rounded-[2.5rem] flex flex-col gap-4">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <div className="w-1.5 h-4 rounded-full bg-[#FF8D72]" />
+                                            <span className="font-semibold text-sm-res text-[#E06D53] dark:text-[#FF8D72]">반대어 — 반대 뜻</span>
+                                        </div>
                                         <div className="flex flex-wrap gap-3">
                                             {item.ant.map(h => {
                                                 const d = HANJA_MAP[h];
@@ -563,7 +578,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     {isQuizOpen && (
                         <div className="flex flex-col gap-4 mt-1 animate-in slide-in-from-top-2 fade-in duration-200">
                             {questions.map((q, idx) => (
-                                <div key={q.id} className="minimal-card-studio p-5 bg-white border border-[#E9EDF2] shadow-xl !rounded-[3rem]">
+                                <div key={q.id} className="minimal-card-studio p-5 bg-white dark:bg-slate-800 border border-[#E9EDF2] shadow-xl !rounded-[3rem]">
                                     <QuizItem
                                         q={q}
                                         idx={idx}
@@ -592,7 +607,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
                         <div className="modal-backdrop" onClick={() => { setQuizDone(false); onNext(); }} />
                         
-                        <div className="minimal-card-studio bg-white w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white">
+                        <div className="minimal-card-studio bg-white dark:bg-slate-800 w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
                             <div className="pt-4 pb-8 px-6 flex flex-col items-center gap-2 w-full relative">
                                 {/* 메인 비주얼 */}
                                 <div className="activity-result-glow" />
@@ -605,7 +620,7 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
                                 {/* 텍스트 정보 */}
                                 <div className="text-center flex flex-col gap-2">
-                                    <h1 className="text-h1 font-medium text-[#3C3C3C] tracking-tighter break-keep">
+                                    <h1 className="text-h1 font-medium text-[#3C3C3C] dark:text-slate-100 tracking-tighter break-keep">
                                         모든 한자 학습 완료!
                                     </h1>
                                     
@@ -910,7 +925,7 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
 
             {showAllDoneModal && (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overlay-success">
-                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white border-4 border-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative animate-in zoom-in-95 duration-200">
+                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative animate-in zoom-in-95 duration-200">
                         <div className="pt-8 pb-8 px-6 flex flex-col items-center gap-5 w-full">
                             <img
                                 src={getCharacterImage(selectedCharacter, 'success')}

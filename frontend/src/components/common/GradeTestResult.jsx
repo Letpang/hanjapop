@@ -33,8 +33,8 @@ const GradeTestResult = ({
     const unlockText = `${grade} 뱃지 획득!`;
 
     return (
-        <div className={`w-full min-h-[100dvh] flex flex-col items-center justify-center px-5 py-4 overflow-hidden ${passed ? 'bg-[#E8F8F3]' : 'bg-[#FFF1F1]'}`}>
-            <div className="w-full max-w-md rounded-[2.5rem] bg-white px-6 py-6 shadow-2xl shadow-[rgba(91,103,122,0.14)] flex flex-col items-center text-center">
+        <div className={`w-full min-h-[100dvh] flex flex-col items-center justify-center px-5 py-4 overflow-hidden dark:bg-slate-900 ${passed ? 'bg-[#E8F8F3]' : 'bg-[#FFF1F1]'}`}>
+            <div className="grade-test-result-card w-full max-w-md rounded-[2.5rem] bg-white px-6 py-6 shadow-2xl shadow-[rgba(91,103,122,0.14)] flex flex-col items-center text-center">
                 <img
                     src={characterImage}
                     alt=""

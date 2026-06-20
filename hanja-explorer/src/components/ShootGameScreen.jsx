@@ -745,8 +745,12 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 100% { filter: hue-rotate(360deg); }
             }
             @keyframes starSparkle {
-                0%, 100% { opacity: 0.18; transform: scale(0.7); }
-                50% { opacity: 1; transform: scale(1.4); }
+                0%, 100% { opacity: 0.25; transform: translateY(0px) scale(0.6) rotate(0deg); }
+                50%      { opacity: 1;    transform: translateY(-6px) scale(1.15) rotate(15deg); }
+            }
+            @keyframes driftBokeh {
+                0%, 100% { opacity: 0.15; transform: translate(0, 0) scale(1); }
+                50%      { opacity: 0.55; transform: translate(8px, -12px) scale(1.2); }
             }
             @keyframes particleDrift {
                 0%   { opacity: 0; transform: translateY(0px) scale(0.5); }
@@ -928,16 +932,42 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
             {COSMIC_STARS.map(star => (
                 <div
                     key={star.id}
-                    className="absolute rounded-full pointer-events-none z-0"
+                    className="absolute pointer-events-none z-0"
                     style={{
                         left: star.left,
                         top: star.top,
-                        width: `${star.size}px`,
-                        height: `${star.size}px`,
-                        backgroundColor: themeConfig.accentColor,
-                        boxShadow: `0 0 6px ${themeConfig.accentColor}, 0 0 14px ${themeConfig.accentColor}, 0 0 28px ${themeConfig.accentColor}`,
+                        width: `${star.size * 3}px`,
+                        height: `${star.size * 3}px`,
+                        background: 'linear-gradient(135deg, #ffffff 0%, #fff0f5 40%, #d8f3ff 100%)',
+                        clipPath: 'polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%)',
+                        filter: `drop-shadow(0 0 5px rgba(255,255,255,0.9)) drop-shadow(0 0 10px ${themeConfig.accentColor}88)`,
+                        willChange: 'transform, opacity',
                         animation: `starSparkle ${star.speed} ease-in-out infinite`,
                         animationDelay: star.delay,
+                    }}
+                />
+            ))}
+
+            {/* Bokeh Lights */}
+            {[
+                { id: 'b1', left: '12%', top: '28%', size: 36, delay: '0s',   speed: '8s'  },
+                { id: 'b2', left: '72%', top: '18%', size: 52, delay: '2.5s', speed: '10s' },
+                { id: 'b3', left: '42%', top: '62%', size: 44, delay: '1.2s', speed: '9s'  },
+                { id: 'b4', left: '85%', top: '55%', size: 30, delay: '3.8s', speed: '7s'  },
+            ].map(b => (
+                <div
+                    key={b.id}
+                    className="absolute rounded-full pointer-events-none z-0"
+                    style={{
+                        left: b.left,
+                        top: b.top,
+                        width: `${b.size}px`,
+                        height: `${b.size}px`,
+                        background: `radial-gradient(circle, rgba(255,255,255,0.7) 0%, ${themeConfig.accentColor}44 60%, transparent 100%)`,
+                        filter: 'blur(4px)',
+                        willChange: 'transform, opacity',
+                        animation: `driftBokeh ${b.speed} ease-in-out infinite`,
+                        animationDelay: b.delay,
                     }}
                 />
             ))}

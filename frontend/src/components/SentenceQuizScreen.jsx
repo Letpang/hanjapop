@@ -40,7 +40,7 @@ const SentenceQuizScreen = ({
     srsData, masteryData, userLevel, userXp, selectedCharacter,
     getRewardPreview, contentPool, onGetNextWordIds, unlockedHanjaIds,
     currentDayHanjaIds, seenHanjaIds, mainSeenHanjaIds, seenWordIds,
-    dailyMapNode, hideRetry,
+    dailyMapNode, hideRetry, missionDone = false,
     quizCount = DEFAULT_QUIZ_COUNT, clearXp = DEFAULT_CLEAR_XP,
 }) => {
     const [viewMode, setViewMode] = useState('grade');
@@ -69,6 +69,7 @@ const SentenceQuizScreen = ({
     const [currentAnswered, setCurrentAnswered] = useState(false);
     const [combo, setCombo] = useState(0);
     const clearCountRef = useRef(0);
+    const missionXpGrantedRef = useRef(0);
     const stageClearArgsRef = useRef(null);
     const stageClearDeliveredRef = useRef(false);
     const shownWordsRef = useRef([]);
@@ -137,7 +138,9 @@ const SentenceQuizScreen = ({
     const endQuiz = useCallback(() => {
         if (completingRef.current) return;
         const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
+        const isFirstClear = clearCountRef.current === 0;
         clearCountRef.current += 1;
+        missionXpGrantedRef.current = (isFirstClear && !missionDone) ? 30 : 0;
         stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
         if (!dailyMapNode) {
             onStageClear?.(...stageClearArgsRef.current);
@@ -147,7 +150,7 @@ const SentenceQuizScreen = ({
         setResultStats(finalStats);
         completingRef.current = true;
         setCompleting(true);
-        setTimeout(() => setGameState('result'), 750);
+        setGameState('result');
     }, [dailyMapNode, onStageClear]);
 
     const generateQuiz = useCallback(() => {
@@ -350,7 +353,7 @@ const SentenceQuizScreen = ({
                 correctXp={correctXp}
                 clearXp={clearXp}
                 detailText={`${resultCorrect}개 정답 x ${xpPerCorrect}XP + 완료 ${clearXp}XP`}
-                missionXp={clearCountRef.current === 1 ? 30 : 0}
+                missionXp={missionXpGrantedRef.current}
                 onRetry={() => startQuiz()}
                 onBack={() => { handleNextStage(); onBack(); }}
                 onNextStage={handleNextStage}
@@ -381,13 +384,12 @@ const SentenceQuizScreen = ({
         const after = rest[1] || '';
         const particleMatch = after.match(/^([^\s]+)/);
         const particle = particleMatch ? particleMatch[1] : '';
-        const remaining = after.substring(particle.length);
+const remaining = after.substring(particle.length);
         return { before, word: wordVal, particle, remaining };
     }, [currentQuiz]);
 
     return (
-        <div className="w-full min-h-[100dvh] flex flex-col max-w-screen-xl mx-auto"
-            style={{ backgroundColor: started ? '#F8FAF9' : '#F7FAF9' }}>
+        <div className={`w-full min-h-[100dvh] flex flex-col max-w-screen-xl mx-auto ${started ? 'bg-[#F8FAF9] dark:bg-slate-900' : 'bg-[#F7FAF9] dark:bg-slate-900'}`}>
 
             {/* 헤더 */}
             <div className="w-full shrink-0 safe-top pt-2 px-4 mb-1">
@@ -423,11 +425,11 @@ const SentenceQuizScreen = ({
                         <div className="flex flex-col items-center w-full animate-in fade-in duration-500">
                             <div className="flex bg-[#F4F7F8]/40 p-1.5 rounded-full border border-[#E9EDF2] w-full mb-4 shadow-inner">
                                 <button onClick={() => setViewMode('grade')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}>
+                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'grade' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}>
                                     급수별
                                 </button>
                                 <button onClick={() => setViewMode('topic')}
-                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white shadow-md text-[#5B677A]' : 'text-[#AEB7C5]'}`}>
+                                    className={`flex-1 px-8 py-3 rounded-full font-normal text-h3 transition-all ${viewMode === 'topic' ? 'bg-white dark:bg-slate-800 shadow-md text-[#5B677A] dark:text-slate-300' : 'text-[#AEB7C5]'}`}>
                                     주제별
                                 </button>
                             </div>
@@ -449,9 +451,9 @@ const SentenceQuizScreen = ({
                             )}
                             <div className="flex flex-col items-center mt-4 mb-5 relative">
                                 <div className="absolute top-4 left-[60%] z-20">
-                                    <div className="px-5 py-2 rounded-2xl shadow-xl border border-white relative bg-white/90 backdrop-blur-md">
-                                        <span className="text-body font-normal text-[#5B677A] whitespace-nowrap break-keep">준비됐어!</span>
-                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white border-r border-b border-white" />
+                                    <div className="px-5 py-2 rounded-2xl shadow-xl border border-white dark:border-slate-700 relative bg-white dark:bg-slate-800/90 backdrop-blur-md">
+                                        <span className="text-body font-normal text-[#5B677A] dark:text-slate-300 whitespace-nowrap break-keep">준비됐어!</span>
+                                        <div className="absolute -bottom-1.5 left-3 w-4 h-4 rotate-45 bg-white dark:bg-slate-800 border-r border-b border-white dark:border-slate-700" />
                                     </div>
                                 </div>
                                 <div className="relative z-10 w-36 h-36 flex items-center justify-center mt-10">
@@ -476,7 +478,7 @@ const SentenceQuizScreen = ({
                             choices={options}
                             correctAnswer={currentAnswer}
                             choiceClassName={currentQuiz.type === 'sentence' ? 'quiz-choice-btn--hanja' : ''}
-                            cardAspect="aspect-[21/9] sm:aspect-[16/9]"
+                            cardAspect="aspect-[16/8] sm:aspect-[16/7]"
                             isFirst={true}
                             isLast={isLastQuestion}
                             completing={completing}
@@ -488,7 +490,7 @@ const SentenceQuizScreen = ({
                             onNext={handleNext}
                             onCorrectSelected={() => setCurrentAnswered(true)}
                             renderFront={({ isAnswered }) => (
-                                <p className="quiz-example-font font-normal leading-[1.8] text-center text-[#5B677A]/90 break-keep">
+                                <p className="quiz-example-font font-normal leading-[1.8] text-center text-[#5B677A] dark:text-slate-300/90 break-keep">
                                     {currentQuiz.type === 'sentence' && sentenceParts ? (
                                         <>
                                             {sentenceParts.before}
@@ -496,7 +498,7 @@ const SentenceQuizScreen = ({
                                                 <span
                                                     className={`inline-flex items-center justify-center min-w-[2em] px-2 rounded-2xl transition-all duration-300 mx-1 py-0.5 ${isAnswered
                                                         ? 'bg-[#7C83FF]/10 border-2 border-[#7C83FF] shadow-sm'
-                                                        : 'bg-[#F8FAF9] border-2 border-dashed border-[#7C83FF]/30 shadow-inner'}`}
+                                                        : 'bg-[#F8FAF9] dark:bg-slate-900 border-2 border-dashed border-[#7C83FF]/30 shadow-inner'}`}
                                                     style={{ verticalAlign: 'baseline', minWidth: `${(currentQuiz.target?.word?.length || 1) * 1.5}em` }}
                                                 >
                                                     <span className="quiz-example-font font-normal"
