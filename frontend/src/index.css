@@ -636,8 +636,13 @@ body.dark-mode {
 }
 
 .sentence-quiz-prompt--long {
-    font-size: clamp(1.5rem, 5.8vw, 1.95rem);
+    font-size: clamp(1.3rem, 5vw, 1.7rem);
     line-height: 1.4;
+}
+
+.sentence-quiz-prompt--extra-long {
+    font-size: clamp(1.05rem, 3.8vw, 1.4rem);
+    line-height: 1.35;
 }
 
 .sentence-quiz-blank-text {

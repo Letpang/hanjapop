@@ -381,9 +381,11 @@ const SentenceQuizScreen = ({
     const sentenceLength = (currentQuiz?.sentence || '').replace(/[()\s]/g, '').length;
     const sentenceSizeClass = sentenceLength <= 18
         ? 'sentence-quiz-prompt--short'
-        : sentenceLength <= 30
+        : sentenceLength <= 28
             ? 'sentence-quiz-prompt--medium'
-            : 'sentence-quiz-prompt--long';
+            : sentenceLength <= 40
+                ? 'sentence-quiz-prompt--long'
+                : 'sentence-quiz-prompt--extra-long';
 
     const sentenceParts = useMemo(() => {
         if (!currentQuiz?.sentence || !currentQuiz.sentence.includes('(')) return null;
@@ -488,7 +490,7 @@ const remaining = after.substring(particle.length);
                             choices={options}
                             correctAnswer={currentAnswer}
                             choiceClassName={currentQuiz.type === 'sentence' ? 'quiz-choice-btn--hanja' : ''}
-                            cardAspect="aspect-[16/8] sm:aspect-[16/7]"
+                            cardAspect="aspect-[16/10] sm:aspect-[16/8]"
                             isFirst={true}
                             isLast={isLastQuestion}
                             completing={completing}

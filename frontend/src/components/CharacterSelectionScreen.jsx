@@ -93,7 +93,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
 
                 {/* 메인 타이틀 */}
                 <div className="text-center mt-0 mb-1 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <h1 className="text-[clamp(1.35rem,4.5vw,2rem)] font-medium text-slate-800 tracking-tight text-balance leading-[1.2]">
+                    <h1 className="text-[clamp(1.55rem,5.5vw,2.2rem)] font-medium text-slate-800 tracking-tight text-balance leading-[1.2]">
                         함께 한자를 배울<br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7C83FF] to-[#FF8D72]">나만의 파트너</span>를 선택하세요!
                     </h1>
@@ -110,7 +110,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                             <button
                                 key={char.id}
                                 onClick={() => handleSelectCharacter(char.id)}
-                                className={`character-selection-card group relative flex flex-col items-center justify-between rounded-[2rem] overflow-hidden transition-all duration-500 focus:outline-none h-[clamp(170px,42vw,230px)] md:h-[clamp(240px,36vw,310px)] lg:h-[clamp(220px,22vh,270px)] ${
+                                className={`character-selection-card group relative flex flex-col items-center justify-between rounded-[2rem] overflow-hidden transition-all duration-500 focus:outline-none h-[clamp(195px,48vw,260px)] md:h-[clamp(280px,38vw,340px)] lg:h-[clamp(240px,26vh,300px)] ${
                                     isSelected
                                         ? "glass-panel scale-[1.03] z-10"
                                         : "glass-panel hover:-translate-y-2 hover:bg-white dark:bg-slate-800/70 opacity-90 hover:opacity-100"
@@ -139,7 +139,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
                                         <img
                                             src={char.finalImage}
                                             alt={char.name}
-                                            className={`max-h-[110px] md:max-h-[150px] lg:max-h-[140px] w-auto object-contain drop-shadow-xl ${
+                                            className={`max-h-[140px] md:max-h-[190px] lg:max-h-[175px] w-auto object-contain drop-shadow-xl ${
                                                 isSelected ? "animate-float" : "animate-float-delay"
                                             }`}
                                             style={{ animationDelay: `${idx * 0.2}s` }}
@@ -149,7 +149,7 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
 
                                 {/* 이름 라벨 */}
                                 <div className="w-full flex flex-col items-center gap-1.5 pb-3 pt-1 shrink-0">
-                                    <span className={`font-medium text-[clamp(14px,3.5vw,18px)] tracking-tight transition-colors duration-300 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`}>
+                                    <span className={`font-medium text-[clamp(16px,4.2vw,20px)] tracking-tight transition-colors duration-300 ${isSelected ? 'text-slate-800' : 'text-slate-600'}`}>
                                         {char.name}
                                     </span>
                                     <div 

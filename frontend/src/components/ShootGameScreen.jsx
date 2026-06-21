@@ -226,9 +226,9 @@ const getGameThemeKey = (currentDay, selectedGrade) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart, missionDone = false, killsPerWaveOverride, userXpOverride }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart, missionDone = false, killsPerWaveOverride, userXpOverride, avatarOverride }) => {
     const { lang } = useLang();
-    const characterAvatar = useMemo(() => getRankDetails(userXpOverride ?? getStoredXp(), selectedCharacter).avatar, [selectedCharacter, userXpOverride]);
+    const characterAvatar = useMemo(() => avatarOverride ?? getRankDetails(userXpOverride ?? getStoredXp(), selectedCharacter).avatar, [selectedCharacter, userXpOverride, avatarOverride]);
     
     const getMeaning = useCallback((item) => {
         if (!item) return "";

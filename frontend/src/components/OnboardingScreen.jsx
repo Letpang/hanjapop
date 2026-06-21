@@ -342,8 +342,7 @@ const GamePick = ({ onPick, guide, charId }) => {
 
       <button
         onClick={() => onPick('shoot')}
-        className="flex items-center gap-4 rounded-[2rem] bg-white dark:bg-slate-800 p-5 text-left active:scale-95 transition-all duration-200 hover:-translate-y-1"
-        style={{ boxShadow: '0 4px 16px rgba(255,155,115,0.15), 0 1px 4px rgba(0,0,0,0.06)', border: '1.5px solid rgba(255,155,115,0.2)' }}
+        className="glass-panel flex items-center gap-4 rounded-[2rem] p-5 text-left active:scale-95 transition-all duration-200 hover:-translate-y-1"
       >
         <div className="w-20 h-20 rounded-[1.2rem] flex items-center justify-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #FFF3EE 0%, #FFE8DC 100%)' }}>
@@ -357,8 +356,7 @@ const GamePick = ({ onPick, guide, charId }) => {
 
       <button
         onClick={() => onPick('match')}
-        className="flex items-center gap-4 rounded-[2rem] bg-white dark:bg-slate-800 p-5 text-left active:scale-95 transition-all duration-200 hover:-translate-y-1"
-        style={{ boxShadow: '0 4px 16px rgba(0,199,174,0.15), 0 1px 4px rgba(0,0,0,0.06)', border: '1.5px solid rgba(0,199,174,0.2)' }}
+        className="glass-panel flex items-center gap-4 rounded-[2rem] p-5 text-left active:scale-95 transition-all duration-200 hover:-translate-y-1"
       >
         <div className="w-20 h-20 rounded-[1.2rem] flex items-center justify-center shrink-0"
           style={{ background: 'linear-gradient(135deg, #E8FAF7 0%, #D4F5F0 100%)' }}>
@@ -380,21 +378,25 @@ const SKILL_MAX = { word: 2, context: 1, idiom: 1 };
 // ─────────────────────────────────────────────
 // Result
 // ─────────────────────────────────────────────
-const Result = ({ score, finalLevel, skillStats, onComplete, guide }) => {
+const Result = ({ score, finalLevel, skillStats, onComplete, guide, charId }) => {
   const profile = PROFILE[finalLevel];
   const gameBonus = 30;
   const totalXp = profile.xp + gameBonus;
   const currentGradeIndex = Math.max(0, GRADE_STEPS.indexOf(profile.grade));
+  const charScale = getCharacterScale(charId || 'garae', 'rank5');
+  const charTranslateY = getCharacterTranslateY(charId || 'garae', true);
 
   return (
     <div className="flex min-h-[100dvh] w-full flex-col overflow-y-auto bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
       <div className="mx-auto flex w-full max-w-sm flex-col gap-4 safe-bottom">
 
         {/* ── 헤더: 캐릭터 + 결과 ── */}
-        <div className="rounded-[2.4rem] overflow-hidden text-center shadow-xl"
-          style={{ background: 'radial-gradient(ellipse at 50% 0%, #e8faf7 0%, #ffffff 60%)' }}>
-          <div className="pt-6 pb-2">
-            <img src={guide} alt="가래뭉치" className="mx-auto h-40 w-40 object-contain drop-shadow-2xl animate-float" />
+        <div className="glass-panel rounded-[2.4rem] overflow-hidden text-center"
+          style={{ background: 'radial-gradient(ellipse at 50% 0%, #e8faf7 0%, rgba(255,255,255,0.55) 60%)' }}>
+          <div className="pt-6 pb-2 flex flex-col items-center">
+            <div style={{ transform: `translateY(${charTranslateY}) scale(${charScale})` }}>
+              <img src={guide} alt="캐릭터" className="h-40 w-40 object-contain drop-shadow-2xl animate-float" />
+            </div>
           </div>
           <div className="px-6 pb-7">
             <p className="text-[11px] font-normal tracking-[0.2em] text-[#00A994]">DIAGNOSIS COMPLETE</p>
@@ -406,7 +408,7 @@ const Result = ({ score, finalLevel, skillStats, onComplete, guide }) => {
         </div>
 
         {/* ── 급수 탐험 경로 ── */}
-        <div className="rounded-[2rem] bg-white dark:bg-slate-800 px-5 pt-4 pb-5 shadow-sm">
+        <div className="glass-panel rounded-[2rem] px-5 pt-4 pb-5">
           <div className="mb-4 flex items-center justify-between">
             <span className="text-body font-medium text-[#334155] dark:text-slate-200">급수 탐험 경로</span>
             <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-xs font-normal text-[#00A994]">{score}/{TOTAL} 정답</span>
@@ -440,7 +442,7 @@ const Result = ({ score, finalLevel, skillStats, onComplete, guide }) => {
             ['문장 추론', skillStats.context, SKILL_MAX.context],
             ['사자성어', skillStats.idiom, SKILL_MAX.idiom],
           ].map(([label, value, max]) => (
-            <div key={label} className="rounded-[1.35rem] bg-white dark:bg-slate-800 p-3 text-center shadow-sm">
+            <div key={label} className="glass-panel rounded-[1.35rem] p-3 text-center">
               <p className="body-muted">{label}</p>
               <p className="mt-1">
                 <span className="text-h3 font-medium text-[#7C83FF]">{value}</span>
@@ -464,7 +466,7 @@ const Result = ({ score, finalLevel, skillStats, onComplete, guide }) => {
 
         <button
           onClick={() => onComplete(profile.grade, totalXp)}
-          className="w-full rounded-[1.7rem] bg-[#00C7AE] py-4 text-h3 font-normal text-white shadow-lg shadow-teal-200 active:scale-95"
+          className="hp-cta-button hp-cta-button--teal text-h3 tracking-tight"
         >
           내 탐험 지도 열기
         </button>
@@ -564,10 +566,10 @@ const OnboardingScreen = ({ onComplete, selectedCharacter }) => {
           contentPool={SHOOT_CONTENT_POOL}
           masteryData={{}}
           srsData={{}}
-          selectedCharacter="garae"
+          selectedCharacter={selectedCharacter || 'garae'}
           hideRetry={true}
           killsPerWaveOverride={6}
-          userXpOverride={9999}
+          avatarOverride={`/assets/images/characters/${selectedCharacter || 'garae'}/rank_5.webp`}
         />
       </Suspense>
     );
@@ -582,8 +584,8 @@ const OnboardingScreen = ({ onComplete, selectedCharacter }) => {
           contentPool={SHOOT_CONTENT_POOL}
           masteryData={{}}
           srsData={{}}
-          userXp={0}
-          selectedCharacter="garae"
+          userXp={999999}
+          selectedCharacter={selectedCharacter || 'garae'}
           hideRetry={true}
           pairsPerRoundOverride={3}
         />
@@ -598,6 +600,7 @@ const OnboardingScreen = ({ onComplete, selectedCharacter }) => {
       skillStats={skillStats}
       onComplete={handleComplete}
       guide={guide}
+      charId={selectedCharacter}
     />
   );
 };
