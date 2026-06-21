@@ -1,5 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getRankDetails, levelToImageRank, getLevel } from '../utils/rankUtils.js';
+import { shareImageToKakao } from '../utils/kakaoShare.js';
+import ResultModalShell, {
+    ResultModalActions,
+    ResultModalHeading,
+    ResultPrimaryButton,
+    ResultShareButton,
+} from './common/ResultModalShell.jsx';
 
 const RANK_LABELS = {
     2: '2단계 진화',
@@ -22,15 +29,50 @@ const RankUpModal = ({ selectedCharacter, userXp, onClose }) => {
     const colors = RANK_COLORS[imageRank] || RANK_COLORS[2];
     const rankLabel = RANK_LABELS[imageRank] || '진화';
 
+    const timerRef = useRef(null);
+    const modalRef = useRef(null);
+    const [shareStatus, setShareStatus] = useState('');
+
     useEffect(() => {
-        const t = setTimeout(onClose, 8000);
-        return () => clearTimeout(t);
+        timerRef.current = setTimeout(onClose, 8000);
+        return () => clearTimeout(timerRef.current);
     }, [onClose]);
 
+    const handleShare = async () => {
+        clearTimeout(timerRef.current);
+        setShareStatus('화면 캡처 중...');
+        try {
+            let file = null;
+            if (modalRef.current) {
+                const { default: html2canvas } = await import('html2canvas');
+                const canvas = await html2canvas(modalRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+                if (blob) file = new File([blob], 'hanjapop-rankup.png', { type: 'image/png' });
+            }
+            setShareStatus('카카오톡 연결 중...');
+            await shareImageToKakao({
+                file,
+                title: `${details.name}이(가) ${details.rankName} 단계로 진화했어요!`,
+                description: `한자팝 ${rankLabel} 달성`,
+                fallbackText: `한자팝 ${rankLabel}!\n${details.name}이(가) ${details.rankName} 단계로 진화했어요!`,
+            });
+            setShareStatus('카카오톡 공유를 열었어요');
+        } catch (error) {
+            if (error?.name === 'AbortError' || /cancel|close|canceled/i.test(String(error?.message || error))) {
+                setShareStatus(''); return;
+            }
+            setShareStatus('공유에 실패했어요.');
+        }
+        setTimeout(() => setShareStatus(''), 3500);
+    };
+
     return (
-        <div
-            className="rank-up-overlay fixed inset-0 z-[300] flex flex-col items-center justify-center animate-in fade-in duration-500"
-            onClick={onClose}
+        <ResultModalShell
+            ref={modalRef}
+            className="rank-up-overlay"
+            cardClassName="flex flex-col items-center overflow-hidden"
+            onBackdropClick={onClose}
+            labelledBy="rank-up-title"
         >
             <style>{`
                 @keyframes rank-float {
@@ -77,7 +119,6 @@ const RankUpModal = ({ selectedCharacter, userXp, onClose }) => {
 
             {/* 캐릭터 이미지 */}
             <div className="relative z-10" style={{ animation: 'rank-float 3s ease-in-out infinite' }}>
-                {/* 이미지 뒤 광택 */}
                 <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
                     <div className="w-16 h-full bg-white/40 blur-sm"
                         style={{ animation: 'rank-shine 2.5s ease-in-out 0.5s infinite' }}
@@ -92,36 +133,31 @@ const RankUpModal = ({ selectedCharacter, userXp, onClose }) => {
             </div>
 
             {/* 텍스트 */}
-            <div className="relative z-10 mt-6 flex flex-col items-center gap-2 text-center px-6">
-                <span className="text-xs font-normal tracking-[0.2em] uppercase"
-                    style={{ color: colors.to }}>
-                    {rankLabel}
-                </span>
-                <h1 className="text-4xl font-medium leading-tight tracking-tight text-slate-800 dark:text-slate-100">
-                    축하해요!
-                </h1>
-                <p className="text-base font-normal text-slate-500 dark:text-slate-300 mt-1">
+            <ResultModalHeading
+                id="rank-up-title"
+                kicker={rankLabel}
+                title="축하해요!"
+                description={<>
                     <span className="font-normal" style={{ color: colors.to }}>{details.name}</span>이(가)<br/>
                     <span className="font-normal text-slate-700 dark:text-slate-100">{details.rankName}</span> 단계로 진화했어요!
-                </p>
-            </div>
+                </>}
+            />
 
-            {/* 확인 버튼 */}
-            <button
-                onClick={onClose}
-                className="relative z-10 mt-10 px-12 py-4 rounded-full font-normal text-white text-lg active:scale-95 transition-all"
-                style={{
-                    background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-                    boxShadow: `0 8px 24px ${colors.glow}`,
-                }}
-            >
-                확인
-            </button>
+            {/* 버튼 영역 */}
+            <ResultModalActions className="relative z-10 mt-6">
+                <ResultShareButton
+                    onClick={handleShare}
+                    title="카카오톡으로 자랑하기"
+                    subtitle={`${rankLabel}을 친구에게 공유해요`}
+                />
+                {shareStatus && <p className="text-[11px] text-slate-400">{shareStatus}</p>}
+                <ResultPrimaryButton onClick={onClose}>확인</ResultPrimaryButton>
+            </ResultModalActions>
 
-            <p className="relative z-10 mt-4 text-xs text-slate-400 font-normal">
+            <p className="relative z-10 mt-3 text-xs text-slate-400 font-normal">
                 화면을 터치해도 닫힙니다
             </p>
-        </div>
+        </ResultModalShell>
     );
 };
 

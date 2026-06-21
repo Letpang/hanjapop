@@ -425,11 +425,14 @@ const StudyHistoryScreen = ({ onBack, isDarkMode }) => {
 
               {selectedSummary.hanjas.length > 0 && (
                 <DetailSection title="학습한 한자" count={selectedSummary.hanjas.length} tone="slate">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {selectedSummary.hanjas.map(h => (
-                      <div key={h.id} className="rounded-2xl border border-slate-100 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm">
-                        <span className="mr-2 text-lg font-normal text-[#334155] dark:text-slate-200">{h.hanja}</span>
-                        <span className="text-xs font-normal text-[#94A3B8]">{h.sound} · {h.meaning}</span>
+                      <div key={h.id} className="rounded-[1.5rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-3 shadow-sm flex flex-col items-center text-center gap-1">
+                        <span className="text-3xl font-normal text-[#334155] dark:text-slate-100">{h.hanja}</span>
+                        <p className="text-[12px] font-normal leading-tight text-center px-1">
+                          <span className="text-[#94A3B8]">{h.meaning}</span>
+                          <span className="text-[#334155] dark:text-slate-200"> {h.sound}</span>
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -438,10 +441,10 @@ const StudyHistoryScreen = ({ onBack, isDarkMode }) => {
 
               {selectedSummary.correctWords.length > 0 && (
                 <DetailSection title="맞춘 단어" count={selectedSummary.correctWords.length} tone="teal">
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {selectedSummary.correctWords.map(w => (
-                      <div key={w.id} className="flex items-center justify-between rounded-2xl bg-[#F8FAF9] dark:bg-slate-900 px-3 py-2">
-                        <span className="font-normal text-[#334155] dark:text-slate-200">{w.word}</span>
+                      <div key={w.id} className="rounded-[1.5rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 shadow-sm flex flex-col items-center text-center gap-0.5">
+                        <span className="font-normal text-[#334155] dark:text-slate-200 text-base">{w.word}</span>
                         <span className="text-xs font-normal text-[#94A3B8]">{w.reading}</span>
                       </div>
                     ))}
@@ -451,10 +454,10 @@ const StudyHistoryScreen = ({ onBack, isDarkMode }) => {
 
               {selectedSummary.wrongWords.length > 0 && (
                 <DetailSection title="틀린 단어" count={selectedSummary.wrongWords.length} tone="coral">
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {selectedSummary.wrongWords.map(w => (
-                      <div key={w.id} className="flex items-center justify-between rounded-2xl bg-[#FFF1EE] dark:bg-rose-950/30 px-3 py-2">
-                        <span className="font-normal text-[#C94C3B]">{w.word}</span>
+                      <div key={w.id} className="rounded-[1.5rem] border border-[#FFD4CC] dark:border-rose-800/50 bg-[#FFF7F5] dark:bg-rose-950/25 px-3 py-2 shadow-sm flex flex-col items-center text-center gap-0.5">
+                        <span className="font-normal text-[#C94C3B] text-base">{w.word}</span>
                         <span className="text-xs font-normal text-[#E8664F]">{w.reading}</span>
                       </div>
                     ))}

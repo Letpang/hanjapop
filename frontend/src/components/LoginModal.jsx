@@ -38,7 +38,7 @@ export default function LoginModal({ onClose, platform, signInWithApple, signInW
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
              style={{ background: 'rgba(0,0,0,0.5)' }}>
-            <div className="login-modal-card w-full max-w-md rounded-t-3xl p-8 pb-12"
+            <div className="login-modal-card mobile-bottom-sheet w-full max-w-md rounded-t-3xl p-8 pb-12"
                  style={{ background: 'var(--card-bg, #fff)' }}>
 
                 {/* 헤더 */}
@@ -50,7 +50,10 @@ export default function LoginModal({ onClose, platform, signInWithApple, signInW
                 {/* 설명 */}
                 <p className="text-sm text-gray-500 mb-8 leading-relaxed text-center">
                     로그인하면 학습 데이터와 구매 내역이<br />
-                    기기를 바꿔도 유지됩니다.
+                    기기를 바꿔도 유지됩니다.<br />
+                    <span className="mt-2 inline-block text-[12px] text-indigo-400">
+                        기존 기록이 있다면 이전에 사용한 로그인 방식을 선택해 주세요.
+                    </span>
                 </p>
 
                 {/* 로그인 버튼 */}

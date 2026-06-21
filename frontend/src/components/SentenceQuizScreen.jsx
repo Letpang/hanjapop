@@ -138,9 +138,10 @@ const SentenceQuizScreen = ({
     const endQuiz = useCallback(() => {
         if (completingRef.current) return;
         const finalStats = { correct: scoreRef.current, total: totalAnsweredRef.current, shownWords: [...shownWordsRef.current] };
+        const passedMission = finalStats.total > 0 && finalStats.correct / finalStats.total >= 0.7;
         const isFirstClear = clearCountRef.current === 0;
-        clearCountRef.current += 1;
-        missionXpGrantedRef.current = (isFirstClear && !missionDone) ? 30 : 0;
+        if (passedMission) clearCountRef.current += 1;
+        missionXpGrantedRef.current = (passedMission && isFirstClear && !missionDone) ? 30 : 0;
         stageClearArgsRef.current = [finalStats.correct, finalStats.total, finalStats.shownWords];
         if (!dailyMapNode) {
             onStageClear?.(...stageClearArgsRef.current);
@@ -367,6 +368,9 @@ const SentenceQuizScreen = ({
     const reading = wordReadingMap[word] || currentQuiz?.target?.reading || word;
     const meaning = currentQuiz?.target?.meaning || '';
     const speakText = currentQuiz?.type === 'sentence' ? reading : (currentQuiz?.sound || '');
+    const backReadingText = currentQuiz?.type === 'sentence' ? reading : (currentQuiz?.sound || '');
+    const backMeaningText = currentQuiz?.type === 'sentence' ? meaning : (currentQuiz?.meaning || '');
+    const isBackDense = backReadingText.length >= 4 || backMeaningText.length > 18;
     const currentAnswer = currentQuiz?.type === 'sentence' ? currentQuiz?.target?.word : currentQuiz?.answer;
     const isLastQuestion = totalAnswered >= plannedQuizTotal ||
         (reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0);
@@ -374,6 +378,12 @@ const SentenceQuizScreen = ({
         totalAnswered + (currentAnswered ? 0 : 1),
         plannedQuizTotal
     ));
+    const sentenceLength = (currentQuiz?.sentence || '').replace(/[()\s]/g, '').length;
+    const sentenceSizeClass = sentenceLength <= 18
+        ? 'sentence-quiz-prompt--short'
+        : sentenceLength <= 30
+            ? 'sentence-quiz-prompt--medium'
+            : 'sentence-quiz-prompt--long';
 
     const sentenceParts = useMemo(() => {
         if (!currentQuiz?.sentence || !currentQuiz.sentence.includes('(')) return null;
@@ -490,7 +500,7 @@ const remaining = after.substring(particle.length);
                             onNext={handleNext}
                             onCorrectSelected={() => setCurrentAnswered(true)}
                             renderFront={({ isAnswered }) => (
-                                <p className="quiz-example-font font-normal leading-[1.8] text-center text-[#5B677A] dark:text-slate-300/90 break-keep">
+                                <p className={`sentence-quiz-prompt ${sentenceSizeClass} font-normal text-center text-[#5B677A] dark:text-slate-300/90 break-keep`}>
                                     {currentQuiz.type === 'sentence' && sentenceParts ? (
                                         <>
                                             {sentenceParts.before}
@@ -501,7 +511,7 @@ const remaining = after.substring(particle.length);
                                                         : 'bg-[#F8FAF9] dark:bg-slate-900 border-2 border-dashed border-[#7C83FF]/30 shadow-inner'}`}
                                                     style={{ verticalAlign: 'baseline', minWidth: `${(currentQuiz.target?.word?.length || 1) * 1.5}em` }}
                                                 >
-                                                    <span className="quiz-example-font font-normal"
+                                                    <span className="sentence-quiz-blank-text font-normal"
                                                         style={{ color: isAnswered ? '#7C83FF' : '#C3C6FF' }}>
                                                         {isAnswered ? currentQuiz.target.word : '?'}
                                                     </span>
@@ -518,25 +528,25 @@ const remaining = after.substring(particle.length);
                             renderBack={({ isSpeaking, onSpeak }) => (
                                 <>
                                     <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }} />
-                                    <div className="quiz-card-back__content">
+                                    <div className={`quiz-card-back__content ${isBackDense ? 'quiz-card-back__content--dense' : ''}`}>
                                         {currentQuiz.type === 'sentence' ? (
                                             <>
                                                 <div className="quiz-card-back__reading-row">
-                                                    <span className="quiz-card-back__reading">{reading}</span>
-                                                    <span className="quiz-card-back__hanja">({word})</span>
+                                                    <span className={`quiz-card-back__reading ${backReadingText.length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{reading}</span>
+                                                    <span className="quiz-card-back__hanja hanja-char">({word})</span>
                                                 </div>
                                                 <div className="quiz-card-back__body">
-                                                    <p className="quiz-card-back__text">{meaning}</p>
+                                                    <p className={`quiz-card-back__text ${meaning.length > 28 ? 'quiz-card-back__text--long' : ''}`}>{meaning}</p>
                                                 </div>
                                             </>
                                         ) : (
                                             <>
                                                 <div className="quiz-card-back__reading-row">
-                                                    <span className="quiz-card-back__reading">{currentQuiz.sound}</span>
-                                                    <span className="quiz-card-back__hanja">({currentQuiz.char})</span>
+                                                    <span className={`quiz-card-back__reading ${backReadingText.length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{currentQuiz.sound}</span>
+                                                    <span className="quiz-card-back__hanja hanja-char">({currentQuiz.char})</span>
                                                 </div>
                                                 <div className="quiz-card-back__body">
-                                                    <p className="quiz-card-back__text">{currentQuiz.meaning}</p>
+                                                    <p className={`quiz-card-back__text ${(currentQuiz.meaning || '').length > 28 ? 'quiz-card-back__text--long' : ''}`}>{currentQuiz.meaning}</p>
                                                 </div>
                                             </>
                                         )}
@@ -556,7 +566,7 @@ const remaining = after.substring(particle.length);
                             style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'keep_going')})` }} />
                         <div className="exit-confirm-content">
                             <h2 className="exit-confirm-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요?'}
+                                {dailyMapNode ? '홈으로 돌아갈까요?' : '정말 퀴즈를 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}
@@ -567,7 +577,7 @@ const remaining = after.substring(particle.length);
                                 <span className="quiz-cta-text">계속 공부하기</span>
                             </CtaButton>
                             <button onClick={handleExitConfirm} className="back-quiz-button">
-                                {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
+                                {dailyMapNode ? '홈으로 돌아가기' : '그만하고 나가기'}
                             </button>
                         </div>
                     </div>

@@ -49,16 +49,40 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
     const [restoreMsg, setRestoreMsg] = useState(null);
     const [packResetDone, setPackResetDone] = useState(false);
     const [packActivated, setPackActivated] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [logoutMessage, setLogoutMessage] = useState('');
+
+    const handleLogout = async () => {
+        if (!onLogout || isLoggingOut) return;
+        setIsLoggingOut(true);
+        setLogoutMessage('');
+        try {
+            const result = await onLogout();
+            if (result?.success === false) throw result.error || new Error('logout_failed');
+        } catch {
+            setLogoutMessage('로그아웃하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.');
+            setIsLoggingOut(false);
+        }
+    };
 
     const handleRestore = async () => {
         if (!restoreFromCloud) return;
-        const { success, reason } = await restoreFromCloud();
+        const { success, reason, legacyRecovery } = await restoreFromCloud();
         if (success) {
-            setRestoreMsg('복원 완료! 재시작합니다...');
+            const recoveredDays = Math.max(
+                0,
+                Number(legacyRecovery?.study_days_after || 0) - Number(legacyRecovery?.study_days_before || 0)
+            );
+            setRestoreMsg(recoveredDays > 0
+                ? `예전 학습 기록 ${recoveredDays}일을 찾아 복원했어요. 재시작합니다...`
+                : '로컬과 클라우드 기록을 안전하게 합쳤어요. 재시작합니다...');
             setTimeout(() => window.location.reload(), 1200);
-        } else if (reason !== 'cancelled') {
-            setRestoreMsg('복원할 데이터가 없습니다. (백업이 없거나 오프라인 상태)');
-            setTimeout(() => setRestoreMsg(null), 3000);
+        } else if (reason === 'error') {
+            setRestoreMsg('복원 중 네트워크 오류가 발생했습니다. 기기 데이터는 변경되지 않았습니다.');
+            setTimeout(() => setRestoreMsg(null), 5000);
+        } else if (reason === 'not_found') {
+            setRestoreMsg('현재 계정에 복원할 백업이 없습니다.');
+            setTimeout(() => setRestoreMsg(null), 4000);
         }
     };
 
@@ -142,20 +166,26 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
                 {/* 계정 */}
                 <Section title="계정" color="#7C83FF">
                     {user ? (
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-normal text-slate-700 dark:text-slate-200 leading-tight truncate">{user.email || '로그인됨'}</span>
-                                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 leading-tight mt-0.5">현재 로그인된 계정</span>
+                        <>
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-sm font-normal text-slate-700 dark:text-slate-200 leading-tight truncate">{user.email || '로그인됨'}</span>
+                                    <span className="text-xs font-normal text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
+                                        확인된 동일 이메일 로그인은 하나의 학습 계정으로 연결됩니다
+                                    </span>
+                                </div>
+                                {onLogout && (
+                                    <button
+                                        onClick={handleLogout}
+                                        disabled={isLoggingOut}
+                                        className="shrink-0 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-normal text-sm active:scale-95 transition-all disabled:opacity-60"
+                                    >
+                                        {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+                                    </button>
+                                )}
                             </div>
-                            {onLogout && (
-                                <button
-                                    onClick={onLogout}
-                                    className="shrink-0 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-normal text-sm active:scale-95 transition-all"
-                                >
-                                    로그아웃
-                                </button>
-                            )}
-                        </div>
+                            {logoutMessage && <p className="text-xs text-rose-500 text-right">{logoutMessage}</p>}
+                        </>
                     ) : (
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex flex-col min-w-0">
@@ -233,8 +263,8 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
 
             {/* 초기화 확인 모달 */}
             {showResetConfirm && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-                    <div className="clay-panel p-8 max-w-sm w-full text-center flex flex-col gap-5 bg-white dark:bg-slate-800 rounded-3xl shadow-xl">
+                <div className="mobile-center-overlay fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+                    <div className="mobile-modal-card clay-panel p-8 max-w-sm w-full text-center flex flex-col gap-5 bg-white dark:bg-slate-800 rounded-3xl shadow-xl">
                         <div className="w-16 h-16 mx-auto">
                             <img src="/assets/images/characters/garae/rank_5.webp" className="w-full h-full object-contain" alt="" style={{ transform: `scale(${getCharacterScale('garae', 'rank5')})` }} />
                         </div>

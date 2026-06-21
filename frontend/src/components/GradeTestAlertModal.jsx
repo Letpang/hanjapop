@@ -19,7 +19,7 @@ export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-md rounded-t-[32px] bg-white dark:bg-slate-800 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.35)]"
+                className="mobile-bottom-sheet w-full max-w-md rounded-t-[32px] bg-white dark:bg-slate-800 pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.35)]"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="flex justify-center pt-4 pb-2">

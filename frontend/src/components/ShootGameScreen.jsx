@@ -226,9 +226,9 @@ const getGameThemeKey = (currentDay, selectedGrade) => {
 // ─────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────
-const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart, missionDone = false }) => {
+const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharacter, getRewardPreview, onMarkWrong, onMarkCorrect, onWordCorrect, onWordWrong, onWaveClear, masteryData, srsData, userLevel, contentPool, unlockedHanjaIds, currentDayHanjaIds, currentDay, seenHanjaIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, autoStart, missionDone = false, killsPerWaveOverride, userXpOverride }) => {
     const { lang } = useLang();
-    const characterAvatar = useMemo(() => getRankDetails(getStoredXp(), selectedCharacter).avatar, [selectedCharacter]);
+    const characterAvatar = useMemo(() => getRankDetails(userXpOverride ?? getStoredXp(), selectedCharacter).avatar, [selectedCharacter, userXpOverride]);
     
     const getMeaning = useCallback((item) => {
         if (!item) return "";
@@ -283,8 +283,9 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
 
     const diffConfig = useMemo(() => {
         const base = DIFFICULTY_CONFIG[selectedDifficulty] || DIFFICULTY_CONFIG.normal;
-        return contentPool ? { ...base, wavesTotal: 1 } : base;
-    }, [selectedDifficulty, contentPool]);
+        const overrides = killsPerWaveOverride ? { killsPerWave: killsPerWaveOverride } : {};
+        return contentPool ? { ...base, wavesTotal: 1, ...overrides } : { ...base, ...overrides };
+    }, [selectedDifficulty, contentPool, killsPerWaveOverride]);
 
     const gamePoolData = useMemo(() => {
         let pool = [];
@@ -921,7 +922,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
     const isResult = status === 'over' || status === 'clear';
     const killXp = score * 3;
     const shootClearXp = sessionXp - killXp;
-    const reward = getRewardPreview?.(sessionXp);
+    const reward = getRewardPreview?.(isClear ? sessionXp : killXp);
 
     // ─────────────────────────────────────────
     // 게임 화면
@@ -1113,7 +1114,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                         <div className={`w-14 h-14 md:w-20 md:h-20 animate-bounce ${w.isWrongItem ? "drop-shadow-[0_0_12px_rgba(244,63,94,0.4)]" : "drop-shadow-md"}`}>
                                             <MonsterIcon />
                                         </div>
-                                        <div className={`font-normal text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 text-body-res max-w-[7rem] md:max-w-[9rem] ${
+                                        <div className={`shoot-target-label hanja-char ${[...w.hanja].length > 4 ? 'shoot-target-label--long' : ''} font-normal text-[#5D544F] flex items-center justify-center rounded-xl shadow-lg border-2 px-2.5 py-1.5 transition-all duration-300 max-w-[8rem] md:max-w-[10rem] ${
                                             w.isWrongItem ? "bg-white dark:bg-slate-800/95 border-rose-200" : w.id === targetId ? "bg-[#FFB433]/15 border-[#FFB433] scale-110 shadow-[#FFB433]/15/50" : "bg-white dark:bg-slate-800/95 border-[#E9EDF2]"
                                         }`}>
                                             <span className="text-center break-keep leading-tight">{w.hanja}</span>
@@ -1133,21 +1134,21 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 </div>
 
                 {/* 보기 버튼 */}
-                <div className="shrink-0 px-4 grid grid-cols-2 gap-2 z-40" style={{ paddingTop: '6px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}>
+                <div className="quiz-numbered-grid shrink-0 px-4 grid grid-cols-2 gap-2 z-40" style={{ paddingTop: '6px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}>
                     {options.map((opt, i) => {
                         const parts = opt.split(' '); const sound = parts.pop(); const meaning = parts.join(' ');
                         return (
                             <button
                                 key={i}
                                 onClick={() => handleOptionClick(opt)}
-                                className={`bg-white dark:bg-slate-800/95 px-4 py-1.5 rounded-[1.2rem] md:rounded-[1.8rem] font-normal border-4 border-white dark:border-slate-700 shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 text-body-lg-res ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
+                                className={`shoot-option-button bg-white dark:bg-slate-800/95 px-3 py-0.5 rounded-[1rem] font-normal border-4 border-white dark:border-slate-700 shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-start gap-1.5 ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
                             >
                                 {isWordTarget ? (
-                                    <span className="text-slate-700 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
+                                    <span className={`shoot-option-text ${meaning.length > 8 ? 'shoot-option-text--long' : ''} text-slate-700 dark:text-slate-100 leading-tight`}>{meaning}</span>
                                 ) : (
                                     <>
-                                        <span className="text-slate-700 dark:text-slate-100 text-sm sm:text-base md:text-lg leading-tight">{meaning}</span>
-                                        <span className="text-[#7C83FF] text-sm sm:text-base md:text-lg leading-tight">{sound}</span>
+                                        <span className={`shoot-option-text ${meaning.length > 8 ? 'shoot-option-text--long' : ''} text-slate-700 dark:text-slate-100 leading-tight`}>{meaning}</span>
+                                        <span className="shoot-option-text text-[#7C83FF] leading-tight">{sound}</span>
                                     </>
                                 )}
                             </button>
@@ -1230,7 +1231,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     correctXp={killXp}
                                     clearXp={shootClearXp}
                                     correctLabel="몬스터 처치"
-                                    detailText={`${score}마리 x 3XP${shootClearXp > 0 ? ` + 웨이브 클리어 ${shootClearXp}XP` : ''}`}
+                                    detailText={`${score}마리 x 3XP${shootClearXp > 0 ? ` + 완료 ${shootClearXp}XP` : ''}`}
                                     missionXp={missionXpGrantedRef.current}
                                 />
 
@@ -1312,7 +1313,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     />
                     <div className="exit-confirm-content">
                         <h2 className="exit-confirm-title">
-                            {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 게임을 중단할까요?'}
+                            {dailyMapNode ? '홈으로 돌아갈까요?' : '정말 게임을 중단할까요?'}
                         </h2>
                         <p className="body-muted break-keep">
                             {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 물리친 몬스터 점수와 기록이 저장되지 않아요. 계속 끝까지 싸워볼까요?'}
@@ -1326,7 +1327,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                             onClick={handleExitConfirm}
                             className="back-quiz-button"
                         >
-                            {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
+                            {dailyMapNode ? '홈으로 돌아가기' : '그만하고 나가기'}
                         </button>
                     </div>
                 </div>

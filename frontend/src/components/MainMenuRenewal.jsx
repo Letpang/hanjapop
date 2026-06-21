@@ -56,6 +56,11 @@ const MainMenuRenewal = ({
     selectedCharacter,
     currentDay,
     completedDay = 0,
+    archivedCompletedDay = completedDay,
+    journeyRound = 1,
+    isJourneyComplete = false,
+    onOpenNewJourney,
+    openMemoryVaultSignal = 0,
     onStartNextStage,
     onSelectPastStage,
     selectedPastStage,
@@ -75,6 +80,10 @@ const MainMenuRenewal = ({
         const t = setTimeout(() => setMounted(true), 40);
         return () => clearTimeout(t);
     }, []);
+
+    useEffect(() => {
+        if (openMemoryVaultSignal > 0) setShowModal(true);
+    }, [openMemoryVaultSignal]);
 
     const missionTotal = missions?.length || 6;
     const missionDone  = doneCount || 0;
@@ -108,26 +117,36 @@ const MainMenuRenewal = ({
             >
                 <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #2ED6C5 0%, #0D9488 100%)' }}>
-                        <span style={{ fontFamily: "'GenJyuuGothic',sans-serif", fontWeight: 400, fontSize: '0.85rem', color: '#fff' }}>H</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '0.85rem', color: '#fff' }}>H</span>
                     </div>
-                    <span style={{ fontFamily: "'GenJyuuGothic',sans-serif", fontWeight: 400, fontSize: '1.05rem', color: '#5B677A', letterSpacing: '-0.02em' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 500, fontSize: '1.05rem', color: '#5B677A', letterSpacing: '-0.02em' }}>
                         HanjaPop
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
                     {streak?.count > 0 && (
-                        <div className="flex items-center gap-1 bg-[#FFF0EB] px-2 py-1 rounded-full border border-[#FFE4D6] shadow-sm">
+                        <button
+                            type="button"
+                            onClick={() => onNavigate('calendar')}
+                            className="flex items-center gap-1 bg-[#FFF0EB] px-2 py-1 rounded-full border border-[#FFE4D6] shadow-sm active:scale-95 transition-transform"
+                            aria-label={`${streak.count}일 연속 학습 기록 보기`}
+                        >
                             <span style={{ fontSize: 13 }}>🔥</span>
                             <span className="font-normal text-[#FF9B73] text-[12px] tracking-tight">{streak.count}일</span>
-                        </div>
+                        </button>
                     )}
                     <button
-                        onClick={() => onNavigate('calendar')}
+                        onClick={() => onNavigate('settings')}
                         className="h-8 w-8 rounded-full border border-[#D7F3EF] bg-white/90 shadow-sm flex items-center justify-center active:scale-95 transition-transform"
-                        aria-label="학습 그래프"
-                        title="학습 그래프"
+                        aria-label="설정 열기"
+                        title="설정"
                     >
-                        <img src="/assets/images/icons/icon_activity.webp" alt="" className="h-4 w-4 object-contain" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                            className="w-4 h-4 text-[#AEB7C5]">
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1-1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
                     </button>
                 </div>
             </header>
@@ -258,7 +277,7 @@ const MainMenuRenewal = ({
                             <div className="w-full rounded-[1.5rem] overflow-hidden relative z-10">
                             <CtaButton
                                 theme={(selectedPastStage || isDailyComplete) ? 'coral' : 'cream'}
-                                onClick={onStartNextStage}
+                                onClick={isJourneyComplete && !selectedPastStage ? onOpenNewJourney : onStartNextStage}
                                 className="mm-primary-cta relative overflow-hidden"
                                 style={{ borderRadius: 0 }}
                             >
@@ -280,6 +299,8 @@ const MainMenuRenewal = ({
                                             >
                                                 {selectedPastStage
                                                     ? `${selectedPastStage}단계 복습하기`
+                                                    : isJourneyComplete
+                                                    ? `${journeyRound + 1}회차 새 탐험`
                                                     : isDailyComplete
                                                     ? `다음 탐험으로 가기`
                                                     : `오늘의 탐험 떠나기`}
@@ -288,7 +309,9 @@ const MainMenuRenewal = ({
                                                 className={`mt-0.5 font-normal ${selectedPastStage || isDailyComplete ? 'text-white' : 'text-[#FF9B73]'}`}
                                                 style={{ fontSize: '0.875rem' }}
                                             >
-                                                {isDailyComplete
+                                                {isJourneyComplete
+                                                    ? '기억을 가지고 다시 떠나요'
+                                                    : isDailyComplete
                                                     ? '다음 탐험으로 가볼까요?'
                                                     : '탐험 지도로 이동합니다'}
                                             </div>
@@ -308,16 +331,20 @@ const MainMenuRenewal = ({
                                 className="w-full px-4 py-2.5 flex items-center gap-3 active:scale-[0.98] transition-all"
                                 style={isDarkMode ? { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.15)' : '#1e293b', borderRadius: 0 } : { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.08)' : 'linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%)', borderRadius: 0 }}
                             >
-                                <span className={`font-normal text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-[#FF6B6B]' : 'text-[#8f99ad]'}`}>급수진행도</span>
+                                <span className={`font-normal text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-[#FF6B6B]' : 'text-[#8f99ad]'}`}>
+                                    탐험진행도
+                                </span>
                                 <div className="flex-1 flex items-center gap-2 min-w-0">
                                     <div className={`flex-1 rounded-full overflow-hidden h-[8px] shadow-inner ${selectedPastStage || isDailyComplete ? 'bg-[#FFE0D4]' : 'bg-slate-100'}`}>
-                                        <div className="quiz-progress-fill" style={{ width: `${Math.round((completedDay / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
+                                        <div className="quiz-progress-fill" style={{ width: `${Math.round(((isJourneyComplete ? TOTAL_STAGES : currentDay) / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
                                     </div>
                                     <div
                                         className="flex items-center gap-1.5 pl-3 pr-2.5 py-1 rounded-xl shadow-sm shrink-0 bg-[#FFF1EA]/80 dark:bg-rose-950/30 border border-orange-100 dark:border-rose-900/40"
                                     >
                                         <span className="font-normal text-[14px]" style={{ color: '#FF6B6B', letterSpacing: '-0.3px' }}>
-                                            {completedDay}/{TOTAL_STAGES}
+                                            {isJourneyComplete
+                                                ? `${TOTAL_STAGES}/${TOTAL_STAGES}`
+                                                : `${journeyRound}회차 · ${currentDay}/${TOTAL_STAGES}`}
                                         </span>
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-400/80" viewBox="0 0 20 20" fill="currentColor">
                                             <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -416,7 +443,7 @@ const MainMenuRenewal = ({
                 <section className="w-full max-w-md" style={up(0.18)}>
                     <div className="flex items-center justify-between mb-3 px-2">
                         <div className="flex flex-col">
-                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-100 tracking-tight">한자 급수별 학습관</span>
+                            <span className="font-semibold text-lg text-slate-700 dark:text-slate-100 tracking-tight">시험 대비 학습관</span>
                             <span className="font-normal text-xs mt-0.5" style={{ color: '#7C83FF' }}>급수별 집중 대비 · 모의고사 · 오답노트</span>
                         </div>
                     </div>
@@ -454,7 +481,7 @@ const MainMenuRenewal = ({
                 </section>
 
                 {/* 6 ── 기억의 보관소 (지나간 단계 복습) ── */}
-                {completedDay > 1 && (
+                {(archivedCompletedDay > 1 || journeyRound > 1 || isJourneyComplete) && (
                     <div className="w-full max-w-md" style={up(0.20)}>
                         <button
                             onClick={() => setShowModal(true)}
@@ -468,7 +495,9 @@ const MainMenuRenewal = ({
                                     기억의 보관소 열기
                                 </div>
                                 <div className="font-normal text-xs mt-0.5 text-[#8f99ad]">
-                                    지나간 1~{completedDay - 1}단계 다시 학습하기
+                                    {isJourneyComplete
+                                        ? '완주 기록과 지나온 단계를 다시 살펴봐요'
+                                        : `지나간 1~${Math.max(1, archivedCompletedDay)}단계 다시 학습하기`}
                                 </div>
                             </div>
                             <div className="shrink-0 text-[#7C83FF]/50 font-normal">
@@ -482,9 +511,9 @@ const MainMenuRenewal = ({
 
             {/* ── 퀴즈 선택 모달 ── */}
             {showQuizModal && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center" className="bottomsheet-dim"
+                <div className="fixed inset-0 z-50 flex items-end justify-center bottomsheet-dim"
                     onClick={() => setShowQuizModal(false)}>
-                    <div className="w-full max-w-lg flex flex-col gap-3 p-6 pb-10" className="bottomsheet-panel"
+                    <div className="mobile-bottom-sheet bottomsheet-panel w-full max-w-lg flex flex-col gap-3 p-6 pb-10"
                         onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-1">
                             <h3 className="bottomsheet-title">한자 어휘</h3>
@@ -512,9 +541,9 @@ const MainMenuRenewal = ({
 
             {/* ── 게임 선택 모달 ── */}
             {showGameModal && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center" className="bottomsheet-dim"
+                <div className="fixed inset-0 z-50 flex items-end justify-center bottomsheet-dim"
                     onClick={() => setShowGameModal(false)}>
-                    <div className="w-full max-w-lg flex flex-col gap-3 p-6 pb-10" className="bottomsheet-panel"
+                    <div className="mobile-bottom-sheet bottomsheet-panel w-full max-w-lg flex flex-col gap-3 p-6 pb-10"
                         onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-1">
                             <h3 className="bottomsheet-title">한자 게임</h3>
@@ -544,7 +573,7 @@ const MainMenuRenewal = ({
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)' }}
                     onClick={() => setShowModal(false)}>
-                    <div className="w-full max-w-lg flex flex-col p-6 pb-10 gap-6 shadow-2xl dark:bg-slate-900" style={isDarkMode ? { borderRadius: '2rem 2rem 0 0' } : { background: '#ffffff', borderRadius: '2rem 2rem 0 0' }}
+                    <div className="mobile-bottom-sheet w-full max-w-lg flex flex-col p-6 pb-10 gap-6 shadow-2xl dark:bg-slate-900" style={isDarkMode ? { borderRadius: '2rem 2rem 0 0' } : { background: '#ffffff', borderRadius: '2rem 2rem 0 0' }}
                         onClick={e => e.stopPropagation()}>
                         
                         <div className="flex items-center justify-between">
@@ -614,7 +643,7 @@ const MainMenuRenewal = ({
                         <div className="flex flex-col gap-2.5">
                             <p className="text-xs font-normal text-slate-400 tracking-wide">단계 선택</p>
                             <div className="grid grid-cols-5 gap-2.5 overflow-y-auto pr-1 pb-2" style={{ maxHeight: '35vh' }}>
-                            {Array.from({ length: Math.max(0, completedDay - 1) }, (_, i) => i + 1).map(n => {
+                            {Array.from({ length: Math.max(0, archivedCompletedDay) }, (_, i) => i + 1).map(n => {
                                 const sel = selectedPastStage === n;
                                 const locked = !canAccessStage(n);
                                 return (

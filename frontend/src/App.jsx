@@ -50,30 +50,59 @@ import { buildPremiumWidgetPayload, savePremiumWidgetPayload } from './utils/pre
 const LoginModal             = lazy(() => import('./components/LoginModal.jsx'));
 const PremiumModal           = lazy(() => import('./components/PremiumModal.jsx'));
 const GradeTestAlertModal    = lazy(() => import('./components/GradeTestAlertModal.jsx'));
+const NewJourneyModal        = lazy(() => import('./components/NewJourneyModal.jsx'));
+const AccountDataChoiceModal = lazy(() => import('./components/AccountDataChoiceModal.jsx'));
 
 import { incrementTodaySessionCount } from './utils/sessionUtils.js';
-import { fetchUnlockedPack, signOut, resetUnlockedPack, activateTestPack } from './lib/supabase.js';
+import { fetchUnlockedPack, resetUnlockedPack, activateTestPack } from './lib/supabase.js';
+
+const hasPassedQuizMission = (correct, total) => Number(total) > 0 && Number(correct) / Number(total) >= 0.7;
 
 const App = () => {
-    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao } = useAuth();
+    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao, signOut: authSignOut } = useAuth();
     const userRef = useRef(user);
     useEffect(() => { userRef.current = user; }, [user]);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [accountDataChoice, setAccountDataChoice] = useState(null);
+    const [accountChoiceBusy, setAccountChoiceBusy] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const { showInterstitial } = useAdMob({ onAfterInterstitial: () => { if (!isPremium) setShowPremiumModal(true); } });
     const [gradeTestAlert, setGradeTestAlert] = useState(null);
     const [gradeTestBackScreen, setGradeTestBackScreen] = useState('mypage');
-    const [unlockedPack, setUnlockedPack] = useState(() => {
-        try { return Number(localStorage.getItem('unlocked_pack') || '0'); } catch { return 0; }
-    });
+    const [showNewJourneyModal, setShowNewJourneyModal] = useState(false);
+    const [openMemoryVaultSignal, setOpenMemoryVaultSignal] = useState(0);
+    const [unlockedPack, setUnlockedPack] = useState(0);
     const isPremium = unlockedPack > 0;
 
     // 로그인 상태 변경 시 팩 조회
     useEffect(() => {
+        if (!user) {
+            setUnlockedPack(0);
+            localStorage.removeItem('unlocked_pack');
+            return;
+        }
         fetchUnlockedPack().then(pack => {
             setUnlockedPack(pack);
             localStorage.setItem('unlocked_pack', String(pack));
         });
+    }, [user]);
+
+    // Lemon Squeezy 결제 탭에서 돌아오면 서버 권한을 다시 확인한다.
+    useEffect(() => {
+        if (!user) return;
+        const refreshEntitlement = () => {
+            if (document.visibilityState !== 'visible') return;
+            fetchUnlockedPack().then(pack => {
+                setUnlockedPack(pack);
+                localStorage.setItem('unlocked_pack', String(pack));
+            });
+        };
+        document.addEventListener('visibilitychange', refreshEntitlement);
+        window.addEventListener('focus', refreshEntitlement);
+        return () => {
+            document.removeEventListener('visibilitychange', refreshEntitlement);
+            window.removeEventListener('focus', refreshEntitlement);
+        };
     }, [user]);
 
     // 온보딩 완료 여부
@@ -164,7 +193,19 @@ const App = () => {
         if (currentScreen === 'main' && !isPremium) showInterstitial();
     }, [currentScreen]);
 
-    const { currentDay, completedDay, currentDayData, clearedHanjaIds, advanceDay } = useCurriculumProgress(sessionDoneToday);
+    const {
+        currentDay,
+        completedDay,
+        archivedCompletedDay,
+        currentDayData,
+        clearedHanjaIds,
+        finalJourney,
+        journeyRound,
+        isJourneyComplete,
+        advanceDay,
+        claimFinalJourney,
+        startNewJourney,
+    } = useCurriculumProgress(sessionDoneToday);
 
     // ── 통합 학습 데이터 훅 ──────────────────────────────────────────────────
     const {
@@ -178,6 +219,7 @@ const App = () => {
     } = useWordData();
 
     const {
+        log: studyLog,
         totalStats,
         logHanja, logWord, logCorrectWord, logWrongWord, logActivity, logXp,
     } = useStudyLog();
@@ -241,6 +283,8 @@ const App = () => {
 
     // 과거 스테이지 선택 플레이
     const [selectedPastStage, setSelectedPastStage] = useState(null);
+    // 급수별 선택 플레이
+    const [selectedGrade, setSelectedGrade] = useState(null);
     // 급수별 학습관 대시보드 상태
     const [selectedDashboardGrade, setSelectedDashboardGrade] = useState(null);
     const backToMain = useCallback(() => {
@@ -253,7 +297,26 @@ const App = () => {
         }
     }, [selectedDashboardGrade]);
     const activeStage = selectedPastStage || currentDay;
-    const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission(sessionDoneToday, activeStage);
+    const { missions, streak, allDone, doneCount, updateMissionProgress } = useDailyMission(sessionDoneToday, activeStage, journeyRound);
+
+    const handleStartNewJourney = useCallback(() => {
+        startNewJourney();
+        setSessionDoneToday(false);
+        setSelectedPastStage(null);
+        setSelectedGrade(null);
+        setCurrentScreen('main');
+        setShowNewJourneyModal(false);
+        try {
+            localStorage.removeItem(SK.DAILY_SESSION);
+            localStorage.removeItem('daily_map_progress');
+        } catch {}
+    }, [startNewJourney]);
+
+    const handleBrowseJourneyMemory = useCallback(() => {
+        setShowNewJourneyModal(false);
+        setCurrentScreen('main');
+        setOpenMemoryVaultSignal(value => value + 1);
+    }, []);
     useEffect(() => {
         const nextDayData = DAILY_CURRICULUM[currentDay] || null;
         savePremiumWidgetPayload(buildPremiumWidgetPayload({
@@ -277,8 +340,6 @@ const App = () => {
         return buildUnifiedPool(hanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, [], 0, wordDataRef.current);
     }, [selectedPastStage]);
 
-    // 급수별 선택 플레이
-    const [selectedGrade, setSelectedGrade] = useState(null);
     const getCumulativeGrades = (targetGrade) => {
         const grades = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
         const normTarget = targetGrade === '7급II' ? '7급Ⅱ' : targetGrade === '6급II' ? '6급Ⅱ' : targetGrade;
@@ -361,10 +422,59 @@ const App = () => {
         wordIds.filter(Boolean).forEach(logWord);
     }, [logWord]);
 
-    const { restoreFromCloud, isRestoring } = useCloudSync({
+    const { restoreFromCloud, adoptLocalDataForCurrentAccount, isRestoring } = useCloudSync({
         userXp, userNickname, selectedCharacter, streak,
-        hanjaData, totalStats,
+        hanjaData, wordData, studyLog, totalStats,
     });
+    // OAuth 리디렉션 복귀를 포함해 로그인 상태가 확정된 뒤 계정 데이터를 1회 복원한다.
+    useEffect(() => {
+        if (authLoading || !user || !restoreFromCloud) return;
+        // 복구 로직 버전이 바뀌면 기존 세션에서도 한 번 더 안전 병합한다.
+        const restoreKey = `cloud_restore_attempted_full_progress_v2_${user.id}`;
+        if (sessionStorage.getItem(restoreKey)) return;
+        sessionStorage.setItem(restoreKey, 'true');
+        restoreFromCloud(true).then(({ success, reason, previousProvider, currentProvider }) => {
+            if (success) {
+                window.location.reload();
+            } else if (reason === 'account_choice_required') {
+                setAccountDataChoice({ previousProvider, currentProvider });
+            } else if (reason === 'error') {
+                sessionStorage.removeItem(restoreKey);
+            }
+        });
+    }, [authLoading, user, restoreFromCloud]);
+
+    const handleUsePreviousLogin = useCallback(async () => {
+        if (!accountDataChoice?.previousProvider || accountChoiceBusy) return;
+        setAccountChoiceBusy(true);
+        const provider = accountDataChoice.previousProvider;
+        try {
+            await authSignOut();
+            setAccountDataChoice(null);
+            if (provider === 'kakao') await signInWithKakao();
+            else if (provider === 'google') await signInWithGoogle();
+            else if (provider === 'apple') await signInWithApple();
+            else setShowLoginModal(true);
+        } finally {
+            setAccountChoiceBusy(false);
+        }
+    }, [accountDataChoice, accountChoiceBusy, authSignOut, signInWithApple, signInWithGoogle, signInWithKakao]);
+
+    const handleUseCurrentAccount = useCallback(async () => {
+        if (accountChoiceBusy) return;
+        setAccountChoiceBusy(true);
+        try {
+            const result = await adoptLocalDataForCurrentAccount();
+            if (result?.success) setAccountDataChoice(null);
+        } finally {
+            setAccountChoiceBusy(false);
+        }
+    }, [accountChoiceBusy, adoptLocalDataForCurrentAccount]);
+
+    const handleContinueWithoutLink = useCallback(() => {
+        // 로컬 학습 기록은 그대로 두되 현재 로그인 계정에는 업로드하지 않는다.
+        setAccountDataChoice(null);
+    }, []);
 
     const getRewardXp = useCallback((xp) => {
         if (!xp || xp <= 0) return 0;
@@ -491,6 +601,11 @@ const App = () => {
                         mastery={hanjaData}
                         currentDay={currentDay}
                         completedDay={completedDay}
+                        archivedCompletedDay={archivedCompletedDay}
+                        journeyRound={journeyRound}
+                        isJourneyComplete={isJourneyComplete}
+                        onOpenNewJourney={() => setShowNewJourneyModal(true)}
+                        openMemoryVaultSignal={openMemoryVaultSignal}
                         onStartNextStage={() => {
                             if (!selectedGrade) {
                                 const targetStage = selectedPastStage || (completedDay + 1);
@@ -669,7 +784,9 @@ const App = () => {
                     onStageClear={(correct, total, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
                         handleHanjaAcquired(null, 20 + correct * 10);
-                        updateMissionProgress('sentenceQuiz', 1, addBonusXp);
+                        if (hasPassedQuizMission(correct, total)) {
+                            updateMissionProgress('sentenceQuiz', 1, addBonusXp);
+                        }
                         addTodayStat('sentenceQuiz', total || 1);
                     }}
                     onHanjaAcquired={handleHanjaAcquired}
@@ -698,7 +815,9 @@ const App = () => {
                     onStageClear={(correct, total, maxCombo, newSeenWords) => {
                         if (newSeenWords) addMainSeenWords(newSeenWords);
                         handleHanjaAcquired(null, 20 + correct * 5);
-                        updateMissionProgress('wordQuiz', 1, addBonusXp);
+                        if (hasPassedQuizMission(correct, total)) {
+                            updateMissionProgress('wordQuiz', 1, addBonusXp);
+                        }
                         addTodayStat('wordQuiz', total || 1);
                         updateRecord('wordBestScore', correct);
                         if (maxCombo) updateRecord('wordMaxCombo', maxCombo);
@@ -848,10 +967,11 @@ const App = () => {
                     user={user}
                     onLogin={() => setShowLoginModal(true)}
                     onLogout={async () => {
-                        await signOut();
+                        await authSignOut();
                         setUnlockedPack(0);
                         localStorage.setItem('unlocked_pack', '0');
                         setCurrentScreen('main');
+                        return { success: true };
                     }}
                 />;
             case 'mypage':
@@ -869,6 +989,7 @@ const App = () => {
                     setIsDarkMode={setIsDarkMode}
                     streak={streak}
                     totalStats={totalStats}
+                    finalJourney={finalJourney}
                 />;
             case 'vocabulary':
                 return <VocabularyScreen
@@ -954,24 +1075,26 @@ const App = () => {
                     )}
 
                     <Suspense fallback={<div className="min-h-screen" style={{ background: 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' }} />}>
-                        {!onboardingDone
-                        ? <OnboardingScreen onComplete={(grade, xp) => {
-                            setOnboardingDone(true);
-                            handleHanjaAcquired(null, xp);
-                          }}
+                        {!selectedCharacter
+                        ? <CharacterSelectionScreen
+                            onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }}
                           />
-                        : (
-                            !selectedCharacter
-                                ? <CharacterSelectionScreen
-                                    onSelect={(id, nick) => { setSelectedCharacter(id); setUserNickname(nick); }}
-                                    onBack={() => {
-                                        localStorage.removeItem(SK.ONBOARDING_DONE);
-                                        setOnboardingDone(false);
-                                    }}
-                                  />
-                                : !sessionDoneToday && canAccessStage(unlockedPack, currentDay)
+                        : !onboardingDone
+                        ? <OnboardingScreen
+                            selectedCharacter={selectedCharacter}
+                            onComplete={(grade, xp) => {
+                                setOnboardingDone(true);
+                                handleHanjaAcquired(null, xp);
+                            }}
+                          />
+                        : (!sessionDoneToday && canAccessStage(unlockedPack, currentDay)) || (import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview-final-journey'))
                                     ? <DailySessionScreen
-                                        onComplete={({ skipLoginModal } = {}) => {
+                                        onComplete={({ skipLoginModal, isFinalJourney, hanjaCount } = {}) => {
+                                            if (isFinalJourney) {
+                                                claimFinalJourney({ hanjaCount });
+                                                if (!finalJourney) addBonusXp(1240);
+                                                setShowNewJourneyModal(true);
+                                            }
                                             setSessionDoneToday(true);
                                             addBonusXp(200);
                                             if (userRef.current || skipLoginModal) {
@@ -983,10 +1106,12 @@ const App = () => {
                                         onNavigate={setCurrentScreen}
                                         onAdvanceDay={() => { advanceDay(); incrementTodaySessionCount(); }}
                                         currentDay={currentDay}
+                                        journeyRound={journeyRound}
                                         srsData={hanjaData}
                                         masteryData={hanjaData}
                                         wordData={wordData}
                                         selectedCharacter={selectedCharacter}
+                                        userNickname={userNickname}
                                         userXp={userXp}
                                         onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                                         onMarkWrong={(id) => { markWrong(id); logHanja(id); }}
@@ -1003,8 +1128,19 @@ const App = () => {
                                         onMapIdle={checkAndShowMissionToast}
                                       />
                                     : renderScreen()
-                        )}
+                        }
                     </Suspense>
+
+                    {showNewJourneyModal && isJourneyComplete && (
+                        <Suspense fallback={null}>
+                            <NewJourneyModal
+                                nextRound={journeyRound + 1}
+                                onBrowseMemory={handleBrowseJourneyMemory}
+                                onStart={handleStartNewJourney}
+                                onClose={() => setShowNewJourneyModal(false)}
+                            />
+                        </Suspense>
+                    )}
                 </div>
                 {charToast && selectedCharacter && (
                     <CharacterToast
@@ -1135,8 +1271,19 @@ const App = () => {
                             onClose={() => setShowLoginModal(false)}
                         />
                     )}
+                    {accountDataChoice && (
+                        <AccountDataChoiceModal
+                            previousProvider={accountDataChoice.previousProvider}
+                            currentProvider={accountDataChoice.currentProvider}
+                            busy={accountChoiceBusy}
+                            onUsePreviousLogin={handleUsePreviousLogin}
+                            onUseCurrentAccount={handleUseCurrentAccount}
+                            onContinueWithoutLink={handleContinueWithoutLink}
+                        />
+                    )}
                     {showPremiumModal && (
                         <PremiumModal
+                            user={user}
                             onClose={() => setShowPremiumModal(false)}
                             onShowLogin={() => {
                             setShowPremiumModal(false);

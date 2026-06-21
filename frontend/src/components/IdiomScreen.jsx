@@ -301,7 +301,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                     <div className="grade-test-question-card flex flex-col items-center justify-center gap-3 py-10">
                         <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }}
                             className="absolute top-4 right-4" />
-                        <span className="text-5xl font-normal text-[#4F56D9] tracking-tighter mt-2">{q.hanja}</span>
+                        <span className="hanja-char text-5xl font-medium text-[#4F56D9] tracking-tighter mt-2">{q.hanja}</span>
                         <span className="text-2xl font-normal text-[#7C83FF]">{q.reading}</span>
                         <p className="quiz-card-back__text text-center px-2">{q.meaning}</p>
                     </div>

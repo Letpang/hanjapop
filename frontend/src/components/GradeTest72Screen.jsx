@@ -21,7 +21,7 @@ const QUESTIONS = [
   { type: 'sound_sentence', sentence: '(江山) 이 아름다워요.', hanja: '江山', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['강산', '산천', '강변', '산하'], answer: '강산' },
   { type: 'sound_sentence', sentence: '(同門) 이라 반가웠어요.', hanja: '同門', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['동문', '교문', '동창', '동행'], answer: '동문' },
   { type: 'sound_sentence', sentence: '(話題) 가 풍성했어요.', hanja: '話題', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['화제', '주제', '화백', '논제'], answer: '화제' },
-  { type: 'sound_sentence', sentence: '(農夫) 가 밭을 갈고 있어요.', hanja: '農夫', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['농부', '어부', '농민', '부농'], answer: '농부' },
+  { type: 'sound_sentence', sentence: '(農夫) 가 밭을 갈고 있어요.', hanja: '農夫', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['농부', '어부', '농민', '소작'], answer: '농부' },
   { type: 'sound_sentence', sentence: '(手動) 으로 조작해야 해요.', hanja: '手動', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['수동', '자동', '수화', '수공'], answer: '수동' },
   { type: 'sound_sentence', sentence: '(全力) 을 다해 달렸어요.', hanja: '全力', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['전력', '전기', '전진', '전심'], answer: '전력' },
   { type: 'sound_sentence', sentence: '(動力) 이 강한 엔진이에요.', hanja: '動力', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['동력', '전력', '동작', '원동'], answer: '동력' },
@@ -144,6 +144,7 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(0);
+  const [answerLog, setAnswerLog] = useState([]);
 
   const q = questions[qIndex];
   const progress = (qIndex / questions.length) * 100;
@@ -154,6 +155,7 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const handleSelect = (choice) => {
     if (selected !== null) return;
     const isCorrect = choice === q.answer;
+    setAnswerLog(prev => [...prev, { number: qIndex + 1, type: TYPE_LABELS[q.type] || '', prompt: q.prompt, sentence: q.sentence || '', userAnswer: choice, correctAnswer: q.answer, isCorrect }]);
     setSelected(choice);
     if (isCorrect) {
       setCorrect(c => c + 1);
@@ -218,7 +220,10 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
             </button>
             <div className="flex-1">
               <div className="quiz-progress-row">
-                <span>7급Ⅱ 인증 시험</span>
+                <div className="grade-test-header-title">
+                  <span>7급Ⅱ 인증 시험</span>
+                  <span className="grade-test-header-type">{TYPE_LABELS[q.type] || ''}</span>
+                </div>
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
               <QuizProgressBar current={qIndex} total={questions.length} fillColor="#6D6FF2" />
@@ -230,9 +235,6 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
         <div className="quiz-content-area">
           <div className="quiz-content-inner">
             <div className="grade-test-question-card">
-              <span className="grade-test-type-label">
-                {TYPE_LABELS[q.type] || ''}
-              </span>
               <p className="grade-test-prompt">{q.prompt}</p>
 
               {(q.type === 'sound_sentence' || q.type === 'underline') && (
@@ -305,7 +307,8 @@ const GradeTest72Screen = ({ onBack, onComplete, selectedCharacter }) => {
       nextGrade="7급"
       alreadyUnlocked={alreadyUnlocked}
       selectedCharacter={selectedCharacter}
-      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
+      answers={answerLog}
+      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); setAnswerLog([]); }}
       onFinish={handleFinish}
     />
   );

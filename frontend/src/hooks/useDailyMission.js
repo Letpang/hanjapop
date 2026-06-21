@@ -54,12 +54,15 @@ const loadStageMissions = (stageMissionKey) => {
 // ─────────────────────────────────────────────────────────────
 // 훅
 // ─────────────────────────────────────────────────────────────
-export const useDailyMission = (sessionDoneToday, activeStage) => {
+export const useDailyMission = (sessionDoneToday, activeStage, journeyRound = 1) => {
     const today = getTodayStr();
 
     // 일일 퀘스트는 전체 합산이 아니라 커리큘럼 단계별로 독립 저장한다.
     const currentStage = String(activeStage || getCurrentCurriculumDay());
-    const stageMissionKey = `stage_missions_${currentStage}`;
+    // 1회차 레거시 키는 그대로 읽고, 2회차부터 분리해 이전 완료 상태가 섞이지 않게 한다.
+    const stageMissionKey = journeyRound > 1
+        ? `stage_missions_r${journeyRound}_${currentStage}`
+        : `stage_missions_${currentStage}`;
 
     // 단계별 미션 초기화 (동기화)
     const [currentStageKey, setCurrentStageKey] = useState(stageMissionKey);
@@ -101,10 +104,11 @@ export const useDailyMission = (sessionDoneToday, activeStage) => {
             
             // 기존 UI의 history 호환성을 위해 유지
             const history = JSON.parse(localStorage.getItem(SK.MISSION_HISTORY) || '{}');
-            history[currentStage] = missions.filter(m => m.done).map(m => m.id);
+            const historyKey = journeyRound > 1 ? `r${journeyRound}_${currentStage}` : currentStage;
+            history[historyKey] = missions.filter(m => m.done).map(m => m.id);
             localStorage.setItem(SK.MISSION_HISTORY, JSON.stringify(history));
         } catch (e) {}
-    }, [missions, currentStage, stageMissionKey, currentStageKey]);
+    }, [missions, currentStage, journeyRound, stageMissionKey, currentStageKey]);
 
     // 스트릭 저장
     useEffect(() => {

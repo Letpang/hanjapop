@@ -3,7 +3,7 @@
  * Lemon Squeezy 결제 연동 유틸
  */
 
-import { getDeviceId } from '../lib/supabase.js';
+import { ensureInternalAccount } from '../lib/supabase.js';
 
 const LS_STORE = 'hanjapop';
 
@@ -14,12 +14,13 @@ const PACK_VARIANT_IDS = {
     fullpack: '1763594',    // 전체 팩 18~124단계 ₩19,900
 };
 
-export const openCheckout = (packId = 'fullpack', email = '') => {
+export const openCheckout = async (packId = 'fullpack', email = '') => {
     const variantId = PACK_VARIANT_IDS[packId] || PACK_VARIANT_IDS.fullpack;
-    const deviceId = getDeviceId();
+    const { accountId, error } = await ensureInternalAccount();
+    if (error || !accountId) return { success: false, reason: 'login_required' };
     const params = [
         `variant=${variantId}`,
-        `checkout[custom][device_id]=${encodeURIComponent(deviceId)}`,
+        `checkout[custom][account_id]=${encodeURIComponent(accountId)}`,
     ];
     if (email) params.push(`checkout[email]=${encodeURIComponent(email)}`);
     const url = `https://${LS_STORE}.lemonsqueezy.com/checkout?${params.join('&')}`;
@@ -30,4 +31,5 @@ export const openCheckout = (packId = 'fullpack', email = '') => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    return { success: true };
 };

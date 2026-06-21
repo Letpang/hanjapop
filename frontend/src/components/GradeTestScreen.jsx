@@ -133,6 +133,7 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(0);
+  const [answerLog, setAnswerLog] = useState([]);
 
   const q = questions[qIndex];
   const progress = (qIndex / questions.length) * 100;
@@ -141,6 +142,7 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
   const handleSelect = (choice) => {
     if (selected !== null) return;
     const isCorrect = choice === q.answer;
+    setAnswerLog(prev => [...prev, { number: qIndex + 1, type: TYPE_LABELS[q.type] || '', prompt: q.prompt, sentence: q.sentence || '', userAnswer: choice, correctAnswer: q.answer, isCorrect }]);
     setSelected(choice);
     if (isCorrect) {
       setCorrect(c => c + 1);
@@ -206,7 +208,10 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
             </button>
             <div className="flex-1">
               <div className="quiz-progress-row">
-                <span>8급 인증 시험</span>
+                <div className="grade-test-header-title">
+                  <span>8급 인증 시험</span>
+                  <span className="grade-test-header-type">{TYPE_LABELS[q.type] || ''}</span>
+                </div>
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
               <QuizProgressBar current={qIndex} total={questions.length} fillColor="#6D6FF2" />
@@ -220,9 +225,6 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
           <div className="quiz-content-inner">
             {/* 문제 카드 */}
             <div className="grade-test-question-card">
-              <span className="grade-test-type-label">
-                {TYPE_LABELS[q.type] || ''}
-              </span>
               <p className="grade-test-prompt">{q.prompt}</p>
 
               {/* 문장형 (독음/밑줄) */}
@@ -298,7 +300,8 @@ const GradeTestScreen = ({ onBack, onComplete, selectedCharacter }) => {
       nextGrade="7급Ⅱ"
       alreadyUnlocked={alreadyUnlocked}
       selectedCharacter={selectedCharacter}
-      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
+      answers={answerLog}
+      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); setAnswerLog([]); }}
       onFinish={handleFinish}
     />
   );

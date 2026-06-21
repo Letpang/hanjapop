@@ -35,7 +35,7 @@ const QuizResultOverlay = ({
     if (dailyMapNode) {
         return (
             <div className={`daily-session-result-backdrop${isClear ? '' : ' daily-session-result-backdrop--fail'}`}>
-                <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative animate-in zoom-in-95 duration-200">
+                <div className="mobile-modal-card w-full max-w-sm flex flex-col items-center rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative animate-in zoom-in-95 duration-200">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] dark:bg-[#14b8a6] rounded-full blur-[80px] opacity-20 dark:opacity-10 pointer-events-none" />
                     <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
                         <div className="text-center flex flex-col gap-1 w-full">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { openCheckout } from '../utils/paymentUtils.js';
 import { useRevenueCat } from '../hooks/useRevenueCat.js';
 import { getPlatform } from '../hooks/useAuth.js';
+import { fetchUnlockedPack } from '../lib/supabase.js';
 
 const PACKS = [
     {
@@ -36,14 +37,33 @@ const PACKS = [
     },
 ];
 
-export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }) {
+export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuccess }) {
     const [selected, setSelected] = useState('fullpack');
     const [errorMsg, setErrorMsg] = useState('');
-    const { initialized, loading, purchasePackage, restorePurchases } = useRevenueCat();
+    const [verifying, setVerifying] = useState(false);
+    const { initialized, loading, purchasePackage, restorePurchases } = useRevenueCat({ enabled: !!user });
     const isNative = getPlatform() !== 'web';
+
+    const verifyServerEntitlement = async (expectedPack) => {
+        setVerifying(true);
+        try {
+            for (let attempt = 0; attempt < 10; attempt += 1) {
+                const serverPack = await fetchUnlockedPack();
+                if (serverPack === expectedPack || serverPack === 3) return serverPack;
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            return 0;
+        } finally {
+            setVerifying(false);
+        }
+    };
 
     const handleBuy = async () => {
         setErrorMsg('');
+        if (!user) {
+            onShowLogin?.();
+            return;
+        }
         if (isNative) {
             // 네이티브(iOS/Android): RevenueCat 인앱결제
             if (!initialized) {
@@ -51,28 +71,39 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                 return;
             }
             const result = await purchasePackage(selected);
-            if (result.success) {
-                // localStorage 업데이트 후 App.jsx에 알림
-                localStorage.setItem('unlocked_pack', String(result.pack));
-                onPurchaseSuccess?.(result.pack);
-                onClose();
+            if (result.success && result.pack > 0) {
+                const verifiedPack = await verifyServerEntitlement(result.pack);
+                if (verifiedPack > 0) {
+                    onPurchaseSuccess?.(verifiedPack);
+                    onClose();
+                } else {
+                    setErrorMsg('결제는 완료됐지만 서버 확인 중입니다. 잠시 후 다시 확인해 주세요.');
+                }
             } else if (!result.cancelled) {
                 setErrorMsg('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
             }
         } else {
-            // 웹: 기존 Lemon Squeezy 결제
-            openCheckout(selected);
+            const result = await openCheckout(selected, user.email || '');
+            if (!result.success) onShowLogin?.();
         }
     };
 
     const handleRestore = async () => {
         setErrorMsg('');
+        if (!user) {
+            onShowLogin?.();
+            return;
+        }
         if (!isNative) return;
         const result = await restorePurchases();
         if (result.success && result.pack > 0) {
-            localStorage.setItem('unlocked_pack', String(result.pack));
-            onPurchaseSuccess?.(result.pack);
-            onClose();
+            const verifiedPack = await verifyServerEntitlement(result.pack);
+            if (verifiedPack > 0) {
+                onPurchaseSuccess?.(verifiedPack);
+                onClose();
+            } else {
+                setErrorMsg('구매 내역을 확인했지만 서버 반영 중입니다. 잠시 후 다시 시도해 주세요.');
+            }
         } else if (result.success && result.pack === 0) {
             setErrorMsg('복원할 구매 내역이 없습니다.');
         } else {
@@ -86,7 +117,7 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
             onClick={onClose}
         >
             <div
-                className="premium-modal-card w-full max-w-md rounded-t-[32px] pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]"
+                className="premium-modal-card mobile-bottom-sheet w-full max-w-md rounded-t-[32px] pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]"
                 style={{ background: '#FFFFFF' }}
                 onClick={e => e.stopPropagation()}
             >
@@ -189,18 +220,18 @@ export default function PremiumModal({ onClose, onShowLogin, onPurchaseSuccess }
                 <div className="px-6">
                     <button
                         onClick={handleBuy}
-                        disabled={loading}
+                        disabled={loading || verifying}
                         className="w-full py-4 rounded-full font-normal text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
                         style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
                     >
-                        {loading ? '처리 중...' : `${PACKS.find(p => p.id === selected)?.price} · 지금 구매하기`}
+                        {verifying ? '결제 확인 중...' : loading ? '처리 중...' : `${PACKS.find(p => p.id === selected)?.price} · 지금 구매하기`}
                     </button>
 
                     {/* 네이티브: 구매 복원 / 웹: 로그인 복원 */}
                     {isNative ? (
                         <button
                             onClick={handleRestore}
-                            disabled={loading}
+                            disabled={loading || verifying}
                             className="w-full py-3 mt-1 text-[13px] text-gray-400 font-normal disabled:opacity-60"
                         >
                             이미 구매했어요 → 구매 복원하기

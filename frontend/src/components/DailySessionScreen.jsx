@@ -11,12 +11,21 @@ import { getTodayStr } from '../utils/sessionUtils.js';
 import { buildUnifiedPool } from '../utils/learningPool.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
+import ResultModalShell, { ResultModalActions, ResultModalHeading, ResultShareButton } from './common/ResultModalShell.jsx';
 import { CLEAR_MESSAGES } from '../constants/messages.js';
+import { shareImageToKakao } from '../utils/kakaoShare.js';
 
 const ShootGameScreen = lazy(() => import('./ShootGameScreen.jsx'));
 const MatchGameScreen = lazy(() => import('./MatchGameScreen.jsx'));
 const SentenceQuizScreen = lazy(() => import('./SentenceQuizScreen.jsx'));
 const WordQuizScreen = lazy(() => import('./WordQuizScreen.jsx'));
+const FinalJourneyCelebration = lazy(() => import('./FinalJourneyCelebration.jsx'));
+
+const FINAL_HANJA_COUNT = new Set(
+    DAILY_CURRICULUM.flatMap(day => (day.hanja || []).map(item => item.id).filter(Boolean))
+).size;
+
+const hasPassedQuizMission = (correct, total) => Number(total) > 0 && Number(correct) / Number(total) >= 0.7;
 
 const getStoredXp = () => { try { return Number(localStorage.getItem(SK.USER_XP)) || 0; } catch { return 0; } };
 
@@ -47,8 +56,12 @@ const clearMapProgress = () => {
 };
 
 
+let _currentCardAudio = null;
+
 const playCardSound = (item) => {
     if (!item) return;
+    if (_currentCardAudio) { _currentCardAudio.pause(); _currentCardAudio.src = ''; _currentCardAudio = null; }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     const playTTS = () => {
         const text = (item.meaning && item.sound) ? (item.meaning + ' ' + item.sound) : (item.sound || '');
         if (text) speakKorean(text);
@@ -56,9 +69,11 @@ const playCardSound = (item) => {
     if (item.id <= 370) {
         const audioId = String(item.id).padStart(item.id < 51 ? 2 : 3, '0');
         const audio = new Audio('/assets/audio/card_' + audioId + '.mp3');
+        _currentCardAudio = audio;
         let done = false;
         const fallback = () => { if (!done) { done = true; playTTS(); } };
         audio.onerror = fallback;
+        audio.onended = () => { _currentCardAudio = null; };
         audio.play().catch(fallback);
     } else {
         playTTS();
@@ -107,7 +122,7 @@ const DailyFlashcard = ({ item, onFlip }) => {
                 )}
             </div>
             {showWords && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center"
+                <div className="mobile-center-overlay fixed inset-0 z-[200] flex items-center justify-center"
                     onClick={e => { e.stopPropagation(); setShowWords(false); }}>
                     <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white dark:bg-slate-800 flex flex-col shadow-2xl shadow-[#7C83FF]/20"
                         style={{ width: 'calc(100% - 8px)', maxHeight: '320px' }} onClick={e => e.stopPropagation()}>
@@ -261,7 +276,7 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
 
                         {/* Words popup */}
                         {showWords && (
-                            <div className="fixed inset-0 z-[200] flex items-center justify-center" onClick={() => setShowWords(false)}>
+                            <div className="mobile-center-overlay fixed inset-0 z-[200] flex items-center justify-center" onClick={() => setShowWords(false)}>
                                 <div className="clay-panel p-4 !rounded-[2rem] border-[3px] border-[#7C83FF] bg-white dark:bg-slate-800 flex flex-col shadow-2xl shadow-[#7C83FF]/20"
                                     style={{ width: 'calc(100% - 8px)', maxHeight: '320px' }} onClick={e => e.stopPropagation()}>
                                     <div className="flex justify-between items-center mb-3">
@@ -322,8 +337,8 @@ const DailyFlashcardView = ({ items, onBack, onCardFlip, onStageClear, getReward
             {/* Stage Clear Popup */}
 
             {showClearPopup && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overlay-success">
-                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative">
+                <div className="mobile-center-overlay fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overlay-success">
+                    <div className="mobile-modal-card w-full max-w-sm flex flex-col items-center rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] relative">
                         <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] rounded-full blur-[80px] opacity-20 pointer-events-none" />
                         
                         <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-7 w-full relative z-10">
@@ -412,7 +427,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
     }, [resumeStep]);
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center px-5">
+        <div className="daily-mobile-screen daily-intro-screen fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center px-5">
             <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#2ED6C5] blur-[100px] opacity-15 pointer-events-none" />
             <div className="absolute -bottom-24 right-0 w-96 h-96 rounded-full bg-[#FF9B73] blur-[100px] opacity-15 pointer-events-none" />
 
@@ -421,7 +436,8 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                 ←
             </button>
 
-            <div className="daily-stage-panel w-full max-w-sm rounded-[2rem] px-4 pt-5 pb-5 border border-white dark:border-slate-700/60 mb-8"
+            <div className="daily-intro-content w-full flex-1 min-h-0 flex flex-col items-center justify-center pt-24 pb-5">
+            <div className="daily-stage-panel w-full max-w-sm rounded-[2rem] px-4 pt-5 pb-5 border border-white dark:border-slate-700/60"
                 style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', boxShadow: '0 8px 32px rgba(46,214,197,0.10), 0 2px 8px rgba(0,0,0,0.05)' }}>
                 <div className="flex flex-col items-center gap-2 mb-4">
                     <div className="rounded-full px-5 py-1.5 mt-[-2.5rem] bg-white dark:bg-slate-800 border-2 border-[#F1F5F9] shadow-sm z-10 flex items-center gap-2.5">
@@ -453,7 +469,10 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                 )}
             </div>
 
-            <CtaButton theme="coral" onClick={onStart} className="max-w-sm">
+            </div>
+
+            <div className="daily-mobile-cta w-full max-w-sm shrink-0 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+            <CtaButton theme="coral" onClick={onStart}>
                 <div className="flex flex-col items-center justify-center gap-1.5 w-full py-1">
                     <div className="font-normal text-white leading-tight drop-shadow-md flex items-center justify-center gap-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.02em' }}>
                         <span>{buttonContent.title}</span>
@@ -464,6 +483,7 @@ const IntroScreen = ({ dayNumber, theme, todayHanja, onBack, onStart, resumeStep
                     </div>
                 </div>
             </CtaButton>
+            </div>
         </div>
     );
 };
@@ -478,20 +498,23 @@ const GamePickScreen = ({ onResult, onBack }) => {
     const game = useMemo(() => pickDailyOption(GAMES, 'game'), []);
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center px-6">
+        <div className="daily-mobile-screen daily-pick-screen fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center px-6">
             <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10 !text-slate-400">←</button>
             <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#2ED6C5] blur-[100px] opacity-10 pointer-events-none" />
             <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
 
+            <div className="daily-pick-content w-full flex-1 min-h-0 flex flex-col items-center justify-center pt-24 pb-5">
             <p className="font-normal text-sm text-[#94A3B8] mb-3 tracking-wide">오늘의 게임</p>
             <h2 className="font-medium text-[#3C3C3C] dark:text-slate-100 mb-10 text-center" style={{ fontSize: '1.7rem' }}>{game.label}</h2>
 
-            <div className="daily-pick-card flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
+            <div className="daily-pick-card flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2"
                 style={{ background: game.bg, borderColor: game.color + '55', boxShadow: `0 12px 32px ${game.color}33` }}>
                 <img src={game.icon} className="w-28 h-28 object-contain" alt={game.label} />
             </div>
 
-            <div className="w-full max-w-xs">
+            </div>
+
+            <div className="daily-mobile-cta w-full max-w-xs shrink-0 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
                 <CtaButton theme={game.theme} onClick={() => onResult(game.id)}>
                     <div className="font-medium text-white leading-tight drop-shadow-md flex items-center justify-center gap-2 py-0.5" style={{ fontSize: '1.85rem', letterSpacing: '-0.02em' }}>
                         <span>시작하기</span>
@@ -519,20 +542,23 @@ const QuizPickScreen = ({ onResult, onBack }) => {
     const quiz = useMemo(() => pickDailyOption(QUIZZES, 'quiz'), []);
 
     return (
-        <div className="fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center justify-center px-6">
+        <div className="daily-mobile-screen daily-pick-screen fixed inset-0 bg-[#F7FAF9] dark:bg-slate-900 flex flex-col items-center px-6">
             <button onClick={onBack} className="hp-nav-button absolute left-4 top-12 z-10 !text-slate-400">←</button>
             <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-[#7C83FF] blur-[100px] opacity-10 pointer-events-none" />
             <div className="absolute -bottom-20 right-0 w-80 h-80 rounded-full bg-[#FF9B73] blur-[100px] opacity-10 pointer-events-none" />
 
+            <div className="daily-pick-content w-full flex-1 min-h-0 flex flex-col items-center justify-center pt-24 pb-5">
             <p className="font-normal text-sm text-[#94A3B8] mb-3 tracking-wide">오늘의 퀴즈</p>
             <h2 className="font-medium text-[#3C3C3C] dark:text-slate-100 mb-10 text-center" style={{ fontSize: '1.7rem' }}>{quiz.label}</h2>
 
-            <div className="daily-pick-card flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2 mb-12"
+            <div className="daily-pick-card flex flex-col items-center gap-4 p-10 rounded-[2.5rem] border-2"
                 style={{ background: quiz.bg, borderColor: quiz.color + '55', boxShadow: `0 12px 32px ${quiz.color}33` }}>
                 <img src={quiz.icon} className="w-28 h-28 object-contain" alt={quiz.label} />
             </div>
 
-            <div className="w-full max-w-xs">
+            </div>
+
+            <div className="daily-mobile-cta w-full max-w-xs shrink-0 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
                 <CtaButton theme={quiz.theme} onClick={() => onResult(quiz.id)}>
                     <div className="font-medium text-white leading-tight drop-shadow-md flex items-center justify-center gap-2 py-0.5" style={{ fontSize: '1.85rem', letterSpacing: '-0.02em' }}>
                         <span>시작하기</span>
@@ -941,8 +967,9 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
     );
 };
 
+
 // ── Results Screen (3D Style - Premium Crossroads) ───────────────────────────
-const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, dayNumber, missions, doneCount, clearMsg }) => {
+const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, userNickname, dayNumber, missions, doneCount, clearMsg }) => {
     const charImg = getCharacterImage(selectedCharacter, 'success');
     const isFinalDay = dayNumber >= DAILY_CURRICULUM.length;
 
@@ -951,11 +978,52 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
     const allDone = missionDone >= missionTotal;
     const progressPct = missionTotal ? (missionDone / missionTotal) * 100 : 0;
 
+    const [shareStatus, setShareStatus] = useState('');
+    const shareCardRef = useRef(null);
+
+    const handleDailyShare = async () => {
+        const nickname = userNickname || '탐험가';
+        const hanjaDesc = todayHanja.filter(h => h.id).slice(0, 3).map(h => `${h.hanja}(${h.sound})`).join(' · ');
+        setShareStatus('화면 캡처 중...');
+        try {
+            let file = null;
+            if (shareCardRef.current) {
+                const { default: html2canvas } = await import('html2canvas');
+                const canvas = await html2canvas(shareCardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+                if (blob) file = new File([blob], 'hanjapop-daily.png', { type: 'image/png' });
+            }
+            setShareStatus('카카오톡 연결 중...');
+            await shareImageToKakao({
+                file,
+                title: `${nickname}님이 한자팝 ${dayNumber}단계를 완료했어요!`,
+                description: hanjaDesc,
+                fallbackText: `한자팝 ${dayNumber}단계 완료!\n오늘 배운 한자: ${hanjaDesc}`,
+            });
+            setShareStatus('카카오톡 공유를 열었어요');
+        } catch (error) {
+            if (error?.name === 'AbortError' || /cancel|close|canceled/i.test(String(error?.message || error))) {
+                setShareStatus(''); return;
+            }
+            setShareStatus('공유에 실패했어요.');
+        }
+        setTimeout(() => setShareStatus(''), 3500);
+    };
+
+    if (isFinalDay) {
+        return (
+            <FinalJourneyCelebration
+                selectedCharacter={selectedCharacter}
+                userNickname={userNickname}
+                hanjaCount={FINAL_HANJA_COUNT}
+                onComplete={onComplete}
+            />
+        );
+    }
+
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-5 backdrop-blur-lg animate-in fade-in duration-300 overflow-y-auto bg-gradient-to-b from-[#DDF1EA] to-[#EAF6F2] dark:from-slate-900 dark:to-slate-800"
-        >
-            <div className="w-full max-w-sm flex flex-col items-center result-card-container my-2 relative">
+        <ResultModalShell ref={shareCardRef} cardClassName="result-card-container" labelledBy="daily-result-title">
+            <div className="w-full flex flex-col items-center relative">
                 {/* Decorative glow background */}
                 <div className="absolute top-[-50px] w-[240px] h-[240px] rounded-full blur-[80px] opacity-25 z-0" style={{ backgroundColor: '#2ED6C5' }} />
 
@@ -974,16 +1042,12 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                     </div>
 
                     {/* 타이틀 */}
-                    <div className="text-center flex flex-col gap-1 -mt-1">
-                        <span className="text-xs font-normal text-[#AEB7C5] tracking-tight">오늘의 {dayNumber}단계 탐험 완료!</span>
-                        <h1 className="text-[1.7rem] font-medium leading-tight tracking-tight"
-                            style={{ color: '#FF9B73', whiteSpace: 'pre-line' }}>
-                            {clearMsg}
-                        </h1>
-                        <p className="font-normal text-sm tracking-tight mt-0.5 text-[#8F99AD]">
-                            일일 완료 보너스 <span className="text-[#FF9B73] font-normal">+200 XP</span> 획득!
-                        </p>
-                    </div>
+                    <ResultModalHeading
+                        id="daily-result-title"
+                        kicker={`오늘의 ${dayNumber}단계 탐험 완료!`}
+                        title={clearMsg}
+                        description={<>일일 완료 보너스 <span className="text-[#FF9B73]">+200 XP</span> 획득!</>}
+                    />
 
                     {/* 오늘 배운 한자 카드 */}
                     <div className="w-full flex flex-col gap-2">
@@ -1019,7 +1083,7 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                     </div>
 
                     {/* 버튼 영역 */}
-                    <div className="w-full flex flex-col gap-2.5">
+                    <ResultModalActions>
                         {!isFinalDay && (
                             <CtaButton theme="coral" onClick={onContinueNext}>
                                 <div className="flex flex-col items-center justify-center gap-0.5">
@@ -1034,11 +1098,17 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                                 <span className="text-[13px] text-white/90 font-normal">(남은 퀘스트를 채우고 올클리어 보너스 받기)</span>
                             </div>
                         </CtaButton>
-                    </div>
+                        <ResultShareButton
+                            onClick={handleDailyShare}
+                            title="카카오톡으로 자랑하기"
+                            subtitle="오늘 배운 한자 3글자와 함께 공유해요"
+                        />
+                        {shareStatus && <p className="text-center text-[11px] text-slate-400 -mt-1.5">{shareStatus}</p>}
+                    </ResultModalActions>
 
                 </div>
             </div>
-        </div>
+        </ResultModalShell>
     );
 };
 
@@ -1047,6 +1117,7 @@ const DailySessionScreen = ({
     onComplete,
     onAdvanceDay,
     currentDay,
+    journeyRound = 1,
     srsData,
     masteryData,
     wordData,
@@ -1057,6 +1128,7 @@ const DailySessionScreen = ({
     onWordCorrect,
     onWordSeen,
     selectedCharacter,
+    userNickname,
     updateMissionProgress,
     addTodayStat,
     addBonusXp,
@@ -1068,17 +1140,20 @@ const DailySessionScreen = ({
     onMapIdle,
 }) => {
     const continuedNextRef = useRef(false);
-    const [dayNumber, setDayNumber] = useState(() => currentDay || getTodayDayNumber());
+    const previewFinalJourney = import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview-final-journey');
+    const [dayNumber, setDayNumber] = useState(() => previewFinalJourney ? DAILY_CURRICULUM.length : (currentDay || getTodayDayNumber()));
     const dayData = DAILY_CURRICULUM[dayNumber - 1] || DAILY_CURRICULUM[0];
     const rawTodayHanja = useMemo(() => (dayData.hanja || []).filter(h => h.id !== null), [dayData]);
 
     const pastHanjaIds = useMemo(() => {
         const result = [];
-        for (let d = 0; d < dayNumber - 1 && d < DAILY_CURRICULUM.length; d++) {
+        const endDay = journeyRound > 1 ? DAILY_CURRICULUM.length : dayNumber - 1;
+        for (let d = 0; d < endDay && d < DAILY_CURRICULUM.length; d++) {
             (DAILY_CURRICULUM[d].hanja || []).forEach(h => { if (h.id) result.push(h.id); });
         }
-        return result;
-    }, [dayNumber]);
+        const todayIds = new Set(rawTodayHanja.map(item => item.id).filter(Boolean));
+        return [...new Set(result)].filter(id => !todayIds.has(id));
+    }, [dayNumber, journeyRound, rawTodayHanja]);
 
     const fallbackReviewIds = useMemo(() => {
         return [...new Set(pastHanjaIds)].slice(-3);
@@ -1136,7 +1211,7 @@ const DailySessionScreen = ({
     }, []);
 
     // step: 'intro' | 'flashcard' | 'sentenceQuiz' | 'dice' | 'shoot' | 'match' | 'results'
-    const [step, setStep] = useState('intro');
+    const [step, setStep] = useState(previewFinalJourney ? 'results' : 'intro');
     const [resultMsg] = useState(() => CLEAR_MESSAGES[Math.floor(Math.random() * CLEAR_MESSAGES.length)]);
     const [resumeStep, setResumeStep] = useState('flashcard');
     const [chosenGame, setChosenGame] = useState(null);
@@ -1241,7 +1316,13 @@ const DailySessionScreen = ({
                 <ResultsScreen
                     todayHanja={todayHanja}
                     clearMsg={resultMsg}
-                    onComplete={() => { if (onAdvanceDay) onAdvanceDay(); onComplete(); }}
+                    onComplete={() => {
+                        if (onAdvanceDay) onAdvanceDay();
+                        onComplete({
+                            isFinalJourney: dayNumber >= DAILY_CURRICULUM.length,
+                            hanjaCount: FINAL_HANJA_COUNT,
+                        });
+                    }}
                     onContinueNext={() => {
                         if (onAdvanceDay) onAdvanceDay();
                         continuedNextRef.current = true;
@@ -1254,6 +1335,7 @@ const DailySessionScreen = ({
                         setStep('intro');
                     }}
                     selectedCharacter={selectedCharacter}
+                    userNickname={userNickname}
                     dayNumber={dayNumber}
                     missions={missions}
                     doneCount={sessionDoneCount}
@@ -1321,7 +1403,9 @@ const DailySessionScreen = ({
                     onStageClear={(correct, total, newSeenIds) => {
                         if (newSeenIds) markHanjaSeen(newSeenIds);
                         if (onHanjaAcquired) onHanjaAcquired(null, 20 + correct * 10);
-                        trackMission('sentenceQuiz', 1, addBonusXp);
+                        if (hasPassedQuizMission(correct, total)) {
+                            trackMission('sentenceQuiz', 1, addBonusXp);
+                        }
                         if (addTodayStat) addTodayStat('sentenceQuiz', total || 1);
                         setResumeStep('dice');
                         setStep('dice');
@@ -1354,7 +1438,9 @@ const DailySessionScreen = ({
                     onWordSeen={(wordId) => { markWordSeen([wordId]); if (onWordSeen) onWordSeen(wordId); }}
                     onStageClear={(correct, total) => {
                         if (onHanjaAcquired) onHanjaAcquired(null, 20 + correct * 5);
-                        trackMission('wordQuiz', 1, addBonusXp);
+                        if (hasPassedQuizMission(correct, total)) {
+                            trackMission('wordQuiz', 1, addBonusXp);
+                        }
                         if (addTodayStat) addTodayStat('wordQuiz', total || 1);
                         setResumeStep('dice');
                         setStep('dice');

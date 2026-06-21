@@ -53,25 +53,57 @@ const shuffle = (arr) => {
 
 const HANJA_MAP = Object.fromEntries(HANJA_DATA.map(h => [h.hanja, h]));
 
+let stopActiveCardSound = null;
 
 const playCardSound = (item, onEnd) => {
-    if (!item) return;
+    if (!item) return () => {};
+    stopActiveCardSound?.();
+
+    let stopped = false;
+    let audio = null;
+    let stopTTS = null;
+    const finish = () => {
+        if (stopped) return;
+        stopped = true;
+        stopActiveCardSound = null;
+        if (onEnd) onEnd();
+    };
+    const stop = () => {
+        if (stopped) return;
+        stopped = true;
+        if (audio) {
+            audio.onended = null;
+            audio.onerror = null;
+            audio.pause();
+            audio.currentTime = 0;
+        }
+        stopTTS?.();
+        if (stopActiveCardSound === stop) stopActiveCardSound = null;
+    };
+    stopActiveCardSound = stop;
+
     const playTTS = () => {
+        if (stopped) return;
         const text = (item.meaning && item.sound) ? (item.meaning + ' ' + item.sound) : (item.sound || '');
-        if (text) speakKorean(text, onEnd);
-        else if (onEnd) onEnd();
+        if (text) stopTTS = speakKorean(text, finish);
+        else finish();
     };
     if (item.id <= 370) {
         const audioId = String(item.id).padStart(item.id < 51 ? 2 : 3, '0');
-        const audio = new Audio('/assets/audio/card_' + audioId + '.mp3');
+        audio = new Audio('/assets/audio/card_' + audioId + '.mp3');
         let done = false;
-        const fallback = () => { if (!done) { done = true; playTTS(); } };
-        audio.onended = () => { done = true; if (onEnd) onEnd(); };
+        const fallback = () => {
+            if (stopped || done) return;
+            done = true;
+            playTTS();
+        };
+        audio.onended = () => { done = true; finish(); };
         audio.onerror = fallback;
         audio.play().catch(fallback);
     } else {
         playTTS();
     }
+    return stop;
 };
 
 // 4지선다 오답 보기 생성
@@ -275,10 +307,12 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [isSpeaking, setIsSpeaking] = useState(false);
     const completionAwardedRef = useRef(false);
+    const answeredQuestionIdsRef = useRef(new Set());
 
     useEffect(() => {
         setIsSpeaking(true);
-        playCardSound(item, () => setIsSpeaking(false));
+        const stop = playCardSound(item, () => setIsSpeaking(false));
+        return stop;
     }, [item.id]);
     const completionLabel = isSequence ? (isLast ? '전체 학습 완료하기' : '다음 한자로 이동') : '학습지 완료하기';
 
@@ -289,29 +323,31 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     // handleWritingNext moved below finishStudySheet to avoid TDZ
 
     const handleAnswer = (qId, isCorrect) => {
-        if (answers[qId] !== undefined) return;
-        setAnswers(prev => {
-            const next = { ...prev, [qId]: isCorrect };
-            if (isCorrect && onHanjaAcquired) {
-                onHanjaAcquired(item.id, 5);
-                setXpPopup({ show: true, key: Date.now(), amount: 5 });
-                setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
+        if (answeredQuestionIdsRef.current.has(qId)) return;
+        answeredQuestionIdsRef.current.add(qId);
+        const next = { ...answers, [qId]: isCorrect };
+        setAnswers(next);
+
+        if (isCorrect && onHanjaAcquired) {
+            onHanjaAcquired(item.id, 5);
+            setXpPopup({ show: true, key: Date.now(), amount: 5 });
+            setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
+        }
+
+        // React 상태 계산 함수에는 부모 상태 변경 같은 부수 효과를 넣지 않는다.
+        if (!isCorrect) {
+            const q = questions.find(question => question.id === qId);
+            if (q?.wordId != null && onMarkWordWrong) {
+                onMarkWordWrong(q.wordId, item.id, q.reading, q.meaning);
+            } else if (onMarkWrong) {
+                onMarkWrong(item.id);
             }
-            // 문제별 오답 기록 (QuizItem이 정답 선택 시 1회만 호출 보장)
-            if (!isCorrect) {
-                const q = questions.find(q => q.id === qId);
-                if (q?.wordId != null && onMarkWordWrong) {
-                    onMarkWordWrong(q.wordId, item.id, q.reading, q.meaning);
-                } else if (onMarkWrong) {
-                    onMarkWrong(item.id);
-                }
-            }
-            if (Object.keys(next).length >= questions.length) {
-                const correct = Object.values(next).filter(Boolean).length;
-                if (correct >= Math.ceil(questions.length * 0.7) && onMarkCorrect) onMarkCorrect(item.id);
-            }
-            return next;
-        });
+        }
+
+        if (Object.keys(next).length >= questions.length) {
+            const correct = Object.values(next).filter(Boolean).length;
+            if (correct >= Math.ceil(questions.length * 0.7) && onMarkCorrect) onMarkCorrect(item.id);
+        }
     };
 
     const finishStudySheet = useCallback((afterComplete) => {
@@ -423,12 +459,12 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                 {regularWords.map((w, i) => (
                                     <div key={i} className="flashcard-word-item">
                                         <div className={`flashcard-word-item__hanja${w.word.length >= 4 ? ' flashcard-word-item__hanja--col' : ''}`}>
-                                            <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{w.word}</span>
-                                            <span className={`text-xs text-[#9AA4B5]${w.word.length < 4 ? ' whitespace-nowrap ml-2' : ''}`}>{w.reading}</span>
+                                            <span className={`flashcard-word-item__word hanja-char text-[#4F56D9] ${w.word.length <= 2 ? 'flashcard-word-item__word--short' : w.word.length === 3 ? 'flashcard-word-item__word--medium' : 'flashcard-word-item__word--long'}`}>{w.word}</span>
+                                            <span className={`flashcard-word-item__reading text-[#9AA4B5]${w.word.length < 4 ? ' whitespace-nowrap ml-2' : ''}`}>{w.reading}</span>
                                         </div>
                                         <div className="flashcard-word-item__divider" />
                                         <div className="flashcard-word-item__meaning">
-                                            <span className="text-body break-keep text-[#5B677A] dark:text-slate-300">{w.meaning}</span>
+                                            <span className="flashcard-word-item__meaning-text break-keep text-[#5B677A] dark:text-slate-300">{w.meaning}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -464,12 +500,12 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
                                     <div key={i} className="flashcard-word-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                                         <div style={{ display: 'flex', alignItems: 'stretch' }}>
                                             <div className="flashcard-word-item__hanja flashcard-word-item__hanja--col">
-                                                <span className="hanja-char font-medium text-body-lg text-[#4F56D9] leading-tight">{idiom.hanja}</span>
-                                                <span className="text-xs text-[#9AA4B5]">{idiom.reading}</span>
+                                                <span className="flashcard-word-item__word flashcard-word-item__word--long hanja-char text-[#4F56D9]">{idiom.hanja}</span>
+                                                <span className="flashcard-word-item__reading text-[#9AA4B5]">{idiom.reading}</span>
                                             </div>
                                             <div className="flashcard-word-item__divider" />
                                             <div className="flashcard-word-item__meaning py-3">
-                                                <span className="text-body break-keep text-[#5B677A] dark:text-slate-300">{idiom.meaning}</span>
+                                                <span className="flashcard-word-item__meaning-text break-keep text-[#5B677A] dark:text-slate-300">{idiom.meaning}</span>
                                             </div>
                                         </div>
                                         {idiom.origin && (
@@ -604,10 +640,10 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
 
                 {/* 퀴즈 완료 결과 모달 (시퀀스의 마지막에만 노출) */}
                 {quizDone && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+                <div className="mobile-center-overlay fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
                         <div className="modal-backdrop" onClick={() => { setQuizDone(false); onNext(); }} />
                         
-                        <div className="minimal-card-studio bg-white dark:bg-slate-800 w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
+                        <div className="mobile-modal-card minimal-card-studio bg-white dark:bg-slate-800 w-full max-w-md relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
                             <div className="pt-4 pb-8 px-6 flex flex-col items-center gap-2 w-full relative">
                                 {/* 메인 비주얼 */}
                                 <div className="activity-result-glow" />
@@ -767,21 +803,18 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
     const handleStudySheetComplete = useCallback((id) => {
         if (id == null) return;
         onStudySheetComplete?.(id);
-        setCompletedStudyIds(prev => {
-            const next = new Set(prev);
-            next.add(id);
-            saveCompletedStudyIds(next, currentDay);
+        const next = new Set(completedStudyIds);
+        next.add(id);
+        saveCompletedStudyIds(next, currentDay);
+        setCompletedStudyIds(next);
 
-            const allDone = currentItems.length > 0 && currentItems.every(h => next.has(h.id));
-            if (allDone && !stageClearFiredRef.current) {
-                stageClearFiredRef.current = true;
-                onStageClear?.();
-                setShowAllDoneModal(true);
-            }
-
-            return next;
-        });
-    }, [contentPool, currentItems, onStageClear, onStudySheetComplete]);
+        const allDone = currentItems.length > 0 && currentItems.every(h => next.has(h.id));
+        if (allDone && !stageClearFiredRef.current) {
+            stageClearFiredRef.current = true;
+            onStageClear?.();
+            setShowAllDoneModal(true);
+        }
+    }, [completedStudyIds, currentDay, currentItems, onStageClear, onStudySheetComplete]);
 
     const handleNext = () => {
         if (completing) return;
@@ -851,7 +884,18 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
             {/* 본문 컨텐츠 */}
             <div className="flex-1 flex flex-col overflow-hidden pt-2">
 
-                {hanjaFilter && hanjaFilter.length > 0 ? (
+                {currentItems.length === 0 ? (
+                    <div className="flex flex-1 w-full max-w-sm mx-auto flex-col items-center justify-center text-center px-8 pb-16">
+                        <div className="w-20 h-20 rounded-[1.75rem] bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center shadow-sm">
+                            <span className="hanja-char text-4xl text-[#7C83FF]">學</span>
+                        </div>
+                        <h3 className="mt-5 text-xl font-medium text-slate-700 dark:text-slate-100">학습할 한자가 아직 없어요</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-400 break-keep">오늘의 탐험을 시작하면 배운 한자의 학습지가 이곳에 모여요.</p>
+                        <button onClick={onBack} className="mt-6 w-full rounded-2xl bg-[#7C83FF] py-3.5 text-base text-white shadow-sm active:scale-95 transition-transform">
+                            탐험으로 돌아가기
+                        </button>
+                    </div>
+                ) : hanjaFilter && hanjaFilter.length > 0 ? (
                     /* ── 학습지 시퀀스 모드 (Daily Journey) ── */
                     <div className="flex-1 overflow-hidden">
                         <HanjaStudySheet
@@ -924,8 +968,8 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
             )}
 
             {showAllDoneModal && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overlay-success">
-                    <div className="w-full max-w-sm flex flex-col items-center overflow-hidden rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative animate-in zoom-in-95 duration-200">
+                <div className="mobile-center-overlay fixed inset-0 z-[300] flex items-center justify-center p-6 backdrop-blur-lg animate-in fade-in duration-300 overlay-success">
+                    <div className="mobile-modal-card w-full max-w-sm flex flex-col items-center rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-700 shadow-[0_20px_50px_rgba(0,0,0,0.1)] relative animate-in zoom-in-95 duration-200">
                         <div className="pt-8 pb-8 px-6 flex flex-col items-center gap-5 w-full">
                             <img
                                 src={getCharacterImage(selectedCharacter, 'success')}

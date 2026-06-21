@@ -7,7 +7,7 @@
  *   ios     → window.Capacitor.Plugins.SignInWithApple → signInWithIdToken
  *   android → window.Capacitor.Plugins.GoogleAuth     → signInWithIdToken
  *
- * 로그인 성공 시 기존 device_id 데이터를 auth_user_id에 자동 연결
+ * 기존 device_id 데이터 연결은 계정 선택 확인 후 useCloudSync에서 처리
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -17,7 +17,6 @@ import {
     signInWithGoogleToken,
     signInWithKakao as supabaseSignInWithKakao,
     signOut as supabaseSignOut,
-    linkAuthToDevice,
 } from '../lib/supabase.js';
 
 const getCapacitorPlugin = (name) => window?.Capacitor?.Plugins?.[name] ?? null;
@@ -35,7 +34,9 @@ export const useAuth = () => {
     const [loading, setLoading] = useState(true);
 
     // 세션 초기화 + 상태 변경 구독
-    // SIGNED_IN 이벤트 시 device_id 연결도 처리 (웹 OAuth 리디렉트 복귀 포함)
+    // 웹 OAuth 리디렉트 복귀를 포함한 인증 상태만 관리한다.
+    // 새 소셜 계정에 기기 데이터를 자동 연결하면 기존 계정과 기록이 갈라질 수 있어
+    // 데이터 연결은 사용자가 명시적으로 선택한 뒤 수행한다.
     useEffect(() => {
         if (!supabase) { setLoading(false); return; }
 
@@ -44,11 +45,8 @@ export const useAuth = () => {
             setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setUser(session?.user ?? null);
-            if (event === 'SIGNED_IN' && session?.user) {
-                await linkAuthToDevice(session.user.id);
-            }
         });
 
         return () => subscription.unsubscribe();
@@ -78,7 +76,6 @@ export const useAuth = () => {
             });
             const { data, error } = await signInWithAppleToken(response.identityToken);
             if (error) throw error;
-            await linkAuthToDevice(data.user.id);
             return { success: true };
         } catch (e) {
             console.error('[useAuth] Apple Sign In failed:', e);
@@ -105,7 +102,6 @@ export const useAuth = () => {
             const googleUser = await plugin.signIn();
             const { data, error } = await signInWithGoogleToken(googleUser.authentication.idToken);
             if (error) throw error;
-            await linkAuthToDevice(data.user.id);
             return { success: true };
         } catch (e) {
             console.error('[useAuth] Google Sign In failed:', e);
@@ -125,8 +121,10 @@ export const useAuth = () => {
     }, []);
 
     const signOut = useCallback(async () => {
-        await supabaseSignOut();
+        const { error } = await supabaseSignOut();
+        if (error) throw error;
         setUser(null);
+        return { success: true };
     }, []);
 
     return { user, loading, platform: getPlatform(), signInWithApple, signInWithGoogle, signInWithKakao, signOut };

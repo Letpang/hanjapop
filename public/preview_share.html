@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>공유 이미지 미리보기</title>
+<style>
+  body { background: #111827; display: flex; flex-wrap: wrap; gap: 32px; padding: 32px; justify-content: center; }
+  .wrap { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  canvas { border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); width: 360px; height: auto; }
+  label { color: #9CA3AF; font-family: sans-serif; font-size: 13px; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div class="wrap"><label>데일리 세션 결과 공유</label><canvas id="daily" width="1080" height="1260"></canvas></div>
+<div class="wrap"><label>캐릭터 진화 공유</label><canvas id="rankup" width="1080" height="1080"></canvas></div>
+<div class="wrap"><label>급수시험 합격 공유</label><canvas id="grade" width="1080" height="1080"></canvas></div>
+<script>
+const CHAR = '/assets/images/characters/jeolmi/sucess.webp';
+const RANK = '/assets/images/characters/jeolmi/rank_3.webp';
+const BADGE = '/assets/images/badges/badge_grade_8.webp';
+
+const loadImg = src => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = reject;
+  img.src = src;
+});
+
+async function drawDaily() {
+  const ctx = document.getElementById('daily').getContext('2d');
+  const bg = ctx.createLinearGradient(0,0,0,1260);
+  bg.addColorStop(0,'#D1F4EC'); bg.addColorStop(1,'#A8E6D9');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,1080,1260);
+  const glow=ctx.createRadialGradient(540,320,20,540,320,400);
+  glow.addColorStop(0,'rgba(46,214,197,0.28)'); glow.addColorStop(1,'rgba(46,214,197,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,1080,760);
+
+  ctx.textAlign='center';
+  ctx.fillStyle='#0D9488'; ctx.font='700 28px sans-serif';
+  ctx.letterSpacing='10px'; ctx.fillText('HANJAPOP',540,72); ctx.letterSpacing='0px';
+  ctx.fillStyle='rgba(15,118,110,0.72)'; ctx.font='500 34px sans-serif';
+  ctx.fillText('7단계 탐험 완료!',540,130);
+
+  try {
+    const img=await loadImg(CHAR);
+    const r=Math.min(360/img.width,360/img.height);
+    ctx.drawImage(img,540-img.width*r/2,165+(360-img.height*r)/2,img.width*r,img.height*r);
+  } catch(e){}
+
+  ctx.fillStyle='#134E4A'; ctx.font='700 58px sans-serif'; ctx.fillText('탐험가님',540,598);
+  ctx.fillStyle='#0D9488'; ctx.font='500 34px sans-serif'; ctx.fillText('오늘도 한자 3글자 정복!',540,654);
+
+  const hanja=[{h:'水',m:'물',s:'수'},{h:'火',m:'불',s:'화'},{h:'山',m:'산',s:'산'}];
+  const cW=300,cH=330,gap=30,startX=(1080-(hanja.length*cW+(hanja.length-1)*gap))/2,cY=706;
+  hanja.forEach((h,i)=>{
+    const x=startX+i*(cW+gap);
+    ctx.fillStyle='rgba(255,255,255,0.90)'; ctx.beginPath(); ctx.roundRect(x,cY,cW,cH,28); ctx.fill();
+    ctx.strokeStyle='rgba(46,214,197,0.35)'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.fillStyle='#134E4A'; ctx.font='700 108px serif'; ctx.fillText(h.h,x+cW/2,cY+148);
+    ctx.strokeStyle='rgba(46,214,197,0.22)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x+28,cY+172); ctx.lineTo(x+cW-28,cY+172); ctx.stroke();
+    ctx.fillStyle='#475569'; ctx.font='500 24px sans-serif'; ctx.fillText(h.m,x+cW/2,cY+222);
+    ctx.fillStyle='#0D9488'; ctx.font='600 28px sans-serif'; ctx.fillText(h.s,x+cW/2,cY+264);
+  });
+  ctx.fillStyle='rgba(13,148,136,0.48)'; ctx.font='400 22px sans-serif';
+  ctx.fillText('한자팝에서 매일 한자를 배워봐요',540,cY+cH+62);
+}
+
+async function drawRankUp() {
+  const ctx=document.getElementById('rankup').getContext('2d');
+  const bg=ctx.createLinearGradient(0,0,1080,1080);
+  bg.addColorStop(0,'#1a1c52'); bg.addColorStop(0.5,'#2e357a'); bg.addColorStop(1,'#1a1848');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,1080,1080);
+  const glow=ctx.createRadialGradient(540,440,20,540,440,420);
+  glow.addColorStop(0,'rgba(46,214,197,0.50)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,1080,1080);
+
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font='600 24px sans-serif';
+  ctx.letterSpacing='10px'; ctx.fillText('HANJAPOP',540,68); ctx.letterSpacing='0px';
+  ctx.fillStyle='#2ED6C5'; ctx.font='700 32px sans-serif'; ctx.fillText('3단계 진화',540,122);
+
+  try {
+    const img=await loadImg(RANK);
+    const r=Math.min(420/img.width,420/img.height);
+    ctx.drawImage(img,540-img.width*r/2,155+(420-img.height*r)/2,img.width*r,img.height*r);
+  } catch(e){}
+
+  ctx.fillStyle='#ffffff'; ctx.font='700 64px sans-serif'; ctx.fillText('진화했어요!',540,648);
+  ctx.fillStyle='#2ED6C5'; ctx.font='500 36px sans-serif'; ctx.fillText('절미이(가) 능숙 단계로',540,712);
+  ctx.fillStyle='rgba(255,255,255,0.42)'; ctx.font='400 22px sans-serif';
+  ctx.fillText('한자팝에서 함께 성장해요',540,800);
+}
+
+async function drawGrade() {
+  const ctx=document.getElementById('grade').getContext('2d');
+  const bg=ctx.createLinearGradient(0,0,0,1080);
+  bg.addColorStop(0,'#E8F8F3'); bg.addColorStop(1,'#C8F0E4');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,1080,1080);
+  const glow=ctx.createRadialGradient(540,380,20,540,380,420);
+  glow.addColorStop(0,'rgba(46,214,197,0.28)'); glow.addColorStop(1,'rgba(46,214,197,0)');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,1080,900);
+
+  ctx.textAlign='center';
+  ctx.fillStyle='#0D9488'; ctx.font='700 26px sans-serif';
+  ctx.letterSpacing='10px'; ctx.fillText('HANJAPOP',540,68); ctx.letterSpacing='0px';
+
+  try {
+    const img=await loadImg(CHAR);
+    const r=Math.min(320/img.width,320/img.height);
+    ctx.drawImage(img,540-img.width*r/2,100+(320-img.height*r)/2,img.width*r,img.height*r);
+  } catch(e){}
+
+  ctx.fillStyle='#134E4A'; ctx.font='700 66px sans-serif'; ctx.fillText('8급 합격!',540,504);
+  ctx.fillStyle='#0D9488'; ctx.font='500 34px sans-serif'; ctx.fillText('탐험가님이 해냈어요',540,562);
+
+  const bx=240,by=610,bw=600,bh=130;
+  ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,24); ctx.fill();
+  ctx.strokeStyle='rgba(46,214,197,0.4)'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle='#00A891'; ctx.font='700 58px sans-serif'; ctx.fillText('18',490,by+86);
+  ctx.fillStyle='#334155'; ctx.font='500 46px sans-serif'; ctx.fillText('/ 20',615,by+86);
+  ctx.fillStyle='#94A3B8'; ctx.font='400 22px sans-serif';
+  ctx.fillText('정답',490,by+28); ctx.fillText('전체',618,by+28);
+
+  try {
+    const badge=await loadImg(BADGE);
+    ctx.drawImage(badge,540-65,778,130,130);
+  } catch(e){}
+
+  ctx.fillStyle='rgba(13,148,136,0.45)'; ctx.font='400 22px sans-serif';
+  ctx.fillText('한자팝에서 급수 인증에 도전해봐요',540,960);
+}
+
+Promise.all([drawDaily(), drawRankUp(), drawGrade()]);
+</script>
+</body>
+</html>

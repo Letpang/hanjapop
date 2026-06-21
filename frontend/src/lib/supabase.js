@@ -119,23 +119,31 @@ export const signInWithGoogleToken = async (idToken) => {
 
 /** 로그아웃 */
 export const signOut = async () => {
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    if (!supabase) return { error: null };
+    // 이 기기의 인증 세션을 즉시 제거한다. 학습 데이터/localStorage는 보존한다.
+    return supabase.auth.signOut({ scope: 'local' });
 };
 
 /**
  * 로그인 후 기존 device_id 데이터를 auth_user_id에 연결
- * - user_profiles, learning_data 모두 처리
+ * 계정 기록이 없을 때만 현재 기기의 데이터를 연결
  */
 export const linkAuthToDevice = async (userId) => {
     if (!supabase) return;
     const deviceId = getDeviceId();
-    await supabase.from('user_profiles')
-        .update({ auth_user_id: userId })
-        .eq('device_id', deviceId);
-    await supabase.from('learning_data')
-        .update({ auth_user_id: userId })
-        .eq('device_id', deviceId);
+    // 계정 기록이 이미 있으면 새 기기의 빈 레코드를 중복 연결하지 않는다.
+    for (const table of ['user_profiles', 'learning_data']) {
+        const { data: linkedRows } = await supabase
+            .from(table)
+            .select('device_id')
+            .eq('auth_user_id', userId)
+            .limit(1);
+        if (linkedRows?.length) continue;
+        await supabase.from(table)
+            .update({ auth_user_id: userId })
+            .eq('device_id', deviceId);
+    }
+    await ensureInternalAccount();
 };
 
 /**
@@ -155,26 +163,202 @@ export const getDeviceId = () => {
     }
 };
 
+const objectSize = (value) => value && typeof value === 'object' ? Object.keys(value).length : 0;
+
+const learningRowScore = (row) => (
+    objectSize(row?.mastery_data) * 1000
+    + objectSize(row?.srs_data) * 100
+    + objectSize(row?.curriculum_progress) * 10
+    + objectSize(row?.total_stats)
+);
+
+const pickBestLearningRow = (rows = []) => [...rows].sort((a, b) => {
+    const scoreDiff = learningRowScore(b) - learningRowScore(a);
+    if (scoreDiff) return scoreDiff;
+    return new Date(b?.updated_at || 0) - new Date(a?.updated_at || 0);
+})[0] || null;
+
+const mergeObjects = (cloudValue, localValue) => ({
+    ...((cloudValue && typeof cloudValue === 'object') ? cloudValue : {}),
+    ...((localValue && typeof localValue === 'object') ? localValue : {}),
+});
+
+const mergeNumericStats = (cloudValue, localValue) => {
+    const merged = mergeObjects(cloudValue, localValue);
+    for (const key of new Set([...Object.keys(cloudValue || {}), ...Object.keys(localValue || {})])) {
+        if (typeof cloudValue?.[key] === 'number' && typeof localValue?.[key] === 'number') {
+            merged[key] = Math.max(cloudValue[key], localValue[key]);
+        }
+    }
+    return merged;
+};
+
+const readJsonStorage = (key, fallback = {}) => {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw === null ? fallback : JSON.parse(raw);
+    } catch {
+        return fallback;
+    }
+};
+
+const collectExtraProgress = () => {
+    const dailyMissions = {};
+    try {
+        for (let index = 0; index < localStorage.length; index += 1) {
+            const key = localStorage.key(index);
+            if (key?.startsWith('daily_missions_')) {
+                dailyMissions[key] = readJsonStorage(key, []);
+            }
+        }
+    } catch {}
+
+    return {
+        mission_history: readJsonStorage(SK.MISSION_HISTORY, {}),
+        records: readJsonStorage(SK.RECORDS, {}),
+        unlocked_grade: localStorage.getItem(SK.UNLOCKED_GRADE),
+        start_grade: localStorage.getItem(SK.START_GRADE),
+        writing_completed: readJsonStorage('hanja_writing_completed', []),
+        idiom_wrong_data: readJsonStorage('idiom_wrong_data', {}),
+        level_test_bonus: Number(localStorage.getItem(SK.LEVEL_TEST_BONUS) || 0),
+        level_test_daily: readJsonStorage(SK.LEVEL_TEST_DAILY, {}),
+        daily_missions: dailyMissions,
+    };
+};
+
+let accountModelSupported = null;
+
+const isMissingAccountModel = (error) => (
+    error?.code === 'PGRST202'
+    || error?.code === '42883'
+    || error?.message?.includes('ensure_my_account')
+    || error?.message?.includes('get_my_account_backup')
+    || error?.message?.includes('sync_my_account_data')
+);
+
+/**
+ * 확인된 이메일을 기준으로 Google·Apple·카카오 신원을
+ * 하나의 앱 내부 account_id에 연결한다.
+ */
+export const ensureInternalAccount = async () => {
+    if (!supabase) return { supported: false, accountId: null, error: 'offline' };
+    if (accountModelSupported === false) return { supported: false, accountId: null, error: null };
+    const { data, error } = await supabase.rpc('ensure_my_account');
+    if (error) {
+        if (isMissingAccountModel(error)) {
+            accountModelSupported = false;
+            return { supported: false, accountId: null, error: null };
+        }
+        return { supported: true, accountId: null, error };
+    }
+    accountModelSupported = true;
+    return { supported: true, accountId: data, error: null };
+};
+
+export const fetchInternalAccountBackup = async () => {
+    if (!supabase) return { supported: false, data: null, error: 'offline' };
+    if (accountModelSupported === false) return { supported: false, data: null, error: null };
+    const { data, error } = await supabase.rpc('get_my_account_backup');
+    if (error) {
+        if (isMissingAccountModel(error)) {
+            accountModelSupported = false;
+            return { supported: false, data: null, error: null };
+        }
+        return { supported: true, data: null, error };
+    }
+    accountModelSupported = true;
+    return { supported: true, data, error: null };
+};
+
+export const fetchInternalAccountProfile = async () => {
+    const accountResult = await ensureInternalAccount();
+    if (!accountResult.supported || accountResult.error || !accountResult.accountId) {
+        return { supported: accountResult.supported, data: null, error: accountResult.error };
+    }
+    const { data, error } = await supabase
+        .from('account_profiles')
+        .select('*')
+        .eq('account_id', accountResult.accountId)
+        .maybeSingle();
+    return { supported: true, data, error };
+};
+
+export const syncInternalAccountData = async ({
+    nickname, characterType, xp, level, streakCount,
+    masteryData, srsData, wordData, studyLog, totalStats,
+}) => {
+    if (!supabase) return { supported: false, error: 'offline' };
+    if (accountModelSupported === false) return { supported: false, error: null };
+
+    let curriculumProgress = {};
+    try { curriculumProgress = JSON.parse(localStorage.getItem('curriculum_progress') || '{}'); } catch {}
+    const profile = {
+        nickname: nickname || '한자학습자',
+        character_type: characterType || 'garae',
+        xp: Number(xp) || 0,
+        level: Number(level) || 1,
+        streak_count: Number(streakCount) || 0,
+    };
+    const learning = {
+        mastery_data: masteryData || {},
+        srs_data: srsData || {},
+        total_stats: totalStats || {},
+        curriculum_progress: curriculumProgress,
+        word_wrong_data: wordData || {},
+        daily_study_log: studyLog?.days || {},
+        extra_progress: collectExtraProgress(),
+    };
+
+    const { data, error } = await supabase.rpc('sync_my_account_data', {
+        p_profile: profile,
+        p_learning: learning,
+    });
+    if (error) {
+        if (isMissingAccountModel(error)) {
+            accountModelSupported = false;
+            return { supported: false, error: null };
+        }
+        return { supported: true, error };
+    }
+    accountModelSupported = true;
+    return { supported: true, accountId: data, error: null };
+};
+
 /**
  * 유저 프로필 업서트 (생성 또는 업데이트)
  */
 export const upsertUserProfile = async ({ nickname, characterType, xp, level, streakCount }) => {
     if (!isSupabaseEnabled || !supabase) return { error: 'offline' };
-    const deviceId = getDeviceId();
+    const currentDeviceId = getDeviceId();
+    const { data: { user } } = await supabase.auth.getUser();
+    let deviceId = currentDeviceId;
+    let existingProfile = null;
+    if (user) {
+        const { data: rows } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .order('xp', { ascending: false })
+            .limit(1);
+        existingProfile = rows?.[0] || null;
+        deviceId = existingProfile?.device_id || currentDeviceId;
+    }
+    const keepCloudProfile = (existingProfile?.xp || 0) > (xp || 0);
     const { data, error } = await supabase
         .from('user_profiles')
         .upsert({
             device_id: deviceId,
-            nickname,
-            character_type: characterType,
-            xp,
-            level,
-            streak_count: streakCount,
+            ...(user && { auth_user_id: user.id }),
+            nickname: keepCloudProfile ? existingProfile.nickname : nickname,
+            character_type: keepCloudProfile ? existingProfile.character_type : characterType,
+            xp: Math.max(existingProfile?.xp || 0, xp || 0),
+            level: Math.max(existingProfile?.level || 1, level || 1),
+            streak_count: Math.max(existingProfile?.streak_count || 0, streakCount || 0),
             last_active: new Date().toISOString(),
             updated_at: new Date().toISOString(),
         }, { onConflict: 'device_id' })
         .select()
-        .single();
+        .maybeSingle();
     return { data, error };
 };
 
@@ -182,58 +366,105 @@ export const upsertUserProfile = async ({ nickname, characterType, xp, level, st
  * 학습 데이터 클라우드 백업
  * curriculum_progress, word_wrong_data 컬럼이 없을 경우 기본 백업으로 자동 폴백
  */
-export const backupLearningData = async ({ masteryData, srsData, totalStats }) => {
+export const backupLearningData = async ({ masteryData, srsData, wordData, studyLog, totalStats }) => {
     if (!isSupabaseEnabled || !supabase) return { error: 'offline' };
-    const deviceId = getDeviceId();
+    const currentDeviceId = getDeviceId();
+    const { data: { user } } = await supabase.auth.getUser();
+    let deviceId = currentDeviceId;
+    let existingLearning = null;
+    if (user) {
+        const { data: rows } = await supabase
+            .from('learning_data')
+            .select('*')
+            .eq('auth_user_id', user.id);
+        existingLearning = pickBestLearningRow(rows);
+        deviceId = existingLearning?.device_id || currentDeviceId;
+    }
 
     let curriculumProgress = null;
-    let wordWrongData = null;
-    let dailyStudyLog = null;
+    let wordWrongData = wordData || null;
+    let dailyStudyLog = studyLog?.days || null;
     try { curriculumProgress = JSON.parse(localStorage.getItem('curriculum_progress') || 'null'); } catch {}
-    try { wordWrongData = JSON.parse(localStorage.getItem('word_wrong_data') || 'null'); } catch {}
-    try { dailyStudyLog = JSON.parse(localStorage.getItem(SK.DAILY_STUDY_LOG) || 'null'); } catch {}
+    if (!wordWrongData) {
+        try { wordWrongData = JSON.parse(localStorage.getItem(SK.WORD_DATA) || 'null'); } catch {}
+    }
+    if (!dailyStudyLog) {
+        try { dailyStudyLog = JSON.parse(localStorage.getItem(SK.DAILY_STUDY_LOG) || 'null'); } catch {}
+    }
 
     const { data, error } = await supabase
         .from('learning_data')
         .upsert({
             device_id: deviceId,
-            mastery_data: masteryData,
-            srs_data: srsData,
-            total_stats: totalStats,
-            ...(curriculumProgress && { curriculum_progress: curriculumProgress }),
-            ...(wordWrongData && { word_wrong_data: wordWrongData }),
-            ...(dailyStudyLog && { daily_study_log: dailyStudyLog }),
+            ...(user && { auth_user_id: user.id }),
+            mastery_data: mergeObjects(existingLearning?.mastery_data, masteryData),
+            srs_data: mergeObjects(existingLearning?.srs_data, srsData),
+            total_stats: mergeNumericStats(existingLearning?.total_stats, totalStats),
+            curriculum_progress: (() => {
+                const local = curriculumProgress || {};
+                const remote = existingLearning?.curriculum_progress || {};
+                const localRound = Number(local.journeyRound || 1);
+                const remoteRound = Number(remote.journeyRound || 1);
+                if (localRound !== remoteRound) return localRound > remoteRound ? local : remote;
+                return Number(local.completedDay || 0) >= Number(remote.completedDay || 0) ? local : remote;
+            })(),
+            word_wrong_data: mergeObjects(existingLearning?.word_wrong_data, wordWrongData),
+            daily_study_log: mergeObjects(existingLearning?.daily_study_log, dailyStudyLog),
             updated_at: new Date().toISOString(),
         }, { onConflict: 'device_id' })
-        .select().single();
+        .select().maybeSingle();
     return { data, error };
 };
 
 /**
  * 학습 데이터 복원
+ * 로그인 상태에서는 계정 기록을 우선하고, 중복 중 실제 학습 데이터가 가장 많은 항목을 선택
  */
 export const restoreLearningData = async () => {
     if (!isSupabaseEnabled || !supabase) return { error: 'offline' };
     const deviceId = getDeviceId();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        const { data: authRows, error } = await supabase
+            .from('learning_data')
+            .select('*')
+            .eq('auth_user_id', user.id);
+        if (error) return { data: null, error };
+        const authData = pickBestLearningRow(authRows);
+        return { data: authData, error: null };
+    }
     const { data, error } = await supabase
         .from('learning_data')
         .select('*')
         .eq('device_id', deviceId)
-        .single();
+        .maybeSingle();
     return { data, error };
 };
 
 /**
  * 유저 프로필 조회 (복원용)
+ * 로그인 상태에서는 계정의 XP가 가장 높은 기록을 우선
  */
 export const fetchUserProfile = async () => {
     if (!isSupabaseEnabled || !supabase) return { data: null, error: 'offline' };
     const deviceId = getDeviceId();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+        const { data: authRows, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('auth_user_id', user.id)
+            .order('xp', { ascending: false })
+            .order('updated_at', { ascending: false })
+            .limit(1);
+        if (error) return { data: null, error };
+        return { data: authRows?.[0] || null, error: null };
+    }
     const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('device_id', deviceId)
-        .single();
+        .maybeSingle();
     return { data, error };
 };
 
@@ -247,9 +478,20 @@ export const fetchUnlockedPack = async () => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         const deviceId = getDeviceId();
+        if (user) {
+            const entitlementResult = await supabase.rpc('get_my_entitlement');
+            if (!entitlementResult.error && entitlementResult.data) {
+                return Number(entitlementResult.data.pack) || 0;
+            }
+            const accountProfile = await fetchInternalAccountProfile();
+            if (accountProfile.supported && accountProfile.data) {
+                if (accountProfile.data.unlocked_pack != null) return accountProfile.data.unlocked_pack;
+                return accountProfile.data.is_premium ? 3 : 0;
+            }
+        }
         const query = user
-            ? supabase.from('user_profiles').select('unlocked_pack, is_premium').eq('auth_user_id', user.id).single()
-            : supabase.from('user_profiles').select('unlocked_pack, is_premium').eq('device_id', deviceId).single();
+            ? supabase.from('user_profiles').select('unlocked_pack, is_premium').eq('auth_user_id', user.id).order('xp', { ascending: false }).limit(1).maybeSingle()
+            : supabase.from('user_profiles').select('unlocked_pack, is_premium').eq('device_id', deviceId).limit(1).maybeSingle();
         const { data } = await query;
         if (!data) return 0;
         if (data.unlocked_pack != null) return data.unlocked_pack;
@@ -290,6 +532,17 @@ export const fetchIsPremium = async () => {
  */
 export const fetchLeaderboard = async () => {
     if (!isSupabaseEnabled || !supabase) return { data: null, error: 'offline' };
+    const accountResult = await supabase
+        .from('account_leaderboard')
+        .select('account_id, nickname, character_type, xp, level, streak_count')
+        .order('xp', { ascending: false })
+        .limit(50);
+    if (!accountResult.error) {
+        return {
+            data: accountResult.data.map(row => ({ ...row, device_id: row.account_id })),
+            error: null,
+        };
+    }
     const { data, error } = await supabase
         .from('user_profiles')
         .select('device_id, nickname, character_type, xp, level, streak_count')
@@ -303,6 +556,11 @@ export const fetchLeaderboard = async () => {
  */
 export const fetchMyRank = async (myXp) => {
     if (!isSupabaseEnabled || !supabase) return { rank: null, error: 'offline' };
+    const accountResult = await supabase
+        .from('account_leaderboard')
+        .select('*', { count: 'exact', head: true })
+        .gt('xp', myXp);
+    if (!accountResult.error) return { rank: (accountResult.count || 0) + 1, error: null };
     const { count, error } = await supabase
         .from('user_profiles')
         .select('*', { count: 'exact', head: true })

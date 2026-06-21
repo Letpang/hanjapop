@@ -1,332 +1,470 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, lazy, Suspense } from 'react';
 import { SK } from '../constants/storageKeys.js';
+import { getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 
-const GUIDE = '/assets/images/characters/garae/rank_5.webp';
+const ShootGameScreen = lazy(() => import('./ShootGameScreen.jsx'));
+const MatchGameScreen = lazy(() => import('./MatchGameScreen.jsx'));
+
+const getGuide = (char) => `/assets/images/characters/${char || 'garae'}/rank_5.webp`;
 
 const INTRO_SLIDES = [
   {
     kicker: 'HANJAPOP PROLOGUE',
     title: '너의 한자 탐험 지도를 열어볼게',
+    highlight: '한자 탐험 지도',
     body: '짧은 진단으로 지금 감각을 확인하고, 딱 맞는 출발점을 찾아요.',
   },
   {
     kicker: 'GRADE PATH',
     title: '한자팝은 급수별 탐험으로 이어져',
+    highlight: '급수별 탐험',
     body: '8급부터 6급까지 차근차근 올라가고, 인증 시험으로 다음 급수를 열어요.',
   },
   {
     kicker: 'READY',
     title: '틀려도 괜찮아. 여긴 시험장이 아니라 출발점이야',
-    body: '한자 눈썰미, 단어 감각, 기억력을 살짝 볼게요.',
+    highlight: '출발점',
+    body: '단어 감각, 문장 추론, 사자성어까지 살짝 볼게요.',
   },
 ];
 
-const QUESTION_BANK = {
-  1: [
-    { hanja: '一', answer: '하나', options: ['하나', '둘', '셋', '넷'], hint: '8급 기초', skill: '한자 눈썰미', grade: '8급' },
-    { hanja: '大', answer: '크다', options: ['작다', '크다', '높다', '빠르다'], hint: '사람이 팔을 벌린 모양', skill: '한자 눈썰미', grade: '8급' },
-    { hanja: '日', answer: '해', options: ['달', '해', '별', '구름'], hint: '태양에서 온 글자', skill: '한자 눈썰미', grade: '8급' },
-  ],
-  2: [
-    { hanja: '校', answer: '학교', options: ['집', '학교', '시장', '공원'], hint: '學校에 들어가요', skill: '단어 감각', grade: '7급II' },
-    { hanja: '先', answer: '먼저', options: ['먼저', '나중', '함께', '매우'], hint: '先生의 첫 글자', skill: '단어 감각', grade: '7급II' },
-    { hanja: '友', answer: '벗', options: ['벗', '적', '길', '힘'], hint: '친구와 관련 있어요', skill: '단어 감각', grade: '7급II' },
-  ],
-  3: [
-    { hanja: '時間', answer: '시간', options: ['학교', '시간', '가족', '날씨'], hint: '時와 間이 만나면?', skill: '단어 감각', grade: '7급' },
-    { hanja: '家族', answer: '가족', options: ['친구', '가족', '나라', '시장'], hint: '집 家가 들어간 단어', skill: '단어 감각', grade: '7급' },
-    { hanja: '道路', answer: '도로', options: ['도로', '마음', '나무', '하늘'], hint: '길 道가 들어간 단어', skill: '단어 감각', grade: '7급' },
-  ],
-  4: [
-    { hanja: '努力', answer: '노력', options: ['기록', '노력', '공부', '약속'], hint: '힘 力이 두 번 느껴지는 단어', skill: '문장 추론', grade: '6급II' },
-    { hanja: '自然', answer: '자연', options: ['자연', '교실', '음악', '역사'], hint: '스스로 自, 그럴 然', skill: '문장 추론', grade: '6급II' },
-    { hanja: '反對', answer: '반대', options: ['찬성', '반대', '완성', '출발'], hint: '反은 되돌린다는 느낌', skill: '문장 추론', grade: '6급II' },
-  ],
-  5: [
-    { hanja: '傳統', answer: '전통', options: ['전통', '과학', '속도', '계절'], hint: '이어져 내려오는 것', skill: '문장 추론', grade: '6급' },
-    { hanja: '記錄', answer: '기록', options: ['기록', '치료', '농사', '승리'], hint: '적어서 남기는 것', skill: '문장 추론', grade: '6급' },
-    { hanja: '醫者', answer: '의사', options: ['의사', '학생', '농부', '가수'], hint: '병을 고치는 사람', skill: '문장 추론', grade: '6급' },
-  ],
+const FLOAT_ITEMS = [
+  { char: '山', top: '10%', left: '7%',  size: 26, duration: '3.4s', delay: '0s',   rotate: -14 },
+  { char: '日', top: '16%', right: '9%', size: 16, duration: '4.0s', delay: '0.7s', rotate: 18  },
+  { char: '月', top: '68%', left: '5%',  size: 22, duration: '4.3s', delay: '1.4s', rotate: -9  },
+  { char: '水', top: '62%', right: '7%', size: 14, duration: '3.7s', delay: '0.3s', rotate: 22  },
+  { char: '木', top: '40%', left: '3%',  size: 19, duration: '4.6s', delay: '1.9s', rotate: -20 },
+  { char: '火', top: '38%', right: '4%', size: 24, duration: '3.9s', delay: '1.1s', rotate: 11  },
+];
+
+const renderTitle = (title, highlight) => {
+  if (!highlight) return title;
+  const idx = title.indexOf(highlight);
+  if (idx === -1) return title;
+  return (
+    <>
+      {title.slice(0, idx)}
+      <span className="text-[#009984] font-bold">{highlight}</span>
+      {title.slice(idx + highlight.length)}
+    </>
+  );
 };
 
+// 4문제: 단어 감각 2 + 문장 추론 1 + 사자성어 1
+const QUESTIONS = [
+  {
+    type: 'word',
+    hanja: '時間',
+    answer: '시간',
+    options: ['시간', '날씨', '가족', '공간'],
+    hint: '時와 間이 합쳐진 말',
+    skill: '단어 감각',
+    grade: '7급II',
+  },
+  {
+    type: 'word',
+    hanja: '家族',
+    answer: '가족',
+    options: ['친구', '가족', '선생님', '이웃'],
+    hint: '집 家가 들어간 단어',
+    skill: '단어 감각',
+    grade: '7급II',
+  },
+  {
+    type: 'sentence',
+    hanja: '努力',
+    sentence: '꿈을 이루려면 매일 ___을 해야 해요.',
+    answer: '노력',
+    options: ['노력', '여행', '포기', '수면'],
+    hint: '힘쓸 努, 힘 力',
+    skill: '문장 추론',
+    grade: '6급II',
+  },
+  {
+    type: 'idiom',
+    hanja: '一石二鳥',
+    answer: '일석이조',
+    options: ['일석이조', '칠전팔기', '마이동풍', '이심전심'],
+    hint: '돌 하나로 새 두 마리를!',
+    skill: '사자성어',
+    grade: '6급',
+  },
+];
+
+const TOTAL = QUESTIONS.length;
+
+// 맞은 개수(0~4) → 시작 급수 프로필
 const PROFILE = {
-  1: { grade: '8급', title: '새싹 탐험가', message: '기초부터 시작하면 성장 속도가 아주 좋아질 타입이에요.', xp: 60 },
-  2: { grade: '8급', title: '기초 탄탄 탐험가', message: '쉬운 한자는 이미 감이 있어요. 8급 지도를 빠르게 밟아봐요.', xp: 90 },
-  3: { grade: '7급II', title: '단어 감각 탐험가', message: '한자와 단어를 연결하는 힘이 보여요. 7급II까지 기대돼요.', xp: 120 },
-  4: { grade: '7급', title: '문맥 추론 탐험가', message: '뜻을 찍는 게 아니라 흐름으로 읽는 감각이 있어요.', xp: 150 },
+  1: { grade: '8급',   title: '새싹 탐험가',         message: '기초부터 시작하면 성장 속도가 아주 좋아질 타입이에요.', xp: 60 },
+  2: { grade: '8급',   title: '기초 탄탄 탐험가',     message: '쉬운 한자는 이미 감이 있어요. 8급 지도를 빠르게 밟아봐요.', xp: 90 },
+  3: { grade: '7급II', title: '단어 감각 탐험가',     message: '한자와 단어를 연결하는 힘이 보여요. 7급II까지 기대돼요.', xp: 120 },
+  4: { grade: '7급',   title: '문맥 추론 탐험가',     message: '뜻을 찍는 게 아니라 흐름으로 읽는 감각이 있어요.', xp: 150 },
   5: { grade: '6급II', title: '고급 코스 예비 탐험가', message: '상위 급수 한자도 겁먹지 않을 감각이에요.', xp: 180 },
 };
 
 const GRADE_STEPS = ['8급', '7급II', '7급', '6급II', '6급'];
 
-const shuffle = (arr) => {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
+const scoreToLevel = (score) => {
+  if (score === 0) return 1;
+  if (score === 1) return 2;
+  if (score === 2) return 3;
+  if (score === 3) return 4;
+  return 5;
 };
 
-const pickQuestion = (level, used) => {
-  const order = [level, level - 1, level + 1, 1, 2, 3, 4, 5].filter(n => n >= 1 && n <= 5);
-  for (const target of order) {
-    const candidates = QUESTION_BANK[target]
-      .map((question, index) => ({ ...question, key: `${target}-${index}` }))
-      .filter(question => !used.has(question.key));
-    if (candidates.length) return candidates[Math.floor(Math.random() * candidates.length)];
-  }
-  return null;
+// 슈팅 게임에 사용할 한자 ID (퀴즈 문제와 연관된 8급~7급II 한자들)
+const SHOOT_HANJA_IDS = [1, 7, 21, 31, 34, 79, 106, 150, 294, 312];
+
+const SHOOT_CONTENT_POOL = {
+  main: { hanjaIds: SHOOT_HANJA_IDS },
+  review: { hanjaIds: [] },
 };
 
-const clampLevel = (level) => Math.min(5, Math.max(1, level));
-
-const Intro = ({ slideIdx, onNext, onSkip }) => {
+// ─────────────────────────────────────────────
+// Intro
+// ─────────────────────────────────────────────
+const Intro = ({ slideIdx, onNext, onSkip, guide, charId }) => {
   const slide = INTRO_SLIDES[slideIdx];
+  const charScale = getCharacterScale(charId || 'garae', 'rank5');
+  const charTranslateY = getCharacterTranslateY(charId || 'garae', true);
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col overflow-hidden bg-[#F7FAF9] dark:bg-slate-900">
+    <div
+      className="onboarding-intro-screen relative flex min-h-[100dvh] w-full flex-col overflow-hidden"
+      style={{
+        background: '#f7fffe',
+        backgroundImage: 'radial-gradient(rgba(0,199,174,0.18) 1px, transparent 1px)',
+        backgroundSize: '28px 28px',
+      }}
+    >
+      {/* 상단 그라데이션 오버레이 */}
+      <div
+        className="absolute inset-x-0 top-0 h-72 pointer-events-none"
+        style={{ background: 'linear-gradient(180deg, rgba(46,214,197,0.18) 0%, transparent 100%)' }}
+      />
+      {/* 하단 흰색 페이드 */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-40 pointer-events-none"
+        style={{ background: 'linear-gradient(0deg, #f7fffe 0%, transparent 100%)' }}
+      />
+
+      {/* 플로팅 한자 오브젝트 */}
+      {FLOAT_ITEMS.map((item, i) => (
+        <div
+          key={i}
+          className="absolute pointer-events-none select-none font-bold animate-float"
+          style={{
+            top: item.top,
+            left: item.left,
+            right: item.right,
+            fontSize: item.size + 'px',
+            color: '#00C7AE',
+            opacity: 0.13,
+            transform: `rotate(${item.rotate}deg)`,
+            animationDuration: item.duration,
+            animationDelay: item.delay,
+          }}
+        >
+          {item.char}
+        </div>
+      ))}
+
       <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-10">
-        <div className="absolute inset-x-0 top-0 h-56 bg-[radial-gradient(circle_at_50%_0%,rgba(46,214,197,0.22),transparent_60%)]" />
-        <div className="relative flex w-full max-w-sm flex-col items-center gap-5">
-          <div className="relative h-48 w-48">
-            <div className="absolute inset-6 rounded-full bg-[#DDF8F4] dark:bg-teal-950/50" />
-            <div className="absolute inset-0 rounded-full border-[14px] border-white dark:border-slate-700/70" />
-            <img src={GUIDE} alt="가래뭉치" className="relative h-full w-full object-contain drop-shadow-2xl" />
+        <div className="relative z-10 flex w-full max-w-sm flex-col items-center gap-8">
+          {/* 캐릭터 + 후광 + 발밑 그림자 */}
+          <div className="relative flex flex-col items-center">
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full pointer-events-none"
+              style={{ background: 'radial-gradient(circle, rgba(0,199,174,0.18) 0%, transparent 68%)' }}
+            />
+            <div style={{ transform: `translateY(${charTranslateY}) scale(${charScale})` }}>
+              <img src={guide} alt="캐릭터" className="h-52 w-52 object-contain drop-shadow-xl animate-float" />
+            </div>
+            <div
+              className="w-16 h-2.5 rounded-full"
+              style={{ background: 'radial-gradient(ellipse, rgba(0,0,0,0.12) 0%, transparent 80%)' }}
+            />
           </div>
-
-          <div className="w-full rounded-[2rem] border border-white dark:border-slate-700 bg-white dark:bg-slate-800/95 p-6 text-center shadow-xl">
-            <p className="mb-2 text-[11px] font-normal tracking-[0.18em] text-[#00A994]">{slide.kicker}</p>
-            <h1 className="text-[28px] font-medium leading-tight tracking-tight text-[#334155] dark:text-slate-200 break-keep">
-              {slide.title}
+          <div className="text-center">
+            <div className="mb-3 inline-flex items-center rounded-full bg-[#E4F9F6] px-3.5 py-1 text-[11px] font-semibold tracking-[0.16em] text-[#009984]">
+              {slide.kicker}
+            </div>
+            <h1 className="text-h2 font-medium leading-tight tracking-tight text-[#334155] dark:text-slate-100 break-keep">
+              {renderTitle(slide.title, slide.highlight)}
             </h1>
-            <p className="mt-3 text-sm font-normal leading-relaxed text-[#7A8798] dark:text-slate-400 break-keep">
-              {slide.body}
-            </p>
+            <p className="mt-3 text-body font-medium text-[#445060] dark:text-slate-300 break-keep" style={{ lineHeight: 1.6 }}>{slide.body}</p>
           </div>
-
-          <div className="flex gap-1.5">
-            {INTRO_SLIDES.map((_, idx) => (
-              <span key={idx} className={`h-2 rounded-full transition-all ${idx === slideIdx ? 'w-7 bg-[#00C7AE]' : 'w-2 bg-[#D9E1EA]'}`} />
+          <div className="flex items-center gap-2">
+            {INTRO_SLIDES.map((_, i) => (
+              <div
+                key={i}
+                className={`rounded-full transition-all duration-300 ${i === slideIdx ? 'w-7 h-2 bg-[#00C7AE]' : 'w-2 h-2 bg-[#C8D8E4]/80 dark:bg-slate-600'}`}
+                style={i === slideIdx ? { boxShadow: '0 0 8px rgba(0,199,174,0.55)' } : {}}
+              />
             ))}
           </div>
-
           <button
             onClick={onNext}
-            className="w-full rounded-[1.6rem] bg-[#00C7AE] py-4 text-lg font-normal text-white shadow-lg shadow-teal-200 active:scale-95"
+            className="hp-cta-button hp-cta-button--teal onboarding-shimmer-btn text-h3 tracking-tight"
           >
-            {slideIdx === INTRO_SLIDES.length - 1 ? '진단 시작하기' : '계속하기'}
+            {slideIdx < INTRO_SLIDES.length - 1 ? '다음' : '진단 시작하기'}
           </button>
-          <button
-            onClick={onSkip}
-            className="w-full rounded-[1.4rem] border-2 border-[#E5ECF3] dark:border-slate-700 bg-white dark:bg-slate-800 py-3.5 text-sm font-normal text-[#7A8798] dark:text-slate-300 active:scale-95"
-          >
-            8급부터 바로 시작
-          </button>
+          <div className="w-full flex flex-col items-center gap-1.5">
+            <p className="text-[15px] font-normal text-[#888]">이미 고수라면?</p>
+            <button
+              onClick={onSkip}
+              className="w-full rounded-[1.4rem] border-2 border-[#E5ECF3] dark:border-slate-700 bg-white/70 dark:bg-slate-800 py-3.5 text-body font-normal text-[#7A8798] dark:text-slate-300 active:scale-95"
+            >
+              8급부터 바로 시작
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const Quiz = ({ question, index, selected, isCorrect, onSelect }) => (
-  <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
-    <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <div className="quiz-progress-track flex-1">
-          <div className="quiz-progress-fill bg-[#00C7AE]" style={{ width: `${((index + 1) / 8) * 100}%` }} />
-        </div>
-        <span className="quiz-counter-text shrink-0">{index + 1}/8</span>
-      </div>
+// ─────────────────────────────────────────────
+// Quiz
+// ─────────────────────────────────────────────
+const PROMPT = {
+  word: '이 단어의 뜻은?',
+  sentence: '빈칸에 알맞은 말은?',
+  idiom: '이 사자성어의 뜻은?',
+};
 
-      <div className="grade-test-question-card">
-        <div className="flex items-center justify-between w-full">
-          <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-[11px] font-normal text-[#00A994]">{question.grade}</span>
-          <span className="grade-test-type-label">{question.skill}</span>
-        </div>
-        <div className={`grade-test-hanja-box ${question.hanja.length > 1 ? 'grade-test-hanja-box--compound' : 'grade-test-hanja-box--single'}`}>
-          <span className="grade-test-hanja-char hanja-char">{question.hanja}</span>
-        </div>
-        <p className="text-center font-normal text-[#334155] dark:text-slate-200 text-xl">이 한자의 뜻은?</p>
-        <p className="body-muted text-center">{question.hint}</p>
-      </div>
+const Quiz = ({ question, index, selected, isCorrect, onSelect }) => {
+  const answered = selected != null;
 
-      <div className="grid grid-cols-2 gap-3">
-        {question.options.map(option => {
-          const answered = selected != null;
-          const right = answered && option === question.answer;
-          const wrong = answered && option === selected && option !== question.answer;
-          const dimmed = answered && !right;
-          return (
-            <button
-              key={option}
-              onClick={() => onSelect(option)}
-              disabled={answered}
-              className={`quiz-choice-btn justify-center text-xl ${right ? 'quiz-choice-btn--correct' : wrong ? 'quiz-choice-btn--wrong' : dimmed ? 'quiz-choice-btn--dimmed' : ''}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-
-      {selected != null && (
-        <div className={`rounded-[1.5rem] px-4 py-3 text-center text-sm font-normal ${isCorrect ? 'bg-[#E8FAF7] text-[#00A994]' : 'bg-[#FFF1EE] text-[#E8664F]'}`}>
-          {isCorrect ? '좋아요. 감각이 살아있어요!' : `정답은 ${question.answer}. 지금 외우면 돼요.`}
-        </div>
-      )}
-    </div>
-  </div>
-);
-
-const ShootMiniGame = ({ items, onFinish }) => {
-  const questions = useMemo(() => items.slice(0, 4).map(item => ({
-    hanja: item.hanja,
-    answer: item.answer,
-    options: shuffle(item.options),
-  })), [items]);
-
-  const [qIdx, setQIdx] = useState(0);
-  const [mistakes, setMistakes] = useState(0);
-  const [selected, setSelected] = useState(null);
-
-  const q = questions[qIdx];
-
-  const handleShoot = (option) => {
-    if (selected != null) return;
-    const wrong = option !== q.answer;
-    const nextMistakes = mistakes + (wrong ? 1 : 0);
-    if (wrong) setMistakes(nextMistakes);
-    setSelected(option);
-    setTimeout(() => {
-      const nextIdx = qIdx + 1;
-      if (nextIdx >= questions.length) {
-        onFinish(nextMistakes);
-      } else {
-        setQIdx(nextIdx);
-        setSelected(null);
-      }
-    }, 600);
+  const renderSentence = (sentence) => {
+    const parts = sentence.split('___');
+    return (
+      <p className="text-center font-bold text-[#2c3e50] dark:text-slate-100 break-keep"
+        style={{ fontSize: 'clamp(1.55rem, 6.5vw, 1.85rem)', lineHeight: 1.5 }}>
+        {parts[0]}
+        <span
+          className="inline-block align-middle mx-1 border-b-[3px] border-[#7C83FF] text-[#7C83FF]"
+          style={{ minWidth: '60px', height: '1em' }}
+        />
+        {parts[1]}
+      </p>
+    );
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
+    <div className="onboarding-activity-screen flex min-h-[100dvh] w-full flex-col overflow-y-auto bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col gap-5">
-        <div className="flex items-start gap-3 rounded-[1.75rem] bg-white dark:bg-slate-800 p-4 shadow-sm">
-          <img src={GUIDE} alt="가래뭉치" className="h-14 w-14 object-contain" />
-          <div>
-            <p className="text-[11px] font-normal tracking-wider text-[#FF9B73]">MONSTER SHOOT</p>
-            <h2 className="text-lg font-medium text-[#334155] dark:text-slate-200">몬스터를 잡아라!</h2>
-            <p className="mt-1 text-xs font-normal text-[#8D9CAE]">한자 뜻이 적힌 몬스터를 빠르게 잡아요.</p>
-          </div>
-        </div>
-
         <div className="flex items-center gap-3">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#E8EEF4] dark:bg-slate-700">
-            <div className="h-full rounded-full bg-[#FF9B73] transition-all duration-500" style={{ width: `${((qIdx + 1) / questions.length) * 100}%` }} />
+          <div className="quiz-progress-track flex-1">
+            <div className="quiz-progress-fill bg-[#00C7AE]" style={{ width: `${((index + 1) / TOTAL) * 100}%` }} />
           </div>
-          <span className="text-xs font-normal text-[#8D9CAE]">{qIdx + 1}/{questions.length}</span>
+          <span className="quiz-counter-text shrink-0">{index + 1}/{TOTAL}</span>
         </div>
 
-        <div className="flex flex-col items-center justify-center rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-sm gap-2">
-          <p className="text-xs font-normal text-[#8D9CAE]">이 한자의 뜻은?</p>
-          <span className={`${q.hanja.length > 2 ? 'text-5xl' : 'text-8xl'} font-normal text-[#334155] dark:text-slate-200`}>{q.hanja}</span>
+        <div className="grade-test-question-card">
+          <div className="flex items-center justify-between w-full">
+            <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-[11px] font-normal text-[#00A994]">{question.grade}</span>
+            <span className="grade-test-type-label">{question.skill}</span>
+          </div>
+
+          {question.type === 'sentence' ? (
+            <>
+              {/* 질문: 작고 연하게 */}
+              <p className="text-center text-[15px] font-medium text-[#888] dark:text-slate-400 mb-1">{PROMPT[question.type]}</p>
+              <div className="flex flex-col items-center gap-4 py-1">
+                {renderSentence(question.sentence)}
+                {/* 힌트 카드: 한자 + 뜻 그룹핑 */}
+                <div className="flex flex-col items-center gap-1 rounded-2xl bg-[#F4F6FF] dark:bg-slate-700 px-6 py-3">
+                  <span className="text-[#7C83FF] font-medium text-[18px]">{question.hanja}</span>
+                  <span className="text-[13px] font-normal text-[#A0A0A0] dark:text-slate-400">{question.hint}</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={`grade-test-hanja-box ${question.hanja.length > 1 ? 'grade-test-hanja-box--compound' : 'grade-test-hanja-box--single'}`}>
+                <span className="grade-test-hanja-char hanja-char">{question.hanja}</span>
+              </div>
+              <p className="text-center font-medium text-[#334155] dark:text-slate-200 text-[clamp(1.45rem,6vw,1.85rem)]">{PROMPT[question.type]}</p>
+              <p className="text-center text-lg font-normal text-[#9AA6B8] dark:text-slate-400">{question.hint}</p>
+            </>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {q.options.map(option => {
-            const answered = selected != null;
-            const right = answered && option === q.answer;
-            const wrong = answered && option === selected && option !== q.answer;
+        <div className="quiz-choice-grid !mt-0">
+          {question.options.map(option => {
+            const right = answered && option === question.answer;
+            const wrong = answered && option === selected && option !== question.answer;
+            const dimmed = answered && !right;
             return (
               <button
                 key={option}
-                onClick={() => handleShoot(option)}
+                onClick={() => onSelect(option)}
                 disabled={answered}
-                className={`min-h-[72px] rounded-[1.35rem] border-2 px-3 text-base font-normal transition-all active:scale-95 ${
-                  right ? 'border-[#00C7AE] bg-[#E8FAF7] text-[#00A994]' :
-                  wrong ? 'border-[#FFB5A8] bg-[#FFF1EE] text-[#E8664F]' :
-                  answered ? 'border-[#EDF2F7] bg-white dark:bg-slate-800 text-[#CBD5E1]' :
-                  'border-[#FFD5B8] dark:border-slate-600 bg-[#FFF8F4] dark:bg-slate-800 text-[#4B5A6D] dark:text-slate-200 shadow-sm'
-                }`}
+                className={`quiz-choice-btn ${right ? 'quiz-choice-btn--correct' : wrong ? 'quiz-choice-btn--wrong' : dimmed ? 'quiz-choice-btn--dimmed' : ''}`}
               >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-xl">{right ? '💥' : wrong ? '✗' : '👾'}</span>
-                  <span>{option}</span>
-                </div>
+                {option}
               </button>
             );
           })}
         </div>
 
-        <div className="flex items-center justify-between rounded-2xl bg-white dark:bg-slate-800 px-4 py-3 text-xs font-normal text-[#8D9CAE]">
-          <span>진행 {qIdx + 1}/{questions.length}</span>
-          <span>실수 {mistakes}</span>
-        </div>
+        {answered && (
+          <div className={`rounded-[1.5rem] px-4 py-3 text-center text-sm font-normal ${isCorrect ? 'bg-[#E8FAF7] text-[#00A994]' : 'bg-[#FFF1EE] text-[#E8664F]'}`}>
+            {isCorrect ? '좋아요. 감각이 살아있어요!' : `정답은 ${question.answer}. 지금 외우면 돼요.`}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-const Result = ({ score, finalLevel, skillStats, memoryMistakes, onComplete }) => {
+// ─────────────────────────────────────────────
+// GamePick
+// ─────────────────────────────────────────────
+const GamePick = ({ onPick, guide, charId }) => {
+  const charScale = getCharacterScale(charId || 'garae', 'rank5');
+  const charTranslateY = getCharacterTranslateY(charId || 'garae', true);
+  return (
+  <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center px-5 safe-top"
+    style={{ background: 'linear-gradient(180deg, #f0faf8 0%, #F7FAF9 40%)' }}>
+    <div className="mx-auto flex w-full max-w-sm flex-col gap-5">
+      <div className="text-center mb-2">
+        <div className="relative inline-flex flex-col items-center mb-4">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(0,199,174,0.15) 0%, transparent 68%)' }} />
+          <div style={{ transform: `translateY(${charTranslateY}) scale(${charScale})` }}>
+            <img src={guide} alt="캐릭터" className="h-48 w-48 object-contain drop-shadow-xl animate-float" />
+          </div>
+        </div>
+        <h2 className="text-h2 font-medium text-[#334155] dark:text-slate-100 tracking-tight">어떤 게임 해볼까요?</h2>
+        <p className="mt-2 text-body font-normal text-[#7A8798] dark:text-slate-400">하나만 골라봐요!</p>
+      </div>
+
+      <button
+        onClick={() => onPick('shoot')}
+        className="flex items-center gap-4 rounded-[2rem] bg-white dark:bg-slate-800 p-5 text-left active:scale-95 transition-all duration-200 hover:-translate-y-1"
+        style={{ boxShadow: '0 4px 16px rgba(255,155,115,0.15), 0 1px 4px rgba(0,0,0,0.06)', border: '1.5px solid rgba(255,155,115,0.2)' }}
+      >
+        <div className="w-20 h-20 rounded-[1.2rem] flex items-center justify-center shrink-0"
+          style={{ background: 'linear-gradient(135deg, #FFF3EE 0%, #FFE8DC 100%)' }}>
+          <img src="/assets/images/icons/monster.webp" alt="슈팅" className="w-16 h-16 object-contain" />
+        </div>
+        <div>
+          <p className="text-body font-bold text-[#334155] dark:text-slate-200">몬스터 슈팅</p>
+          <p className="text-body font-normal text-[#7A8798] dark:text-slate-400 mt-1 break-keep leading-snug">한자 뜻이 적힌 몬스터를<br/>빠르게 잡아요</p>
+        </div>
+      </button>
+
+      <button
+        onClick={() => onPick('match')}
+        className="flex items-center gap-4 rounded-[2rem] bg-white dark:bg-slate-800 p-5 text-left active:scale-95 transition-all duration-200 hover:-translate-y-1"
+        style={{ boxShadow: '0 4px 16px rgba(0,199,174,0.15), 0 1px 4px rgba(0,0,0,0.06)', border: '1.5px solid rgba(0,199,174,0.2)' }}
+      >
+        <div className="w-20 h-20 rounded-[1.2rem] flex items-center justify-center shrink-0"
+          style={{ background: 'linear-gradient(135deg, #E8FAF7 0%, #D4F5F0 100%)' }}>
+          <img src="/assets/images/icons/matching.webp" alt="매칭" className="w-16 h-16 object-contain" />
+        </div>
+        <div>
+          <p className="text-body font-bold text-[#334155] dark:text-slate-200">메모리 게임</p>
+          <p className="text-body font-normal text-[#7A8798] dark:text-slate-400 mt-1 break-keep leading-snug">한자와 뜻을 뒤집어<br/>짝을 맞춰요</p>
+        </div>
+      </button>
+    </div>
+  </div>
+  );
+};
+
+// 문제 유형별 최대 점수
+const SKILL_MAX = { word: 2, context: 1, idiom: 1 };
+
+// ─────────────────────────────────────────────
+// Result
+// ─────────────────────────────────────────────
+const Result = ({ score, finalLevel, skillStats, onComplete, guide }) => {
   const profile = PROFILE[finalLevel];
-  const memoryBonus = memoryMistakes <= 1 ? 40 : memoryMistakes <= 3 ? 25 : 10;
-  const totalXp = profile.xp + memoryBonus;
+  const gameBonus = 30;
+  const totalXp = profile.xp + gameBonus;
   const currentGradeIndex = Math.max(0, GRADE_STEPS.indexOf(profile.grade));
 
   return (
     <div className="flex min-h-[100dvh] w-full flex-col overflow-y-auto bg-[#F7FAF9] dark:bg-slate-900 px-5 py-6 safe-top">
-      <div className="mx-auto flex w-full max-w-sm flex-col gap-5 safe-bottom">
-        <div className="rounded-[2.4rem] border border-white dark:border-slate-700 bg-white dark:bg-slate-800 p-6 text-center shadow-xl">
-          <img src={GUIDE} alt="가래뭉치" className="mx-auto h-36 w-36 object-contain drop-shadow-xl" />
-          <p className="mt-2 text-[11px] font-normal tracking-[0.18em] text-[#00A994]">DIAGNOSIS COMPLETE</p>
-          <h1 className="mt-1 text-[29px] font-medium leading-tight tracking-tight text-[#334155] dark:text-slate-200 break-keep">
-            {profile.grade} {profile.title}
-          </h1>
-          <p className="mt-3 text-sm font-normal leading-relaxed text-[#7A8798] dark:text-slate-400 break-keep">{profile.message}</p>
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-4 safe-bottom">
+
+        {/* ── 헤더: 캐릭터 + 결과 ── */}
+        <div className="rounded-[2.4rem] overflow-hidden text-center shadow-xl"
+          style={{ background: 'radial-gradient(ellipse at 50% 0%, #e8faf7 0%, #ffffff 60%)' }}>
+          <div className="pt-6 pb-2">
+            <img src={guide} alt="가래뭉치" className="mx-auto h-40 w-40 object-contain drop-shadow-2xl animate-float" />
+          </div>
+          <div className="px-6 pb-7">
+            <p className="text-[11px] font-normal tracking-[0.2em] text-[#00A994]">DIAGNOSIS COMPLETE</p>
+            <h1 className="mt-1 text-h2 font-medium leading-tight tracking-tight text-[#334155] dark:text-slate-200 break-keep">
+              <span className="text-[#00C7AE]">{profile.grade}</span> {profile.title}
+            </h1>
+            <p className="mt-2 text-body font-normal leading-relaxed text-[#7A8798] dark:text-slate-400 break-keep">{profile.message}</p>
+          </div>
         </div>
 
-        <div className="rounded-[2rem] bg-white dark:bg-slate-800 p-5 shadow-sm">
+        {/* ── 급수 탐험 경로 ── */}
+        <div className="rounded-[2rem] bg-white dark:bg-slate-800 px-5 pt-4 pb-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
-            <span className="text-sm font-normal text-[#334155] dark:text-slate-200">급수 탐험 경로</span>
-            <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-xs font-normal text-[#00A994]">{score}/8 정답</span>
+            <span className="text-body font-medium text-[#334155] dark:text-slate-200">급수 탐험 경로</span>
+            <span className="rounded-full bg-[#E8FAF7] px-3 py-1 text-xs font-normal text-[#00A994]">{score}/{TOTAL} 정답</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            {GRADE_STEPS.map((grade, idx) => (
-              <div key={grade} className="flex flex-1 flex-col items-center gap-2">
-                <div className={`h-3 w-full rounded-full ${idx <= currentGradeIndex ? 'bg-[#00C7AE]' : 'bg-[#E5ECF3] dark:bg-slate-700'}`} />
-                <span className={`text-[10px] font-normal ${idx === currentGradeIndex ? 'text-[#00A994]' : 'text-[#AEB7C5]'}`}>{grade}</span>
-              </div>
-            ))}
+          <div className="relative flex items-start justify-between">
+            {/* 연결선 */}
+            <div className="absolute top-[9px] left-0 right-0 h-[3px] bg-[#E5ECF3] dark:bg-slate-700 mx-2" />
+            <div className="absolute top-[9px] left-0 h-[3px] bg-[#00C7AE]"
+              style={{ width: `${(currentGradeIndex / (GRADE_STEPS.length - 1)) * 100}%`, marginLeft: '8px' }} />
+            {GRADE_STEPS.map((grade, idx) => {
+              const done = idx < currentGradeIndex;
+              const current = idx === currentGradeIndex;
+              return (
+                <div key={grade} className="relative z-10 flex flex-col items-center gap-1.5">
+                  <div className={`w-5 h-5 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center shadow ${
+                    done ? 'bg-[#00C7AE]' : current ? 'bg-[#00C7AE] ring-4 ring-[#00C7AE]/20' : 'bg-[#E5ECF3] dark:bg-slate-700'
+                  }`}>
+                    {done && <span className="text-white text-[8px]">✓</span>}
+                  </div>
+                  <span className={`text-[10px] font-normal ${current ? 'text-[#00A994] font-medium' : 'text-[#AEB7C5]'}`}>{grade}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
+        {/* ── 스킬 점수 ── */}
         <div className="grid grid-cols-3 gap-2.5">
           {[
-            ['한자 눈썰미', skillStats.eye],
-            ['단어 감각', skillStats.word],
-            ['문장 추론', skillStats.context],
-          ].map(([label, value]) => (
+            ['단어 감각', skillStats.word, SKILL_MAX.word],
+            ['문장 추론', skillStats.context, SKILL_MAX.context],
+            ['사자성어', skillStats.idiom, SKILL_MAX.idiom],
+          ].map(([label, value, max]) => (
             <div key={label} className="rounded-[1.35rem] bg-white dark:bg-slate-800 p-3 text-center shadow-sm">
-              <p className="text-[10px] font-normal text-[#8D9CAE]">{label}</p>
-              <p className="mt-1 text-xl font-normal text-[#7C83FF]">{value}</p>
+              <p className="body-muted">{label}</p>
+              <p className="mt-1">
+                <span className="text-h3 font-medium text-[#7C83FF]">{value}</span>
+                <span className="text-body font-normal text-[#AEB7C5]">/{max}</span>
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="rounded-[2rem] bg-white dark:bg-slate-800 p-5 shadow-sm">
+        {/* ── 보상 ── */}
+        <div className="rounded-[2rem] p-5 shadow-sm" style={{ background: '#fff9f0', border: '1.5px solid #FFE5C8' }}>
           <div className="flex items-center justify-between">
-            <span className="text-sm font-normal text-[#334155] dark:text-slate-200">진단 보상</span>
-            <span className="text-2xl font-normal text-[#FF9B73]">+{totalXp} XP</span>
+            <span className="text-body font-medium text-[#334155]">진단 보상</span>
+            <span className="text-h3 font-medium" style={{ color: '#E67E22' }}>+{totalXp} XP ✨</span>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-normal">
-            <span className="rounded-xl bg-[#FFF1EA] dark:bg-rose-950/30 px-3 py-2 text-[#E8664F] dark:text-rose-300">진단 +{profile.xp}</span>
-            <span className="rounded-xl bg-[#FFF1EA] dark:bg-rose-950/30 px-3 py-2 text-[#FF9B73] dark:text-orange-300">슈팅 보너스 +{memoryBonus}</span>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-body font-normal">
+            <span className="rounded-xl bg-[#FFF1EA] px-3 py-2 text-center text-[#E8664F]">진단 +{profile.xp}</span>
+            <span className="rounded-xl bg-[#FFF1EA] px-3 py-2 text-center text-[#FF9B73]">게임 보너스 +{gameBonus}</span>
           </div>
         </div>
 
         <button
           onClick={() => onComplete(profile.grade, totalXp)}
-          className="w-full rounded-[1.7rem] bg-[#00C7AE] py-4 text-lg font-normal text-white shadow-lg shadow-teal-200 active:scale-95"
+          className="w-full rounded-[1.7rem] bg-[#00C7AE] py-4 text-h3 font-normal text-white shadow-lg shadow-teal-200 active:scale-95"
         >
           내 탐험 지도 열기
         </button>
@@ -335,27 +473,25 @@ const Result = ({ score, finalLevel, skillStats, memoryMistakes, onComplete }) =
   );
 };
 
-const OnboardingScreen = ({ onComplete }) => {
+// ─────────────────────────────────────────────
+// Main
+// ─────────────────────────────────────────────
+const OnboardingScreen = ({ onComplete, selectedCharacter }) => {
+  const guide = getGuide(selectedCharacter);
   const [step, setStep] = useState('intro');
   const [slideIdx, setSlideIdx] = useState(0);
-  const [qState, setQState] = useState(() => {
-    const used = new Set();
-    const first = pickQuestion(2, used);
-    if (first) used.add(first.key);
-    return { question: first, used, level: 2, index: 0 };
-  });
+  const [qIdx, setQIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answers, setAnswers] = useState([]);
-  const [seenItems, setSeenItems] = useState([]);
-  const [finalLevel, setFinalLevel] = useState(2);
-  const [memoryMistakes, setMemoryMistakes] = useState(0);
+  const [finalLevel, setFinalLevel] = useState(1);
 
-  const skillStats = useMemo(() => answers.reduce((acc, answer) => {
-    if (!answer.correct) return acc;
-    if (answer.skill === '한자 눈썰미') return { ...acc, eye: acc.eye + 1 };
-    if (answer.skill === '단어 감각') return { ...acc, word: acc.word + 1 };
-    return { ...acc, context: acc.context + 1 };
-  }, { eye: 0, word: 0, context: 0 }), [answers]);
+  const skillStats = useMemo(() => answers.reduce((acc, a) => {
+    if (!a.correct) return acc;
+    if (a.skill === '단어 감각') return { ...acc, word: acc.word + 1 };
+    if (a.skill === '문장 추론') return { ...acc, context: acc.context + 1 };
+    if (a.skill === '사자성어') return { ...acc, idiom: acc.idiom + 1 };
+    return acc;
+  }, { word: 0, context: 0, idiom: 0 }), [answers]);
 
   const handleIntroNext = () => {
     if (slideIdx < INTRO_SLIDES.length - 1) setSlideIdx(prev => prev + 1);
@@ -370,31 +506,27 @@ const OnboardingScreen = ({ onComplete }) => {
 
   const handleSelect = (option) => {
     if (selected != null) return;
-    const question = qState.question;
+    const question = QUESTIONS[qIdx];
     const correct = option === question.answer;
     setSelected(option);
-    setAnswers(prev => [...prev, { ...question, selected: option, correct }]);
-    setSeenItems(prev => prev.some(item => item.hanja === question.hanja) ? prev : [...prev, question]);
+    const nextAnswers = [...answers, { ...question, selected: option, correct }];
+    setAnswers(nextAnswers);
 
-    const nextLevel = clampLevel(qState.level + (correct ? 1 : -1));
     setTimeout(() => {
-      if (qState.index + 1 >= 8) {
-        setFinalLevel(nextLevel);
-        setStep('shoot');
+      const nextIdx = qIdx + 1;
+      if (nextIdx >= TOTAL) {
+        const score = nextAnswers.filter(a => a.correct).length;
+        setFinalLevel(scoreToLevel(score));
+        setStep('gamePick');
         return;
       }
-      const nextUsed = new Set(qState.used);
-      const nextQuestion = pickQuestion(nextLevel, nextUsed);
-      if (nextQuestion) nextUsed.add(nextQuestion.key);
-      setQState({ question: nextQuestion, used: nextUsed, level: nextLevel, index: qState.index + 1 });
+      setQIdx(nextIdx);
       setSelected(null);
     }, 820);
   };
 
-  const handleShootFinish = (mistakes) => {
-    setMemoryMistakes(mistakes);
-    setStep('result');
-  };
+  const handleGamePick = (game) => setStep(game);
+  const handleGameDone = () => setStep('result');
 
   const handleComplete = (grade, xp) => {
     localStorage.setItem(SK.ONBOARDING_DONE, 'true');
@@ -403,32 +535,69 @@ const OnboardingScreen = ({ onComplete }) => {
   };
 
   if (step === 'intro') {
-    return <Intro slideIdx={slideIdx} onNext={handleIntroNext} onSkip={handleSkip} />;
+    return <Intro slideIdx={slideIdx} onNext={handleIntroNext} onSkip={handleSkip} guide={guide} charId={selectedCharacter} />;
   }
 
-  if (step === 'quiz' && qState.question) {
+  if (step === 'quiz') {
+    const question = QUESTIONS[qIdx];
     return (
       <Quiz
-        question={qState.question}
-        index={qState.index}
+        question={question}
+        index={qIdx}
         selected={selected}
-        isCorrect={selected === qState.question.answer}
+        isCorrect={selected === question.answer}
         onSelect={handleSelect}
       />
     );
   }
 
+  if (step === 'gamePick') {
+    return <GamePick onPick={handleGamePick} guide={guide} charId={selectedCharacter} />;
+  }
+
   if (step === 'shoot') {
-    return <ShootMiniGame items={seenItems.length >= 4 ? seenItems : answers} onFinish={handleShootFinish} />;
+    return (
+      <Suspense fallback={<div className="flex min-h-[100dvh] items-center justify-center bg-[#F7FAF9]" />}>
+        <ShootGameScreen
+          onBack={handleGameDone}
+          onGameFinish={handleGameDone}
+          contentPool={SHOOT_CONTENT_POOL}
+          masteryData={{}}
+          srsData={{}}
+          selectedCharacter="garae"
+          hideRetry={true}
+          killsPerWaveOverride={6}
+          userXpOverride={9999}
+        />
+      </Suspense>
+    );
+  }
+
+  if (step === 'match') {
+    return (
+      <Suspense fallback={<div className="flex min-h-[100dvh] items-center justify-center bg-[#F7FAF9]" />}>
+        <MatchGameScreen
+          onBack={handleGameDone}
+          onGameFinish={handleGameDone}
+          contentPool={SHOOT_CONTENT_POOL}
+          masteryData={{}}
+          srsData={{}}
+          userXp={0}
+          selectedCharacter="garae"
+          hideRetry={true}
+          pairsPerRoundOverride={3}
+        />
+      </Suspense>
+    );
   }
 
   return (
     <Result
-      score={answers.filter(answer => answer.correct).length}
+      score={answers.filter(a => a.correct).length}
       finalLevel={finalLevel}
       skillStats={skillStats}
-      memoryMistakes={memoryMistakes}
       onComplete={handleComplete}
+      guide={guide}
     />
   );
 };

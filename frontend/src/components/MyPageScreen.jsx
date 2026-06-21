@@ -100,7 +100,7 @@ const getBadgeStage = (category, value) => {
   return 1;
 };
 
-const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharacter, isDarkMode, setIsDarkMode, streak, totalStats }) => {
+const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharacter, isDarkMode, setIsDarkMode, streak, totalStats, finalJourney }) => {
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [hoveredBadgeId, setHoveredBadgeId] = useState(null);
   const [showGradeModal, setShowGradeModal] = useState(false);
@@ -223,6 +223,9 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
   const xpProgress = level >= 10 ? 100 : Math.min(((xp - currentThreshold) / (nextThreshold - currentThreshold)) * 100, 100);
   const rankDetails = getRankDetails(xp, selectedCharacter);
   const characterImage = selectedCharacter ? rankDetails.avatar : '/assets/images/characters/default_3d.webp';
+  const finalJourneyDate = finalJourney?.completedAt
+    ? new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(finalJourney.completedAt))
+    : '';
 
   return (
     <div className={`min-h-screen flex flex-col bg-[#F7FAF9] dark:bg-slate-900`}>
@@ -307,7 +310,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
               )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[#7C83FF] font-normal text-sm">{rankDetails.rankName || 'Junior Master'}</span>
+              <span className="text-[#7C83FF] font-normal text-sm">{finalJourney?.title || rankDetails.rankName || 'Junior Master'}</span>
               <span className="text-xs font-normal text-[#FF9B73] whitespace-nowrap px-2 py-0.5 rounded-md flex items-center gap-1" style={{ backgroundColor: 'rgba(255,155,115,0.12)' }}>
                 <img src="/assets/images/icons/icon_streak_mini.webp" alt="streak" className="w-4 h-4 object-contain" /> {streakCount}일 연속
               </span>
@@ -325,6 +328,23 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
             </div>
           </div>
         </div>
+
+        {finalJourney && (
+          <section className="master-profile-card" aria-label="124단계 완주 인증">
+            <div className="master-profile-badge" aria-hidden="true">
+              <span>★</span>
+              <strong>124</strong>
+              <small>MASTER</small>
+            </div>
+            <div className="master-profile-copy">
+              <span>FINAL JOURNEY COMPLETE</span>
+              <h3>한자팝 마스터</h3>
+              <p>{finalJourney.stages || 124}단계 · {finalJourney.hanjaCount || 369}한자 완주</p>
+              <small>{finalJourneyDate} 인증</small>
+            </div>
+            <div className="master-profile-seal">完</div>
+          </section>
+        )}
 
         {/* 뱃지 창고 */}
         <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>
@@ -443,7 +463,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                     </span>
                     <div className="flex flex-col">
                       <div className="flex items-baseline gap-0.5 flex-nowrap">
-                        <span className={`text-xl font-normal tracking-tight leading-none whitespace-nowrap bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent dark:text-white`} style={{ fontFamily: "'GenJyuuGothic', sans-serif" }}>
+                        <span className={`text-xl font-normal tracking-tight leading-none whitespace-nowrap bg-gradient-to-br from-[#2D3142] to-[#4F5D75] bg-clip-text text-transparent dark:text-white`} style={{ fontFamily: 'var(--font-display)' }}>
                           {display}
                         </span>
                         {item.unit && !isEmpty && (
@@ -468,11 +488,11 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
           <div className="grid grid-cols-2 p-4 gap-3">
             <button
               onClick={() => onNavigate('calendar')}
-              className={`rounded-[1.5rem] border p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all duration-300 bg-[#F5F3FF]/70 border-purple-100/60 dark:bg-purple-950/20 dark:border-purple-900/30`}
+              className={`rounded-[1.5rem] border p-3 flex items-center gap-2 active:scale-[0.98] transition-all duration-300 bg-[#F5F3FF]/70 border-purple-100/60 dark:bg-purple-950/20 dark:border-purple-900/30`}
             >
               {/* 왼쪽: 둥근 소프트 박스에 아이콘 배치 */}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm bg-white border-purple-100/30 dark:bg-slate-800/80 dark:border-slate-700/60`}>
-                <img src="/assets/images/icons/icon_calendar.webp" alt="달력" className="w-8 h-8 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)] transform hover:scale-110 transition-transform duration-300" />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm bg-white border-purple-100/30 dark:bg-slate-800/80 dark:border-slate-700/60`}>
+                <img src="/assets/images/icons/icon_calendar.webp" alt="달력" className="w-7 h-7 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)] transform hover:scale-110 transition-transform duration-300" />
               </div>
               {/* 오른쪽: 텍스트 정보 */}
               <div className="flex-1 min-w-0 text-left">
@@ -487,11 +507,11 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
 
             <button
               onClick={() => onNavigate('vocabulary')}
-              className={`rounded-[1.5rem] border p-3.5 flex items-center gap-3 active:scale-[0.98] transition-all duration-300 bg-[#FFFBEB]/70 border-amber-100/60 dark:bg-amber-950/20 dark:border-amber-900/30`}
+              className={`rounded-[1.5rem] border p-3 flex items-center gap-2 active:scale-[0.98] transition-all duration-300 bg-[#FFFBEB]/70 border-amber-100/60 dark:bg-amber-950/20 dark:border-amber-900/30`}
             >
               {/* 왼쪽: 둥근 소프트 박스에 아이콘 배치 */}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm bg-white border-amber-100/30 dark:bg-slate-800/80 dark:border-slate-700/60`}>
-                <img src="/assets/images/icons/icon_vocab.webp" alt="단어장" className="w-8 h-8 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)] transform hover:scale-110 transition-transform duration-300" />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm bg-white border-amber-100/30 dark:bg-slate-800/80 dark:border-slate-700/60`}>
+                <img src="/assets/images/icons/icon_vocab.webp" alt="단어장" className="w-7 h-7 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.05)] transform hover:scale-110 transition-transform duration-300" />
               </div>
               {/* 오른쪽: 텍스트 정보 */}
               <div className="flex-1 min-w-0 text-left">
@@ -512,8 +532,8 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
 
       {/* 뱃지 상세 모달 */}
       {selectedBadge && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setSelectedBadge(null)}>
-          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 bg-[#F7FAF9] dark:bg-slate-800`} onClick={e => e.stopPropagation()}>
+        <div className="mobile-center-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setSelectedBadge(null)}>
+          <div className={`mobile-modal-card relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 bg-[#F7FAF9] dark:bg-slate-800`} onClick={e => e.stopPropagation()}>
             {/* 왼쪽 상단 닫기(X) 버튼 */}
             <button 
               onClick={() => setSelectedBadge(null)}
@@ -543,7 +563,7 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
                         <div key={s} className="flex flex-col items-center gap-1.5">
                           <div className="relative w-12 h-12">
                             <img
-                              src={`${selectedBadge.base}_${s}.png`}
+                              src={`${selectedBadge.base}_${s}.webp`}
                               className={`w-full h-full object-contain transition-all ${!done ? 'grayscale opacity-35' : ''}`}
                             />
                             {/* 이미 달성한 모든 등급에 주황색 체크 표시 */}
@@ -647,8 +667,8 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
         </div>
       )}
       {showGradeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowGradeModal(false)}>
-          <div className={`relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 bg-[#F7FAF9] dark:bg-slate-800`} onClick={e => e.stopPropagation()}>
+        <div className="mobile-center-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setShowGradeModal(false)}>
+          <div className={`mobile-modal-card relative w-full max-w-sm rounded-[2.5rem] p-6 pt-10 pb-8 shadow-2xl flex flex-col gap-5 bg-[#F7FAF9] dark:bg-slate-800`} onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setShowGradeModal(false)}
               className={`absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90 shadow-sm bg-white text-slate-400 border border-slate-200 dark:bg-slate-700/80 dark:text-slate-300 dark:border dark:border-slate-600`}

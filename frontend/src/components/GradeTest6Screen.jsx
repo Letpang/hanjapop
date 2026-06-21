@@ -13,29 +13,29 @@ const QUESTIONS = [
   { type: 'sound_sentence', sentence: '(感情) 을 솔직하게 표현해요.', hanja: '感情', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['감정', '감사', '정보', '감각'], answer: '감정' },
   { type: 'sound_sentence', sentence: '(開放) 적인 태도가 중요해요.', hanja: '開放', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['개방', '개인', '방면', '개시'], answer: '개방' },
   { type: 'sound_sentence', sentence: '(衣服) 을 깨끗이 입어요.', hanja: '衣服', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['의복', '의원', '복장', '의류'], answer: '의복' },
-  { type: 'sound_sentence', sentence: '(愛情) 이 가득한 가족이에요.', hanja: '愛情', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['애정', '애국', '정애', '정열'], answer: '애정' },
+  { type: 'sound_sentence', sentence: '(愛情) 이 가득한 가족이에요.', hanja: '愛情', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['애정', '애국', '연정', '정열'], answer: '애정' },
   { type: 'sound_sentence', sentence: '(美術) 관람을 즐겨요.', hanja: '美術', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['미술', '미화', '미용', '예술'], answer: '미술' },
   { type: 'sound_sentence', sentence: '(朝食) 을 꼭 먹어요.', hanja: '朝食', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['조식', '조석', '석식', '조반'], answer: '조식' },
-  { type: 'sound_sentence', sentence: '(死亡) 소식을 들었어요.', hanja: '死亡', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['사망', '망사', '사건', '생사'], answer: '사망' },
+  { type: 'sound_sentence', sentence: '(死亡) 소식을 들었어요.', hanja: '死亡', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['사망', '희생', '사건', '생사'], answer: '사망' },
   { type: 'sound_sentence', sentence: '(民族) 정신을 이어받아요.', hanja: '民族', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['민족', '민속', '민심', '씨족'], answer: '민족' },
-  { type: 'sound_sentence', sentence: '(遠近) 을 조절해요.', hanja: '遠近', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['원근', '근원', '원거', '원방'], answer: '원근' },
+  { type: 'sound_sentence', sentence: '(遠近) 을 조절해요.', hanja: '遠近', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['원근', '근접', '원거', '원방'], answer: '원근' },
   { type: 'sound_sentence', sentence: '(石油) 가격이 올랐어요.', hanja: '石油', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['석유', '원유', '석탄', '석재'], answer: '석유' },
   { type: 'sound_sentence', sentence: '(洋食) 을 좋아해요.', hanja: '洋食', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['양식', '한식', '중식', '일식'], answer: '양식' },
   { type: 'sound_sentence', sentence: '(集中) 해서 공부해요.', hanja: '集中', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['집중', '집약', '집합', '집성'], answer: '집중' },
-  { type: 'sound_sentence', sentence: '(正義) 를 위해 싸워요.', hanja: '正義', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정의', '의정', '정당', '의리'], answer: '정의' },
+  { type: 'sound_sentence', sentence: '(正義) 를 위해 싸워요.', hanja: '正義', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정의', '진리', '정당', '의리'], answer: '정의' },
   { type: 'sound_sentence', sentence: '(廣場) 에 사람들이 모였어요.', hanja: '廣場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['광장', '장소', '광야', '광역'], answer: '광장' },
-  { type: 'sound_sentence', sentence: '(平和) 가 찾아왔어요.', hanja: '平和', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['평화', '화평', '평온', '화합'], answer: '평화' },
-  { type: 'sound_sentence', sentence: '(利用) 해서 만들었어요.', hanja: '利用', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['이용', '용이', '이익', '활용'], answer: '이용' },
-  { type: 'sound_sentence', sentence: '(共同) 으로 작업해요.', hanja: '共同', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['공동', '동공', '공통', '공유'], answer: '공동' },
-  { type: 'sound_sentence', sentence: '(待機) 하고 있어요.', hanja: '待機', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['대기', '기대', '대비', '대령'], answer: '대기' },
-  { type: 'sound_sentence', sentence: '(定期) 적으로 검사해요.', hanja: '定期', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정기', '기정', '정시', '기한'], answer: '정기' },
-  { type: 'sound_sentence', sentence: '(式場) 에 많은 사람이 왔어요.', hanja: '式場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['식장', '장식', '식순', '식전'], answer: '식장' },
+  { type: 'sound_sentence', sentence: '(平和) 가 찾아왔어요.', hanja: '平和', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['평화', '화목', '평온', '화합'], answer: '평화' },
+  { type: 'sound_sentence', sentence: '(利用) 해서 만들었어요.', hanja: '利用', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['이용', '사용', '이익', '활용'], answer: '이용' },
+  { type: 'sound_sentence', sentence: '(共同) 으로 작업해요.', hanja: '共同', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['공동', '협동', '공통', '공유'], answer: '공동' },
+  { type: 'sound_sentence', sentence: '(待機) 하고 있어요.', hanja: '待機', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['대기', '준비', '대비', '대령'], answer: '대기' },
+  { type: 'sound_sentence', sentence: '(定期) 적으로 검사해요.', hanja: '定期', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['정기', '임시', '정시', '기한'], answer: '정기' },
+  { type: 'sound_sentence', sentence: '(式場) 에 많은 사람이 왔어요.', hanja: '式場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['식장', '행사', '식순', '식전'], answer: '식장' },
   { type: 'sound_sentence', sentence: '(現代) 사회는 변화가 빨라요.', hanja: '現代', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['현대', '현황', '근대', '현실'], answer: '현대' },
-  { type: 'sound_sentence', sentence: '(勇氣) 를 내세요.', hanja: '勇氣', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['용기', '기용', '용감', '기개'], answer: '용기' },
-  { type: 'sound_sentence', sentence: '(油田) 에서 석유를 채굴해요.', hanja: '油田', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['유전', '전유', '유정', '유류'], answer: '유전' },
+  { type: 'sound_sentence', sentence: '(勇氣) 를 내세요.', hanja: '勇氣', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['용기', '패기', '용감', '기개'], answer: '용기' },
+  { type: 'sound_sentence', sentence: '(油田) 에서 석유를 채굴해요.', hanja: '油田', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['유전', '원유', '유정', '유류'], answer: '유전' },
   { type: 'sound_sentence', sentence: '(洋服) 차림으로 나갔어요.', hanja: '洋服', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['양복', '한복', '교복', '양장'], answer: '양복' },
   { type: 'sound_sentence', sentence: '(米穀) 상점에서 쌀을 샀어요.', hanja: '米穀', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['미곡', '곡류', '미식', '미음'], answer: '미곡' },
-  { type: 'sound_sentence', sentence: '(牛乳) 를 매일 마셔요.', hanja: '牛乳', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['우유', '유우', '유제', '소유'], answer: '우유' },
+  { type: 'sound_sentence', sentence: '(牛乳) 를 매일 마셔요.', hanja: '牛乳', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['우유', '두유', '유제', '소유'], answer: '우유' },
   { type: 'sound_sentence', sentence: '(利益) 을 나누어요.', hanja: '利益', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['이익', '이윤', '이득', '이자'], answer: '이익' },
   { type: 'sound_sentence', sentence: '(集合) 시간이 됐어요.', hanja: '集合', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['집합', '합창', '집결', '집산'], answer: '집합' },
   { type: 'sound_sentence', sentence: '(石炭) 을 연료로 쓰던 시대예요.', hanja: '石炭', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['석탄', '탄광', '연탄', '목탄'], answer: '석탄' },
@@ -180,6 +180,7 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(0);
+  const [answerLog, setAnswerLog] = useState([]);
 
   const q = questions[qIndex];
   const progress = (qIndex / questions.length) * 100;
@@ -190,6 +191,7 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const handleSelect = (choice) => {
     if (selected !== null) return;
     const isCorrect = choice === q.answer;
+    setAnswerLog(prev => [...prev, { number: qIndex + 1, type: TYPE_LABELS[q.type] || '', prompt: q.prompt, sentence: q.sentence || '', userAnswer: choice, correctAnswer: q.answer, isCorrect }]);
     setSelected(choice);
     if (isCorrect) {
       setCorrect(c => c + 1);
@@ -254,7 +256,10 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
             </button>
             <div className="flex-1">
               <div className="quiz-progress-row">
-                <span>6급 인증 시험</span>
+                <div className="grade-test-header-title">
+                  <span>6급 인증 시험</span>
+                  <span className="grade-test-header-type">{TYPE_LABELS[q.type] || ''}</span>
+                </div>
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
               <QuizProgressBar current={qIndex} total={questions.length} fillColor="#6D6FF2" />
@@ -266,9 +271,6 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
         <div className="quiz-content-area">
           <div className="quiz-content-inner">
             <div className="grade-test-question-card">
-              <span className="grade-test-type-label">
-                {TYPE_LABELS[q.type] || ''}
-              </span>
               <p className="grade-test-prompt">{q.prompt}</p>
 
               {(q.type === 'sound_sentence' || q.type === 'underline') && (
@@ -341,7 +343,8 @@ const GradeTest6Screen = ({ onBack, onComplete, selectedCharacter }) => {
       nextGrade={null}
       alreadyUnlocked={alreadyUnlocked}
       selectedCharacter={selectedCharacter}
-      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
+      answers={answerLog}
+      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); setAnswerLog([]); }}
       onFinish={handleFinish}
     />
   );

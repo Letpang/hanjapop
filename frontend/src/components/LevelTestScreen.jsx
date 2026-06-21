@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import { getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
+import ResultModalShell, { ResultModalActions, ResultModalHeading, ResultPrimaryButton } from './common/ResultModalShell.jsx';
 
 const SORTED_HANJA = [...HANJA_DATA].sort((a, b) => a.id - b.id);
 
@@ -341,11 +342,13 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
             
             {/* Result phase */}
             {phase === 'result' && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                    <div className="modal-backdrop" onClick={handleFinish} />
-                    
-                    <div className="minimal-card-studio bg-white dark:bg-slate-800 w-full max-w-md overflow-hidden relative animate-in zoom-in slide-in-from-bottom-8 duration-500 !rounded-[3.5rem] shadow-2xl border-4 border-white dark:border-slate-700">
-                        <div className="pt-1 pb-1 px-8 flex flex-col items-center gap-2 w-full relative">
+                <ResultModalShell
+                    tone={passed ? 'clear' : 'fail'}
+                    size="md"
+                    onBackdropClick={handleFinish}
+                    labelledBy="level-test-result-title"
+                >
+                        <div className="flex flex-col items-center gap-4 w-full relative">
                             
                             {/* 메인 비주얼 */}
                             <img
@@ -356,13 +359,15 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                             />
 
                             {/* 텍스트 정보 */}
-                            <div className="text-center flex flex-col gap-2">
-                                <span className="text-xs-res font-normal text-[#AEB7C5] uppercase tracking-widest">
-                                    {passed ? '정말 대단해요! 레벨 테스트 통과!' : '아쉽지만 다시 도전해볼까요?'}
-                                </span>
-                                <h1 className="text-h1 font-medium tracking-tighter" style={{ color: passed ? '#FF9B73' : '#64748B' }}>
-                                    {correctCount} / {questions.length} 맞춤!
-                                </h1>
+                            <ResultModalHeading
+                                id="level-test-result-title"
+                                tone={passed ? 'clear' : 'fail'}
+                                kicker={passed ? '정말 대단해요! 레벨 테스트 통과!' : '아쉽지만 다시 도전해볼까요?'}
+                                title={`${correctCount} / ${questions.length} 맞춤!`}
+                                description={passed
+                                    ? '축하해요! 뭉치 학습지 2개가 추가로 열립니다 🔓'
+                                    : `${PASS_THRESHOLD}문제 이상 맞혀야 통과예요. 더 공부하고 다시 도전해 보세요!`}
+                            >
                                 
                                 {/* 획득 경험치 표시 */}
                                 <div className="flex items-center justify-center gap-2 mt-2">
@@ -371,14 +376,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                                         <span className="text-body-lg font-normal text-[#FFB433]">+{correctCount * 10} XP 획득</span>
                                     </div>
                                 </div>
-
-                                <p className="text-xs-res font-normal text-[#AEB7C5] leading-relaxed break-keep mt-3">
-                                    {passed
-                                        ? `축하해요! 뭉치 학습지 2개가 추가로 열립니다 🔓`
-                                        : `${PASS_THRESHOLD}문제 이상 맞혀야 통과예요. 더 공부하고 다시 도전해 보세요!`
-                                    }
-                                </p>
-                            </div>
+                            </ResultModalHeading>
 
                             {/* 문항별 결과 점 찍기 */}
                             <div className="flex gap-1.5 flex-wrap justify-center py-2">
@@ -391,17 +389,13 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                             </div>
 
                             {/* 하단 버튼 */}
-                            <div className="w-full flex flex-col gap-3 mt-4">
-                                <button
-                                    onClick={handleFinish}
-                                    className="w-full py-5 rounded-[2rem] bg-[#7C83FF] text-white font-normal text-body-lg shadow-xl shadow-[#C3C6FF] active:scale-95 transition-all border-b-4 border-[#4A51D4]"
-                                >
+                            <ResultModalActions>
+                                <ResultPrimaryButton onClick={handleFinish} theme={passed ? 'indigo' : 'coral'}>
                                     {passed ? '오픈하고 돌아가기 🎉' : '돌아가기'}
-                                </button>
-                            </div>
+                                </ResultPrimaryButton>
+                            </ResultModalActions>
                         </div>
-                    </div>
-                </div>
+                </ResultModalShell>
             )}
             </>
         );

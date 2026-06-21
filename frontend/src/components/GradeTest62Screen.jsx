@@ -16,16 +16,16 @@ const QUESTIONS = [
   { type: 'sound_sentence', sentence: '(高速) 도로가 막혀요.', hanja: '高速', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['고속', '고급', '속도', '급행'], answer: '고속' },
   { type: 'sound_sentence', sentence: '(近代) 역사를 공부해요.', hanja: '近代', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['근대', '현대', '고대', '근거'], answer: '근대' },
   { type: 'sound_sentence', sentence: '(感謝) 의 마음을 전해요.', hanja: '感謝', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['감사', '감동', '사과', '감정'], answer: '감사' },
-  { type: 'sound_sentence', sentence: '(科學) 기술이 발전했어요.', hanja: '科學', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['과학', '과목', '학과', '과거'], answer: '과학' },
-  { type: 'sound_sentence', sentence: '(果實) 이 탐스러워요.', hanja: '果實', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['과실', '과수', '실과', '과즙'], answer: '과실' },
-  { type: 'sound_sentence', sentence: '(球場) 에서 야구를 봐요.', hanja: '球場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['구장', '운동장', '구기', '장구'], answer: '구장' },
+  { type: 'sound_sentence', sentence: '(科學) 기술이 발전했어요.', hanja: '科學', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['과학', '과목', '공학', '과거'], answer: '과학' },
+  { type: 'sound_sentence', sentence: '(果實) 이 탐스러워요.', hanja: '果實', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['과실', '과수', '수확', '과즙'], answer: '과실' },
+  { type: 'sound_sentence', sentence: '(球場) 에서 야구를 봐요.', hanja: '球場', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['구장', '운동장', '구기', '경기'], answer: '구장' },
   { type: 'sound_sentence', sentence: '(急行) 열차를 탔어요.', hanja: '急行', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['급행', '급속', '속행', '특급'], answer: '급행' },
-  { type: 'sound_sentence', sentence: '(始作) 이 반이에요.', hanja: '始作', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['시작', '작시', '시초', '출발'], answer: '시작' },
+  { type: 'sound_sentence', sentence: '(始作) 이 반이에요.', hanja: '始作', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['시작', '착수', '시초', '출발'], answer: '시작' },
   { type: 'sound_sentence', sentence: '(信念) 이 강한 사람이에요.', hanja: '信念', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['신념', '신뢰', '신앙', '신조'], answer: '신념' },
   { type: 'sound_sentence', sentence: '(根本) 부터 해결해야 해요.', hanja: '根本', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['근본', '근간', '근거', '본질'], answer: '근본' },
-  { type: 'sound_sentence', sentence: '(算數) 문제를 풀었어요.', hanja: '算數', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['산수', '수산', '계산', '수학'], answer: '산수' },
+  { type: 'sound_sentence', sentence: '(算數) 문제를 풀었어요.', hanja: '算數', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['산수', '암산', '계산', '수학'], answer: '산수' },
   { type: 'sound_sentence', sentence: '(分別) 있는 행동을 해요.', hanja: '分別', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['분별', '분류', '구별', '분리'], answer: '분별' },
-  { type: 'sound_sentence', sentence: '(事件) 이 발생했어요.', hanja: '事件', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['사건', '건사', '사고', '사태'], answer: '사건' },
+  { type: 'sound_sentence', sentence: '(事件) 이 발생했어요.', hanja: '事件', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['사건', '분쟁', '사고', '사태'], answer: '사건' },
   { type: 'sound_sentence', sentence: '(植物) 원에 갔어요.', hanja: '植物', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['식물', '식용', '식생', '생물'], answer: '식물' },
   { type: 'sound_sentence', sentence: '(世界) 여행을 꿈꿔요.', hanja: '世界', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['세계', '세대', '세상', '지구'], answer: '세계' },
   { type: 'sound_sentence', sentence: '(開始) 신호가 울렸어요.', hanja: '開始', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['개시', '개방', '개통', '출발'], answer: '개시' },
@@ -34,11 +34,11 @@ const QUESTIONS = [
   { type: 'sound_sentence', sentence: '(考試) 준비를 열심히 해요.', hanja: '考試', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['고시', '고찰', '시험', '고사'], answer: '고시' },
   { type: 'sound_sentence', sentence: '(法院) 에서 재판이 열려요.', hanja: '法院', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['법원', '법규', '법정', '법률'], answer: '법원' },
   { type: 'sound_sentence', sentence: '(別世) 하신 분을 기리어요.', hanja: '別世', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['별세', '별명', '별거', '별도'], answer: '별세' },
-  { type: 'sound_sentence', sentence: '(身體) 가 건강해야 해요.', hanja: '身體', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['신체', '체신', '몸체', '체격'], answer: '신체' },
-  { type: 'sound_sentence', sentence: '(期間) 내에 완성해야 해요.', hanja: '期間', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['기간', '간기', '기한', '기일'], answer: '기간' },
-  { type: 'sound_sentence', sentence: '(高山) 지대에는 눈이 많아요.', hanja: '高山', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['고산', '산고', '고지', '고원'], answer: '고산' },
-  { type: 'sound_sentence', sentence: '(各種) 요리를 만들어요.', hanja: '各種', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['각종', '종각', '종류', '각색'], answer: '각종' },
-  { type: 'sound_sentence', sentence: '(旗手) 가 앞장서요.', hanja: '旗手', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['기수', '수기', '기함', '선두'], answer: '기수' },
+  { type: 'sound_sentence', sentence: '(身體) 가 건강해야 해요.', hanja: '身體', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['신체', '골격', '몸체', '체격'], answer: '신체' },
+  { type: 'sound_sentence', sentence: '(期間) 내에 완성해야 해요.', hanja: '期間', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['기간', '시간', '기한', '기일'], answer: '기간' },
+  { type: 'sound_sentence', sentence: '(高山) 지대에는 눈이 많아요.', hanja: '高山', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['고산', '설산', '고지', '고원'], answer: '고산' },
+  { type: 'sound_sentence', sentence: '(各種) 요리를 만들어요.', hanja: '各種', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['각종', '다양', '종류', '각색'], answer: '각종' },
+  { type: 'sound_sentence', sentence: '(旗手) 가 앞장서요.', hanja: '旗手', prompt: '다음 문장 속 한자어의 음(音)은?', choices: ['기수', '선봉', '기함', '선두'], answer: '기수' },
 
   // ── [33-61] 한자 → 훈+음 ──
   { type: 'meaning_sound', hanja: '成', prompt: '이 한자의 훈과 음은?', choices: ['이룰 성', '공 공', '나눌 분', '믿을 신'], answer: '이룰 성' },
@@ -164,6 +164,7 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [correct, setCorrect] = useState(0);
+  const [answerLog, setAnswerLog] = useState([]);
 
   const q = questions[qIndex];
   const progress = (qIndex / questions.length) * 100;
@@ -174,6 +175,7 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const handleSelect = (choice) => {
     if (selected !== null) return;
     const isCorrect = choice === q.answer;
+    setAnswerLog(prev => [...prev, { number: qIndex + 1, type: TYPE_LABELS[q.type] || '', prompt: q.prompt, sentence: q.sentence || '', userAnswer: choice, correctAnswer: q.answer, isCorrect }]);
     setSelected(choice);
     if (isCorrect) {
       setCorrect(c => c + 1);
@@ -238,7 +240,10 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
             </button>
             <div className="flex-1">
               <div className="quiz-progress-row">
-                <span>6급Ⅱ 인증 시험</span>
+                <div className="grade-test-header-title">
+                  <span>6급Ⅱ 인증 시험</span>
+                  <span className="grade-test-header-type">{TYPE_LABELS[q.type] || ''}</span>
+                </div>
                 <span>{qIndex + 1} / {questions.length}</span>
               </div>
               <QuizProgressBar current={qIndex} total={questions.length} fillColor="#6D6FF2" />
@@ -250,9 +255,6 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
         <div className="quiz-content-area">
           <div className="quiz-content-inner">
             <div className="grade-test-question-card">
-              <span className="grade-test-type-label">
-                {TYPE_LABELS[q.type] || ''}
-              </span>
               <p className="grade-test-prompt">{q.prompt}</p>
 
               {(q.type === 'sound_sentence' || q.type === 'underline') && (
@@ -325,7 +327,8 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
       nextGrade="6급"
       alreadyUnlocked={alreadyUnlocked}
       selectedCharacter={selectedCharacter}
-      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); }}
+      answers={answerLog}
+      onRetry={() => { setPhase('intro'); setQIndex(0); setSelected(null); setRevealed(false); setCorrect(0); setAnswerLog([]); }}
       onFinish={handleFinish}
     />
   );

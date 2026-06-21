@@ -14,7 +14,7 @@ const GradeTestIntro = ({
     onStart,
 }) => {
     return (
-        <div className="w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto bg-[#F7FAF9] dark:bg-slate-900 overflow-hidden">
+        <div className="grade-test-intro-screen w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto bg-[#F7FAF9] dark:bg-slate-900 overflow-y-auto overflow-x-hidden">
             <div className="w-full shrink-0 flex items-center justify-between px-5 pt-4 pb-2 relative">
                 <button
                     onClick={onBack}
@@ -28,7 +28,7 @@ const GradeTestIntro = ({
                 <div className="w-11" />
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 pb-4">
+            <div className="grade-test-intro-body flex-1 flex flex-col items-center justify-center gap-3 px-6 pb-4">
                 <div className="grade-test-intro-card w-full max-w-md bg-white/95 backdrop-blur-md rounded-[2.75rem] border-4 border-white shadow-[0_16px_40px_rgba(120,130,160,0.12)] px-5 py-5 flex flex-col items-center gap-3 text-center">
                     <div className="w-14 h-14 rounded-full flex items-center justify-center border-4 border-white dark:border-slate-600 bg-[#FFF5E8] dark:bg-slate-700 shadow-[0_0_24px_rgba(255,210,120,0.25),inset_0_2px_4px_rgba(255,255,255,0.8)]">
                         <img src="/assets/images/icons/icon_test.webp" alt="" className="w-8 h-8 object-contain" />

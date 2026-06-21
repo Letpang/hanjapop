@@ -162,7 +162,7 @@ const VocabularyScreen = ({
   const filteredWords = useMemo(() => {
     return words.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'correct' && item.correctCount <= 0) return false;
+      if (filter === 'correct' && (item.wrongCount > 0 || item.correctCount <= 0)) return false;
       if (!normalizedQuery) return true;
       return [item.word, item.reading, item.meaning, item.hanja]
         .filter(Boolean)
@@ -173,7 +173,7 @@ const VocabularyScreen = ({
   const filteredHanjas = useMemo(() => {
     return hanjas.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'correct' && item.correctCount <= 0 && item.level < 1) return false;
+      if (filter === 'correct' && (item.wrongCount > 0 || (item.correctCount <= 0 && item.level < 1))) return false;
       if (!normalizedQuery) return true;
       return [item.hanja, item.sound, item.meaning, item.category]
         .filter(Boolean)
@@ -184,7 +184,7 @@ const VocabularyScreen = ({
   const filteredIdioms = useMemo(() => {
     return idioms.filter(item => {
       if (filter === 'wrong' && item.wrongCount <= 0) return false;
-      if (filter === 'correct' && item.correctCount <= 0) return false;
+      if (filter === 'correct' && (item.wrongCount > 0 || item.correctCount <= 0)) return false;
       if (!normalizedQuery) return true;
       return [item.hanja, item.reading, item.meaning, item.grade]
         .filter(Boolean)

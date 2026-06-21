@@ -1,39 +1,13 @@
-/**
- * lemon-webhook/index.ts
- * Lemon Squeezy 결제 완료 웹훅 처리
- *
- * 동작:
- *   order_created (status: paid) 이벤트 수신
- *   → variant_id로 구매한 팩 식별
- *   → custom_data.device_id로 유저 식별
- *   → user_profiles.unlocked_pack 업데이트
- *   → pack1 + pack2 동시 보유 시 자동으로 fullpack(3) 승격
- *
- * 환경 변수 (Supabase 대시보드에서 설정):
- *   LEMON_SIGNING_SECRET      - LS 웹훅 서명 시크릿
- *   SUPABASE_URL              - 자동 주입
- *   SUPABASE_SERVICE_ROLE_KEY - 자동 주입
- */
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// variant_id → unlocked_pack 번호
 const VARIANT_TO_PACK: Record<string, number> = {
-    '1763592': 1,   // 기초 팩  (18~51단계)  ₩9,900
-    '1763593': 2,   // 심화 팩  (52~124단계) ₩13,900
-    '1763594': 3,   // 전체 팩  (18~124단계) ₩19,900
+    '1763592': 1,
+    '1763593': 2,
+    '1763594': 3,
 }
-
-// pack1 + pack2 동시 보유 → fullpack(3) 승격
-function resolvePack(current: number, purchased: number): number {
-    const next = Math.max(current, purchased)
-    if ((current === 1 && purchased === 2) || (current === 2 && purchased === 1)) return 3
-    return next
-}
-
-// ── 서명 검증 ────────────────────────────────────────────────────────────────
 
 function hexToUint8Array(hex: string): Uint8Array {
+    if (!/^[\da-f]{64}$/i.test(hex)) return new Uint8Array()
     const pairs = hex.match(/[\da-f]{2}/gi) ?? []
     return new Uint8Array(pairs.map(h => parseInt(h, 16)))
 }
@@ -43,29 +17,18 @@ async function verifySignature(body: string, signature: string): Promise<boolean
     if (!secret) return false
     const encoder = new TextEncoder()
     const key = await crypto.subtle.importKey(
-        'raw',
-        encoder.encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['verify']
+        'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
     )
-    const sigBytes = hexToUint8Array(signature)
-    return crypto.subtle.verify('HMAC', key, sigBytes, encoder.encode(body))
+    const signatureBytes = hexToUint8Array(signature)
+    if (signatureBytes.length !== 32) return false
+    return crypto.subtle.verify('HMAC', key, signatureBytes, encoder.encode(body))
 }
 
-// ── 메인 핸들러 ───────────────────────────────────────────────────────────────
-
 Deno.serve(async (req) => {
-    if (req.method !== 'POST') {
-        return new Response('Method not allowed', { status: 405 })
-    }
+    if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
     const body = await req.text()
-    const signature = req.headers.get('X-Signature') ?? ''
-
-    const isValid = await verifySignature(body, signature)
-    if (!isValid) {
-        console.error('Invalid webhook signature')
+    if (!await verifySignature(body, req.headers.get('X-Signature') ?? '')) {
         return new Response('Unauthorized', { status: 401 })
     }
 
@@ -76,64 +39,66 @@ Deno.serve(async (req) => {
         return new Response('Invalid JSON', { status: 400 })
     }
 
-    const eventName = payload.meta?.event_name
-    const status = payload.data?.attributes?.status
-
-    console.log(`Webhook received: ${eventName}, status: ${status}`)
-
-    if (eventName !== 'order_created' || status !== 'paid') {
+    const eventName = String(payload.meta?.event_name ?? '')
+    if (!['order_created', 'order_refunded'].includes(eventName)) {
         return new Response('OK - ignored', { status: 200 })
     }
 
-    // 구매한 팩 식별
-    const variantId = String(payload.data?.attributes?.first_order_item?.variant_id ?? '')
-    const purchasedPack = VARIANT_TO_PACK[variantId]
-    if (!purchasedPack) {
-        console.error(`Unknown variant_id: ${variantId}`)
-        return new Response(`Unknown variant: ${variantId}`, { status: 400 })
+    const attributes = payload.data?.attributes ?? {}
+    if (eventName === 'order_created' && attributes.status !== 'paid') {
+        return new Response('OK - unpaid', { status: 200 })
     }
 
-    // 유저 식별
-    const deviceId = payload.meta?.custom_data?.device_id
-    if (!deviceId) {
-        console.error('No device_id in custom_data')
-        return new Response('Missing device_id', { status: 400 })
-    }
+    const variantId = String(attributes.first_order_item?.variant_id ?? '')
+    const pack = VARIANT_TO_PACK[variantId]
+    if (!pack) return new Response('Unknown variant', { status: 400 })
 
     const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // 기존 팩 조회 후 승격 처리
-    const { data: profile, error: fetchError } = await supabase
-        .from('user_profiles')
-        .select('unlocked_pack')
-        .eq('device_id', deviceId)
-        .single()
+    let accountId = payload.meta?.custom_data?.account_id ?? null
 
-    if (fetchError) {
-        console.error('Fetch error:', fetchError)
-        return new Response('DB fetch error', { status: 500 })
+    // 배포 전에 생성된 기존 checkout 호환용.
+    if (!accountId && payload.meta?.custom_data?.device_id) {
+        const { data: legacyProfile } = await supabase
+            .from('user_profiles')
+            .select('auth_user_id')
+            .eq('device_id', payload.meta.custom_data.device_id)
+            .maybeSingle()
+        if (legacyProfile?.auth_user_id) {
+            const { data: identity } = await supabase
+                .from('app_account_identities')
+                .select('account_id')
+                .eq('auth_user_id', legacyProfile.auth_user_id)
+                .maybeSingle()
+            accountId = identity?.account_id ?? null
+        }
     }
 
-    const currentPack = profile?.unlocked_pack ?? 0
-    const newPack = resolvePack(currentPack, purchasedPack)
+    if (!accountId) return new Response('Missing account', { status: 400 })
 
-    const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({
-            unlocked_pack: newPack,
-            is_premium: true,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('device_id', deviceId)
+    const orderId = String(payload.data?.id ?? attributes.identifier ?? '')
+    if (!orderId) return new Response('Missing order id', { status: 400 })
 
-    if (updateError) {
-        console.error('Update error:', updateError)
-        return new Response('DB update error', { status: 500 })
+    const purchasedAt = attributes.created_at ?? new Date().toISOString()
+    const { error } = await supabase.rpc('record_verified_purchase', {
+        p_provider: 'lemon',
+        p_event_id: `${eventName}:${orderId}`,
+        p_event_type: eventName,
+        p_transaction_id: orderId,
+        p_account_id: accountId,
+        p_pack: pack,
+        p_status: eventName === 'order_refunded' ? 'refunded' : 'active',
+        p_purchased_at: purchasedAt,
+        p_event_at: attributes.updated_at ?? purchasedAt,
+    })
+
+    if (error) {
+        console.error('Purchase ledger update failed:', error)
+        return new Response('Database error', { status: 500 })
     }
 
-    console.log(`✅ Pack updated: device=${deviceId}, variant=${variantId}, ${currentPack} → ${newPack}`)
     return new Response('OK', { status: 200 })
 })

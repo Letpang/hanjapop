@@ -240,6 +240,13 @@ const WordQuizScreen = ({
     const wordFontSize = wordLen > 6 ? 'text-[3.5rem] sm:text-[4.5rem]'
         : wordLen > 4 ? 'text-[4.5rem] sm:text-[6rem]'
         : 'text-[6rem] sm:text-[8rem]';
+    const wordTermSizeClass = wordLen <= 2
+        ? 'word-quiz-term--short'
+        : wordLen === 3
+            ? 'word-quiz-term--medium'
+            : wordLen === 4
+                ? 'word-quiz-term--idiom'
+                : '';
 
     return (
         <div className={`w-full min-h-[100dvh] flex flex-col max-w-screen-xl mx-auto ${phase === 'select' ? 'bg-[#F7FAF9] dark:bg-slate-900' : 'bg-[#F8FAFC] dark:bg-slate-900'}`}>
@@ -255,10 +262,10 @@ const WordQuizScreen = ({
                         <p className="screen-subtitle">한자의 뜻과 음을 골라보세요</p>
                     </div>
                     <div className="quiz-header-right">
-                        {(phase === 'quiz' || phase === 'result') && <span className="quiz-counter-text">{currentIdx + 1}/{questions.length}</span>}
+                        {(phase === 'quiz' || phase === 'result') && questions.length > 0 && <span className="quiz-counter-text">{currentIdx + 1}/{questions.length}</span>}
                     </div>
                 </div>
-                {(phase === 'quiz' || phase === 'result') && (
+                {(phase === 'quiz' || phase === 'result') && questions.length > 0 && (
                     <QuizProgressBar current={currentIdx} total={questions.length} answered={currentAnswered} completing={completing} avatar={characterAvatar} charType={selectedCharacter} />
                 )}
             </div>
@@ -338,20 +345,20 @@ const WordQuizScreen = ({
                             onPrev={handlePrev}
                             onCorrectSelected={() => setCurrentAnswered(true)}
                             renderFront={() => (
-                                <span className={`hanja-char ${wordFontSize} font-normal text-[#1e293b] dark:text-slate-50 tracking-tighter drop-shadow-sm text-center leading-none`}>
+                                <span className={`word-quiz-term hanja-char ${wordTermSizeClass} ${wordFontSize} font-normal text-[#1e293b] dark:text-slate-50 tracking-tighter drop-shadow-sm text-center leading-none`}>
                                     {q.word}
                                 </span>
                             )}
                             renderBack={({ isSpeaking, onSpeak }) => (
                                 <>
                                     <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }} />
-                                    <div className="quiz-card-back__content">
+                                    <div className={`quiz-card-back__content ${(q.reading || '').length >= 4 ? 'quiz-card-back__content--dense' : ''}`}>
                                         <div className="quiz-card-back__reading-row">
-                                            <span className="quiz-card-back__reading">{q.reading}</span>
-                                            <span className="quiz-card-back__hanja">({q.word})</span>
+                                            <span className={`quiz-card-back__reading ${(q.reading || '').length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{q.reading}</span>
+                                            <span className="quiz-card-back__hanja hanja-char">({q.word})</span>
                                         </div>
                                         <div className="quiz-card-back__body">
-                                            <p className="quiz-card-back__text">
+                                            <p className={`quiz-card-back__text ${(q.example || '').length > 38 ? 'quiz-card-back__text--long' : ''}`}>
                                                 <span className="quiz-card-back__badge">예문</span>
                                                 {q.example ? q.example.replace(/\(\s*\)/g, q.word).trim().replace(/\s+/g, ' ') : ''}
                                             </p>
@@ -362,8 +369,21 @@ const WordQuizScreen = ({
                         />
                     )}
 
+                    {phase === 'quiz' && !q && (
+                        <div className="flex flex-1 w-full max-w-sm flex-col items-center justify-center text-center px-5 py-10">
+                            <div className="w-20 h-20 rounded-[1.75rem] bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 flex items-center justify-center shadow-sm">
+                                <span className="hanja-char text-4xl text-[#7C83FF]">字</span>
+                            </div>
+                            <h3 className="mt-5 text-xl font-medium text-slate-700 dark:text-slate-100">풀 수 있는 단어가 아직 없어요</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-400 break-keep">한자 학습을 먼저 진행하면 배운 글자로 단어 퀴즈가 열려요.</p>
+                            <button onClick={onBack} className="mt-6 w-full rounded-2xl bg-[#7C83FF] py-3.5 text-base text-white shadow-sm active:scale-95 transition-transform">
+                                학습하러 돌아가기
+                            </button>
+                        </div>
+                    )}
+
                     {/* 결과 화면 */}
-                    {phase === 'result' && (() => {
+                    {phase === 'result' && questions.length > 0 && (() => {
                         const xpPerCorrect = 5;
                         const correctXp = correctCount * xpPerCorrect;
                         const isClear = Math.round((correctCount / questions.length) * 100) >= 70;
@@ -408,7 +428,7 @@ const WordQuizScreen = ({
                             style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${getCharacterScale(selectedCharacter, 'keep_going')})` }} />
                         <div className="exit-confirm-content">
                             <h2 className="exit-confirm-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 퀴즈를 중단할까요?'}
+                                {dailyMapNode ? '홈으로 돌아갈까요?' : '정말 퀴즈를 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 퀴즈는 완료되지 않아요. 계속 끝까지 풀어볼까요?' : '지금 나가면 진행 중인 퀴즈의 학습 진행 상황이 저장되지 않아요. 계속 끝까지 풀어볼까요?'}
@@ -419,7 +439,7 @@ const WordQuizScreen = ({
                                 <span className="quiz-cta-text">계속 공부하기</span>
                             </CtaButton>
                             <button onClick={handleExitConfirm} className="back-quiz-button">
-                                {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
+                                {dailyMapNode ? '홈으로 돌아가기' : '그만하고 나가기'}
                             </button>
                         </div>
                     </div>

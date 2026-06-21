@@ -183,7 +183,7 @@ const QuizCard = ({
     const gridClass = choiceGridClassName !== undefined ? choiceGridClassName : 'quiz-choice-grid';
 
     return (
-        <div className="flex-1 flex flex-col gap-3 w-full max-w-2xl mx-auto animate-in fade-in duration-500">
+        <div className={`quiz-card-layout quiz-card-layout--${cardLayout} flex-1 flex flex-col gap-3 w-full max-w-2xl mx-auto animate-in fade-in duration-500`}>
 
             {showXPPopup && (
                 <div key={xpAnimKey}

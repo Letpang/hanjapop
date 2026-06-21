@@ -80,16 +80,17 @@ let globalStagePoolIndex = 0;
 // ── 사운드 ───────────────────────────────────────────────────────────────────
 
 // ── 카드 컴포넌트 ─────────────────────────────────────────────────────────────
-const getCardTextClass = (type, totalCards) => {
+const getCardTextClass = (type, totalCards, contentLen = 1) => {
     if (type === 'hanja') {
-        if (totalCards <= 4)  return 'text-[clamp(2.5rem,7vw,3.4rem)] font-bold text-slate-700 dark:text-slate-100';
-        if (totalCards <= 8)  return 'text-[clamp(2.25rem,5.5vw,3.5rem)] font-bold text-slate-700 dark:text-slate-100';
-        return                       'text-[clamp(1.75rem,4.25vw,2.5rem)] font-bold text-slate-700 dark:text-slate-100';
+        const big = contentLen <= 1;
+        if (totalCards <= 4)  return `hanja-char ${big ? 'text-[clamp(2.05rem,5.5vw,2.7rem)]' : 'text-[clamp(1.7rem,4.5vw,2.4rem)]'} font-medium text-slate-700 dark:text-slate-100`;
+        if (totalCards <= 8)  return `hanja-char ${big ? 'text-[clamp(1.9rem,4.7vw,2.5rem)]' : 'text-[clamp(1.6rem,4vw,2.2rem)]'} font-medium text-slate-700 dark:text-slate-100`;
+        return                       `hanja-char ${big ? 'text-[clamp(1.65rem,3.8vw,2.15rem)]' : 'text-[clamp(1.4rem,3.5vw,1.9rem)]'} font-medium text-slate-700 dark:text-slate-100`;
     }
     if (type === 'word') {
-        if (totalCards <= 4)  return 'text-[clamp(1.6rem,4.5vw,2.25rem)] font-normal text-[#4A51D4]';
-        if (totalCards <= 8)  return 'text-[clamp(1.6rem,4vw,2.5rem)] font-normal text-[#4A51D4]';
-        return                       'text-[clamp(1.3rem,3vw,1.75rem)] font-normal text-[#4A51D4]';
+        if (totalCards <= 4)  return 'hanja-char text-[clamp(1.6rem,4.5vw,2.25rem)] font-normal text-[#4A51D4]';
+        if (totalCards <= 8)  return 'hanja-char text-[clamp(1.6rem,4vw,2.5rem)] font-normal text-[#4A51D4]';
+        return                       'hanja-char text-[clamp(1.3rem,3vw,1.75rem)] font-normal text-[#4A51D4]';
     }
     // meaning
     if (totalCards <= 4)  return 'text-[clamp(1.4rem,4.5vw,1.8rem)] font-normal text-[#5B677A] dark:text-slate-300';
@@ -99,7 +100,14 @@ const getCardTextClass = (type, totalCards) => {
 
 const CardItem = memo(({ card, onClick, totalCards, backChar, backSrc }) => {
     const isFlipped = card.isFlipped || card.isMatched;
-    const isLongMeaning = card.type === 'meaning' && card.content.length > 16;
+    const meaningLength = card.type === 'meaning' ? [...card.content].length : 0;
+    const meaningDensityClass = meaningLength > 48
+        ? 'match-card-copy--ultra-dense'
+        : meaningLength > 28
+            ? 'match-card-copy--dense'
+            : meaningLength > 16
+                ? 'match-card-copy--long'
+                : '';
 
     return (
         <div
@@ -126,7 +134,7 @@ const CardItem = memo(({ card, onClick, totalCards, backChar, backSrc }) => {
                     </div>
                 )}
                 <span
-                    className={`match-card-copy match-card-copy--${card.type} ${isLongMeaning ? 'match-card-copy--long' : ''} ${getCardTextClass(card.type, totalCards)} text-center tracking-tight w-full px-1 ${card.isMatched ? '!text-[#FF9B73]' : ''}`}
+                    className={`match-card-copy match-card-copy--${card.type} ${meaningDensityClass} ${getCardTextClass(card.type, totalCards, card.content?.length ?? 1)} text-center tracking-tight w-full px-1 ${card.isMatched ? '!text-[#FF9B73]' : ''}`}
                 >
                     {card.content}
                 </span>
@@ -138,7 +146,7 @@ const CardItem = memo(({ card, onClick, totalCards, backChar, backSrc }) => {
 const CARD_BACK_CHARS = ['muzi', 'chapssal', 'jeolmi', 'garae'];
 
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
-const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false }) => {
+const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, onMarkCorrect, onMarkWrong, srsData, masteryData, userLevel, userXp, selectedCharacter, getRewardPreview, contentPool, unlockedHanjaIds, currentDayHanjaIds, seenHanjaIds, seenWordIds, onHanjaSeen, onWordSeen, dailyMapNode, hideRetry, missionDone = false, pairsPerRoundOverride }) => {
     const [cardBackChar] = useState(() => CARD_BACK_CHARS[Math.floor(Math.random() * CARD_BACK_CHARS.length)]);
     const cardBackSrc = `/assets/images/characters/${cardBackChar}/rank_5.webp`;
 
@@ -266,7 +274,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
         }
 
         // 스테이지 모드면 5쌍 고정(오답 페어가 적으면 그만큼 축소), 아니면 선택된 개수에 따라 라운드당 페어 수 결정
-        const pairsPerRound = 4;
+        const pairsPerRound = pairsPerRoundOverride ?? 4;
 
         if (isStageMode) {
             const currentIds = [
@@ -349,8 +357,6 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                 if (roundResolvedRef.current) return prev;
                 if (prev <= 1) {
                     clearInterval(timer);
-                    stageClearArgsRef.current = [currentRound + 1, null, matches];
-                    if (!dailyMapNode) deliverStageClear();
                     setGameState('over');
                     return 0;
                 }
@@ -439,7 +445,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
     // ── 다음 라운드 ─────────────────────────────────────────────────────────
     const goNextRound = useCallback(() => {
-        const pairsPerRound = 4;
+        const pairsPerRound = pairsPerRoundOverride ?? 4;
         const nextRound = currentRound + 1;
         const nextIdx = poolIndex + pairsPerRound;
 
@@ -491,7 +497,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
 
     // ── 재도전 ──────────────────────────────────────────────────────────────
     const retryRound = useCallback(() => {
-        const pairsPerRound = 4;
+        const pairsPerRound = pairsPerRoundOverride ?? 4;
         let slice;
 
         if (contentPool != null) {
@@ -781,7 +787,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     ) : (
                                         <button
                                             onClick={() => {
-                                                deliverStageClear();
+                                                if (gameState === 'clear') deliverStageClear();
                                                 if (gameState === 'clear' || contentPool) onBack();
                                                 else { setGameStarted(false); setGameState('idle'); }
                                             }}
@@ -807,7 +813,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                             />
                             <div className="exit-confirm-content">
                                 <h2 className="exit-confirm-title">
-                                    {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
+                                    {dailyMapNode ? '홈으로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
                                 </h2>
                                 <p className="body-muted break-keep">
                                     {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
@@ -821,7 +827,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     onClick={handleExitConfirm}
                                     className="back-quiz-button"
                                 >
-                                    {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
+                                    {dailyMapNode ? '홈으로 돌아가기' : '그만하고 나가기'}
                                 </button>
                             </div>
                         </div>
@@ -965,7 +971,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                         />
                         <div className="exit-confirm-content">
                             <h2 className="exit-confirm-title">
-                                {dailyMapNode ? '학습 지도로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
+                                {dailyMapNode ? '홈으로 돌아갈까요?' : '정말 매칭을 중단할까요?'}
                             </h2>
                             <p className="body-muted break-keep">
                                 {dailyMapNode ? '지도로 돌아가면 진행 중인 게임은 완료되지 않아요. 계속 끝까지 플레이할까요?' : '지금 나가면 플레이 중인 카드 매칭의 게임 기록이 저장되지 않아요. 계속 끝까지 맞춰볼까요?'}
@@ -979,7 +985,7 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                 onClick={handleExitConfirm}
                                 className="back-quiz-button"
                             >
-                                {dailyMapNode ? '학습 지도로 돌아가기' : '그만하고 나가기'}
+                                {dailyMapNode ? '홈으로 돌아가기' : '그만하고 나가기'}
                             </button>
                         </div>
                     </div>

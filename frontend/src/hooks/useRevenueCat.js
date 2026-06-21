@@ -2,20 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { getPlatform } from './useAuth.js';
 import { RC_API_KEY_IOS, RC_API_KEY_ANDROID, RC_PRODUCT_IDS, entitlementsToPack } from '../utils/rcConfig.js';
+import { ensureInternalAccount } from '../lib/supabase.js';
 
-export const useRevenueCat = () => {
+export const useRevenueCat = ({ enabled = true } = {}) => {
     const [initialized, setInitialized] = useState(false);
     const [packages, setPackages] = useState({});   // { pack1: pkg, pack2: pkg, fullpack: pkg }
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const platform = getPlatform();
-        if (platform === 'web') return;
+        if (platform === 'web' || !enabled) return;
 
         (async () => {
             try {
                 const apiKey = platform === 'ios' ? RC_API_KEY_IOS : RC_API_KEY_ANDROID;
                 await Purchases.configure({ apiKey });
+
+                const { accountId, error } = await ensureInternalAccount();
+                if (error || !accountId) throw error || new Error('Account is required for purchases');
+                await Purchases.logIn({ appUserID: accountId });
 
                 const { current } = await Purchases.getOfferings();
                 if (!current) return;
@@ -34,7 +39,7 @@ export const useRevenueCat = () => {
                 console.warn('[RevenueCat] 초기화 실패:', e);
             }
         })();
-    }, []);
+    }, [enabled]);
 
     // pack1 / pack2 / fullpack 구매
     const purchasePackage = useCallback(async (packId) => {
