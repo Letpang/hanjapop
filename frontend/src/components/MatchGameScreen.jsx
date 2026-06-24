@@ -93,19 +93,19 @@ const getCardTextClass = (type, totalCards, contentLen = 1) => {
         return                       'hanja-char text-[clamp(1.3rem,3vw,1.75rem)] font-normal text-[#4A51D4]';
     }
     // meaning
-    if (totalCards <= 4)  return 'text-[clamp(1.4rem,4.5vw,1.8rem)] font-normal text-[#5B677A] dark:text-slate-300';
-    if (totalCards <= 8)  return 'text-[clamp(1.4rem,4vw,2.1rem)] font-normal text-[#5B677A] dark:text-slate-300';
-    return                       'text-[clamp(1.2rem,3.5vw,1.6rem)] font-normal text-[#5B677A] dark:text-slate-300';
+    if (totalCards <= 4)  return 'text-[clamp(2.0rem,5.5vw,2.6rem)] font-normal text-[#5B677A] dark:text-slate-300';
+    if (totalCards <= 8)  return 'text-[clamp(1.9rem,5.2vw,2.6rem)] font-normal text-[#5B677A] dark:text-slate-300';
+    return                       'text-[clamp(1.6rem,4.5vw,2.1rem)] font-normal text-[#5B677A] dark:text-slate-300';
 }
 
 const CardItem = memo(({ card, onClick, totalCards, backChar, backSrc }) => {
     const isFlipped = card.isFlipped || card.isMatched;
     const meaningLength = card.type === 'meaning' ? [...card.content].length : 0;
-    const meaningDensityClass = meaningLength > 48
+    const meaningDensityClass = meaningLength > 56
         ? 'match-card-copy--ultra-dense'
-        : meaningLength > 28
+        : meaningLength > 36
             ? 'match-card-copy--dense'
-            : meaningLength > 16
+            : meaningLength > 22
                 ? 'match-card-copy--long'
                 : '';
 
@@ -171,7 +171,6 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
     const [timeLeft, setTimeLeft] = useState(60);
     const [gameState, setGameState] = useState('idle');
     const [resultClearMsg] = useState(() => pickClearMessage()); // 'idle'|'playing'|'clear'|'over'|'allClear'
-    const clearCombo = 0; // Legacy display value; combo scoring was removed.
     const [xpPopup, setXpPopup] = useState({ show: false, key: 0, amount: 0 });
     const [showExitModal, setShowExitModal] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -712,9 +711,9 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                     <div
                         className={`daily-session-result-backdrop${gameState !== 'clear' ? ' daily-session-result-backdrop--fail' : ''}`}
                     >
-                        <div className="activity-result-card">
+                        <div className={`activity-result-card ${!dailyMapNode ? 'result-balanced-card' : ''}`}>
                             {dailyMapNode}
-                            <div className={`pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative ${dailyMapNode ? 'mt-4' : ''}`}>
+                            <div className={`${dailyMapNode ? 'pt-5 pb-6 gap-4 mt-4' : 'result-balanced-body'} px-6 flex flex-col items-center w-full relative`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {!dailyMapNode && (
                                     <div className="activity-result-glow" />
@@ -737,8 +736,8 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                 )}
 
                                 {/* 텍스트 */}
-                                <div className="result-text-area -mt-5">
-                                    <span className="result-subtitle">{gameState === 'clear' ? '메모리 게임 완료!' : '아쉬운 결과네요...'}</span>
+                                <div className={`result-text-area mt-2 ${!dailyMapNode ? 'result-balanced-content-stack' : ''}`}>
+                                    {gameState !== 'clear' && <span className="result-subtitle">아쉬운 결과네요...</span>}
                                     <h1 className={`text-h2-res leading-snug result-title ${gameState === 'clear' ? 'result-title--clear' : 'result-title--fail'}`}>
                                         {gameState === 'clear' ? resultClearMsg : '시간이 다 됐어요!'}
                                     </h1>
@@ -749,17 +748,19 @@ const MatchGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, onStageClear, 
                                     )}
                                 </div>
 
-                                <RewardBreakdown
-                                    reward={reward}
-                                    correctXp={matchXp}
-                                    clearXp={clearXp}
-                                    correctLabel="카드 매칭"
-                                    detailText={`${matches}쌍 x ${xpPerMatch}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
-                                    missionXp={(gameState === 'clear' && clearCountRef.current === 1 && !missionDoneAtStartRef.current) ? 20 : 0}
-                                />
+                                <div className={!dailyMapNode ? 'result-balanced-lower-stack' : 'w-full'}>
+                                    <RewardBreakdown
+                                        reward={reward}
+                                        correctXp={matchXp}
+                                        clearXp={clearXp}
+                                        correctLabel="카드 매칭"
+                                        detailText={`${matches}쌍 x ${xpPerMatch}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
+                                        missionXp={(gameState === 'clear' && clearCountRef.current === 1 && !missionDoneAtStartRef.current) ? 20 : 0}
+                                    />
+                                </div>
 
                                 {/* 버튼 2단 */}
-                                <div className="result-btn-area">
+                                <div className={`result-btn-area ${!dailyMapNode ? 'result-balanced-lower-stack' : ''}`}>
                                     {(!hideRetry || (gameState === 'clear' && contentPool == null)) && (
                                         <CtaButton
                                             theme={gameState === 'clear' && contentPool == null ? 'coral' : 'indigo'}

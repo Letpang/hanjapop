@@ -88,8 +88,8 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
             className="fixed inset-0 z-50 flex items-start justify-center p-6 overflow-y-auto backdrop-blur-lg animate-in fade-in duration-300"
             style={{ background: isClear ? 'linear-gradient(180deg, #DDF1EA 0%, #EAF6F2 100%)' : 'rgba(255,107,107,0.18)' }}
         >
-            <div className="activity-result-card">
-                <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">
+            <div className="activity-result-card result-balanced-card">
+                <div className="result-balanced-body px-6 flex flex-col items-center w-full relative">
                     {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                     <div className="activity-result-glow" />
 
@@ -99,7 +99,7 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                         className="activity-result-char img-shadow-lg"
                         style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, isClear ? 'success' : 'failure')})` }}
                     />
-                    <div className="result-text-area -mt-5">
+                    <div className="result-text-area -mt-5 result-balanced-content-stack">
                         <span className="result-subtitle">
                             {isClear ? '완벽하게 써냈어요!' : '조금 더 연습해볼까요?'}
                         </span>
@@ -107,15 +107,17 @@ const ResultScreen = ({ correct, total, onRetry, onBack, selectedCharacter, getR
                             {isClear ? clearMsg : <>괜찮아요,<br/>다시 도전해봐요!</>}
                         </h1>
                     </div>
-                    <RewardBreakdown
-                        reward={getRewardPreview?.(writingXp + clearXp)}
-                        correctXp={writingXp}
-                        clearXp={clearXp}
-                        correctLabel="쓰기"
-                        detailText={`${correct}글자 x ${WRITING_XP_PER_CHAR}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
-                        missionXp={missionXp}
-                    />
-                    <div className="result-btn-area">
+                    <div className="result-balanced-lower-stack">
+                        <RewardBreakdown
+                            reward={getRewardPreview?.(writingXp + clearXp)}
+                            correctXp={writingXp}
+                            clearXp={clearXp}
+                            correctLabel="쓰기"
+                            detailText={`${correct}글자 x ${WRITING_XP_PER_CHAR}XP${clearXp > 0 ? ` + 완료 ${clearXp}XP` : ''}`}
+                            missionXp={missionXp}
+                        />
+                    </div>
+                    <div className="result-btn-area result-balanced-lower-stack">
                         <CtaButton theme="indigo" onClick={onRetry}>
                             <span className="quiz-cta-text">다시 하기</span>
                         </CtaButton>

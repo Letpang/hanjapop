@@ -1,3 +1,5 @@
+import { fetchMyReferralCode } from '../lib/supabase.js';
+
 const KAKAO_SDK_URL = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.1/kakao.min.js';
 const MAX_KAKAO_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -64,6 +66,19 @@ export const initializeKakaoShare = async () => {
     return { Kakao, shareUrl };
 };
 
+const buildTrackedShareUrl = async (shareUrl, campaign = 'share') => {
+    try {
+        const url = new URL(shareUrl);
+        const { code } = await fetchMyReferralCode();
+        if (code) url.searchParams.set('ref', code);
+        url.searchParams.set('utm_source', 'kakao');
+        url.searchParams.set('utm_campaign', campaign);
+        return url.toString();
+    } catch {
+        return shareUrl;
+    }
+};
+
 const toFileList = file => {
     if (typeof DataTransfer === 'undefined') return [file];
     const transfer = new DataTransfer();
@@ -71,22 +86,33 @@ const toFileList = file => {
     return transfer.files;
 };
 
-const sendTextShare = ({ Kakao, shareUrl, text }) => Kakao.Share.sendDefault({
+const sendTextShare = ({ Kakao, shareUrl, text, buttonTitle = '한자팝 시작하기' }) => Kakao.Share.sendDefault({
     objectType: 'text',
     text,
     link: {
         mobileWebUrl: shareUrl,
         webUrl: shareUrl,
     },
-    buttonTitle: '한자팝 시작하기',
+    buttonTitle,
 });
 
-export const shareImageToKakao = async ({ file, title, description, fallbackText }) => {
+export const shareImageToKakao = async ({
+    file,
+    title,
+    description,
+    fallbackText,
+    campaign = 'achievement_share',
+    buttonTitle = '한자팝 시작하기',
+    preferText = false,
+    imageWidth,
+    imageHeight,
+}) => {
     const { Kakao, shareUrl } = await initializeKakaoShare();
+    const trackedShareUrl = await buildTrackedShareUrl(shareUrl, campaign);
     const text = fallbackText || `${title}\n${description || ''}`;
 
-    if (!file || file.size > MAX_KAKAO_IMAGE_BYTES) {
-        await Promise.resolve(sendTextShare({ Kakao, shareUrl, text }));
+    if (preferText || !file || file.size > MAX_KAKAO_IMAGE_BYTES) {
+        await Promise.resolve(sendTextShare({ Kakao, shareUrl: trackedShareUrl, text, buttonTitle }));
         return { mode: 'text', imageFallback: true };
     }
 
@@ -101,26 +127,28 @@ export const shareImageToKakao = async ({ file, title, description, fallbackText
                 title,
                 description,
                 imageUrl,
-                link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+                ...(imageWidth && imageHeight ? { imageWidth, imageHeight } : {}),
+                link: { mobileWebUrl: trackedShareUrl, webUrl: trackedShareUrl },
             },
-            buttons: [{ title: '한자팝 시작하기', link: { mobileWebUrl: shareUrl, webUrl: shareUrl } }],
+            buttons: [{ title: buttonTitle, link: { mobileWebUrl: trackedShareUrl, webUrl: trackedShareUrl } }],
         }));
         return { mode: 'feed', imageFallback: false };
     } catch (error) {
         if (/cancel|close|canceled/i.test(String(error?.message || error))) throw error;
-        await Promise.resolve(sendTextShare({ Kakao, shareUrl, text }));
+        await Promise.resolve(sendTextShare({ Kakao, shareUrl: trackedShareUrl, text, buttonTitle }));
         return { mode: 'text', imageFallback: true };
     }
 };
 
 export const shareMasterAchievementToKakao = async ({ file, nickname, hanjaCount }) => {
     const { Kakao, shareUrl } = await initializeKakaoShare();
+    const trackedShareUrl = await buildTrackedShareUrl(shareUrl, 'master_complete');
     const safeNickname = nickname || '탐험가';
     const title = `${safeNickname}님의 124일 완주 인증서`;
     const description = `124일 탐험 완료 · ${hanjaCount}한자 마스터 · 황금 완주 배지 획득`;
 
     if (!file || file.size > MAX_KAKAO_IMAGE_BYTES) {
-        await Promise.resolve(sendTextShare({ Kakao, shareUrl, text: `한자팝 마스터 탄생!\n${description}` }));
+        await Promise.resolve(sendTextShare({ Kakao, shareUrl: trackedShareUrl, text: `한자팝 마스터 탄생!\n${description}` }));
         return { mode: 'text', imageFallback: true };
     }
 
@@ -138,22 +166,22 @@ export const shareMasterAchievementToKakao = async ({ file, nickname, hanjaCount
                 imageWidth: 1080,
                 imageHeight: 1080,
                 link: {
-                    mobileWebUrl: shareUrl,
-                    webUrl: shareUrl,
+                    mobileWebUrl: trackedShareUrl,
+                    webUrl: trackedShareUrl,
                 },
             },
             buttons: [{
                 title: '한자팝 시작하기',
                 link: {
-                    mobileWebUrl: shareUrl,
-                    webUrl: shareUrl,
+                    mobileWebUrl: trackedShareUrl,
+                    webUrl: trackedShareUrl,
                 },
             }],
         }));
         return { mode: 'feed', imageFallback: false };
     } catch (error) {
         if (/cancel|close|canceled/i.test(String(error?.message || error))) throw error;
-        await Promise.resolve(sendTextShare({ Kakao, shareUrl, text: `한자팝 마스터 탄생!\n${description}` }));
+        await Promise.resolve(sendTextShare({ Kakao, shareUrl: trackedShareUrl, text: `한자팝 마스터 탄생!\n${description}` }));
         return { mode: 'text', imageFallback: true };
     }
 };

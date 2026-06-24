@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { getLevel, getRankDetails, getCharacterScale, getCharacterTranslateY, LEVEL_THRESHOLDS } from '../utils/rankUtils.js';
 import { SK } from '../constants/storageKeys.js';
+import { fetchReferralSummary } from '../lib/supabase.js';
 
 const getUnlockedGrade = () => {
   try {
@@ -98,6 +99,135 @@ const getBadgeStage = (category, value) => {
     if (value >= reqs[i]) return i + 1;
   }
   return 1;
+};
+
+const buildReferralShareUrl = (code) => {
+  const base = String(import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin || '').replace(/\/$/, '');
+  const url = new URL(base || window.location.href);
+  if (code) url.searchParams.set('ref', code);
+  url.searchParams.set('utm_source', 'manual_share');
+  url.searchParams.set('utm_campaign', 'referral_milestone');
+  return url.toString();
+};
+
+const ReferralProgressCard = ({ isDarkMode }) => {
+  const [summary, setSummary] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchReferralSummary().then(({ summary: next }) => {
+      if (active && next) setSummary(next);
+    });
+    return () => { active = false; };
+  }, []);
+
+  if (!summary?.code) return null;
+
+  const count = Math.min(5, Number(summary.activated_count || 0));
+  const progress = Math.min(100, (count / 5) * 100);
+  const activeOffer = summary.active_offer?.eligible ? summary.active_offer : null;
+  const offerDaysLeft = activeOffer?.expires_at
+    ? Math.max(1, Math.ceil((new Date(activeOffer.expires_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
+    : null;
+  const offerExpiryLabel = activeOffer ? (offerDaysLeft ? `${offerDaysLeft}일 남음` : '만료 없음') : '';
+  const shareUrl = buildReferralShareUrl(summary.code);
+  const milestones = summary.milestones || [
+    { count: 1, title: '풀팩 20% 할인권', subtitle: '만료 없음', done: count >= 1 },
+    { count: 3, title: '풀팩 50% 할인권', subtitle: '만료 없음', done: count >= 3 },
+    { count: 5, title: '풀팩 무료 소장권', subtitle: '만료 없음', done: count >= 5 },
+  ];
+
+  const handleShare = async () => {
+    setCopied(false);
+    const text = `한자팝 같이 시작해요! 초대 링크로 시작하면 풀팩 20% 할인권을 받을 수 있어요.\n${shareUrl}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: '한자팝 친구 초대', text, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+      } catch {}
+    }
+  };
+
+  return (
+    <section className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] overflow-hidden ${
+      isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-white'
+    }`}>
+      <div className="px-5 pt-4 pb-3 border-b border-[#E5EAF2] dark:border-slate-700">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="font-medium text-base tracking-tight text-[#3C3C3C] dark:text-slate-100">친구 초대 보상</h3>
+            <p className="mt-1 text-[12px] font-normal text-[#8D9CAE] dark:text-slate-400">
+              {count < 1 ? '1명만 시작해도 풀팩 20% 할인권' : 5 - count > 0 ? `${5 - count}명만 더 초대하면 풀팩 무료` : '풀팩 무료 보상 달성'}
+            </p>
+          </div>
+          <div className="rounded-full bg-[#E8FAF7] px-3 py-1 text-[12px] font-medium text-[#00A994]">
+            {count}/5 완료
+          </div>
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden shadow-inner">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #2ED6C5, #7C83FF, #FF9B73)' }}
+          />
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {milestones.map(item => (
+            <div
+              key={item.count}
+              className={`rounded-[1.25rem] border px-3 py-3 text-center ${
+                item.done
+                  ? 'bg-[#F0FEFA] border-[#B8F0E8] dark:bg-teal-950/20 dark:border-teal-900/40'
+                  : 'bg-[#F8FAFC] border-slate-100 dark:bg-slate-900/40 dark:border-slate-700'
+              }`}
+            >
+              <div className={`mx-auto mb-2 flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-medium ${
+                item.done ? 'bg-[#2ED6C5] text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300'
+              }`}>
+                {item.done ? '✓' : item.count}
+              </div>
+              <p className="text-[11px] font-normal leading-snug text-slate-600 dark:text-slate-300 break-keep">{item.title}</p>
+              <p className="mt-1 text-[10px] font-normal leading-none text-[#8D9CAE] dark:text-slate-500">{item.subtitle || '만료 없음'}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center gap-2 rounded-[1.25rem] bg-[#F8FAFC] dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700 px-3 py-2">
+          <span className="text-[11px] text-[#8D9CAE]">초대 코드</span>
+          <strong className="flex-1 text-[14px] text-slate-700 dark:text-slate-100 tracking-wider">{summary.code}</strong>
+          <button
+            onClick={handleShare}
+            className="rounded-full bg-[#7C83FF] px-3 py-1.5 text-[12px] font-medium text-white active:scale-95"
+          >
+            공유
+          </button>
+        </div>
+        {summary.fullpack_granted ? (
+          <div className="mt-2 flex items-center justify-between rounded-[1.25rem] bg-[#F0FEFA] dark:bg-teal-950/20 border border-[#B8F0E8] dark:border-teal-900/40 px-3 py-2">
+            <span className="text-[11px] text-[#00A994]">보유 보상</span>
+            <strong className="text-[13px] text-slate-700 dark:text-slate-100">풀팩 무료 소장권 활성화</strong>
+          </div>
+        ) : activeOffer ? (
+          <div className="mt-2 flex items-center justify-between rounded-[1.25rem] bg-[#EEF2FF] dark:bg-indigo-950/20 border border-[#D8D4FF] dark:border-indigo-900/40 px-3 py-2">
+            <span className="text-[11px] text-[#7C83FF]">사용 가능한 할인권</span>
+            <strong className="text-[13px] text-slate-700 dark:text-slate-100">
+              풀팩 {activeOffer.discount_percent}% 할인 · {offerExpiryLabel}
+            </strong>
+          </div>
+        ) : null}
+        {copied && <p className="mt-2 text-center text-[11px] text-[#00A994]">초대 문구를 복사했어요</p>}
+      </div>
+    </section>
+  );
 };
 
 const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharacter, isDarkMode, setIsDarkMode, streak, totalStats, finalJourney }) => {
@@ -259,8 +389,8 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
         {/* 프로필 카드 */}
         <div className={`w-full rounded-[2rem] border-4 shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-5 flex items-center gap-4 bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>
           <div className={`relative shrink-0 w-24 h-24 rounded-[2rem] flex items-center justify-center overflow-visible bg-white/40 backdrop-blur-sm border-2 border-white shadow-lg dark:bg-slate-700/60 dark:border dark:border-slate-600`}>
-            <img src={characterImage} alt="character" className="w-full h-full object-contain filter drop-shadow-2xl translate-y-[-8%] z-10"
-              style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter)}) scale(${1.25 * getCharacterScale(selectedCharacter, `rank${rankDetails.imageRank}`)})` }}
+            <img src={characterImage} alt="character" className="w-full h-full object-contain filter drop-shadow-2xl z-10"
+              style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${1.1 * getCharacterScale(selectedCharacter, `rank${rankDetails.imageRank}`)})` }}
               onError={e => { e.target.src = '/assets/images/characters/default_3d.webp'; }} />
             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-[#14B8A6] text-white font-normal text-xs px-3 py-1 rounded-full border-2 border-white shadow-md whitespace-nowrap z-20">
               LV.{level}
@@ -345,6 +475,8 @@ const MyPageScreen = ({ onBack, onNavigate, userXp, userNickname, selectedCharac
             <div className="master-profile-seal">完</div>
           </section>
         )}
+
+        <ReferralProgressCard isDarkMode={isDarkMode} />
 
         {/* 뱃지 창고 */}
         <div className={`w-full rounded-[2rem] border-4 shadow-[0_8px_24px_rgba(0,0,0,0.06)] bg-white border-white dark:bg-slate-800 dark:border-slate-700`}>

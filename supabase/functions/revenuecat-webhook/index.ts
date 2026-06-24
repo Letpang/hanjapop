@@ -6,6 +6,11 @@ const PRODUCT_TO_PACK: Record<string, number> = {
     'com.soujinne.hanjaexplorer.fullpack': 3,
 }
 
+const REFERRAL_FULLPACK_20_PRODUCT_ID = Deno.env.get('RC_REFERRAL_FULLPACK_20_PRODUCT_ID') ?? Deno.env.get('RC_REFERRAL_FULLPACK_PRODUCT_ID') ?? ''
+const REFERRAL_FULLPACK_50_PRODUCT_ID = Deno.env.get('RC_REFERRAL_FULLPACK_50_PRODUCT_ID') ?? ''
+if (REFERRAL_FULLPACK_20_PRODUCT_ID) PRODUCT_TO_PACK[REFERRAL_FULLPACK_20_PRODUCT_ID] = 3
+if (REFERRAL_FULLPACK_50_PRODUCT_ID) PRODUCT_TO_PACK[REFERRAL_FULLPACK_50_PRODUCT_ID] = 3
+
 const REVOKE_EVENTS = new Set(['CANCELLATION', 'EXPIRATION'])
 
 function constantTimeEqual(left: string, right: string): boolean {

@@ -160,6 +160,7 @@ const WordQuizScreen = ({
             setQuestions(buildQuiz(filter, effectiveViewMode, wordData, userLevel, unlockedIds, quizCount));
         }
         setCurrentIdx(0);
+        setCurrentAnswered(false);
         setCorrectCount(0); correctCountRef.current = 0;
         comboRef.current = 0; setCombo(0);
         setMaxCombo(0); maxComboRef.current = 0;
@@ -237,9 +238,6 @@ const WordQuizScreen = ({
 
     const q = questions[currentIdx];
     const wordLen = q?.word?.length || 0;
-    const wordFontSize = wordLen > 6 ? 'text-[3.5rem] sm:text-[4.5rem]'
-        : wordLen > 4 ? 'text-[4.5rem] sm:text-[6rem]'
-        : 'text-[6rem] sm:text-[8rem]';
     const wordTermSizeClass = wordLen <= 2
         ? 'word-quiz-term--short'
         : wordLen === 3
@@ -259,7 +257,7 @@ const WordQuizScreen = ({
                     </button>
                     <div className="quiz-header-title-area">
                         <h2 className="quiz-screen-title">단어 퀴즈</h2>
-                        <p className="screen-subtitle">한자의 뜻과 음을 골라보세요</p>
+                        <p className="screen-subtitle">한자 단어의 뜻을 맞춰보세요!</p>
                     </div>
                     <div className="quiz-header-right">
                         {(phase === 'quiz' || phase === 'result') && questions.length > 0 && <span className="quiz-counter-text">{currentIdx + 1}/{questions.length}</span>}
@@ -331,6 +329,7 @@ const WordQuizScreen = ({
                             key={currentIdx}
                             choices={q.choices}
                             correctAnswer={q.meaning}
+                            cardAspect="aspect-[9/6] sm:aspect-[16/9]"
                             choiceGridClassName="quiz-choice-grid word-quiz-choice-grid"
                             isFirst={currentIdx === 0}
                             isLast={currentIdx === questions.length - 1}
@@ -345,27 +344,56 @@ const WordQuizScreen = ({
                             onPrev={handlePrev}
                             onCorrectSelected={() => setCurrentAnswered(true)}
                             renderFront={() => (
-                                <span className={`word-quiz-term hanja-char ${wordTermSizeClass} ${wordFontSize} font-normal text-[#1e293b] dark:text-slate-50 tracking-tighter drop-shadow-sm text-center leading-none`}>
-                                    {q.word}
-                                </span>
+                                <div className={`quiz-card-back__content ${(q.reading || '').length >= 4 ? 'quiz-card-back__content--dense' : ''}`}>
+                                    <div className="quiz-card-back__reading-row">
+                                        <span className={`quiz-card-back__reading ${(q.reading || '').length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{q.reading}</span>
+                                        <span className="quiz-card-back__hanja hanja-char">({q.word})</span>
+                                    </div>
+                                    <div className="quiz-card-back__body">
+                                        <p className={`quiz-card-back__text ${(q.example || '').length > 38 ? 'quiz-card-back__text--long' : ''}`}>
+                                            <span className="quiz-card-back__badge">예문</span>
+                                            {q.example ? q.example.replace(/\(\s*\)/g, q.word).trim().replace(/\s+/g, ' ') : ''}
+                                        </p>
+                                    </div>
+                                </div>
                             )}
-                            renderBack={({ isSpeaking, onSpeak }) => (
-                                <>
-                                    <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }} />
-                                    <div className={`quiz-card-back__content ${(q.reading || '').length >= 4 ? 'quiz-card-back__content--dense' : ''}`}>
-                                        <div className="quiz-card-back__reading-row">
-                                            <span className={`quiz-card-back__reading ${(q.reading || '').length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{q.reading}</span>
-                                            <span className="quiz-card-back__hanja hanja-char">({q.word})</span>
+                            renderBack={({ isSpeaking, onSpeak }) => {
+                                const seenChars = new Set();
+                                const charChips = [...(q.word || '')].map(ch => {
+                                    const h = HANJA_DATA.find(d => d.hanja === ch);
+                                    const badge = h.grade && h.grade.includes('급') ? h.grade : null;
+                                    return h ? { char: ch, meaning: h.meaning, sound: h.sound, badge } : null;
+                                }).filter(Boolean).filter(({ char }) => {
+                                    if (seenChars.has(char)) return false;
+                                    seenChars.add(char);
+                                    return true;
+                                });
+                                return (
+                                    <div className="flex flex-col h-full px-3 pt-2 pb-3">
+                                        <div className="flex justify-end shrink-0">
+                                            <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }} />
                                         </div>
-                                        <div className="quiz-card-back__body">
-                                            <p className={`quiz-card-back__text ${(q.example || '').length > 38 ? 'quiz-card-back__text--long' : ''}`}>
-                                                <span className="quiz-card-back__badge">예문</span>
-                                                {q.example ? q.example.replace(/\(\s*\)/g, q.word).trim().replace(/\s+/g, ' ') : ''}
-                                            </p>
+                                        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                                        <span className={`word-quiz-term hanja-char font-normal text-[#1e293b] dark:text-slate-50 tracking-tighter drop-shadow-sm text-center leading-none ${wordTermSizeClass}`}>
+                                            {q.word}
+                                        </span>
+                                        <span className="text-xl font-normal text-slate-500 dark:text-slate-400">{q.reading}</span>
+                                        {charChips.length > 0 && (
+                                            <div className="flex items-center gap-2 flex-wrap justify-center">
+                                                {charChips.map(({ char, meaning, sound, badge }) => (
+                                                    <div key={char} className="flex items-center gap-1 bg-[#EEF0FF] dark:bg-indigo-950/40 rounded-xl px-2.5 py-1.5 shadow-sm">
+                                                        <span className="hanja-char text-base font-normal text-[#334155] dark:text-slate-200">{char}</span>
+                                                        <span className="text-sm text-[#94A3B8]">{meaning}</span>
+                                                        <span className="text-sm font-medium text-[#5B677A] dark:text-slate-300">{sound}</span>
+                                                        {badge && <span className="text-[10px] font-medium text-[#7C83FF] bg-white/70 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded-full leading-none">{badge}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                         </div>
                                     </div>
-                                </>
-                            )}
+                                );
+                            }}
                         />
                     )}
 

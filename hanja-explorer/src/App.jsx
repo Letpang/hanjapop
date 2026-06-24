@@ -55,7 +55,7 @@ import { incrementTodaySessionCount } from './utils/sessionUtils.js';
 import { fetchUnlockedPack, signOut, resetUnlockedPack, activateTestPack } from './lib/supabase.js';
 
 const App = () => {
-    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao } = useAuth();
+    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao, linkIdentity } = useAuth();
     const userRef = useRef(user);
     useEffect(() => { userRef.current = user; }, [user]);
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -839,6 +839,7 @@ const App = () => {
                     isRestoring={isRestoring}
                     user={user}
                     onLogin={() => setShowLoginModal(true)}
+                    linkIdentity={linkIdentity}
                     onLogout={async () => {
                         await signOut();
                         setUnlockedPack(0);

@@ -236,7 +236,6 @@ const VocabularyScreen = ({
 
   const wrongCount = words.filter(w => w.wrongCount > 0).length;
   const idiomWrongCount = idioms.filter(w => w.wrongCount > 0).length;
-  const hanjaWrongCount = hanjas.filter(h => h.wrongCount > 0).length;
   const totalCount = words.length + idioms.length;
   const correctCount = totalCount - wrongCount - idiomWrongCount;
 

@@ -227,7 +227,6 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
     })();
 
     if (!q) {
-        console.log("IdiomQuiz: !q triggered. idioms.length:", idioms.length, "questions.length:", questions.length);
         return (
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAF9] dark:bg-slate-900 px-6" style={{ backgroundColor: '#F8FAF9', color: '#334155' }}>
                 <h2 className="text-2xl font-bold mb-4">사자성어가 없어요!</h2>
@@ -276,7 +275,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                 onPrev={handlePrev}
                 onCorrectSelected={() => setCurrentAnswered(true)}
                 renderFront={() => (
-                    <div className="grade-test-question-card" style={{ height: '100%' }}>
+                    <div className="grade-test-question-card">
                         <span className="grade-test-type-label">{q.typeLabel}</span>
                         <p className="grade-test-prompt">{q.prompt}</p>
                         {q.type === 'fill_blank' && (
@@ -293,7 +292,7 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
                             <p className="grade-exam-guide-text text-center">{q.displayMeaning}</p>
                         )}
                         {q.origin && (
-                            <p className="text-xs text-[#9AA4B5] text-center px-4 leading-relaxed break-keep border-t border-[#E9EDF2] pt-5 mt-4 pb-2">{q.origin}</p>
+                            <p className="text-xs text-[#9AA4B5] text-center px-4 leading-relaxed break-keep border-t border-[#E9EDF2] pt-3 mt-2">{q.origin}</p>
                         )}
                     </div>
                 )}

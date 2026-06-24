@@ -153,7 +153,7 @@ export default function GradeStudyDashboardScreen({
                     <div className="w-10" />
                 </header>
 
-                <main className="flex-1 overflow-y-auto px-4 pb-10 w-full max-w-2xl mx-auto">
+                <main className="flex-1 overflow-y-auto px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] w-full max-w-2xl mx-auto">
                     <div className="sticky top-0 z-10 bg-[#F8FAF9]/95 dark:bg-slate-900/95 backdrop-blur-xl pb-3">
                         <label className="h-12 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center gap-3 shadow-sm">
                             <svg viewBox="0 0 24 24" className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
@@ -200,7 +200,7 @@ export default function GradeStudyDashboardScreen({
                 </span>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-4 pb-10 flex flex-col gap-7 w-full max-w-2xl mx-auto">
+            <main className="flex-1 overflow-y-auto px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] flex flex-col gap-7 w-full max-w-2xl mx-auto">
 
                 {/* 진척도 카드 */}
                 <section className="shrink-0 rounded-[1.75rem] border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-[0_8px_30px_rgba(15,23,42,0.05)] flex flex-col gap-5 overflow-hidden relative">

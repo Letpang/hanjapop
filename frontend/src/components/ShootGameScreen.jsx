@@ -621,7 +621,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     meaning: nextItem.meaning || getMeaning(nextItem) || "",
                     sound: nextItem.sound || "",
                     category: nextItem.category || "",
-                    x: Math.floor(Math.random() * 80) + 10,
+                    x: Math.floor(Math.random() * 65) + 15,
                     y: 0,
                     emojiId: Math.floor(Math.random() * MONSTER_COMPONENTS.length),
                     state: 'falling',
@@ -1137,18 +1137,23 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                 <div className="quiz-numbered-grid shrink-0 px-4 grid grid-cols-2 gap-2 z-40" style={{ paddingTop: '6px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}>
                     {options.map((opt, i) => {
                         const parts = opt.split(' '); const sound = parts.pop(); const meaning = parts.join(' ');
+                        const lenClass = meaning.length > 12
+                            ? 'shoot-option-text--xlong'
+                            : meaning.length > 6
+                                ? 'shoot-option-text--long'
+                                : '';
                         return (
                             <button
                                 key={i}
                                 onClick={() => handleOptionClick(opt)}
-                                className={`shoot-option-button bg-white dark:bg-slate-800/95 px-3 py-0.5 rounded-[1rem] font-normal border-4 border-white dark:border-slate-700 shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-start gap-1.5 ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
+                                className={`shoot-option-button bg-white dark:bg-slate-800/95 px-3 py-0.5 rounded-[1rem] font-normal border-4 border-white dark:border-slate-700 shadow-xl active:scale-95 transition-all text-center break-keep flex items-center justify-center gap-1.5 ${isInputLocked ? 'opacity-50 grayscale' : 'opacity-90 hover:opacity-100'}`}
                             >
                                 {isWordTarget ? (
-                                    <span className={`shoot-option-text ${meaning.length > 8 ? 'shoot-option-text--long' : ''} text-slate-700 dark:text-slate-100 leading-tight`}>{meaning}</span>
+                                    <span className={`shoot-option-text ${lenClass} text-slate-700 dark:text-slate-100`}>{meaning}</span>
                                 ) : (
                                     <>
-                                        <span className={`shoot-option-text ${meaning.length > 8 ? 'shoot-option-text--long' : ''} text-slate-700 dark:text-slate-100 leading-tight`}>{meaning}</span>
-                                        <span className="shoot-option-text text-[#7C83FF] leading-tight">{sound}</span>
+                                        <span className={`shoot-option-text ${lenClass} text-slate-700 dark:text-slate-100`}>{meaning}</span>
+                                        <span className="shoot-option-text text-[#7C83FF]">{sound}</span>
                                     </>
                                 )}
                             </button>
@@ -1187,8 +1192,8 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                     <div
                         className={`daily-session-result-backdrop${isClear ? '' : ' daily-session-result-backdrop--fail'}`}
                     >
-                        <div className="activity-result-card">
-                            <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">
+                        <div className={`activity-result-card ${(!dailyMapNode || !isClear) ? 'shoot-result-card' : ''}`}>
+                            <div className={`${(dailyMapNode && isClear) ? 'pt-5 pb-6 gap-4' : 'shoot-result-card-body'} px-6 flex flex-col items-center w-full relative`}>
                                 {/* 캐릭터 아래 백그라운드 글로우 추가 */}
                                 {(!dailyMapNode || !isClear) && (
                                     <div className="activity-result-glow" />
@@ -1203,7 +1208,7 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     />
                                 )}
                                 
-                                <div className="text-center flex flex-col gap-1 w-full relative z-10">
+                                <div className={`${(!dailyMapNode || !isClear) ? 'shoot-result-content-stack' : ''} text-center flex flex-col gap-1 w-full relative z-10`}>
                                     <span className="result-subtitle">
                                         {isClear ? '몬스터 슈팅 완료!' : '아쉬운 결과네요...'}
                                     </span>
@@ -1226,32 +1231,18 @@ const ShootGameScreen = ({ onBack, onGameFinish, onHanjaAcquired, selectedCharac
                                     </div>
                                 )}
 
-                                <RewardBreakdown
-                                    reward={reward}
-                                    correctXp={killXp}
-                                    clearXp={shootClearXp}
-                                    correctLabel="몬스터 처치"
-                                    detailText={`${score}마리 x 3XP${shootClearXp > 0 ? ` + 완료 ${shootClearXp}XP` : ''}`}
-                                    missionXp={missionXpGrantedRef.current}
-                                />
+                                <div className={(!dailyMapNode || !isClear) ? 'shoot-result-lower-stack' : 'w-full'}>
+                                    <RewardBreakdown
+                                        reward={reward}
+                                        correctXp={killXp}
+                                        clearXp={shootClearXp}
+                                        correctLabel="몬스터 처치"
+                                        detailText={`${score}마리 x 3XP${shootClearXp > 0 ? ` + 완료 ${shootClearXp}XP` : ''}`}
+                                        missionXp={missionXpGrantedRef.current}
+                                    />
+                                </div>
 
-                                {/* 몬스터 오답 노트 (Review Note) */}
-                                {wrongItemsForRender.length > 0 && (
-                                    <div className="w-full flex flex-col gap-2 relative z-10 mt-1 max-h-[140px] overflow-y-auto px-1">
-                                        <p className="text-xs font-normal text-[#FF6B6B] text-center mb-1">몬스터 오답 노트</p>
-                                        <div className="flex flex-wrap gap-2 justify-center">
-                                            {wrongItemsForRender.map((w, idx) => (
-                                                <div key={idx} className="bg-rose-50 border border-rose-100 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 shadow-sm">
-                                                    <span className="font-normal text-rose-500 text-sm">{w.hanja}</span>
-                                                    <span className="text-[11px] font-normal text-rose-400">({w.sound})</span>
-                                                    <span className="text-[10px] font-normal text-slate-400">{w.meaning}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="result-btn-area">
+                                <div className={`result-btn-area ${(!dailyMapNode || !isClear) ? 'shoot-result-lower-stack' : ''}`}>
                                     {!hideRetry && (
                                         <CtaButton
                                             theme="indigo"

@@ -28,6 +28,11 @@ export const RC_PRODUCT_IDS = {
     fullpack: 'com.soujinne.hanjaexplorer.fullpack',  // ₩19,900 전체 팩 (18~124단계)
 };
 
+export const RC_REFERRAL_PRODUCT_IDS = {
+    fullpack20: String(import.meta.env.VITE_RC_REFERRAL_FULLPACK_20_PRODUCT_ID || import.meta.env.VITE_RC_REFERRAL_FULLPACK_PRODUCT_ID || '').trim(),
+    fullpack50: String(import.meta.env.VITE_RC_REFERRAL_FULLPACK_50_PRODUCT_ID || '').trim(),
+};
+
 // ── Entitlement ID ────────────────────────────────────────────────────────
 // RevenueCat 대시보드 > Entitlements에 등록한 ID와 동일해야 함
 export const RC_ENTITLEMENTS = {

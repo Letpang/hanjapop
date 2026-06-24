@@ -39,7 +39,7 @@ const CHARACTERS = [
     { id: 'muzi',     label: '무지', image: '/assets/images/characters/muzi/rank_5.webp' },
 ];
 
-const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUserNickname, selectedCharacter, setSelectedCharacter, restoreFromCloud, isRestoring, user, onLogout, onLogin, onResetPack, onActivateTestPack }) => {
+const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUserNickname, selectedCharacter, setSelectedCharacter, restoreFromCloud, isRestoring, user, onLogout, onLogin, onResetPack, onActivateTestPack, linkIdentity }) => {
     const [tempNickname, setTempNickname] = useState(userNickname || '');
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [restoreMsg, setRestoreMsg] = useState(null);
@@ -137,18 +137,80 @@ const SettingsScreen = ({ onBack, isDarkMode, setIsDarkMode, userNickname, setUs
                 {/* 계정 */}
                 <Section title="계정" color="#7C83FF">
                     {user ? (
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex flex-col min-w-0">
-                                <span className="text-sm font-normal text-slate-700 dark:text-slate-200 leading-tight truncate">{user.email || '로그인됨'}</span>
-                                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 leading-tight mt-0.5">현재 로그인된 계정</span>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex flex-col min-w-0">
+                                    <span className="text-sm font-normal text-slate-700 dark:text-slate-200 leading-tight truncate">{user.email || '로그인됨'}</span>
+                                    <span className="text-xs font-normal text-slate-400 dark:text-slate-500 leading-tight mt-0.5">현재 로그인된 계정</span>
+                                </div>
+                                {onLogout && (
+                                    <button
+                                        onClick={onLogout}
+                                        className="shrink-0 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-normal text-sm active:scale-95 transition-all"
+                                    >
+                                        로그아웃
+                                    </button>
+                                )}
                             </div>
-                            {onLogout && (
-                                <button
-                                    onClick={onLogout}
-                                    className="shrink-0 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 font-normal text-sm active:scale-95 transition-all"
-                                >
-                                    로그아웃
-                                </button>
+
+                            {/* 계정 연동 상태 관리 */}
+                            {linkIdentity && (
+                                <>
+                                    <Divider />
+                                    <div className="flex flex-col gap-3">
+                                        <span className="text-xs font-normal text-slate-700 dark:text-slate-200">연동된 소셜 계정</span>
+                                        <div className="flex flex-col gap-2">
+                                            {/* Google 연동 */}
+                                            <div className="flex items-center justify-between py-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-300 font-normal">Google</span>
+                                                </div>
+                                                {user.identities?.some(i => i.provider === 'google') ? (
+                                                    <span className="text-xs text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg">연동됨</span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => linkIdentity('google')}
+                                                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 text-xs rounded-lg active:scale-95 transition-all"
+                                                    >
+                                                        연동하기
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {/* Apple 연동 */}
+                                            <div className="flex items-center justify-between py-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-300 font-normal">Apple</span>
+                                                </div>
+                                                {user.identities?.some(i => i.provider === 'apple') ? (
+                                                    <span className="text-xs text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg">연동됨</span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => linkIdentity('apple')}
+                                                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 text-xs rounded-lg active:scale-95 transition-all"
+                                                    >
+                                                        연동하기
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {/* Kakao 연동 */}
+                                            <div className="flex items-center justify-between py-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-300 font-normal">Kakao</span>
+                                                </div>
+                                                {user.identities?.some(i => i.provider === 'kakao') ? (
+                                                    <span className="text-xs text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg">연동됨</span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => linkIdentity('kakao')}
+                                                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 text-xs rounded-lg active:scale-95 transition-all"
+                                                    >
+                                                        연동하기
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
                             )}
                         </div>
                     ) : (

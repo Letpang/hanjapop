@@ -70,13 +70,20 @@ import { SK } from '../constants/storageKeys.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const NATIVE_AUTH_REDIRECT_URL = 'com.soujinne.hanjaexplorer://auth-callback';
+
+export const getOAuthRedirectTo = () => {
+    const platform = window?.Capacitor?.getPlatform?.();
+    if (platform && platform !== 'web') return NATIVE_AUTH_REDIRECT_URL;
+    return import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin;
+};
 
 // 환경 변수가 없으면 오프라인 모드로 동작
 export const isSupabaseEnabled = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 export const supabase = isSupabaseEnabled
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: true, storage: localStorage },
+        auth: { persistSession: true, storage: localStorage, flowType: 'pkce' },
         realtime: { params: { eventsPerSecond: 2 } },
     })
     : null;
@@ -91,17 +98,18 @@ export const getCurrentUser = async () => {
 };
 
 /** 카카오 OAuth → Supabase 로그인 (웹 리디렉트) */
-export const signInWithKakao = async () => {
+export const signInWithKakao = async ({ skipBrowserRedirect = false } = {}) => {
     if (!supabase) return { success: false, error: 'offline' };
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
         options: { 
-            redirectTo: window.location.origin,
+            redirectTo: getOAuthRedirectTo(),
+            skipBrowserRedirect,
             queryParams: { prompt: 'login' }
         },
     });
     if (error) return { success: false, error };
-    return { success: true };
+    return { success: true, url: data?.url };
 };
 
 
@@ -236,6 +244,60 @@ const isMissingAccountModel = (error) => (
     || error?.message?.includes('sync_my_account_data')
 );
 
+const isMissingReferralModel = (error) => (
+    error?.code === 'PGRST202'
+    || error?.code === '42883'
+    || error?.message?.includes('referral')
+);
+
+const normalizeReferralCode = (value) => String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 16);
+
+const cacheReferralOffer = (offer) => {
+    try {
+        if (offer?.eligible) localStorage.setItem(SK.REFERRAL_OFFER, JSON.stringify(offer));
+        else localStorage.removeItem(SK.REFERRAL_OFFER);
+    } catch {}
+};
+
+export const getCachedReferralOffer = () => {
+    try {
+        const offer = JSON.parse(localStorage.getItem(SK.REFERRAL_OFFER) || 'null');
+        if (!offer?.eligible) return null;
+        if (offer.expires_at && new Date(offer.expires_at).getTime() <= Date.now()) {
+            localStorage.removeItem(SK.REFERRAL_OFFER);
+            return null;
+        }
+        return offer;
+    } catch {
+        return null;
+    }
+};
+
+export const captureReferralFromUrl = () => {
+    try {
+        const url = new URL(window.location.href);
+        const code = normalizeReferralCode(url.searchParams.get('ref') || url.searchParams.get('referral'));
+        if (!code) return null;
+        localStorage.setItem(SK.PENDING_REFERRAL_CODE, code);
+        return code;
+    } catch {
+        return null;
+    }
+};
+
+export const getPendingReferralCode = () => {
+    try { return normalizeReferralCode(localStorage.getItem(SK.PENDING_REFERRAL_CODE)); }
+    catch { return ''; }
+};
+
+export const clearPendingReferralCode = () => {
+    try { localStorage.removeItem(SK.PENDING_REFERRAL_CODE); } catch {}
+};
+
 /**
  * 확인된 이메일을 기준으로 Google·Apple·카카오 신원을
  * 하나의 앱 내부 account_id에 연결한다.
@@ -253,6 +315,84 @@ export const ensureInternalAccount = async () => {
     }
     accountModelSupported = true;
     return { supported: true, accountId: data, error: null };
+};
+
+export const fetchMyReferralCode = async () => {
+    if (!supabase) return { supported: false, code: null, error: 'offline' };
+    const { data, error } = await supabase.rpc('get_my_referral_code');
+    if (error) {
+        if (isMissingReferralModel(error)) return { supported: false, code: null, error: null };
+        return { supported: true, code: null, error };
+    }
+    const code = normalizeReferralCode(data);
+    try { if (code) localStorage.setItem(SK.REFERRAL_CODE, code); } catch {}
+    return { supported: true, code, error: null };
+};
+
+export const acceptPendingReferral = async () => {
+    if (!supabase) return { supported: false, accepted: false, error: 'offline' };
+    const code = getPendingReferralCode();
+    if (!code) return { supported: true, accepted: false, error: null };
+    const { data, error } = await supabase.rpc('accept_referral', { p_code: code });
+    if (error) {
+        if (isMissingReferralModel(error)) return { supported: false, accepted: false, error: null };
+        return { supported: true, accepted: false, error };
+    }
+    if (data?.accepted || data?.reason === 'already_referred') clearPendingReferralCode();
+    return { supported: true, accepted: !!data?.accepted, data, error: null };
+};
+
+export const fetchReferralOffer = async () => {
+    if (!supabase) return { supported: false, offer: getCachedReferralOffer(), error: 'offline' };
+    const { data, error } = await supabase.rpc('get_my_referral_offer');
+    if (error) {
+        if (isMissingReferralModel(error)) return { supported: false, offer: getCachedReferralOffer(), error: null };
+        return { supported: true, offer: getCachedReferralOffer(), error };
+    }
+    cacheReferralOffer(data);
+    return { supported: true, offer: data?.eligible ? data : null, error: null };
+};
+
+export const fetchReferralSummary = async () => {
+    if (!supabase) return { supported: false, summary: null, error: 'offline' };
+    const { data, error } = await supabase.rpc('get_my_referral_summary');
+    if (error) {
+        if (isMissingReferralModel(error)) return { supported: false, summary: null, error: null };
+        return { supported: true, summary: null, error };
+    }
+    if (data?.active_offer) cacheReferralOffer(data.active_offer);
+    return { supported: true, summary: data, error: null };
+};
+
+export const activateReferralAfterDailySession = async () => {
+    if (!supabase) return { supported: false, activated: false, rewardXp: 0, error: 'offline' };
+    const { data, error } = await supabase.rpc('activate_my_referral');
+    if (error) {
+        if (isMissingReferralModel(error)) return { supported: false, activated: false, rewardXp: 0, error: null };
+        return { supported: true, activated: false, rewardXp: 0, error };
+    }
+    if (data?.offer?.eligible) cacheReferralOffer(data.offer);
+    try {
+        if (data?.activated) localStorage.setItem(SK.REFERRAL_ACTIVATED, 'true');
+    } catch {}
+    return {
+        supported: true,
+        activated: !!data?.activated,
+        rewardXp: Number(data?.referred_reward_xp || 0),
+        data,
+        error: null,
+    };
+};
+
+export const consumeMyReferralOffer = async (offerId) => {
+    if (!supabase || !offerId) return { supported: false, consumed: false, error: 'offline' };
+    const { data, error } = await supabase.rpc('consume_my_referral_offer', { p_offer_id: offerId });
+    if (error) {
+        if (isMissingReferralModel(error)) return { supported: false, consumed: false, error: null };
+        return { supported: true, consumed: false, error };
+    }
+    if (data?.consumed) cacheReferralOffer(null);
+    return { supported: true, consumed: !!data?.consumed, data, error: null };
 };
 
 export const fetchInternalAccountBackup = async () => {

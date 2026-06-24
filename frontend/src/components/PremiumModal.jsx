@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { openCheckout } from '../utils/paymentUtils.js';
 import { useRevenueCat } from '../hooks/useRevenueCat.js';
 import { getPlatform } from '../hooks/useAuth.js';
-import { fetchUnlockedPack } from '../lib/supabase.js';
+import { consumeMyReferralOffer, fetchUnlockedPack } from '../lib/supabase.js';
 
 const PACKS = [
     {
@@ -37,12 +37,58 @@ const PACKS = [
     },
 ];
 
-export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuccess }) {
+const parseWon = (value) => Number(String(value || '').replace(/[^\d]/g, '')) || 0;
+
+const formatWon = (value) => {
+    const rounded = Math.round(Number(value || 0) / 100) * 100;
+    return `₩${rounded.toLocaleString('ko-KR')}`;
+};
+
+const REFERRAL_FULLPACK_PRICES = {
+    20: '₩15,900',
+    50: '₩9,900',
+};
+
+const getReferralPrice = (pack, referralOffer) => {
+    if (!pack) return null;
+    if (!referralOffer?.eligible || pack.id !== 'fullpack') return null;
+    const percent = Math.max(0, Math.min(100, Number(referralOffer.discount_percent || 20)));
+    const originalPrice = parseWon(pack.price);
+    const discountedPrice = originalPrice * (100 - percent) / 100;
+    const fixedDiscountedPrice = percent >= 50
+        ? REFERRAL_FULLPACK_PRICES[50]
+        : percent >= 20
+            ? REFERRAL_FULLPACK_PRICES[20]
+            : null;
+    return {
+        original: pack.price,
+        discounted: percent >= 100 ? '무료' : fixedDiscountedPrice || formatWon(discountedPrice),
+        label: `${percent}%`,
+    };
+};
+
+const getOfferDaysLeft = (offer) => {
+    if (!offer?.expires_at) return null;
+    const ms = new Date(offer.expires_at).getTime() - Date.now();
+    if (ms <= 0) return null;
+    return Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+};
+
+export default function PremiumModal({ user, referralOffer, onClose, onShowLogin, onPurchaseSuccess, onReferralOfferConsumed }) {
     const [selected, setSelected] = useState('fullpack');
     const [errorMsg, setErrorMsg] = useState('');
     const [verifying, setVerifying] = useState(false);
-    const { initialized, loading, purchasePackage, restorePurchases } = useRevenueCat({ enabled: !!user });
+    const { initialized, packages, loading, purchasePackage, restorePurchases } = useRevenueCat({ enabled: !!user });
     const isNative = getPlatform() !== 'web';
+    const referralDiscountPercent = Number(referralOffer?.discount_percent || 20);
+    const referralNativePackageId = referralDiscountPercent >= 50 ? 'fullpack_referral50' : 'fullpack_referral20';
+    const referralWebVariantId = referralDiscountPercent >= 50
+        ? String(import.meta.env.VITE_LEMON_REFERRAL_FULLPACK_50_VARIANT_ID || '').trim()
+        : String(import.meta.env.VITE_LEMON_REFERRAL_FULLPACK_20_VARIANT_ID || import.meta.env.VITE_LEMON_REFERRAL_FULLPACK_VARIANT_ID || '').trim();
+    const hasReferralCheckout = isNative
+        ? !!packages[referralNativePackageId]
+        : !!referralWebVariantId;
+    const activeReferralOffer = referralOffer?.eligible && hasReferralCheckout ? referralOffer : null;
 
     const verifyServerEntitlement = async (expectedPack) => {
         setVerifying(true);
@@ -58,6 +104,12 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
         }
     };
 
+    const consumeNativeReferralOffer = async () => {
+        if (!activeReferralOffer?.offer_id) return;
+        const result = await consumeMyReferralOffer(activeReferralOffer.offer_id);
+        if (result.consumed) onReferralOfferConsumed?.();
+    };
+
     const handleBuy = async () => {
         setErrorMsg('');
         if (!user) {
@@ -70,10 +122,11 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
                 setErrorMsg('결제 시스템 준비 중입니다. 잠시 후 다시 시도해 주세요.');
                 return;
             }
-            const result = await purchasePackage(selected);
+            const result = await purchasePackage(selected, { referralOffer: activeReferralOffer });
             if (result.success && result.pack > 0) {
                 const verifiedPack = await verifyServerEntitlement(result.pack);
                 if (verifiedPack > 0) {
+                    await consumeNativeReferralOffer();
                     onPurchaseSuccess?.(verifiedPack);
                     onClose();
                 } else {
@@ -83,7 +136,7 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
                 setErrorMsg('결제 중 오류가 발생했습니다. 다시 시도해 주세요.');
             }
         } else {
-            const result = await openCheckout(selected, user.email || '');
+            const result = await openCheckout(selected, user.email || '', activeReferralOffer);
             if (!result.success) onShowLogin?.();
         }
     };
@@ -111,6 +164,9 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
         }
     };
 
+    const offerDaysLeft = getOfferDaysLeft(activeReferralOffer);
+    const offerExpiryLabel = activeReferralOffer ? (offerDaysLeft ? `${offerDaysLeft}일 남음` : '만료 없음') : '';
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-end justify-center modal-dim"
@@ -131,6 +187,22 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
                     <h2 className="text-2xl font-medium text-gray-800 tracking-tight">단계 잠금 해제</h2>
                     <p className="text-sm font-normal text-slate-400 mt-1">일회성 구매 · 광고 없이 평생 이용 · 기기 복원 가능</p>
                 </div>
+
+                {activeReferralOffer?.eligible && (
+                    <div className="px-5 mb-4">
+                        <div className="rounded-2xl border border-[#FFE0D4] bg-[#FFF7F3] px-4 py-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="text-[13px] font-medium text-[#E8664F]">친구 초대 보너스 적용</div>
+                                <div className="text-[12px] font-normal text-slate-500 mt-0.5 break-keep">
+                                    전체 팩 {activeReferralOffer.discount_percent || 20}% 할인 · {offerExpiryLabel}
+                                </div>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-[#FF9B73] px-3 py-1 text-[12px] font-medium text-white">
+                                -{activeReferralOffer.discount_percent || 20}%
+                            </span>
+                        </div>
+                    </div>
+                )}
 
                 <div className="px-5 mb-5 relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-[#2ED6C5] via-[#7C83FF] to-[#FF9B73] opacity-25 blur-xl rounded-full scale-y-[0.8]" />
@@ -174,6 +246,7 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
                 <div className="px-5 flex flex-col gap-3 mb-5">
                     {PACKS.map(pack => {
                         const isSel = selected === pack.id;
+                        const referralPrice = getReferralPrice(pack, activeReferralOffer);
                         return (
                             <button
                                 key={pack.id}
@@ -203,8 +276,17 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
                                     <div className="text-[12px] text-slate-400 dark:text-slate-300 font-normal mt-0.5">{pack.desc}</div>
                                 </div>
                                 {/* 가격 */}
-                                <div className="text-[15px] font-normal shrink-0" style={{ color: pack.color }}>
-                                    {pack.price}
+                                <div className="text-right shrink-0">
+                                    {referralPrice ? (
+                                        <>
+                                            <div className="text-[11px] font-normal text-slate-400 line-through">{referralPrice.original}</div>
+                                            <div className="text-[15px] font-normal" style={{ color: pack.color }}>{referralPrice.discounted}</div>
+                                        </>
+                                    ) : (
+                                        <div className="text-[15px] font-normal" style={{ color: pack.color }}>
+                                            {pack.price}
+                                        </div>
+                                    )}
                                 </div>
                             </button>
                         );
@@ -224,7 +306,10 @@ export default function PremiumModal({ user, onClose, onShowLogin, onPurchaseSuc
                         className="w-full py-4 rounded-full font-normal text-white text-[17px] shadow-[0_8px_20px_rgba(46,214,197,0.25)] transition-transform active:scale-[0.98] disabled:opacity-60"
                         style={{ background: 'linear-gradient(135deg, #2ED6C5, #0D9488)' }}
                     >
-                        {verifying ? '결제 확인 중...' : loading ? '처리 중...' : `${PACKS.find(p => p.id === selected)?.price} · 지금 구매하기`}
+                        {verifying ? '결제 확인 중...' : loading ? '처리 중...' : `${
+                            getReferralPrice(PACKS.find(p => p.id === selected), activeReferralOffer)?.discounted
+                            || PACKS.find(p => p.id === selected)?.price
+                        } · 지금 구매하기`}
                     </button>
 
                     {/* 네이티브: 구매 복원 / 웹: 로그인 복원 */}

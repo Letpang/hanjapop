@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { getPlatform } from './useAuth.js';
-import { RC_API_KEY_IOS, RC_API_KEY_ANDROID, RC_PRODUCT_IDS, entitlementsToPack } from '../utils/rcConfig.js';
+import { RC_API_KEY_IOS, RC_API_KEY_ANDROID, RC_PRODUCT_IDS, RC_REFERRAL_PRODUCT_IDS, entitlementsToPack } from '../utils/rcConfig.js';
 import { ensureInternalAccount } from '../lib/supabase.js';
 
 export const useRevenueCat = ({ enabled = true } = {}) => {
@@ -27,8 +27,13 @@ export const useRevenueCat = ({ enabled = true } = {}) => {
 
                 // package identifier → pack ID 매핑
                 const pkgMap = {};
+                const productMap = {
+                    ...RC_PRODUCT_IDS,
+                    ...(RC_REFERRAL_PRODUCT_IDS.fullpack20 && { fullpack_referral20: RC_REFERRAL_PRODUCT_IDS.fullpack20 }),
+                    ...(RC_REFERRAL_PRODUCT_IDS.fullpack50 && { fullpack_referral50: RC_REFERRAL_PRODUCT_IDS.fullpack50 }),
+                };
                 for (const pkg of current.availablePackages) {
-                    const match = Object.entries(RC_PRODUCT_IDS).find(
+                    const match = Object.entries(productMap).find(
                         ([, id]) => pkg.product.identifier === id
                     );
                     if (match) pkgMap[match[0]] = pkg;
@@ -42,8 +47,12 @@ export const useRevenueCat = ({ enabled = true } = {}) => {
     }, [enabled]);
 
     // pack1 / pack2 / fullpack 구매
-    const purchasePackage = useCallback(async (packId) => {
-        const pkg = packages[packId];
+    const purchasePackage = useCallback(async (packId, { referralOffer = null } = {}) => {
+        const referralPackageId = referralOffer?.discount_percent >= 50 ? 'fullpack_referral50' : 'fullpack_referral20';
+        const packageId = referralOffer?.eligible && packId === 'fullpack' && packages[referralPackageId]
+            ? referralPackageId
+            : packId;
+        const pkg = packages[packageId];
         if (!pkg) return { success: false, error: 'package_not_found' };
 
         setLoading(true);

@@ -5,7 +5,6 @@ import { SK } from '../constants/storageKeys.js';
 import HANJA_DATA from '../hanja_unified.json';
 import DAILY_CURRICULUM from '../data/dailyCurriculum.js';
 import IDIOMS from '../data/idioms.js';
-import { usePremium } from '../hooks/usePremium.js';
 import GradeGrid, { TopicCard } from './GradeGrid.jsx';
 import { getRankDetails, getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../utils/rankUtils.js';
 import { GRADES, CATEGORY_IMAGES } from '../constants/hanjaConstants.js';
@@ -222,9 +221,9 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
             <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl bg-[#F4F7F8] flex items-center justify-center text-xs-res font-normal text-[#AEB7C5] border border-[#E9EDF2] uppercase tracking-widest shrink-0">Q{idx + 1}</span>
                 <p className="font-normal text-[#3C3C3C] dark:text-slate-100 text-h4 tracking-tight break-keep leading-tight flex-1">
-                    {(q.id === 'q_syn' || q.id === 'q_ant') && q.prompt.match(/^([^\(]+)\((.+?)\)(.*)$/) ? (
+                    {(q.id === 'q_syn' || q.id === 'q_ant') && q.prompt.match(/^([^(]+)\((.+?)\)(.*)$/) ? (
                         (() => {
-                            const match = q.prompt.match(/^([^\(]+)\((.+?)\)(.*)$/);
+                            const match = q.prompt.match(/^([^(]+)\((.+?)\)(.*)$/);
                             return (
                                 <>
                                     <span className="hanja-char text-[#4F56D9] text-2xl align-middle mr-1">{match[1]}</span>
@@ -248,7 +247,7 @@ const QuizItem = ({ q, idx, onAnswer, twoCol }) => {
                     let customStyle = {};
 
                     if (typeof c === 'string' && (q.id === 'q_syn' || q.id === 'q_ant')) {
-                        const match = c.match(/^([^\(]+)\((.+)\)$/);
+                        const match = c.match(/^([^(]+)\((.+)\)$/);
                         if (match) {
                             content = (
                                 <div className="flex flex-col items-center justify-center w-full gap-1.5 py-2">
@@ -284,8 +283,6 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
     const refIdioms  = useRef(null);
     const refSynAnt  = useRef(null);
     const refQuiz    = useRef(null);
-    const refWriting = useRef(null);
-    const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const hasSynAnt = (item.syn && item.syn.length > 0) || (item.ant && item.ant.length > 0);
 
     const [isWordsOpen, setIsWordsOpen] = useState(false);
@@ -315,12 +312,6 @@ const HanjaStudySheet = ({ item, onBack, onWriteHanja, onMarkCorrect, onMarkWron
         return stop;
     }, [item.id]);
     const completionLabel = isSequence ? (isLast ? '전체 학습 완료하기' : '다음 한자로 이동') : '학습지 완료하기';
-
-    const handleWritingComplete = useCallback((hanjaId, score) => {
-        if (onHanjaAcquired) onHanjaAcquired(hanjaId, Math.round(score / 10));
-    }, [onHanjaAcquired]);
-
-    // handleWritingNext moved below finishStudySheet to avoid TDZ
 
     const handleAnswer = (qId, isCorrect) => {
         if (answeredQuestionIdsRef.current.has(qId)) return;
@@ -739,10 +730,6 @@ const HanjaCard = ({ item, isLocked, isCompleted, onClick }) => {
 // ─── 인라인 플립 카드 (백업 스타일 모방) ────────────────────
 // ─── 메인 FlashcardScreen ──────────────────────────────────────────────────
 const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMarkWrong, onMarkWordWrong, hanjaFilter, onStageClear, unlockedHanjaIds, onHanjaAcquired, userXp, selectedCharacter, getRewardPreview, onStudySheetComplete, isPremium = false, contentPool = null, currentDay = null }) => {
-    const { showPremiumGate } = usePremium();
-    const [viewMode, setViewMode] = useState('grade');
-    const [phase, setPhase] = useState('list');
-    const [isDailyMode, setIsDailyMode] = useState(!!contentPool && !hanjaFilter);
     const [studyItem, setStudyItem] = useState(null); // 학습지 열린 한자
     const [showExitModal, setShowExitModal] = useState(false);
     const [showAllDoneModal, setShowAllDoneModal] = useState(false);
@@ -775,12 +762,6 @@ const FlashcardScreen = ({ onBack, onCardFlip, onWriteHanja, onMarkCorrect, onMa
         if (contentPoolIds) return contentPoolIds;
         return unlockedIds;
     }, [contentPoolIds, unlockedIds]);
-
-    const unlockedGrades = useMemo(() => {
-        const s = new Set(['전체']);
-        for (const h of HANJA_DATA) { if (unlockedIds.has(h.id)) s.add(h.grade); }
-        return s;
-    }, [unlockedIds]);
 
     const currentItems = useMemo(() => {
         if (hanjaFilter && hanjaFilter.length > 0) return HANJA_DATA.filter(h => hanjaFilter.includes(h.id));

@@ -21,8 +21,22 @@ HANJA_DATA.forEach(h => {
     });
 });
 
+const shuffle = (items) => [...items].sort(() => 0.5 - Math.random());
+
+const getReadingDistractors = (targetWord, targetIsHanja) => {
+    const readingsByType = HANJA_DATA.flatMap(h => (h.words || [])
+        .filter(w => w.word && w.reading && w.type !== 'idiom' && /[一-鿿]/.test(w.word) === targetIsHanja)
+        .map(w => w.reading));
+    const fallbackReadings = HANJA_DATA.flatMap(h => (h.words || [])
+        .filter(w => w.reading && w.type !== 'idiom')
+        .map(w => w.reading));
+    const primary = [...new Set(readingsByType.filter(r => r && r !== targetWord.reading))];
+    const fallback = [...new Set(fallbackReadings.filter(r => r && r !== targetWord.reading && !primary.includes(r)))];
+    return shuffle([...primary, ...fallback]).slice(0, 3);
+};
+
 const getValidSentenceWords = (hanja) =>
-    (hanja?.words || []).filter(w => w.id != null && w.word && w.meaning && w.type !== 'idiom');
+    (hanja?.words || []).filter(w => w.id != null && w.word && w.reading && w.meaning && w.type !== 'idiom');
 
 const buildSentenceQueueFromWordIds = (wordIds, candidateHanja) => {
     const byWordId = new Map();
@@ -201,7 +215,26 @@ const SentenceQuizScreen = ({
             const preferredPool = appUnseenWords.length > 0 ? appUnseenWords : sessionPool;
             const nonConsecutivePool = preferredPool.filter(w => w.id !== lastWordIdRef.current);
             const wordPool = nonConsecutivePool.length > 0 ? nonConsecutivePool : preferredPool;
-            const targetWord = wordPool[Math.floor(Math.random() * wordPool.length)] ?? validWords[0];
+            const hasHanja = (s) => /[一-鿿]/.test(s);
+            const shuffledWordPool = shuffle(wordPool);
+            let targetWord = null;
+            let distractors = [];
+            for (const candidate of shuffledWordPool) {
+                const candidateDistractors = getReadingDistractors(candidate, hasHanja(candidate.word));
+                if (candidateDistractors.length >= 3) {
+                    targetWord = candidate;
+                    distractors = candidateDistractors;
+                    break;
+                }
+            }
+            if (!targetWord) {
+                targetWord = shuffledWordPool[0] ?? validWords[0];
+                distractors = targetWord ? getReadingDistractors(targetWord, hasHanja(targetWord.word)) : [];
+            }
+            if (!targetWord || distractors.length < 3) {
+                endQuiz();
+                return;
+            }
             if (targetWord?.id != null) {
                 if (!shownWordsRef.current.includes(targetWord.id)) {
                     shownWordsRef.current = [...shownWordsRef.current, targetWord.id];
@@ -209,16 +242,8 @@ const SentenceQuizScreen = ({
                 lastWordIdRef.current = targetWord.id;
                 onWordSeen?.(targetWord.id);
             }
-            const hasHanja = (s) => /[一-鿿]/.test(s);
-            const targetIsHanja = hasHanja(targetWord.word);
-            const allWords = HANJA_DATA.flatMap(h => (h.words || []).filter(w => w.word && w.type !== 'idiom' && hasHanja(w.word) === targetIsHanja).map(w => w.word));
-            const distractors = [];
-            while (distractors.length < 3) {
-                const rw = allWords[Math.floor(Math.random() * allWords.length)];
-                if (rw !== targetWord.word && !distractors.includes(rw)) distractors.push(rw);
-            }
             setCurrentQuiz({ type: 'sentence', char: hanjaItem.hanja, target: targetWord, sentence: targetWord.example || `${targetWord.meaning} (${targetWord.word})`, _hanjaId: hanjaItem.id });
-            setOptions([...distractors, targetWord.word].sort(() => 0.5 - Math.random()));
+            setOptions(shuffle([...distractors, targetWord.reading]));
         }
         setGameState('playing');
     }, [sessionPlan, activeHanjaSet, pickNextFromPool, seenWordIds, onWordSeen, endQuiz]);
@@ -368,10 +393,7 @@ const SentenceQuizScreen = ({
     const reading = wordReadingMap[word] || currentQuiz?.target?.reading || word;
     const meaning = currentQuiz?.target?.meaning || '';
     const speakText = currentQuiz?.type === 'sentence' ? reading : (currentQuiz?.sound || '');
-    const backReadingText = currentQuiz?.type === 'sentence' ? reading : (currentQuiz?.sound || '');
-    const backMeaningText = currentQuiz?.type === 'sentence' ? meaning : (currentQuiz?.meaning || '');
-    const isBackDense = backReadingText.length >= 4 || backMeaningText.length > 18;
-    const currentAnswer = currentQuiz?.type === 'sentence' ? currentQuiz?.target?.word : currentQuiz?.answer;
+    const currentAnswer = currentQuiz?.type === 'sentence' ? currentQuiz?.target?.reading : currentQuiz?.answer;
     const isLastQuestion = totalAnswered >= plannedQuizTotal ||
         (reviewQueueRef.current.length === 0 && normalQueueRef.current.length === 0);
     const displayQuestionNumber = Math.max(1, Math.min(
@@ -489,8 +511,8 @@ const remaining = after.substring(particle.length);
                             key={questionKey}
                             choices={options}
                             correctAnswer={currentAnswer}
-                            choiceClassName={currentQuiz.type === 'sentence' ? 'quiz-choice-btn--hanja' : ''}
-                            cardAspect="aspect-[16/10] sm:aspect-[16/8]"
+                            choiceClassName=""
+                            cardAspect="aspect-[9/5] sm:aspect-[16/9]"
                             isFirst={true}
                             isLast={isLastQuestion}
                             completing={completing}
@@ -527,34 +549,49 @@ const remaining = after.substring(particle.length);
                                     )}
                                 </p>
                             )}
-                            renderBack={({ isSpeaking, onSpeak }) => (
-                                <>
-                                    <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }} />
-                                    <div className={`quiz-card-back__content ${isBackDense ? 'quiz-card-back__content--dense' : ''}`}>
-                                        {currentQuiz.type === 'sentence' ? (
-                                            <>
-                                                <div className="quiz-card-back__reading-row">
-                                                    <span className={`quiz-card-back__reading ${backReadingText.length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{reading}</span>
-                                                    <span className="quiz-card-back__hanja hanja-char">({word})</span>
-                                                </div>
-                                                <div className="quiz-card-back__body">
-                                                    <p className={`quiz-card-back__text ${meaning.length > 28 ? 'quiz-card-back__text--long' : ''}`}>{meaning}</p>
-                                                </div>
-                                            </>
+                            renderBack={({ isSpeaking, onSpeak }) => {
+                                const backWord = currentQuiz.type === 'sentence' ? word : currentQuiz.char;
+                                const backReading = currentQuiz.type === 'sentence' ? reading : currentQuiz.sound;
+                                const backMeaning = currentQuiz.type === 'sentence' ? meaning : currentQuiz.meaning;
+                                const wordLen = (backWord || '').length;
+                                const seenChars = new Set();
+                                const charChips = [...(backWord || '')].map(ch => {
+                                    const h = HANJA_DATA.find(d => d.hanja === ch);
+                                    const badge = h.grade && h.grade.includes('급') ? h.grade : null;
+                                    return h ? { char: ch, meaning: h.meaning, sound: h.sound, badge } : null;
+                                }).filter(Boolean).filter(({ char }) => {
+                                    if (seenChars.has(char)) return false;
+                                    seenChars.add(char);
+                                    return true;
+                                });
+                                return (
+                                    <div className="flex flex-col h-full px-3 pt-2 pb-3">
+                                        <div className="flex justify-end shrink-0">
+                                            <SpeakButton isSpeaking={isSpeaking} onSpeak={(e) => { e.stopPropagation(); onSpeak(e); }} />
+                                        </div>
+                                        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                                        <span className={`word-quiz-term hanja-char font-normal text-[#1e293b] dark:text-slate-50 tracking-tighter drop-shadow-sm text-center leading-none ${wordLen <= 2 ? 'word-quiz-term--short' : wordLen === 3 ? 'word-quiz-term--medium' : wordLen === 4 ? 'word-quiz-term--idiom' : 'word-quiz-term--short'}`}>
+                                            {backWord}
+                                        </span>
+                                        <span className="text-xl font-normal text-slate-500 dark:text-slate-400">{backReading}</span>
+                                        {charChips.length > 0 ? (
+                                            <div className="flex items-center gap-2 flex-wrap justify-center">
+                                                {charChips.map(({ char, meaning: cm, sound, badge }) => (
+                                                    <div key={char} className="flex items-center gap-1 bg-[#EEF0FF] dark:bg-indigo-950/40 rounded-xl px-2.5 py-1.5 shadow-sm">
+                                                        <span className="hanja-char text-base font-normal text-[#334155] dark:text-slate-200">{char}</span>
+                                                        <span className="text-sm text-[#94A3B8]">{cm}</span>
+                                                        <span className="text-sm font-medium text-[#5B677A] dark:text-slate-300">{sound}</span>
+                                                        {badge && <span className="text-[10px] font-medium text-[#7C83FF] bg-white/70 dark:bg-indigo-900/50 px-1.5 py-0.5 rounded-full leading-none">{badge}</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         ) : (
-                                            <>
-                                                <div className="quiz-card-back__reading-row">
-                                                    <span className={`quiz-card-back__reading ${backReadingText.length >= 4 ? 'quiz-card-back__reading--long' : ''}`}>{currentQuiz.sound}</span>
-                                                    <span className="quiz-card-back__hanja hanja-char">({currentQuiz.char})</span>
-                                                </div>
-                                                <div className="quiz-card-back__body">
-                                                    <p className={`quiz-card-back__text ${(currentQuiz.meaning || '').length > 28 ? 'quiz-card-back__text--long' : ''}`}>{currentQuiz.meaning}</p>
-                                                </div>
-                                            </>
+                                            <span className="text-sm text-slate-400 text-center leading-snug">{backMeaning}</span>
                                         )}
+                                        </div>
                                     </div>
-                                </>
-                            )}
+                                );
+                            }}
                         />
                     )}
                 </div>

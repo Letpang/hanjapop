@@ -158,7 +158,6 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
             xpPopupKeyRef.current += 1;
             setXpPopup({ show: true, key: xpPopupKeyRef.current, amount: 10 });
             setTimeout(() => setXpPopup(p => ({ ...p, show: false })), 1500);
-        } else {
         }
     };
 
@@ -327,7 +326,7 @@ const LevelTestScreen = ({ onBack, onComplete, onHanjaAcquired, selectedCharacte
                         {/* 정오 표시 */}
                         {revealed && (
                             <div className={`quiz-feedback ${selected === q.answer ? 'quiz-feedback--correct' : 'quiz-feedback--wrong'}`}>
-                                {selected === q.answer ? '✓ 정답!' : `✗ 정답: ${q.answer}`}
+                                {selected === q.answer ? '정답!' : `정답: ${q.answer}`}
                             </div>
                         )}
 

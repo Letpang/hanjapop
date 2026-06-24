@@ -11,9 +11,10 @@ import { getTodayStr } from '../utils/sessionUtils.js';
 import { buildUnifiedPool } from '../utils/learningPool.js';
 import CtaButton from './common/CtaButton.jsx';
 import RewardBreakdown from './common/RewardBreakdown.jsx';
-import ResultModalShell, { ResultModalActions, ResultModalHeading, ResultShareButton } from './common/ResultModalShell.jsx';
+import ResultModalShell, { ResultModalActions, ResultModalHeading } from './common/ResultModalShell.jsx';
 import { CLEAR_MESSAGES } from '../constants/messages.js';
 import { shareImageToKakao } from '../utils/kakaoShare.js';
+import { fetchReferralSummary } from '../lib/supabase.js';
 
 const ShootGameScreen = lazy(() => import('./ShootGameScreen.jsx'));
 const MatchGameScreen = lazy(() => import('./MatchGameScreen.jsx'));
@@ -968,6 +969,100 @@ const JourneyMap = ({ dayNumber, theme, charId, done, chosenGame, chosenQuiz, on
 };
 
 
+const RESULT_CONFETTI = [
+    { left: '7%',  top: '25%', color: '#FF6B6B', w: 6, h: 8, r: 35,  dur: '2.8s', del: '0s'   },
+    { left: '18%', top: '60%', color: '#FFD93D', w: 8, h: 5, r: -20, dur: '2.4s', del: '0.3s' },
+    { left: '28%', top: '10%', color: '#6BCB77', w: 5, h: 7, r: 60,  dur: '3.2s', del: '0.5s' },
+    { left: '70%', top: '15%', color: '#4D96FF', w: 7, h: 5, r: -45, dur: '2.7s', del: '0.1s' },
+    { left: '82%', top: '50%', color: '#FF6B6B', w: 5, h: 8, r: 15,  dur: '3.0s', del: '0.4s' },
+    { left: '91%', top: '28%', color: '#C77DFF', w: 6, h: 6, r: -30, dur: '2.5s', del: '0.6s' },
+    { left: '55%', top: '72%', color: '#FFD93D', w: 7, h: 5, r: 50,  dur: '3.3s', del: '0.2s' },
+    { left: '42%', top: '8%',  color: '#4D96FF', w: 5, h: 7, r: -60, dur: '2.6s', del: '0.7s' },
+    { left: '60%', top: '42%', color: '#FF9B73', w: 6, h: 6, r: 25,  dur: '3.1s', del: '0.35s'},
+];
+
+const DailyInviteShareCard = ({ selectedCharacter, nickname = '탐험가' }) => {
+    return (
+        <div
+            className="relative overflow-hidden text-slate-800"
+            style={{ width: 800, height: 1000, fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif' }}
+        >
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,#D0F6EC_0%,#EEF8FF_48%,#FFF0CF_100%)]" />
+            <div className="absolute left-[54px] right-[54px] top-[50px] bottom-[50px] rounded-[54px] bg-white/28 border-[7px] border-white/86 shadow-[inset_0_0_54px_rgba(255,255,255,0.62),0_24px_56px_rgba(66,82,100,0.10)]" />
+            <div className="absolute left-1/2 top-[340px] h-[350px] w-[350px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.98)_0%,rgba(252,247,201,0.62)_43%,rgba(46,214,197,0.18)_72%,rgba(46,214,197,0)_100%)]" />
+            <img
+                src={`/assets/images/characters/${selectedCharacter || 'garae'}/rank_5.webp`}
+                alt=""
+                className="absolute left-1/2 top-[340px] z-10 h-[353px] w-[353px] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-[0_18px_22px_rgba(66,82,100,0.12)]"
+                onError={e => { e.target.src = '/assets/images/characters/default_3d.webp'; }}
+            />
+            <div className="absolute left-[94px] right-[94px] top-[540px] z-20 flex h-[310px] flex-col items-center justify-center rounded-[42px] bg-white/54 px-12 text-center shadow-[0_16px_36px_rgba(66,82,100,0.08)]">
+                <h1 className="text-[58px] font-extrabold leading-[1.12] tracking-tight text-[#4B423A] drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                    {nickname}님이 보낸<br />한자팝 선물
+                </h1>
+                <p className="mt-8 text-[24px] font-extrabold leading-snug text-[#777777]">
+                    시작하면 보너스 XP와<br />풀팩 할인권을 받아요
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const ReferralPlayRewardCard = () => {
+    const [summary, setSummary] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        fetchReferralSummary().then(({ summary: next }) => {
+            if (active) setSummary(next || null);
+        });
+        return () => { active = false; };
+    }, []);
+
+    const count = Math.min(5, Number(summary?.activated_count || 0));
+    const rewards = [
+        { count: 1, label: '20%', desc: '할인권' },
+        { count: 3, label: '50%', desc: '할인권' },
+        { count: 5, label: '무료', desc: '풀팩' },
+    ];
+
+    return (
+        <div className="w-full rounded-[1.15rem] border border-[#FFE0A8] bg-[#FFF9E8] px-3.5 py-3 shadow-[0_3px_10px_rgba(120,96,40,0.05)]">
+            <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                    <p className="text-[12px] font-medium text-[#7A5A10] leading-none">친구 초대 보상</p>
+                    <p className="mt-1 text-[11px] font-normal text-[#A87812] leading-snug break-keep">
+                        친구가 시작하면 내 풀팩 할인권이 열려요
+                    </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-white/80 px-2.5 py-1 text-[12px] font-semibold text-[#7A5A10] border border-[#F4D78D]">
+                    {count}/5
+                </span>
+            </div>
+            <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                {rewards.map(item => {
+                    const done = count >= item.count;
+                    return (
+                        <div
+                            key={item.count}
+                            className={`rounded-xl border px-2 py-2 text-center ${
+                                done ? 'bg-white border-[#2ED6C5]' : 'bg-white/60 border-[#F5E6BD]'
+                            }`}
+                        >
+                            <div className={`text-[13px] font-semibold leading-none ${done ? 'text-[#00A994]' : 'text-[#7A5A10]'}`}>
+                                {item.count}명 {item.label}
+                            </div>
+                            <div className="mt-1 text-[10px] font-normal text-[#9A7A28] leading-none">
+                                {item.desc} · 만료 없음
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 // ── Results Screen (3D Style - Premium Crossroads) ───────────────────────────
 const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharacter, userNickname, dayNumber, missions, doneCount, clearMsg }) => {
     const charImg = getCharacterImage(selectedCharacter, 'success');
@@ -976,29 +1071,33 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
     const missionTotal = missions?.length || 6;
     const missionDone = doneCount || 0;
     const allDone = missionDone >= missionTotal;
-    const progressPct = missionTotal ? (missionDone / missionTotal) * 100 : 0;
 
     const [shareStatus, setShareStatus] = useState('');
     const shareCardRef = useRef(null);
+    const shareInviteCardRef = useRef(null);
 
     const handleDailyShare = async () => {
         const nickname = userNickname || '탐험가';
         const hanjaDesc = todayHanja.filter(h => h.id).slice(0, 3).map(h => `${h.hanja}(${h.sound})`).join(' · ');
-        setShareStatus('화면 캡처 중...');
+        setShareStatus('초대 카드 준비 중...');
         try {
             let file = null;
-            if (shareCardRef.current) {
+            if (shareInviteCardRef.current) {
                 const { default: html2canvas } = await import('html2canvas');
-                const canvas = await html2canvas(shareCardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
+                const canvas = await html2canvas(shareInviteCardRef.current, { scale: 2, useCORS: true, backgroundColor: '#F7FAF9' });
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
-                if (blob) file = new File([blob], 'hanjapop-daily.png', { type: 'image/png' });
+                if (blob) file = new File([blob], 'hanjapop-invite.png', { type: 'image/png' });
             }
             setShareStatus('카카오톡 연결 중...');
             await shareImageToKakao({
                 file,
-                title: `${nickname}님이 한자팝 ${dayNumber}단계를 완료했어요!`,
-                description: hanjaDesc,
-                fallbackText: `한자팝 ${dayNumber}단계 완료!\n오늘 배운 한자: ${hanjaDesc}`,
+                title: `${nickname}님이 특별한 선물을 보냈어요`,
+                description: '초대 링크로 시작하면 풀팩 20% 할인권을 받을 수 있어요.',
+                fallbackText: `${nickname}님이 한자팝 ${dayNumber}단계를 완료했어요.\n오늘 배운 한자: ${hanjaDesc}\n\n초대 링크로 시작하면 풀팩 20% 할인권을 받을 수 있어요.`,
+                campaign: 'daily_clear',
+                buttonTitle: '선물 확인하러 가기',
+                imageWidth: 800,
+                imageHeight: 1000,
             });
             setShareStatus('카카오톡 공유를 열었어요');
         } catch (error) {
@@ -1023,11 +1122,32 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
 
     return (
         <ResultModalShell ref={shareCardRef} cardClassName="result-card-container" labelledBy="daily-result-title">
+            <div
+                ref={shareInviteCardRef}
+                aria-hidden="true"
+                className="fixed pointer-events-none"
+                style={{ left: '-10000px', top: 0, width: 800, height: 1000 }}
+            >
+                <DailyInviteShareCard
+                    selectedCharacter={selectedCharacter}
+                    nickname={userNickname || '탐험가'}
+                />
+            </div>
+
             <div className="w-full flex flex-col items-center relative">
                 {/* Decorative glow background */}
                 <div className="absolute top-[-50px] w-[240px] h-[240px] rounded-full blur-[80px] opacity-25 z-0" style={{ backgroundColor: '#2ED6C5' }} />
 
-                <div className="pt-5 pb-6 px-5 flex flex-col items-center gap-4 w-full relative z-10">
+                {/* Confetti */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-55">
+                    {RESULT_CONFETTI.map((p, i) => (
+                        <div key={i} style={{ position: 'absolute', left: p.left, top: p.top, rotate: `${p.r}deg` }}>
+                            <div style={{ width: `${p.w}px`, height: `${p.h}px`, backgroundColor: p.color, borderRadius: '2px', animation: `confetti-drift ${p.dur} ${p.del} ease-in-out infinite alternate` }} />
+                        </div>
+                    ))}
+                </div>
+
+                <div className="pt-2 pb-4 px-5 flex flex-col items-center gap-3 w-full relative z-10">
 
                     {/* 캐릭터 이미지 */}
                     <div className="relative flex items-center justify-center mt-7">
@@ -1046,63 +1166,60 @@ const ResultsScreen = ({ todayHanja, onComplete, onContinueNext, selectedCharact
                         id="daily-result-title"
                         kicker={`오늘의 ${dayNumber}단계 탐험 완료!`}
                         title={clearMsg}
-                        description={<>일일 완료 보너스 <span className="text-[#FF9B73]">+200 XP</span> 획득!</>}
+                        description={<>일일 완료 보너스 <span className="font-semibold text-amber-400">+200 XP</span></>}
                     />
 
                     {/* 오늘 배운 한자 카드 */}
                     <div className="w-full flex flex-col gap-2">
                         <p className="text-[13px] font-medium text-slate-500 text-center uppercase tracking-widest">오늘 배운 한자</p>
-                        <div className="flex gap-2 w-full">
+                        <div className="flex gap-3 w-full">
                             {todayHanja.filter(h => h.id).map((h, i) => (
-                                <div key={i} className="flex-1 clay-panel !rounded-[1.3rem] flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 border-[2px] border-white dark:border-slate-700 !bg-[#F8FAF9] dark:bg-slate-900 shadow-sm">
-                                    <span className="text-4xl font-normal text-slate-700 dark:text-slate-100 leading-none">{h.hanja}</span>
-                                    <span className="text-sm font-normal text-[#8F99AD] text-center break-keep leading-tight">{h.meaning} {h.sound}</span>
+                                <div key={i} className="hanja-review-card flex-1 !rounded-[1.3rem] flex flex-col items-center justify-center py-3.5 px-2 gap-1.5 border border-[#D8E2ED] !bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+                                    <span className="hanja-char text-4xl font-normal text-slate-700 leading-none">{h.hanja}</span>
+                                    <span className="hanja-label text-sm font-normal text-[#8F99AD] text-center break-keep leading-tight">{h.meaning} {h.sound}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* 오늘의 퀘스트 진행 현황 */}
-                    <div className="w-full rounded-[1.4rem] bg-[#F4F7F8]/80 border border-[#E9EDF2] p-4 flex flex-col gap-2 shadow-inner">
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col text-left">
-                                <span className="font-normal text-[15px] text-slate-700 dark:text-slate-100 leading-none">오늘의 퀘스트 현황</span>
-                                <span className="font-normal text-[12px] text-slate-400 mt-1">올클리어 시 +200 XP!</span>
-                            </div>
-                            <span className={`px-2.5 py-0.5 rounded-full font-normal text-[11px] ${allDone ? 'bg-[#2ED6C5] text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-400 border border-slate-100'}`}>
-                                {missionDone} / {missionTotal}
-                            </span>
+                    {/* 오늘의 퀘스트 요약 */}
+                    <div className="w-full rounded-[1.15rem] bg-[#F7FAF9]/90 dark:bg-slate-700/50 border border-[#E9EDF2] dark:border-slate-600 px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex flex-col items-start gap-1">
+                            <span className="font-medium text-[14px] text-slate-700 dark:text-slate-100 leading-none">오늘의 퀘스트</span>
+                            <span className="font-normal text-[11px] text-slate-400 leading-none">올클리어 시 +200 XP!</span>
                         </div>
-                        <div className="w-full flex items-center gap-2 mt-0.5">
-                            <div className="flex-1 h-2 rounded-full bg-slate-200 overflow-hidden shadow-inner">
-                                <div className="quiz-progress-fill"
-                                    style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #2ED6C5, #0D9488)', boxShadow: '0 0 6px rgba(46,214,197,0.3)' }} />
-                            </div>
-                            <span className="font-normal text-[11px] text-[#0D9488] min-w-[28px] text-right">{Math.round(progressPct)}%</span>
-                        </div>
+                        <span className={`px-2.5 py-1 rounded-full font-semibold text-[13px] ${allDone ? 'bg-[#2ED6C5] text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 border border-slate-200'}`}>
+                            {missionDone} / {missionTotal}
+                        </span>
                     </div>
+
+                    <ReferralPlayRewardCard />
 
                     {/* 버튼 영역 */}
                     <ResultModalActions>
                         {!isFinalDay && (
-                            <CtaButton theme="coral" onClick={onContinueNext}>
-                                <div className="flex flex-col items-center justify-center gap-0.5">
-                                    <span className="font-normal text-white text-[1.35rem] drop-shadow-md">다음 단계 계속 도전하기 ›</span>
-                                    <span className="text-[13px] text-white/90 font-normal">({dayNumber + 1}단계로 바로 넘어가서 계속 달립니다)</span>
-                                </div>
+                            <CtaButton theme="teal" onClick={onContinueNext}>
+                                <span className="font-normal text-white text-[1.35rem] drop-shadow-md">다음 단계 계속 도전하기 ›</span>
                             </CtaButton>
                         )}
-                        <CtaButton theme="indigo" onClick={onComplete}>
-                            <div className="flex flex-col items-center justify-center gap-0.5">
-                                <span className="font-normal text-white text-[1.35rem] drop-shadow-md">메인 화면으로 이동</span>
-                                <span className="text-[13px] text-white/90 font-normal">(남은 퀘스트를 채우고 올클리어 보너스 받기)</span>
-                            </div>
-                        </CtaButton>
-                        <ResultShareButton
-                            onClick={handleDailyShare}
-                            title="카카오톡으로 자랑하기"
-                            subtitle="오늘 배운 한자 3글자와 함께 공유해요"
-                        />
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <button
+                                type="button"
+                                onClick={onComplete}
+                                className="min-h-[60px] rounded-[1.1rem] border border-[#E3EAF2] bg-white active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-0.5 py-2 px-2"
+                            >
+                                <span className="text-[1rem] font-medium text-slate-600">메인으로</span>
+                                <span className="text-[0.68rem] font-normal text-slate-400 text-center leading-tight">오늘의 퀘스트 완료하고 200XP 받기</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleDailyShare}
+                                className="min-h-[60px] rounded-[1.1rem] bg-[#FEE500] shadow-[0_3px_10px_rgba(0,0,0,0.08)] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-0.5 py-2 px-2"
+                            >
+                                <span className="text-[1rem] font-medium text-[#3D2C04]">카톡 공유</span>
+                                <span className="text-[0.68rem] font-normal text-[#7A5A10] text-center leading-tight">1명 성공 시 내 풀팩 20% 할인권</span>
+                            </button>
+                        </div>
                         {shareStatus && <p className="text-center text-[11px] text-slate-400 -mt-1.5">{shareStatus}</p>}
                     </ResultModalActions>
 
@@ -1201,6 +1318,10 @@ const DailySessionScreen = ({
         const q = sessionQueueRef.current;
         if (!q.wordIds.length) return [];
         let { wordIds, wordIdx } = q;
+        if (wordIds.length - wordIdx < n) {
+            wordIds = [...wordIds].sort(() => Math.random() - 0.5);
+            wordIdx = 0;
+        }
         const result = [];
         while (result.length < n) {
             if (wordIdx >= wordIds.length) { wordIds = [...wordIds].sort(() => Math.random() - 0.5); wordIdx = 0; }
@@ -1445,7 +1566,7 @@ const DailySessionScreen = ({
                         setResumeStep('dice');
                         setStep('dice');
                     }}
-                    quizCount={5}
+                    quizCount={6}
                     clearXp={20}
                 />
             </Suspense>
@@ -1469,7 +1590,8 @@ const DailySessionScreen = ({
                     contentPool={contentPool} selectedCharacter={selectedCharacter}
                     onWaveClear={(kills) => { if (addTodayStat) addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
                     onMarkCorrect={(id) => onMarkCorrect(id)}
-                    onMarkWrong={(id) => onMarkWrong(id)}
+                    onMarkWrong={() => {}}
+                    onWordWrong={(wordId, hanjaId, reading, meaning) => { if (onMarkWordWrong) onMarkWordWrong(wordId, hanjaId, reading, meaning); }}
                     masteryData={masteryData} srsData={srsData} currentDay={dayNumber}
                     onHanjaSeen={(ids) => markHanjaSeen(ids)}
                     seenWordIds={seenWordIds}

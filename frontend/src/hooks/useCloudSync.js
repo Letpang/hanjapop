@@ -42,12 +42,19 @@ const hasMeaningfulLocalData = () => {
     const xp = Number(localStorage.getItem(SK.USER_XP) || 0);
     const studyLog = readLocalObject('study_log');
     const mastery = readLocalObject('hanja_data');
-    return xp > 0 || Object.keys(studyLog.days || {}).length > 0 || Object.keys(mastery).length > 0;
+    const wordData = readLocalObject('word_data');
+    return (
+        xp > 0
+        || Object.keys(studyLog.days || {}).length > 0
+        || Object.keys(mastery).length > 0
+        || Object.keys(wordData).length > 0
+    );
 };
 
 const hasMeaningfulCloudData = (profile, learningData) => (
     Number(profile?.xp || 0) > 0
     || Object.keys(learningData?.mastery_data || {}).length > 0
+    || Object.keys(learningData?.word_wrong_data || {}).length > 0
     || Object.keys(learningData?.daily_study_log || {}).length > 0
     || Object.keys(learningData?.total_stats || {}).length > 0
     || Object.keys(learningData?.extra_progress || {}).length > 0
@@ -371,6 +378,29 @@ export const useCloudSync = ({
     const adoptLocalDataForCurrentAccount = useCallback(async () => {
         const currentUser = await getCurrentUser();
         if (!currentUser) return { success: false, reason: 'signed_out' };
+
+        // 안전장치: 업로드 직전 클라우드를 다시 조회해 기존 데이터가 없는지 재확인한다.
+        // 네트워크 오류 등으로 hasMeaningfulCloudData가 잘못 false를 반환했을 경우를 방어한다.
+        try {
+            let profile = null, learningData = null;
+            const internalResult = await fetchInternalAccountBackup();
+            if (internalResult.supported && !internalResult.error) {
+                profile = internalResult.data?.profile || null;
+                learningData = internalResult.data?.learning_data || null;
+            } else if (!internalResult.supported) {
+                const [p, l] = await Promise.all([fetchUserProfile(), restoreLearningData()]);
+                profile = p.data;
+                learningData = l.data;
+            }
+            if (hasMeaningfulCloudData(profile, learningData)) {
+                // 예상치 못하게 클라우드에 데이터가 있음 → 업로드 중단
+                return { success: false, reason: 'cloud_has_data' };
+            }
+        } catch {
+            // 재확인 실패 시 안전하게 중단
+            return { success: false, reason: 'recheck_failed' };
+        }
+
         await linkAuthToDevice(currentUser.id);
         sessionStorage.setItem(`${RESTORE_READY_PREFIX}${currentUser.id}`, 'true');
         const syncResult = await syncToCloud();

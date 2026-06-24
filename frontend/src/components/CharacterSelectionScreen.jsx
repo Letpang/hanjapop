@@ -81,9 +81,9 @@ const CharacterSelectionScreen = ({ onSelect, onBack }) => {
             {/* 파티클 효과용 컨테이너 (옵션) */}
             <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/60 via-transparent to-transparent"></div>
 
-            <div className="w-full min-h-full flex flex-col items-center justify-start gap-2.5 md:gap-8 relative z-50 px-4 pt-2 safe-bottom pb-6 md:px-10 max-w-5xl mx-auto">
+            <div className="w-full min-h-full flex flex-col items-center justify-center gap-2.5 md:gap-8 relative z-50 px-4 py-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] md:px-10 max-w-5xl mx-auto">
                 {/* 뒤로가기 헤더 */}
-                <div className="w-full shrink-0 safe-top px-2 flex justify-start">
+                <div className="w-full shrink-0 px-2 flex justify-start">
                     {onBack && (
                         <button onClick={onBack} className="hp-nav-button glass-panel !w-12 !h-12 flex items-center justify-center rounded-full text-slate-600 hover:scale-105 active:scale-95 transition-all">
                             ←

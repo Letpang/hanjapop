@@ -6,6 +6,11 @@ const VARIANT_TO_PACK: Record<string, number> = {
     '1763594': 3,
 }
 
+const REFERRAL_FULLPACK_20_VARIANT_ID = Deno.env.get('LEMON_REFERRAL_FULLPACK_20_VARIANT_ID') ?? Deno.env.get('LEMON_REFERRAL_FULLPACK_VARIANT_ID') ?? ''
+const REFERRAL_FULLPACK_50_VARIANT_ID = Deno.env.get('LEMON_REFERRAL_FULLPACK_50_VARIANT_ID') ?? ''
+if (REFERRAL_FULLPACK_20_VARIANT_ID) VARIANT_TO_PACK[REFERRAL_FULLPACK_20_VARIANT_ID] = 3
+if (REFERRAL_FULLPACK_50_VARIANT_ID) VARIANT_TO_PACK[REFERRAL_FULLPACK_50_VARIANT_ID] = 3
+
 function hexToUint8Array(hex: string): Uint8Array {
     if (!/^[\da-f]{64}$/i.test(hex)) return new Uint8Array()
     const pairs = hex.match(/[\da-f]{2}/gi) ?? []
@@ -98,6 +103,14 @@ Deno.serve(async (req) => {
     if (error) {
         console.error('Purchase ledger update failed:', error)
         return new Response('Database error', { status: 500 })
+    }
+
+    const referralOfferId = payload.meta?.custom_data?.referral_offer_id ?? null
+    if (eventName === 'order_created' && referralOfferId) {
+        const { error: offerError } = await supabase.rpc('consume_referral_offer', {
+            p_offer_id: referralOfferId,
+        })
+        if (offerError) console.error('Referral offer consume failed:', offerError)
     }
 
     return new Response('OK', { status: 200 })

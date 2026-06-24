@@ -53,6 +53,7 @@ const GradeTestResult = ({
                 title: `한자팝 ${grade} 합격했어요!`,
                 description: `${correct}/${total} 정답 · 한자팝 급수 인증`,
                 fallbackText: `한자팝 ${grade} 합격!\n${correct}/${total} 정답으로 통과했어요`,
+                campaign: 'grade_pass',
             });
             setShareStatus('카카오톡 공유를 열었어요');
         } catch (error) {

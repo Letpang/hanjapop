@@ -27,11 +27,11 @@
     --hp-btn-inner-radius: 1.6rem;
     --hp-btn-pad-y: 1rem;
     --hp-btn-pad-x: 1.25rem;
-    --hp-btn-font: 1.5rem;
+    --hp-btn-font: clamp(1.95rem, 5.4vw, 2.35rem);
     --hp-cta-radius: 1.5rem;
-    --hp-cta-pad-y: 1rem;
+    --hp-cta-pad-y: 0.65rem;
     --hp-cta-pad-x: 1.25rem;
-    --hp-cta-min-height: 64px;
+    --hp-cta-min-height: 52px;
 }
 
 /* Typography Utilities (Responsive & Standard Names) */
@@ -51,6 +51,8 @@
 h1, h2 { font-family: var(--font-display); font-weight: 500; }
 
 body {
+    margin: 0;
+    padding: 0;
     font-family: var(--font-ui);
     font-weight: 400;
     letter-spacing: 0;
@@ -348,6 +350,25 @@ body.dark-mode {
     box-shadow: 0 3px 8px rgba(0, 199, 174, 0.25), inset 0 -1px 0 rgba(0, 120, 105, 0.2);
 }
 
+.hp-cta-button--ghost {
+    background: #F8FAFC;
+    color: #374151;
+    border: 1.5px solid #E2E8F0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.hp-cta-button--ghost::before {
+    background: none;
+}
+.hp-cta-button--ghost:active {
+    background: #F0F4F7;
+    box-shadow: none;
+}
+
+@keyframes confetti-drift {
+    0%   { transform: translateY(0);     opacity: 0.7; }
+    100% { transform: translateY(-20px); opacity: 0.25; }
+}
+
 /* ── Quiz Choice Grid (공통 4지선다 래퍼) ────────────────────── */
 .quiz-choice-grid {
     display: grid;
@@ -365,25 +386,25 @@ body.dark-mode {
 }
 
 .word-quiz-choice-grid .quiz-choice-btn {
-    font-size: clamp(1.4rem, 4.8vw, 1.75rem);
+    font-size: clamp(1.05rem, 5.1vw, 1.55rem);
 }
 
 .word-quiz-term--short {
-    font-size: clamp(5rem, 23vw, 6.25rem) !important;
+    font-size: clamp(3rem, 14vw, 4rem) !important;
     font-weight: 500 !important;
     letter-spacing: -0.045em !important;
 }
 
 .word-quiz-term--medium {
-    font-size: clamp(6.1rem, 27vw, 7.1rem) !important;
+    font-size: clamp(3rem, 13vw, 4.2rem) !important;
     font-weight: 500 !important;
-    letter-spacing: -0.06em !important;
+    letter-spacing: -0.04em !important;
 }
 
 .word-quiz-term--idiom {
-    font-size: clamp(4.65rem, 19vw, 5.25rem) !important;
+    font-size: clamp(2.4rem, 10.5vw, 3.5rem) !important;
     font-weight: 500 !important;
-    letter-spacing: -0.055em !important;
+    letter-spacing: -0.03em !important;
 }
 
 @media (max-height: 700px) {
@@ -477,13 +498,6 @@ body.dark-mode {
     border-color: #9FA5FF;
     color: #4F56D9;
 }
-.quiz-choice-btn--correct::after {
-    content: '✓';
-    color: #7C83FF;
-    flex-shrink: 0;
-    margin-left: 0.5rem;
-}
-
 .quiz-choice-btn--wrong {
     border-color: #FFA88D;
     border-bottom-color: #FFA88D;
@@ -495,13 +509,6 @@ body.dark-mode {
     border-color: #FFC0AD;
     color: #F4775C;
 }
-.quiz-choice-btn--wrong::after {
-    content: '✕';
-    color: #FF8D72;
-    flex-shrink: 0;
-    margin-left: 0.5rem;
-}
-
 .quiz-choice-btn--dimmed {
     border-bottom-width: 1.5px;
     border-bottom-color: #E9EDF2;
@@ -559,10 +566,9 @@ body.dark-mode {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 1rem 1.5rem;
+    padding: 0.75rem 0.5rem;
     box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
     overflow: hidden;
-    overflow-y: auto;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     transform: rotateY(180deg);
@@ -574,7 +580,7 @@ body.dark-mode {
     gap: 1.25rem;
     width: 100%;
     max-height: 100%;
-    margin: auto 0;
+    margin: 0;
 }
 .quiz-card-back__content--dense {
     gap: 0.75rem;
@@ -615,7 +621,7 @@ body.dark-mode {
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding-inline: 0.5rem;
+    padding-inline: 0;
 }
 .quiz-example-font {
     font-size: clamp(1.5rem, 5.5vw, 2.2rem);
@@ -628,21 +634,21 @@ body.dark-mode {
 }
 
 .sentence-quiz-prompt--short {
-    font-size: clamp(2.15rem, 8.2vw, 2.8rem);
+    font-size: clamp(2.15rem, 7.8vw, 2.75rem);
 }
 
 .sentence-quiz-prompt--medium {
-    font-size: clamp(1.8rem, 7vw, 2.35rem);
+    font-size: clamp(1.75rem, 6.2vw, 2.15rem);
 }
 
 .sentence-quiz-prompt--long {
-    font-size: clamp(1.3rem, 5vw, 1.7rem);
+    font-size: clamp(1.35rem, 4.8vw, 1.75rem);
     line-height: 1.4;
 }
 
 .sentence-quiz-prompt--extra-long {
-    font-size: clamp(1.05rem, 3.8vw, 1.4rem);
-    line-height: 1.35;
+    font-size: clamp(1.12rem, 3.9vw, 1.42rem);
+    line-height: 1.38;
 }
 
 .sentence-quiz-blank-text {
@@ -2071,7 +2077,7 @@ body.dark .clay-button {
     animation: zoom-in 0.2s ease, fade-in 0.2s ease;
 }
 .exit-confirm-card > img {
-    width: 104px; height: 104px;
+    width: 160px; height: 160px;
     object-fit: contain; margin-bottom: 0.5rem;
 }
 .exit-confirm-content {
@@ -2277,6 +2283,7 @@ body.dark .clay-button {
     display: flex; flex-direction: column;
     gap: 0.75rem; width: 100%;
     position: relative; z-index: 10;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 /* ── 공통 결과/축하 모달 ───────────────────────────────────── */
@@ -2287,7 +2294,7 @@ body.dark .clay-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+    padding: max(1rem, env(safe-area-inset-top)) 1rem max(3.5rem, env(safe-area-inset-bottom));
     overflow-y: auto;
     background: rgba(71, 85, 105, 0.42);
     backdrop-filter: blur(14px);
@@ -2332,9 +2339,9 @@ body.dark .clay-button {
 }
 .result-modal-heading .result-title {
     margin: 0;
-    font-size: clamp(1.8rem, 7vw, 2.25rem);
+    font-size: clamp(1.3rem, 5.5vw, 1.6rem);
     line-height: 1.18;
-    word-break: keep-all;
+    white-space: nowrap;
 }
 .result-modal-description {
     margin: 0.15rem 0 0;
@@ -2357,8 +2364,8 @@ body.dark .clay-button {
     border: 0;
     border-radius: var(--hp-cta-radius);
     color: #3D2C04;
-    background: linear-gradient(180deg, #FFFCE0 0%, #FFE860 35%, #FFCC00 70%, #FFB000 100%);
-    box-shadow: 0 8px 20px rgba(255,180,0,0.28), inset 0 1px 0 rgba(255,255,255,0.65);
+    background: #FEE500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2367,11 +2374,7 @@ body.dark .clay-button {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .result-share-button::before {
-    content: '';
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 45%;
-    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0));
+    content: none;
 }
 .result-share-button > span {
     position: relative;
@@ -2696,13 +2699,15 @@ body.dark .clay-button {
 
 /* 퀴즈 다음/이전 네비게이션 버튼 공통 */
 .quiz-next-btn {
-    padding: 0.75rem 1.25rem;
+    min-height: 3.5rem;
+    padding: 0.65rem 1.5rem;
     border-radius: 2.5rem;
     background: linear-gradient(160deg, #A5A9F8 0%, #6B72EF 100%);
-    font-weight: 500;
-    font-size: 1.5rem;
+    font-weight: 600;
+    font-size: clamp(1.95rem, 5.4vw, 2.35rem);
+    line-height: 1;
     color: #FFFFFF;
-    box-shadow: 0 8px 20px rgba(100, 108, 240, 0.38), 0 2px 6px rgba(100, 108, 240, 0.22);
+    box-shadow: 0 13px 26px rgba(100, 108, 240, 0.34), 0 3px 8px rgba(100, 108, 240, 0.24);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     display: flex;
     align-items: center;
@@ -2712,11 +2717,13 @@ body.dark .clay-button {
 .quiz-next-btn:active { transform: scale(0.95); box-shadow: 0 3px 8px rgba(100, 108, 240, 0.25); }
 
 .quiz-prev-btn {
-    padding: 0.75rem 1.25rem;
+    min-height: 3.5rem;
+    padding: 0.65rem 1.5rem;
     border-radius: 2.5rem;
     background: #FFFFFF;
-    font-weight: 500;
-    font-size: 1.5rem;
+    font-weight: 600;
+    font-size: clamp(1.85rem, 5vw, 2.2rem);
+    line-height: 1;
     color: #5B677A;
     border: 2px solid #E9EDF2;
     box-shadow: 0 2px 8px rgba(120, 130, 160, 0.08);
@@ -2735,12 +2742,12 @@ body.dark .clay-button {
     background: rgba(255, 255, 255, 0.85) !important;
     border: 2px solid #E2E8F2 !important;
     color: #58627A !important;
-    border-radius: var(--hp-btn-radius) !important;
-    padding: var(--hp-btn-pad-y) var(--hp-btn-pad-x) !important;
+    border-radius: var(--hp-cta-radius) !important;
+    padding: var(--hp-cta-pad-y) var(--hp-cta-pad-x) !important;
     box-shadow: 0 4px 12px rgba(100, 120, 160, 0.08) !important;
     transition: all 0.2s ease-in-out !important;
-    min-height: 64px;
-    font-size: var(--hp-btn-font) !important;
+    min-height: var(--hp-cta-min-height);
+    font-size: 1.5rem !important;
     font-weight: 500 !important;
     line-height: 1.2;
 }
@@ -2791,6 +2798,79 @@ body.dark .clay-button {
     box-shadow: 0 18px 44px rgba(120, 130, 160, 0.12);
     border-radius: 48px;
     background-color: #FFFFFF;
+}
+
+.result-balanced-body {
+    padding-top: 0.75rem;
+    padding-bottom: 2.4rem;
+    gap: 1.3rem;
+}
+
+.result-balanced-card .activity-result-char {
+    width: 140px;
+    height: 140px;
+    margin-top: 18px;
+    margin-bottom: 0;
+}
+
+.result-balanced-card .activity-result-glow {
+    top: 8px;
+    width: 110px;
+    height: 110px;
+}
+
+.result-balanced-content-stack {
+    transform: translateY(0);
+}
+
+.result-balanced-lower-stack {
+    width: 100%;
+    transform: translateY(0);
+}
+
+.result-balanced-card .result-btn-area {
+    margin-top: 0.25rem;
+}
+
+.shoot-result-card {
+    max-width: 24rem;
+}
+
+.shoot-result-card-body {
+    padding-top: 0.75rem;
+    padding-bottom: 2.4rem;
+    gap: 1.3rem;
+}
+
+.shoot-result-card .activity-result-char {
+    width: 185px;
+    height: 185px;
+    margin-top: -0.7rem;
+    margin-bottom: -0.65rem;
+}
+
+.shoot-result-card .activity-result-glow {
+    top: 8px;
+    width: 145px;
+    height: 145px;
+}
+
+.shoot-result-card .result-fail-desc {
+    margin-top: 0.2rem;
+    margin-bottom: 0.35rem;
+}
+
+.shoot-result-content-stack {
+    transform: translateY(-1.35rem);
+}
+
+.shoot-result-lower-stack {
+    width: 100%;
+    transform: translateY(-1.35rem);
+}
+
+.shoot-result-card .result-btn-area {
+    margin-top: 0.25rem;
 }
 
 .quiz-result-overlay {
@@ -3295,11 +3375,29 @@ body.dark .clay-button {
         inset 0 2px 0 rgba(255,255,255,0.05);
 }
 
+.dark-mode .result-modal-shell {
+    background: #1e293b;
+    border-color: rgba(255,255,255,0.08);
+    box-shadow: 0 22px 55px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.dark-mode .result-card-container .hanja-review-card {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+.dark-mode .result-card-container .hanja-review-card .hanja-char {
+    color: #f1f5f9 !important;
+}
+.dark-mode .result-card-container .hanja-review-card .hanja-label {
+    color: #94a3b8 !important;
+}
+
 .dark-mode .result-title {
     color: #f8fafc;
 }
 
 .dark-mode .result-title--clear {
+    color: #FF9B73;
     text-shadow: 0 0 10px rgba(46,214,197,0.3);
 }
 
@@ -3437,28 +3535,28 @@ body.dark .clay-button {
 }
 
 .match-card-copy--meaning {
-    font-size: clamp(1.25rem, 11cqw, 2rem) !important;
+    font-size: clamp(1.38rem, 12.5cqw, 2.2rem) !important;
     padding-inline: clamp(0.5rem, 4cqw, 1.25rem);
 }
 
 .match-card-copy--meaning.match-card-copy--long {
-    font-size: clamp(0.88rem, 7.2cqw, 1.28rem) !important;
+    font-size: clamp(1.02rem, 8.4cqw, 1.48rem) !important;
     line-height: 1.2 !important;
     padding-inline: clamp(0.3rem, 2.5cqw, 0.7rem);
 }
 
 .match-card-copy--meaning.match-card-copy--dense {
-    font-size: clamp(0.72rem, 6cqw, 1.05rem) !important;
+    font-size: clamp(0.84rem, 6.8cqw, 1.16rem) !important;
     line-height: 1.16 !important;
     padding-inline: clamp(0.2rem, 1.8cqw, 0.45rem);
-    letter-spacing: -0.035em !important;
+    letter-spacing: 0 !important;
 }
 
 .match-card-copy--meaning.match-card-copy--ultra-dense {
-    font-size: clamp(0.64rem, 5.1cqw, 0.9rem) !important;
+    font-size: clamp(0.74rem, 5.8cqw, 1rem) !important;
     line-height: 1.12 !important;
     padding-inline: 0.12rem;
-    letter-spacing: -0.045em !important;
+    letter-spacing: 0 !important;
 }
 
 .match-game-timer {
@@ -3484,15 +3582,23 @@ body.dark .clay-button {
 }
 
 .shoot-option-button {
-    min-height: 3rem;
+    min-height: 3.15rem;
 }
 
 .shoot-option-text {
-    font-size: clamp(1.25rem, 5.4vw, 1.55rem);
+    font-size: clamp(1.45rem, 6vw, 1.85rem);
+    line-height: 1.12;
+    max-width: 100%;
 }
 
 .shoot-option-text--long {
-    font-size: clamp(1.05rem, 4.6vw, 1.3rem);
+    font-size: clamp(1.18rem, 4.8vw, 1.45rem);
+    line-height: 1.16;
+}
+
+.shoot-option-text--xlong {
+    font-size: clamp(0.98rem, 4vw, 1.18rem);
+    line-height: 1.18;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -3956,6 +4062,10 @@ body.dark .clay-button {
 .daily-pick-screen,
 .daily-intro-screen {
     justify-content: center;
+}
+
+.daily-intro-screen {
+    overflow-y: hidden;
 }
 
 .daily-pick-screen .daily-pick-content,

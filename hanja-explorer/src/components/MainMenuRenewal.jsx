@@ -302,9 +302,10 @@ const MainMenuRenewal = ({
                                     </div>
                                 </div>
                             </CtaButton>
-                            {/* 진행률 바 — 별도 영역, 클릭 시 단계 선택 모달만 열림 */}
+                            {/* 진행률 바 — 위 CTA와 같은 탐험 이동 동작 */}
                             <button
-                                onClick={() => setShowModal(true)}
+                                type="button"
+                                onClick={handlePrimaryCta}
                                 className="w-full px-4 py-2.5 flex items-center gap-3 active:scale-[0.98] transition-all"
                                 style={{ background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.08)' : 'linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%)', borderRadius: 0 }}
                             >

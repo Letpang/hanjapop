@@ -45,7 +45,7 @@ const QuizCard = ({
     choiceGridStyle,
     choiceClassName = '',
     renderChoice,         // (choice, { isCorrect, isWrong, isDimmed }) => ReactNode
-    cardAspect = 'aspect-[2/1] sm:aspect-[16/9]',
+    cardAspect = 'aspect-[9/5] sm:aspect-[16/9]',
     cardLayout = 'aspect',
     isFirst = true,
     isLast = false,
@@ -152,14 +152,14 @@ const QuizCard = ({
     };
 
     const card = cardLayout === 'content' ? (
-        // 사자성어: 뒷면(relative)이 높이 결정, 앞면(absolute)이 overlay
+        // 사자성어: 앞면(relative)이 높이 결정, 뒷면(absolute)이 overlay
         <div className="w-full card-flip-perspective" onClick={handleCardClick}>
             <div style={{ ...flipStyle, transition: 'transform 700ms' }}>
-                <div style={{ position: 'relative', transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isFlipped ? 1 : 0 }}>
-                    {renderBack?.({ isSpeaking, onSpeak: doSpeak })}
-                </div>
-                <div style={{ position: 'absolute', inset: 0, backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isFlipped ? 0 : 1 }}>
+                <div style={{ position: 'relative', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isFlipped ? 0 : 1 }}>
                     {renderFront?.({ isAnswered: isCorrectSelected, hasWrong: wrongChoices.length > 0 })}
+                </div>
+                <div style={{ position: 'absolute', inset: 0, transform: 'rotateY(180deg)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isFlipped ? 1 : 0 }}>
+                    {renderBack?.({ isSpeaking, onSpeak: doSpeak })}
                 </div>
             </div>
         </div>
@@ -167,7 +167,7 @@ const QuizCard = ({
         // 단어/문장: 고정 비율 컨테이너, 양면 absolute
         <div className={`relative w-full ${cardAspect} card-flip-perspective`} onClick={handleCardClick}>
             <div className={`relative w-full h-full transition-all duration-700 ${isCorrectSelected ? 'cursor-pointer shadow-2xl dark:shadow-slate-900/50' : ''} rounded-[4rem]`} style={flipStyle}>
-                <div className="quiz-card-front absolute inset-0 bg-white dark:bg-slate-800 rounded-[2.5rem] border-[10px] border-white dark:border-slate-700 flex flex-col items-center justify-center px-8 overflow-hidden"
+                <div className="quiz-card-front absolute inset-0 bg-white dark:bg-slate-800 rounded-[2.5rem] border-[10px] border-white dark:border-slate-700 flex flex-col items-center justify-center px-2 overflow-hidden"
                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', zIndex: isFlipped ? 0 : 1 }}>
                     {renderFront?.({ isAnswered: isCorrectSelected, hasWrong: wrongChoices.length > 0 })}
                 </div>
@@ -236,7 +236,7 @@ const QuizCard = ({
                     })}
                 </div>
 
-                <div className={`pt-2 sm:pt-4 w-full flex gap-3 transition-opacity duration-300 ${isCorrectSelected && !completing ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <div className={`pt-2 sm:pt-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] w-full flex gap-3 transition-opacity duration-300 ${isCorrectSelected && !completing ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                     {!isFirst && <button onClick={onPrev} className="quiz-prev-btn flex-[1.5]">이전</button>}
                     <button onClick={handleNext} className={`quiz-next-btn ${isFirst ? 'w-full' : 'flex-[2.5]'}`}>
                         {isLast ? '결과 보기' : '다음'}

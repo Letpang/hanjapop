@@ -43,7 +43,7 @@ import { useCloudSync } from './hooks/useCloudSync.js';
 import { useCurriculumProgress } from './hooks/useCurriculumProgress.js';
 import { useAuth } from './hooks/useAuth.js';
 import { PremiumProvider } from './context/PremiumContext.jsx';
-import { canAccessStage, canAccessGrade } from './utils/premiumAccess.js';
+import { canAccessStage } from './utils/premiumAccess.js';
 import { useAdMob } from './hooks/useAdMob.js';
 import { buildPremiumWidgetPayload, savePremiumWidgetPayload } from './utils/premiumWidget.js';
 
@@ -54,36 +54,55 @@ const NewJourneyModal        = lazy(() => import('./components/NewJourneyModal.j
 const AccountDataChoiceModal = lazy(() => import('./components/AccountDataChoiceModal.jsx'));
 
 import { incrementTodaySessionCount } from './utils/sessionUtils.js';
-import { fetchUnlockedPack, resetUnlockedPack, activateTestPack } from './lib/supabase.js';
+import {
+    fetchUnlockedPack,
+    captureReferralFromUrl,
+    acceptPendingReferral,
+    fetchReferralOffer,
+    activateReferralAfterDailySession,
+    getCachedReferralOffer,
+} from './lib/supabase.js';
 
 const hasPassedQuizMission = (correct, total) => Number(total) > 0 && Number(correct) / Number(total) >= 0.7;
 
 const App = () => {
-    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao, signOut: authSignOut } = useAuth();
+    const { user, loading: authLoading, platform, signInWithApple, signInWithGoogle, signInWithKakao, signOut: authSignOut, linkIdentity } = useAuth();
     const userRef = useRef(user);
     useEffect(() => { userRef.current = user; }, [user]);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [accountDataChoice, setAccountDataChoice] = useState(null);
     const [accountChoiceBusy, setAccountChoiceBusy] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
-    const { showInterstitial } = useAdMob({ onAfterInterstitial: () => { if (!isPremium) setShowPremiumModal(true); } });
     const [gradeTestAlert, setGradeTestAlert] = useState(null);
     const [gradeTestBackScreen, setGradeTestBackScreen] = useState('mypage');
     const [showNewJourneyModal, setShowNewJourneyModal] = useState(false);
     const [openMemoryVaultSignal, setOpenMemoryVaultSignal] = useState(0);
+    const [referralOffer, setReferralOffer] = useState(() => getCachedReferralOffer());
     const [unlockedPack, setUnlockedPack] = useState(0);
     const isPremium = unlockedPack > 0;
+    const handleAfterInterstitial = useCallback(() => {
+        if (!isPremium) setShowPremiumModal(true);
+    }, [isPremium]);
+    const { showInterstitial } = useAdMob({ onAfterInterstitial: handleAfterInterstitial });
+
+    useEffect(() => {
+        captureReferralFromUrl();
+    }, []);
 
     // 로그인 상태 변경 시 팩 조회
     useEffect(() => {
         if (!user) {
             setUnlockedPack(0);
+            setReferralOffer(null);
             localStorage.removeItem('unlocked_pack');
             return;
         }
         fetchUnlockedPack().then(pack => {
             setUnlockedPack(pack);
             localStorage.setItem('unlocked_pack', String(pack));
+        });
+        acceptPendingReferral().finally(() => {
+            fetchReferralOffer().then(({ offer }) => setReferralOffer(offer || null));
         });
     }, [user]);
 
@@ -191,7 +210,7 @@ const App = () => {
     // 메인 화면 복귀 시 전면광고 (5번에 1번, 프리미엄 사용자 제외)
     useEffect(() => {
         if (currentScreen === 'main' && !isPremium) showInterstitial();
-    }, [currentScreen]);
+    }, [currentScreen, isPremium, showInterstitial]);
 
     const {
         currentDay,
@@ -336,17 +355,9 @@ const App = () => {
         const dayData = DAILY_CURRICULUM[selectedPastStage - 1];
         if (!dayData) return null;
         const hanjaIds = (dayData.hanja || []).map(h => h.id).filter(Boolean);
-        // eslint-disable-next-line react-hooks/refs
         return buildUnifiedPool(hanjaIds, HANJA_DATA, hanjaDataRef.current, hanjaDataRef.current, [], 0, wordDataRef.current);
     }, [selectedPastStage]);
 
-    const getCumulativeGrades = (targetGrade) => {
-        const grades = ['8급', '7급Ⅱ', '7급', '6급Ⅱ', '6급'];
-        const normTarget = targetGrade === '7급II' ? '7급Ⅱ' : targetGrade === '6급II' ? '6급Ⅱ' : targetGrade;
-        const idx = grades.indexOf(normTarget);
-        if (idx === -1) return [normTarget];
-        return grades.slice(0, idx + 1);
-    };
     const gradePool = useMemo(() => {
         if (!selectedGrade) return null;
         const norm = selectedGrade.replace('II', 'Ⅱ');
@@ -394,6 +405,10 @@ const App = () => {
         const q = sessionQueueRef.current;
         if (!q.hanjaIds.length) return [];
         let { hanjaIds, hanjaIdx } = q;
+        if (hanjaIds.length - hanjaIdx < n) {
+            hanjaIds = [...hanjaIds].sort(() => Math.random() - 0.5);
+            hanjaIdx = 0;
+        }
         const result = [];
         while (result.length < n) {
             if (hanjaIdx >= hanjaIds.length) { hanjaIds = [...hanjaIds].sort(() => Math.random() - 0.5); hanjaIdx = 0; }
@@ -407,6 +422,10 @@ const App = () => {
         const q = sessionQueueRef.current;
         if (!q.wordIds.length) return [];
         let { wordIds, wordIdx } = q;
+        if (wordIds.length - wordIdx < n) {
+            wordIds = [...wordIds].sort(() => Math.random() - 0.5);
+            wordIdx = 0;
+        }
         const result = [];
         while (result.length < n) {
             if (wordIdx >= wordIds.length) { wordIds = [...wordIds].sort(() => Math.random() - 0.5); wordIdx = 0; }
@@ -437,7 +456,8 @@ const App = () => {
             if (success) {
                 window.location.reload();
             } else if (reason === 'account_choice_required') {
-                setAccountDataChoice({ previousProvider, currentProvider });
+                const localXp = Number(localStorage.getItem(SK.USER_XP) || 0);
+                setAccountDataChoice({ previousProvider, currentProvider, localXp });
             } else if (reason === 'error') {
                 sessionStorage.removeItem(restoreKey);
             }
@@ -465,7 +485,12 @@ const App = () => {
         setAccountChoiceBusy(true);
         try {
             const result = await adoptLocalDataForCurrentAccount();
-            if (result?.success) setAccountDataChoice(null);
+            if (result?.success) {
+                setAccountDataChoice(null);
+            } else if (result?.reason === 'cloud_has_data' || result?.reason === 'recheck_failed') {
+                // 재확인 결과 클라우드에 기존 데이터가 있거나 확인 실패 → 덮어쓰기 중단하고 복원으로 유도
+                window.location.reload();
+            }
         } finally {
             setAccountChoiceBusy(false);
         }
@@ -492,6 +517,14 @@ const App = () => {
         setUserXp(prev => prev + finalXp);
         logXp(finalXp);
     }, [getRewardXp, logXp]);
+
+    const activateReferralForDailyClear = useCallback(async () => {
+        if (!userRef.current) return;
+        const result = await activateReferralAfterDailySession();
+        if (result?.rewardXp) addBonusXp(result.rewardXp);
+        const offerResult = await fetchReferralOffer();
+        setReferralOffer(offerResult.offer || null);
+    }, [addBonusXp]);
 
     // 캐릭터 토스트 메시지
     const [charToast, setCharToast] = useState(null);
@@ -550,7 +583,6 @@ const App = () => {
             }
 
             // 캐릭터 토스트: 하루 1번, 항상 노출 (진화 임박이면 rank_soon 메시지, 아니면 일반 응원)
-            const level = getLevel(userXp);
             const today = new Date().toDateString();
             const lastShown = localStorage.getItem(RANK_SOON_KEY);
             if (lastShown !== today) {
@@ -710,7 +742,7 @@ const App = () => {
                     onHanjaAcquired={handleHanjaAcquired}
                     selectedCharacter={selectedCharacter}
                     onWaveClear={(kills) => { updateMissionProgress('shootGame', 1, addBonusXp); addTodayStat('shootGame'); if (kills) updateRecord('totalMonsterKills', kills); }}
-                    onMarkWrong={(id) => markWrong(id)}
+                    onMarkWrong={() => {}}
                     onMarkCorrect={(id) => { markCorrect(id); logHanja(id); }}
                     onWordCorrect={(wordId) => { logCorrectWord(wordId); markWordCorrect(wordId); }}
                     onWordWrong={(wordId, hanjaId, reading, meaning) => { logWrongWord(wordId); markWordWrong(wordId, hanjaId, reading, meaning); }}
@@ -966,6 +998,7 @@ const App = () => {
                     isRestoring={isRestoring}
                     user={user}
                     onLogin={() => setShowLoginModal(true)}
+                    linkIdentity={linkIdentity}
                     onLogout={async () => {
                         await authSignOut();
                         setUnlockedPack(0);
@@ -1097,6 +1130,7 @@ const App = () => {
                                             }
                                             setSessionDoneToday(true);
                                             addBonusXp(200);
+                                            activateReferralForDailyClear();
                                             if (userRef.current || skipLoginModal) {
                                                 setCurrentScreen('main');
                                             } else {
@@ -1170,7 +1204,7 @@ const App = () => {
                         <img
                             src={getCharacterImage(selectedCharacter, 'success')}
                             alt="save progress"
-                            className="w-32 h-32 object-contain drop-shadow-2xl mb-2 animate-in zoom-in duration-500"
+                            className="w-44 h-44 object-contain drop-shadow-2xl mb-2 animate-in zoom-in duration-500"
                             style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, 'success')})` }}
                         />
 
@@ -1275,6 +1309,7 @@ const App = () => {
                         <AccountDataChoiceModal
                             previousProvider={accountDataChoice.previousProvider}
                             currentProvider={accountDataChoice.currentProvider}
+                            localXp={accountDataChoice.localXp}
                             busy={accountChoiceBusy}
                             onUsePreviousLogin={handleUsePreviousLogin}
                             onUseCurrentAccount={handleUseCurrentAccount}
@@ -1284,6 +1319,7 @@ const App = () => {
                     {showPremiumModal && (
                         <PremiumModal
                             user={user}
+                            referralOffer={referralOffer}
                             onClose={() => setShowPremiumModal(false)}
                             onShowLogin={() => {
                             setShowPremiumModal(false);
@@ -1296,8 +1332,10 @@ const App = () => {
                             avatarUrl={selectedCharacter ? getRankDetails(userXp, selectedCharacter).avatar : '/assets/images/characters/default_3d.webp'}
                             onPurchaseSuccess={(pack) => {
                                 setUnlockedPack(pack);
+                                setReferralOffer(null);
                                 setShowPremiumModal(false);
                             }}
+                            onReferralOfferConsumed={() => setReferralOffer(null)}
                         />
                     )}
                     {gradeTestAlert && (

@@ -31,4 +31,8 @@ export const SK = {
     WORD_DATA:            'word_data',        // 단어 오답 + 단어 SRS 통합
     STUDY_LOG:            'study_log',        // 학습 로그 + 활동 통계 통합
     PREMIUM_WIDGET_PAYLOAD:'premium_widget_payload',
+    REFERRAL_CODE:        'referral_code',
+    PENDING_REFERRAL_CODE:'pending_referral_code',
+    REFERRAL_OFFER:       'referral_offer',
+    REFERRAL_ACTIVATED:   'referral_activated',
 };

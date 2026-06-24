@@ -89,6 +89,19 @@ const MainMenuRenewal = ({
     const missionDone  = doneCount || 0;
     const allDone      = missionDone >= missionTotal;
     const isDailyComplete = allDone && !selectedPastStage && !selectedGrade;
+    const targetStage = selectedPastStage || currentDay;
+    const isStageLocked = !selectedGrade && !isJourneyComplete && !canAccessStage(targetStage);
+    const handlePrimaryCta = () => {
+        if (isStageLocked) {
+            setShowModal(true);
+            return;
+        }
+        if (isJourneyComplete && !selectedPastStage) {
+            onOpenNewJourney?.();
+            return;
+        }
+        onStartNextStage?.();
+    };
     const up = (d = 0) => ({
         opacity:   mounted ? 1 : 0,
         transform: mounted ? 'translateY(0)' : 'translateY(18px)',
@@ -274,12 +287,17 @@ const MainMenuRenewal = ({
                                     </svg>
                                 </div>
                             )}
-                            <div className="w-full rounded-[1.5rem] overflow-hidden relative z-10">
+                            <div
+                                className="w-full rounded-[1.5rem] overflow-hidden relative z-10 border border-white/80 shadow-[0_18px_40px_rgba(80,96,120,0.12)]"
+                                style={isDarkMode ? { background: '#1e293b' } : { background: '#FFFFFF' }}
+                            >
                             <CtaButton
                                 theme={(selectedPastStage || isDailyComplete) ? 'coral' : 'cream'}
-                                onClick={isJourneyComplete && !selectedPastStage ? onOpenNewJourney : onStartNextStage}
+                                onClick={handlePrimaryCta}
                                 className="mm-primary-cta relative overflow-hidden"
-                                style={{ borderRadius: 0 }}
+                                style={isDarkMode
+                                    ? { borderRadius: 0, background: selectedPastStage || isDailyComplete ? undefined : 'linear-gradient(135deg, #1F2937 0%, #253244 100%)' }
+                                    : { borderRadius: 0, background: selectedPastStage || isDailyComplete ? undefined : 'linear-gradient(135deg, #FFFDF9 0%, #FFF3EA 100%)' }}
                             >
                                 {isDailyComplete && (
                                     <span
@@ -298,11 +316,13 @@ const MainMenuRenewal = ({
                                                 style={{ fontSize: '1.4rem', letterSpacing: '-0.02em' }}
                                             >
                                                 {selectedPastStage
-                                                    ? `${selectedPastStage}단계 복습하기`
+                                                    ? isStageLocked ? `${selectedPastStage}단계는 프리미엄 단계예요` : `${selectedPastStage}단계 복습하기`
                                                     : isJourneyComplete
                                                     ? `${journeyRound + 1}회차 새 탐험`
                                                     : isDailyComplete
                                                     ? `다음 탐험으로 가기`
+                                                    : isStageLocked
+                                                    ? `${targetStage}단계부터 프리미엄 탐험`
                                                     : `오늘의 탐험 떠나기`}
                                             </div>
                                             <div
@@ -313,6 +333,8 @@ const MainMenuRenewal = ({
                                                     ? '기억을 가지고 다시 떠나요'
                                                     : isDailyComplete
                                                     ? '다음 탐험으로 가볼까요?'
+                                                    : isStageLocked
+                                                    ? '먼저 잠금 범위와 팩을 확인해요'
                                                     : '탐험 지도로 이동합니다'}
                                             </div>
                                         </div>
@@ -321,21 +343,33 @@ const MainMenuRenewal = ({
                                         className={`shrink-0 flex items-center justify-center rounded-full w-9 h-9 shadow-md relative ${selectedPastStage || isDailyComplete ? 'bg-white text-[#FF6B6B]' : 'bg-[#FF9B73] text-white'}`}
                                         style={isDailyComplete ? { boxShadow: '0 8px 18px rgba(255,255,255,0.35), 0 0 0 6px rgba(255,255,255,0.16)' } : undefined}
                                     >
-                                        <span style={{ fontSize: 18, fontWeight: 400, marginLeft: 2 }}>▶</span>
+                                        {isStageLocked ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
+                                                className="w-[18px] h-[18px]">
+                                                <rect x="5" y="10" width="14" height="10" rx="2" />
+                                                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                                            </svg>
+                                        ) : (
+                                            <span style={{ fontSize: 18, fontWeight: 400, marginLeft: 2 }}>▶</span>
+                                        )}
                                     </div>
                                 </div>
                             </CtaButton>
-                            {/* 진행률 바 — 별도 영역, 클릭 시 단계 선택 모달만 열림 */}
+                            {/* 진행률 바 — 위 CTA와 같은 탐험 이동 동작 */}
                             <button
-                                onClick={() => setShowModal(true)}
-                                className="w-full px-4 py-2.5 flex items-center gap-3 active:scale-[0.98] transition-all"
-                                style={isDarkMode ? { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.15)' : '#1e293b', borderRadius: 0 } : { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.08)' : 'linear-gradient(135deg, #FFFFFF 0%, #FFF4E9 100%)', borderRadius: 0 }}
+                                type="button"
+                                onClick={handlePrimaryCta}
+                                className="w-full px-4 py-3 flex items-center gap-3 border-t active:scale-[0.98] transition-all"
+                                style={isDarkMode
+                                    ? { background: selectedPastStage || isDailyComplete ? 'rgba(255,107,107,0.15)' : '#162033', borderColor: 'rgba(148,163,184,0.16)', borderRadius: 0 }
+                                    : { background: selectedPastStage || isDailyComplete ? '#FFF1EA' : '#F4FBF9', borderColor: '#E7F1EE', borderRadius: 0 }}
                             >
-                                <span className={`font-normal text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-[#FF6B6B]' : 'text-[#8f99ad]'}`}>
+                                <span className={`font-medium text-xs shrink-0 ${selectedPastStage || isDailyComplete ? 'text-[#FF6B6B]' : 'text-[#6D7D91]'}`}>
                                     탐험진행도
                                 </span>
                                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                                    <div className={`flex-1 rounded-full overflow-hidden h-[8px] shadow-inner ${selectedPastStage || isDailyComplete ? 'bg-[#FFE0D4]' : 'bg-slate-100'}`}>
+                                    <div className={`flex-1 rounded-full overflow-hidden h-[8px] shadow-inner ${selectedPastStage || isDailyComplete ? 'bg-[#FFE0D4]' : 'bg-[#DDEBE8]'}`}>
                                         <div className="quiz-progress-fill" style={{ width: `${Math.round(((isJourneyComplete ? TOTAL_STAGES : currentDay) / TOTAL_STAGES) * 100)}%`, background: 'linear-gradient(90deg,#FF9B73,#FF6B6B)', boxShadow: '0 0 8px rgba(255,155,115,0.5)' }} />
                                     </div>
                                     <div

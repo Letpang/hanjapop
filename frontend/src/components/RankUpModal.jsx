@@ -55,6 +55,7 @@ const RankUpModal = ({ selectedCharacter, userXp, onClose }) => {
                 title: `${details.name}이(가) ${details.rankName} 단계로 진화했어요!`,
                 description: `한자팝 ${rankLabel} 달성`,
                 fallbackText: `한자팝 ${rankLabel}!\n${details.name}이(가) ${details.rankName} 단계로 진화했어요!`,
+                campaign: 'rank_up',
             });
             setShareStatus('카카오톡 공유를 열었어요');
         } catch (error) {

@@ -159,6 +159,7 @@ const WordQuizScreen = ({
             setQuestions(buildQuiz(filter, effectiveViewMode, wordData, userLevel, unlockedIds, quizCount));
         }
         setCurrentIdx(0);
+        setCurrentAnswered(false);
         setCorrectCount(0); correctCountRef.current = 0;
         comboRef.current = 0; setCombo(0);
         setMaxCombo(0); maxComboRef.current = 0;

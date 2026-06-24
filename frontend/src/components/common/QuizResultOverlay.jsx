@@ -71,8 +71,8 @@ const QuizResultOverlay = ({
         <div
             className={`quiz-result-overlay fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300 ${isClear ? 'quiz-result-overlay--clear' : 'quiz-result-overlay--fail'}`}
         >
-            <div className="activity-result-card">
-                <div className="pt-5 pb-6 px-6 flex flex-col items-center gap-4 w-full relative">
+            <div className="activity-result-card result-balanced-card">
+                <div className="result-balanced-body px-6 flex flex-col items-center w-full relative">
                     <div className="activity-result-glow" />
                     <img
                         src={getCharacterImage(selectedCharacter, isClear ? 'success' : 'failure')}
@@ -80,7 +80,7 @@ const QuizResultOverlay = ({
                         className="activity-result-char img-shadow-lg"
                         style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, isClear ? 'success' : 'failure')})` }}
                     />
-                    <div className="result-text-area -mt-5">
+                    <div className="result-text-area result-balanced-content-stack">
                         <span className="result-subtitle">{subtitle}</span>
                         <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
                             {isClear ? clearTitle : (failTitle || defaultFailTitle)}
@@ -89,14 +89,16 @@ const QuizResultOverlay = ({
                             <p className="body-muted break-keep">{scoreNode}</p>
                         )}
                     </div>
-                    <RewardBreakdown
-                        reward={reward}
-                        correctXp={correctXp}
-                        clearXp={clearXp}
-                        detailText={detailText}
-                        missionXp={missionXp}
-                    />
-                    <div className="result-btn-area">
+                    <div className="result-balanced-lower-stack">
+                        <RewardBreakdown
+                            reward={reward}
+                            correctXp={correctXp}
+                            clearXp={clearXp}
+                            detailText={detailText}
+                            missionXp={missionXp}
+                        />
+                    </div>
+                    <div className="result-btn-area result-balanced-lower-stack">
                         {!hideRetry && onRetry && (
                             <CtaButton theme="coral" onClick={onRetry}>
                                 <span className="quiz-cta-text">{retryLabel}</span>

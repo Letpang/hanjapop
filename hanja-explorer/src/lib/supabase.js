@@ -70,13 +70,20 @@ import { SK } from '../constants/storageKeys.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const NATIVE_AUTH_REDIRECT_URL = 'com.soujinne.hanjaexplorer://auth-callback';
+
+export const getOAuthRedirectTo = () => {
+    const platform = window?.Capacitor?.getPlatform?.();
+    if (platform && platform !== 'web') return NATIVE_AUTH_REDIRECT_URL;
+    return import.meta.env.VITE_PUBLIC_APP_URL || window.location.origin;
+};
 
 // 환경 변수가 없으면 오프라인 모드로 동작
 export const isSupabaseEnabled = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 export const supabase = isSupabaseEnabled
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: true, storage: localStorage },
+        auth: { persistSession: true, storage: localStorage, flowType: 'pkce' },
         realtime: { params: { eventsPerSecond: 2 } },
     })
     : null;
@@ -91,14 +98,17 @@ export const getCurrentUser = async () => {
 };
 
 /** 카카오 OAuth → Supabase 로그인 (웹 리디렉트) */
-export const signInWithKakao = async () => {
+export const signInWithKakao = async ({ skipBrowserRedirect = false } = {}) => {
     if (!supabase) return { success: false, error: 'offline' };
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'kakao',
-        options: { redirectTo: window.location.origin },
+        options: {
+            redirectTo: getOAuthRedirectTo(),
+            skipBrowserRedirect,
+        },
     });
     if (error) return { success: false, error };
-    return { success: true };
+    return { success: true, url: data?.url };
 };
 
 

@@ -167,7 +167,6 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
   const [answerLog, setAnswerLog] = useState([]);
 
   const q = questions[qIndex];
-  const progress = (qIndex / questions.length) * 100;
   const isCompound = q?.hanja && q.hanja.length > 1;
   const isChoiceLarge = q?.type === 'opposite';
   const isChoiceMediumHanja = q?.type === 'underline' || q?.type === 'meaning_to_word';
@@ -306,7 +305,7 @@ const GradeTest62Screen = ({ onBack, onComplete, selectedCharacter }) => {
 
             {revealed && (
               <div className={`quiz-feedback ${selected === q.answer ? 'quiz-feedback--correct' : 'quiz-feedback--wrong'}`}>
-                {selected === q.answer ? '✓ 정답!' : `✗ 정답: ${q.answer}`}
+                {selected === q.answer ? '정답!' : `정답: ${q.answer}`}
               </div>
             )}
           </div>

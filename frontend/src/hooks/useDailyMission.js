@@ -23,8 +23,6 @@ const MISSION_POOL = [
 ];
 
 const pickFreshMissions = () => MISSION_POOL.map(m => ({ ...m, progress: 0, done: false }));
-const validMissionIds = MISSION_POOL.map(m => m.id);
-
 const hydrateMissions = (raw) => {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
