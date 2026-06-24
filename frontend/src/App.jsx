@@ -441,7 +441,7 @@ const App = () => {
         wordIds.filter(Boolean).forEach(logWord);
     }, [logWord]);
 
-    const { restoreFromCloud, adoptLocalDataForCurrentAccount, isRestoring } = useCloudSync({
+    const { restoreFromCloud, isRestoring } = useCloudSync({
         userXp, userNickname, selectedCharacter, streak,
         hanjaData, wordData, studyLog, totalStats,
     });
@@ -479,22 +479,6 @@ const App = () => {
             setAccountChoiceBusy(false);
         }
     }, [accountDataChoice, accountChoiceBusy, authSignOut, signInWithApple, signInWithGoogle, signInWithKakao]);
-
-    const handleUseCurrentAccount = useCallback(async () => {
-        if (accountChoiceBusy) return;
-        setAccountChoiceBusy(true);
-        try {
-            const result = await adoptLocalDataForCurrentAccount();
-            if (result?.success) {
-                setAccountDataChoice(null);
-            } else if (result?.reason === 'cloud_has_data' || result?.reason === 'recheck_failed') {
-                // 재확인 결과 클라우드에 기존 데이터가 있거나 확인 실패 → 덮어쓰기 중단하고 복원으로 유도
-                window.location.reload();
-            }
-        } finally {
-            setAccountChoiceBusy(false);
-        }
-    }, [accountChoiceBusy, adoptLocalDataForCurrentAccount]);
 
     const handleContinueWithoutLink = useCallback(() => {
         // 로컬 학습 기록은 그대로 두되 현재 로그인 계정에는 업로드하지 않는다.
@@ -1312,7 +1296,6 @@ const App = () => {
                             localXp={accountDataChoice.localXp}
                             busy={accountChoiceBusy}
                             onUsePreviousLogin={handleUsePreviousLogin}
-                            onUseCurrentAccount={handleUseCurrentAccount}
                             onContinueWithoutLink={handleContinueWithoutLink}
                         />
                     )}

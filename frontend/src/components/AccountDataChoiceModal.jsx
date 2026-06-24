@@ -18,7 +18,6 @@ const AccountDataChoiceModal = ({
     currentProvider,
     localXp,
     onUsePreviousLogin,
-    onUseCurrentAccount,
     onContinueWithoutLink,
     busy = false,
 }) => {
@@ -52,9 +51,6 @@ const AccountDataChoiceModal = ({
                             {previousLabel}로 기존 기록 불러오기
                         </ResultPrimaryButton>
                     )}
-                    <ResultSecondaryButton onClick={onUseCurrentAccount} disabled={busy}>
-                        이 기기 기록을 {currentLabel} 계정에 저장하기
-                    </ResultSecondaryButton>
                     <button
                         type="button"
                         onClick={onContinueWithoutLink}

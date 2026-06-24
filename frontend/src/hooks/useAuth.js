@@ -92,7 +92,8 @@ export const useAuth = () => {
                     displayMsg = '이 소셜 계정은 이미 다른 계정에 연동되어 있습니다. 해당 계정으로 로그인하여 회원 탈퇴 등을 진행한 후 연동해 주세요.';
                 }
                 alert(displayMsg);
-                window.location.hash = '';
+                // 에러 파라미터 URL에서 제거 (hash + query string 모두)
+                window.history.replaceState(null, '', window.location.pathname);
             }
         };
         checkWebAuthError();

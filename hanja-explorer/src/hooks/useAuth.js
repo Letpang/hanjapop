@@ -26,6 +26,25 @@ const getCapacitorPlugin = (name) => window?.Capacitor?.Plugins?.[name] ?? null;
 const GOOGLE_WEB_CLIENT_ID = '1050279254864-1hgfqf17ve0sc2nlit7kojuace89mond.apps.googleusercontent.com';
 let googleAuthReady = false;
 
+const LAST_PROVIDER_KEY = 'hanjapop_last_login_provider';
+const PROVIDER_LABELS = { kakao: '카카오', google: 'Google', apple: 'Apple' };
+
+const saveProvider = (provider) => {
+    try { localStorage.setItem(LAST_PROVIDER_KEY, provider); } catch {}
+};
+
+const checkProviderConflict = (attempted) => {
+    try {
+        const last = localStorage.getItem(LAST_PROVIDER_KEY);
+        if (last && last !== attempted) {
+            const lastLabel = PROVIDER_LABELS[last] || last;
+            alert(`이전에 ${lastLabel}로 로그인하셨어요.\n${lastLabel}로 로그인해 주세요.`);
+            return true;
+        }
+    } catch {}
+    return false;
+};
+
 export const getPlatform = () => {
     if (window?.Capacitor?.getPlatform) return window.Capacitor.getPlatform();
     const ua = navigator.userAgent;
@@ -53,6 +72,8 @@ const applyNativeAuthUrl = async (url, setUser) => {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) throw error;
         setUser(data.session?.user ?? null);
+        const provider = data.session?.user?.app_metadata?.provider;
+        if (provider) saveProvider(provider);
         return true;
     }
 
@@ -65,6 +86,8 @@ const applyNativeAuthUrl = async (url, setUser) => {
         });
         if (error) throw error;
         setUser(data.session?.user ?? null);
+        const provider = data.session?.user?.app_metadata?.provider;
+        if (provider) saveProvider(provider);
         return true;
     }
     return false;
@@ -91,7 +114,8 @@ export const useAuth = () => {
                     displayMsg = '이 소셜 계정은 이미 다른 계정에 연동되어 있습니다. 해당 계정으로 로그인하여 회원 탈퇴 등을 진행한 후 연동해 주세요.';
                 }
                 alert(displayMsg);
-                window.location.hash = '';
+                // 에러 파라미터 URL에서 제거 (hash + query string 모두)
+                window.history.replaceState(null, '', window.location.pathname);
             }
         };
         checkWebAuthError();
@@ -137,6 +161,7 @@ export const useAuth = () => {
 
     /** Apple 로그인: 웹은 OAuth 리디렉트, iOS는 네이티브 플러그인 */
     const signInWithApple = useCallback(async () => {
+        if (checkProviderConflict('apple')) return { success: false };
         try {
             if (getPlatform() === 'web') {
                 const { error } = await supabase.auth.signInWithOAuth({
@@ -157,6 +182,7 @@ export const useAuth = () => {
             const { data, error } = await signInWithAppleToken(response.identityToken);
             if (error) throw error;
             await linkAuthToDevice(data.user.id);
+            saveProvider('apple');
             return { success: true };
         } catch (e) {
             console.error('[useAuth] Apple Sign In failed:', e);
@@ -166,6 +192,7 @@ export const useAuth = () => {
 
     /** Google 로그인: 웹은 OAuth 리디렉트, Android는 네이티브 플러그인 */
     const signInWithGoogle = useCallback(async () => {
+        if (checkProviderConflict('google')) return { success: false };
         try {
             if (getPlatform() === 'web') {
                 const { error } = await supabase.auth.signInWithOAuth({
@@ -191,6 +218,7 @@ export const useAuth = () => {
             const { data, error } = await signInWithGoogleToken(idToken);
             if (error) throw error;
             await linkAuthToDevice(data.user.id);
+            saveProvider('google');
             return { success: true };
         } catch (e) {
             console.error('[useAuth] Google Sign In failed:', e);
@@ -199,6 +227,7 @@ export const useAuth = () => {
     }, []);
 
     const signInWithKakao = useCallback(async () => {
+        if (checkProviderConflict('kakao')) return { success: false };
         try {
             const isNative = getPlatform() !== 'web';
             const result = await supabaseSignInWithKakao({ skipBrowserRedirect: isNative });
