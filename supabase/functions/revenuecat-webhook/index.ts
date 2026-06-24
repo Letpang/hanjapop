@@ -32,6 +32,13 @@ function packFromEvent(event: any): number {
     return PRODUCT_TO_PACK[productId] ?? 0
 }
 
+function referralDiscountFromEvent(event: any): number {
+    const productId = String(event.product_id ?? '').split(':')[0]
+    if (REFERRAL_FULLPACK_50_PRODUCT_ID && productId === REFERRAL_FULLPACK_50_PRODUCT_ID) return 50
+    if (REFERRAL_FULLPACK_20_PRODUCT_ID && productId === REFERRAL_FULLPACK_20_PRODUCT_ID) return 20
+    return 0
+}
+
 function accountCandidates(event: any): string[] {
     return [event.app_user_id, event.original_app_user_id, ...(event.aliases ?? [])]
         .filter((value): value is string => typeof value === 'string')
@@ -107,6 +114,15 @@ Deno.serve(async (req) => {
     if (error) {
         console.error('Purchase ledger update failed:', error)
         return new Response('Database error', { status: 500 })
+    }
+
+    const referralDiscountPercent = referralDiscountFromEvent(event)
+    if (!REVOKE_EVENTS.has(eventType) && referralDiscountPercent) {
+        const { error: offerError } = await supabase.rpc('consume_account_referral_offer', {
+            p_account_id: accountId,
+            p_discount_percent: referralDiscountPercent,
+        })
+        if (offerError) console.error('Referral offer consume failed:', offerError)
     }
 
     return new Response('OK', { status: 200 })

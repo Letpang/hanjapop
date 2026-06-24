@@ -230,7 +230,6 @@ const IdiomQuiz = ({ idioms, onBack, onComplete, onHanjaAcquired, userXp, select
     })();
 
     if (!q) {
-        console.log("IdiomQuiz: !q triggered. idioms.length:", idioms.length, "questions.length:", questions.length);
         return (
             <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAF9] px-6" style={{ backgroundColor: '#F8FAF9', color: '#334155' }}>
                 <h2 className="text-2xl font-bold mb-4">사자성어가 없어요!</h2>
