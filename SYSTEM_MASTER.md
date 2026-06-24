@@ -28,7 +28,7 @@
 
 ## 1. 전체 화면 흐름
 
-> 기준 파일: `hanja-explorer/src/App.jsx`
+> 기준 파일: `frontend/src/App.jsx`
 
 ### 앱 진입 시 렌더 우선순위 (조건 순서)
 
@@ -93,8 +93,8 @@ DailySessionScreen 완료
 
 ## 2. 커리큘럼 구조
 
-> 기준 파일: `hanja-explorer/src/data/dailyCurriculum.js`  
-> 총 **124일**, 커리큘럼 한자 **369자**  
+> 기준 파일: `frontend/src/data/dailyCurriculum.js`
+> 총 **124일**, 커리큘럼 한자 **369자**
 > Day 1~123은 하루 3자 중심, Day 124는 신규 한자 없이 최종 피날레/복습 보스 구성
 
 ```
@@ -148,7 +148,7 @@ Day 52 ~ 124  │ PACK2 (심화 팩) │ 73일  · 219자  · 6급Ⅱ / 6급 / N
 
 ## 3. 문제 출제 방식 — 컨텐트 풀 & SRS
 
-> 기준 파일: `hanja-explorer/src/utils/learningPool.js`, `hanja-explorer/src/hooks/useSRS.js`, `hanja-explorer/src/App.jsx`
+> 기준 파일: `frontend/src/utils/learningPool.js`, `frontend/src/hooks/useSRS.js`, `frontend/src/App.jsx`
 
 ### 컨텐트 풀(Content Pool) 개념
 
@@ -251,7 +251,7 @@ SRS 상태별 가중치:
 
 ## 4. 레벨 시스템 (20레벨)
 
-> 기준 파일: `hanja-explorer/src/utils/rankUtils.js`
+> 기준 파일: `frontend/src/utils/rankUtils.js`
 
 ```
 총 20레벨 · 0 ~ 800,000 XP 누적 기준
@@ -297,7 +297,7 @@ SRS 상태별 가중치:
 
 ## 5. XP 획득 시스템
 
-> 기준 파일: `hanja-explorer/src/App.jsx`
+> 기준 파일: `frontend/src/App.jsx`
 
 ### 활동별 기본 XP
 
@@ -360,7 +360,7 @@ SRS 상태별 가중치:
 
 ## 6. 뱃지 시스템 (활동 뱃지 6종)
 
-> 기준 파일: `hanja-explorer/src/components/MyPageScreen.jsx`
+> 기준 파일: `frontend/src/components/MyPageScreen.jsx`
 
 각 뱃지는 **5단계(Lv.1~5)**, 누적 활동 횟수 기반으로 자동 상승.
 
@@ -383,7 +383,7 @@ SRS 상태별 가중치:
 
 ## 7. 급수 인증 시험 & 급수 뱃지
 
-> 기준 파일: `hanja-explorer/src/components/MyPageScreen.jsx`, `hanja-explorer/src/components/GradeTestAlertModal.jsx`
+> 기준 파일: `frontend/src/components/MyPageScreen.jsx`, `frontend/src/components/GradeTestAlertModal.jsx`
 
 ### 급수 시험 체계
 
@@ -440,7 +440,7 @@ Day 101 완료 → "6급 학습 완료!" 모달 → gradeTest6 화면
 
 ## 8. 오답 알림 시스템
 
-> 기준 파일: `hanja-explorer/src/App.jsx` (CharacterToast 렌더링 로직)
+> 기준 파일: `frontend/src/App.jsx` (CharacterToast 렌더링 로직)
 
 ### 오답 복습 토스트 (`review_reminder`)
 
@@ -484,7 +484,7 @@ buildOopsPool(wrongHanjaIds, wrongWordIds)
 
 ## 9. 프리미엄 전환 체계
 
-> 기준 파일: `hanja-explorer/src/utils/premiumAccess.js`, `hanja-explorer/src/utils/paymentUtils.js`, `hanja-explorer/src/utils/rcConfig.js`
+> 기준 파일: `frontend/src/utils/premiumAccess.js`, `frontend/src/utils/paymentUtils.js`, `frontend/src/utils/rcConfig.js`
 
 ### 팩 구성 및 가격
 
@@ -558,7 +558,7 @@ Day 17 커리큘럼 완료 후 Day 18 접근 시
 
 ## 10. 일일 미션 시스템
 
-> 기준 파일: `hanja-explorer/src/hooks/useDailyMission.js`
+> 기준 파일: `frontend/src/hooks/useDailyMission.js`
 
 매일 **7개 퀘스트** 자동 배정.  
 **커리큘럼 단계(`completedDay`)별로 독립 저장** — 같은 단계에서는 날짜가 바뀌어도 유지됨.  
@@ -582,7 +582,7 @@ Day 17 커리큘럼 완료 후 Day 18 접근 시
 
 ## 11. 스트릭 시스템
 
-> 기준 파일: `hanja-explorer/src/hooks/useDailyMission.js`
+> 기준 파일: `frontend/src/hooks/useDailyMission.js`
 
 스트릭은 **연속 출석 일수** 추적 — UI에 현재 스트릭 일수 표시.  
 어제 날짜가 아닌 경우(하루 이상 건너뜀) → count 1로 리셋.
@@ -621,7 +621,7 @@ Day 17 커리큘럼 완료 후 Day 18 접근 시
 
 ## 13. 사자성어 시스템
 
-> 기준 파일: `hanja-explorer/src/components/IdiomScreen.jsx`
+> 기준 파일: `frontend/src/components/IdiomScreen.jsx`
 
 ### 사자성어 퀴즈 (`idiomQuiz`)
 
@@ -653,7 +653,7 @@ Day 17 커리큘럼 완료 후 Day 18 접근 시
 
 ## 14. 급수별 학습관
 
-> 기준 파일: `hanja-explorer/src/components/GradeStudyDashboardScreen.jsx`, `hanja-explorer/src/components/GradeExamSelectScreen.jsx`
+> 기준 파일: `frontend/src/components/GradeStudyDashboardScreen.jsx`, `frontend/src/components/GradeExamSelectScreen.jsx`
 
 ### 진입 경로
 
@@ -677,7 +677,7 @@ Day 17 커리큘럼 완료 후 Day 18 접근 시
 
 ## 15. localStorage 키 목록
 
-> 기준 파일: `hanja-explorer/src/constants/storageKeys.js`
+> 기준 파일: `frontend/src/constants/storageKeys.js`
 
 | 키 (SK 상수) | localStorage 키 | 내용 |
 |------------|----------------|------|
