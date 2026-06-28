@@ -13,13 +13,13 @@ const getCurrentCurriculumDay = () => {
 // 미션 정의
 // ─────────────────────────────────────────────────────────────
 const MISSION_POOL = [
-    { id: 'flashcard_1',  type: 'flashcard',    target: 1, label: '한자 학습지 1개 완료',      xp: 50 },
-    { id: 'wordquiz_1',   type: 'wordQuiz',     target: 1, label: '단어 퀴즈 1세트 완료',      xp: 30 },
-    { id: 'quiz_1',       type: 'sentenceQuiz', target: 1, label: '문장 퀴즈 1세트 완료',      xp: 30 },
-    { id: 'idiom_1',      type: 'idiomQuiz',    target: 1, label: '한자성어 퀴즈 1세트 완료',  xp: 25 },
-    { id: 'shootgame_1',  type: 'shootGame',    target: 1, label: '몬스터 슈팅 1웨이브 완료',  xp: 20 },
-    { id: 'match_1',      type: 'matchGame',    target: 1, label: '메모리 게임 1판 완료',      xp: 20 },
-    { id: 'writing_1',    type: 'writing',      target: 1, label: '획순 테스트 1개 완료',      xp: 30 },
+    { id: 'flashcard_1',  type: 'flashcard',    target: 1, label: 'ext_1855', xp: 50 },
+    { id: 'wordquiz_1',   type: 'wordQuiz',     target: 1, label: 'ext_1856', xp: 30 },
+    { id: 'quiz_1',       type: 'sentenceQuiz', target: 1, label: 'ext_1857', xp: 30 },
+    { id: 'idiom_1',      type: 'idiomQuiz',    target: 1, label: 'ext_1984', xp: 25 },
+    { id: 'shootgame_1',  type: 'shootGame',    target: 1, label: 'ext_1985', xp: 20 },
+    { id: 'match_1',      type: 'matchGame',    target: 1, label: 'ext_1858', xp: 20 },
+    { id: 'writing_1',    type: 'writing',      target: 1, label: 'ext_1859', xp: 30 },
 ];
 
 const pickFreshMissions = () => MISSION_POOL.map(m => ({ ...m, progress: 0, done: false }));

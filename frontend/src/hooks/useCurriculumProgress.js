@@ -77,8 +77,8 @@ export const useCurriculumProgress = (sessionDoneToday = false) => {
         setProgress(prev => {
             const completion = {
                 completedAt: record?.completedAt || new Date().toISOString(),
-                title: '한자팝 마스터',
-                badge: '황금 124 완주 배지',
+                title: 'ext_1619',
+                badge: 'ext_1854',
                 rewardXp: prev.finalJourney ? 0 : 1240,
                 stages: DAILY_CURRICULUM.length,
                 hanjaCount: record?.hanjaCount || 369,

@@ -1,0 +1,110 @@
+/* =============================================
+   GLASS PANEL (보조 카드)
+   ============================================= */
+
+.dark-mode /* (Removed neon text effects for warm cream aesthetic) */
+.premium-text-shadow {
+    text-shadow: 0 1px 2px rgba(93, 84, 79, 0.1);
+}
+
+
+/* =============================================
+   ANIMATIONS
+   ============================================= */
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.3s ease-in-out; }
+
+/* 크리스탈 스파클 */
+@keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+/* =============================================
+   CARD FLIP SYSTEM (GENERIC - for Match Game etc.)
+   ============================================= */
+
+.card-face-front,
+.card-face-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.card-face-front {
+    opacity: 1;
+    transform: scaleX(1);
+}
+.card-face-front.is-flipped {
+    opacity: 0;
+    transform: scaleX(0.6);
+    pointer-events: none;
+}
+.card-face-back {
+    opacity: 0;
+    transform: scaleX(0.6);
+    pointer-events: none;
+}
+.card-face-back.is-flipped {
+    opacity: 1;
+    transform: scaleX(1);
+    pointer-events: auto;
+}
+
+/* =============================================
+   FLASHCARD SYSTEM (SCOPED - for Single Card Mode)
+   ============================================= */
+
+.flashcard-perspective { perspective: 1200px; }
+.flashcard-preserve-3d { transform-style: preserve-3d; }
+
+.flashcard-face-front,
+.flashcard-face-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 3rem;
+    backface-visibility: hidden;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flashcard-face-back {
+    transform: rotateY(180deg);
+}
+
+/* =============================================
+   BACKUP UI REPLICATION (HANJA CARD)
+   ============================================= */
+
+.rotate-y-180 {
+    transform: rotateY(180deg);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* =============================================
+   SAFE AREA UTILITIES
+   ============================================= */
+
+.safe-top    { padding-top:    max(1rem,    env(safe-area-inset-top)); }
+.safe-bottom { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }

@@ -22,10 +22,13 @@
  */
 
 import { useState, useCallback } from 'react';
+import {
+    DEFAULT_LEARNING_EF,
+    saveLearningRecord,
+    updateLearningSchedule,
+} from './learningRecordUtils.js';
 
 const KEY = 'word_data';
-const MIN_EF = 1.3;
-const DEFAULT_EF = 2.5;
 
 // ── 마이그레이션 (구 word_wrong_data → word_data) ───────────────────────────
 const migrate = () => {
@@ -46,7 +49,7 @@ const migrate = () => {
                 correctCount: 0,
                 lastWrong: null,
                 lastCorrect: null,
-                ef: DEFAULT_EF,
+                ef: DEFAULT_LEARNING_EF,
                 interval: 1,       // 오답이 있던 단어 → 1일 후 복습 우선
                 repetitions: 0,
                 nextReview: new Date().toISOString(), // 바로 복습 대상으로
@@ -57,36 +60,8 @@ const migrate = () => {
     } catch { return {}; }
 };
 
-// ── SM-2 ─────────────────────────────────────────────────────────────────────
-const sm2Update = (card, quality) => {
-    const ef = Math.max(MIN_EF, Number.isFinite(card?.ef) ? card.ef : DEFAULT_EF);
-    const interval = Number.isFinite(card?.interval) && card.interval >= 0 ? card.interval : 0;
-    const reps = Number.isFinite(card?.repetitions) ? Math.floor(card.repetitions) : 0;
-
-    let newEf = ef, newInterval, newReps;
-
-    if (quality >= 3) {
-        newInterval = reps === 0 ? 1 : reps === 1 ? 3 : reps === 2 ? 7 : Math.round(interval * ef);
-        newReps = reps + 1;
-        newEf = Math.max(MIN_EF, ef + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-    } else {
-        newInterval = 1;
-        newReps = 0;
-        newEf = Math.max(MIN_EF, ef - 0.2);
-    }
-
-    if (!Number.isFinite(newInterval) || newInterval < 1) newInterval = 1;
-    newInterval = Math.min(newInterval, 365);
-
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-    nextReview.setHours(0, 0, 0, 0);
-
-    return { ef: Math.round(newEf * 100) / 100, interval: newInterval, repetitions: newReps, nextReview: nextReview.toISOString() };
-};
-
 const save = (data) => {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+    saveLearningRecord(KEY, data);
 };
 
 export const useWordData = () => {
@@ -106,7 +81,7 @@ export const useWordData = () => {
         if (wordId == null) return;
         update(wordId, curr => {
             const now = new Date().toISOString();
-            const srs = sm2Update(curr, 1);
+            const srs = updateLearningSchedule(curr, 1);
             return {
                 ...curr, ...srs,
                 hanjaId: hanjaId ?? curr.hanjaId ?? null,
@@ -125,7 +100,7 @@ export const useWordData = () => {
         const quality = responseTimeMs < 2000 ? 5 : responseTimeMs < 5000 ? 4 : 3;
         update(wordId, curr => {
             const now = new Date().toISOString();
-            const srs = sm2Update(curr, quality);
+            const srs = updateLearningSchedule(curr, quality);
             return {
                 ...curr, ...srs,
                 correctCount: (curr.correctCount || 0) + 1,

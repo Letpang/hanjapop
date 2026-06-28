@@ -1,6 +1,6 @@
-import { getCharacterImage, getCharacterScale, getCharacterTranslateY } from '../../utils/rankUtils.js';
-import CtaButton from './CtaButton.jsx';
-import RewardBreakdown from './RewardBreakdown.jsx';
+import DailyQuizResultOverlay from './quiz-result-overlay/DailyQuizResultOverlay.jsx';
+import FullQuizResultOverlay from './quiz-result-overlay/FullQuizResultOverlay.jsx';
+import { useLang } from '../../hooks/useLang.js';
 
 /**
  * 퀴즈 결과 오버레이 공통 컴포넌트.
@@ -25,92 +25,54 @@ const QuizResultOverlay = ({
     onRetry,              // 다시 풀기 핸들러 (없으면 버튼 미표시)
     onBack,               // 돌아가기 / 일반 모드 CTA
     onNextStage,          // dailyMapNode 모드 CTA (없으면 onBack 사용)
-    retryLabel = '다시 풀기',
-    backLabel = '돌아가기',
+    retryLabel,
     hideRetry = false,
 }) => {
-    const subtitle = isClear ? completedLabel : '아쉬운 결과네요...';
-    const defaultFailTitle = <>괜찮아요,<br />다시 도전해봐요!</>;
+    const { t } = useLang();
+    const subtitle = isClear ? completedLabel : t('ext_1793');
+    const defaultFailTitle = <> {t('ext_1475')}<br />{t('ext_1691')}</>;
 
     if (dailyMapNode) {
         return (
-            <div className={`daily-session-result-backdrop${isClear ? '' : ' daily-session-result-backdrop--fail'}`}>
-                <div className="mobile-modal-card w-full max-w-sm flex flex-col items-center rounded-[2.5rem] bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.1),0_0_0_1px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] relative animate-in zoom-in-95 duration-200">
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#2ED6C5] dark:bg-[#14b8a6] rounded-full blur-[80px] opacity-20 dark:opacity-10 pointer-events-none" />
-                    <div className="pt-10 pb-8 px-7 flex flex-col items-center gap-6 w-full relative z-10">
-                        <div className="text-center flex flex-col gap-1 w-full">
-                            <span className="result-subtitle">{subtitle}</span>
-                            <h1 className={`text-3xl leading-tight mt-1 result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                                {isClear ? clearTitle : (failTitle || defaultFailTitle)}
-                            </h1>
-                            {scoreNode && (
-                                <p className="body-muted break-keep mt-2">{scoreNode}</p>
-                            )}
-                        </div>
-                        <div className="w-full">{dailyMapNode}</div>
-                        <RewardBreakdown
-                            reward={reward}
-                            correctXp={correctXp}
-                            clearXp={clearXp}
-                            detailText={detailText}
-                            missionXp={missionXp}
-                        />
-                        <div className="w-full mt-3">
-                            <CtaButton theme="coral" onClick={onNextStage || onBack}>
-                                <span className="quiz-cta-text">다음 단계로 이동</span>
-                                <span className="quiz-cta-text ml-2">›</span>
-                            </CtaButton>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <DailyQuizResultOverlay
+                clearTitle={clearTitle}
+                clearXp={clearXp}
+                correctXp={correctXp}
+                dailyMapNode={dailyMapNode}
+                defaultFailTitle={defaultFailTitle}
+                detailText={detailText}
+                failTitle={failTitle}
+                isClear={isClear}
+                missionXp={missionXp}
+                onBack={onBack}
+                onNextStage={onNextStage}
+                reward={reward}
+                scoreNode={scoreNode}
+                subtitle={subtitle}
+            />
         );
     }
 
     return (
-        <div
-            className={`quiz-result-overlay fixed inset-0 z-50 flex items-center justify-center p-6 animate-in fade-in duration-300 ${isClear ? 'quiz-result-overlay--clear' : 'quiz-result-overlay--fail'}`}
-        >
-            <div className="activity-result-card result-balanced-card">
-                <div className="result-balanced-body px-6 flex flex-col items-center w-full relative">
-                    <div className="activity-result-glow" />
-                    <img
-                        src={getCharacterImage(selectedCharacter, isClear ? 'success' : 'failure')}
-                        alt={isClear ? 'clear' : 'fail'}
-                        className="activity-result-char img-shadow-lg"
-                        style={{ transform: `translateY(${getCharacterTranslateY(selectedCharacter, true)}) scale(${getCharacterScale(selectedCharacter, isClear ? 'success' : 'failure')})` }}
-                    />
-                    <div className="result-text-area result-balanced-content-stack">
-                        <span className="result-subtitle">{subtitle}</span>
-                        <h1 className={`text-h2-res leading-snug result-title ${isClear ? 'result-title--clear' : 'result-title--fail'}`}>
-                            {isClear ? clearTitle : (failTitle || defaultFailTitle)}
-                        </h1>
-                        {scoreNode && (
-                            <p className="body-muted break-keep">{scoreNode}</p>
-                        )}
-                    </div>
-                    <div className="result-balanced-lower-stack">
-                        <RewardBreakdown
-                            reward={reward}
-                            correctXp={correctXp}
-                            clearXp={clearXp}
-                            detailText={detailText}
-                            missionXp={missionXp}
-                        />
-                    </div>
-                    <div className="result-btn-area result-balanced-lower-stack">
-                        {!hideRetry && onRetry && (
-                            <CtaButton theme="coral" onClick={onRetry}>
-                                <span className="quiz-cta-text">{retryLabel}</span>
-                            </CtaButton>
-                        )}
-                        <button onClick={onBack} className="back-quiz-button">
-                            {backLabel}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <FullQuizResultOverlay
+            backLabel={t('ext_1068')}
+            clearTitle={clearTitle}
+            clearXp={clearXp}
+            correctXp={correctXp}
+            defaultFailTitle={defaultFailTitle}
+            detailText={detailText}
+            failTitle={failTitle}
+            hideRetry={hideRetry}
+            isClear={isClear}
+            missionXp={missionXp}
+            onBack={onBack}
+            onRetry={onRetry}
+            retryLabel={retryLabel ?? t('ext_3197')}
+            reward={reward}
+            scoreNode={scoreNode}
+            selectedCharacter={selectedCharacter}
+            subtitle={subtitle}
+        />
     );
 };
 

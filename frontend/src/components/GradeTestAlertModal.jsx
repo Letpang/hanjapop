@@ -1,5 +1,5 @@
-import React from 'react';
 import CtaButton from './common/CtaButton.jsx';
+import { useLang } from '../hooks/useLang.js';
 
 const GRADE_INFO = {
     '8급':  { screen: 'gradeTest',   theme: 'indigo' },
@@ -10,6 +10,7 @@ const GRADE_INFO = {
 };
 
 export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
+    const { t } = useLang();
     const info = GRADE_INFO[grade];
     if (!info) return null;
 
@@ -27,12 +28,12 @@ export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
                 </div>
 
                 <div className="px-6 pt-4 pb-6 text-center">
-                    <span className="result-subtitle">{grade} 학습을 마쳤어요</span>
+                    <span className="result-subtitle">{t('ext_2150', { grade })}</span>
                     <h2 className="result-title result-title--clear text-[1.6rem] mt-1">
-                        시험에 도전해볼까요?
+                        {t('ext_2730')}
                     </h2>
                     <p className="text-sm font-normal text-slate-400 dark:text-slate-300 mt-2">
-                        지금까지 배운 한자로 {grade} 시험에 도전해 보세요
+                        {t('ext_2975', { grade })}
                     </p>
                 </div>
 
@@ -41,13 +42,13 @@ export default function GradeTestAlertModal({ grade, onNavigate, onClose }) {
                         theme={info.theme}
                         onClick={() => { onClose(); onNavigate(info.screen); }}
                     >
-                        <span className="quiz-cta-text">{grade} 시험 보러 가기</span>
+                        <span className="quiz-cta-text">{t('ext_2151', { grade })}</span>
                     </CtaButton>
                     <button
                         onClick={onClose}
-                        className="w-full py-3 text-[14px] text-slate-400 font-normal"
+                        className="w-full py-3 text-base text-slate-400 font-normal"
                     >
-                        나중에 하기
+                        {t('ext_2666')}
                     </button>
                 </div>
             </div>

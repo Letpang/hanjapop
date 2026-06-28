@@ -18,126 +18,21 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import {
+    DEFAULT_EF,
+    getDueSRSItems,
+    getNewSRSItems,
+    getSRSCardStatus,
+    getSRSPriority,
+    getSRSStats,
+    getSRSStatus,
+    getWeightedSRSPool,
+    loadSRS,
+    saveSRS,
+    sm2Update,
+} from './srsUtils.js';
 
-const STORAGE_KEY = 'srs_data';
-const MIN_EF = 1.3;
-const DEFAULT_EF = 2.5;
-
-// 복습 간격 테이블 (일 단위)
-const INTERVAL_TABLE = [1, 3, 7]; // 0회, 1회, 2회 정답 후
-
-const loadSRS = () => {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : {};
-    } catch (e) {
-        return {};
-    }
-};
-
-const saveSRS = (data) => {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
-};
-
-/**
- * SM-2 알고리즘으로 다음 복습 간격 계산
- * @param {Object} card - 현재 카드 상태
- * @param {number} quality - 정답 품질 (0~5, 3이상=정답)
- * @returns {Object} 업데이트된 카드 상태
- */
-const sm2Update = (card, quality) => {
-    const rawEf = Number(card?.ef);
-    const rawInterval = Number(card?.interval);
-    const rawRepetitions = Number(card?.repetitions);
-    const ef = Number.isFinite(rawEf) && rawEf >= MIN_EF ? rawEf : DEFAULT_EF;
-    const interval = Number.isFinite(rawInterval) && rawInterval >= 0 ? rawInterval : 0;
-    const repetitions = Number.isFinite(rawRepetitions) && rawRepetitions >= 0 ? Math.floor(rawRepetitions) : 0;
-
-    let newEf = ef;
-    let newInterval;
-    let newRepetitions;
-
-    if (quality >= 3) {
-        if (repetitions === 0) {
-            newInterval = INTERVAL_TABLE[0];
-        } else if (repetitions === 1) {
-            newInterval = INTERVAL_TABLE[1];
-        } else if (repetitions === 2) {
-            newInterval = INTERVAL_TABLE[2];
-        } else {
-            newInterval = Math.round(interval * ef);
-        }
-        newRepetitions = repetitions + 1;
-        newEf = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-        newEf = Math.max(MIN_EF, newEf);
-        // 밀린 만큼 EF 페널티 (최대 0.3)
-        if (card?.lastReviewed && interval > 0) {
-            const actualDays = (Date.now() - new Date(card.lastReviewed)) / (1000 * 60 * 60 * 24);
-            const delay = Math.max(0, actualDays - interval);
-            if (delay > 0) newEf = Math.max(MIN_EF, newEf - Math.min(0.3, delay * 0.02));
-        }
-    } else {
-        newInterval = 1;
-        newRepetitions = 0;
-        newEf = Math.max(MIN_EF, ef - 0.2);
-    }
-
-    // NaN/Infinity 방어: 이상 값이면 1일로 리셋
-    if (!Number.isFinite(newInterval) || newInterval < 1) newInterval = 1;
-    newInterval = Math.min(newInterval, 365); // 최대 1년 캡
-
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-    nextReview.setHours(0, 0, 0, 0);
-
-    return {
-        ef: Math.round(newEf * 100) / 100,
-        interval: newInterval,
-        repetitions: newRepetitions,
-        nextReview: nextReview.toISOString(),
-        lastQuality: quality,
-        totalReviews: (card?.totalReviews || 0) + 1,
-        lastReviewed: new Date().toISOString(),
-    };
-};
-
-/**
- * 복습 긴급도 계산
- * @param {Object} card - SRS 카드 데이터
- * @returns {'new'|'due'|'overdue'|'learning'|'mastered'}
- */
-export const getSRSStatus = (card) => {
-    if (!card || !card.nextReview) return 'new';
-    const now = new Date();
-    const next = new Date(card.nextReview);
-    const diffDays = (next - now) / (1000 * 60 * 60 * 24);
-
-    if (diffDays < -3) return 'overdue';  // 3일 이상 지남 (긴급)
-    if (diffDays <= 0) return 'due';       // 오늘 복습 예정
-    if (card.repetitions >= 4) return 'mastered'; // 충분히 학습됨
-    return 'learning';                     // 학습 중
-};
-
-/**
- * 복습 우선순위 점수 계산 (낮을수록 먼저 복습)
- */
-export const getSRSPriority = (card) => {
-    if (!card) return 0; // 새 카드는 최우선
-    const status = getSRSStatus(card);
-    const now = new Date();
-    const next = new Date(card.nextReview || now);
-    const overdueDays = Math.max(0, (now - next) / (1000 * 60 * 60 * 24));
-
-    switch (status) {
-        case 'overdue': return -overdueDays * 10; // 오래될수록 낮은 점수(우선)
-        case 'due': return 0;
-        case 'learning': return (next - now) / (1000 * 60 * 60 * 24);
-        case 'mastered': return 999;
-        default: return -1;
-    }
-};
+export { getSRSPriority, getSRSStatus } from './srsUtils.js';
 
 export const useSRS = () => {
     const [srsData, setSrsData] = useState(loadSRS);
@@ -195,41 +90,21 @@ export const useSRS = () => {
      * @returns {Array} 복습 필요 한자 목록
      */
     const getDueItems = useCallback((hanjaList) => {
-        const now = new Date();
-        return hanjaList
-            .filter(h => {
-                const card = srsData[String(h.id)];
-                if (!card) return false;
-                const next = new Date(card.nextReview);
-                return next <= now;
-            })
-            .sort((a, b) => {
-                const cardA = srsData[String(a.id)];
-                const cardB = srsData[String(b.id)];
-                return getSRSPriority(cardA) - getSRSPriority(cardB);
-            });
+        return getDueSRSItems(hanjaList, srsData);
     }, [srsData]);
 
     /**
      * 새로 학습해야 할 한자 목록 (아직 SRS에 없는 것)
      */
     const getNewItems = useCallback((hanjaList) => {
-        return hanjaList.filter(h => !srsData[String(h.id)]);
+        return getNewSRSItems(hanjaList, srsData);
     }, [srsData]);
 
     /**
      * 특정 한자의 SRS 상태 반환
      */
     const getCardStatus = useCallback((hanjaId) => {
-        const card = srsData[String(hanjaId)];
-        return {
-            card,
-            status: getSRSStatus(card),
-            priority: getSRSPriority(card),
-            daysUntilReview: card?.nextReview
-                ? Math.ceil((new Date(card.nextReview) - new Date()) / (1000 * 60 * 60 * 24))
-                : null,
-        };
+        return getSRSCardStatus(hanjaId, srsData);
     }, [srsData]);
 
     /**
@@ -240,59 +115,14 @@ export const useSRS = () => {
      * @returns {Array} 가중치가 적용된 한자 목록 (중복 포함)
      */
     const getWeightedPool = useCallback((hanjaList, masteryData = {}) => {
-        const pool = [];
-        hanjaList.forEach(h => {
-            const id = String(h.id);
-            const card = srsData[id];
-            const mastery = masteryData[id];
-            const status = getSRSStatus(card);
-
-            // 기본 1회 추가
-            pool.push(h);
-
-            // 취약 한자 가중치 추가
-            if (status === 'overdue') {
-                pool.push(h, h, h); // 4배 등장
-            } else if (status === 'due') {
-                pool.push(h, h); // 3배 등장
-            } else if (mastery?.wrongCount >= 3) {
-                pool.push(h, h); // 오답 많으면 3배
-            } else if (mastery?.wrongCount >= 1) {
-                pool.push(h); // 오답 있으면 2배
-            }
-        });
-        return pool;
+        return getWeightedSRSPool(hanjaList, srsData, masteryData);
     }, [srsData]);
 
     /**
      * SRS 통계 계산
      */
     const getStats = useCallback((hanjaList) => {
-        const now = new Date();
-        let newCount = 0, dueCount = 0, overdueCount = 0, learningCount = 0, masteredCount = 0;
-
-        hanjaList.forEach(h => {
-            const card = srsData[String(h.id)];
-            const status = getSRSStatus(card);
-            switch (status) {
-                case 'new': newCount++; break;
-                case 'due': dueCount++; break;
-                case 'overdue': overdueCount++; break;
-                case 'learning': learningCount++; break;
-                case 'mastered': masteredCount++; break;
-            }
-        });
-
-        // 다음 7일간 복습 예정 수
-        const upcoming = hanjaList.filter(h => {
-            const card = srsData[String(h.id)];
-            if (!card?.nextReview) return false;
-            const next = new Date(card.nextReview);
-            const diffDays = (next - now) / (1000 * 60 * 60 * 24);
-            return diffDays > 0 && diffDays <= 7;
-        }).length;
-
-        return { newCount, dueCount, overdueCount, learningCount, masteredCount, upcoming };
+        return getSRSStats(hanjaList, srsData);
     }, [srsData]);
 
     return {

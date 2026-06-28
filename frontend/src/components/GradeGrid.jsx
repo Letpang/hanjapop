@@ -1,10 +1,19 @@
 import { GRADES } from '../constants/hanjaConstants.js';
 import { usePremium } from '../hooks/usePremium.js';
+import { useLang } from '../hooks/useLang.js';
 export { GRADES };
+
+const GRADE_KEY_MAP = {
+    '전체': 'ext_281', '8급': 'ext_270',
+    '7급Ⅱ': 'ext_3201', '7급II': 'ext_1064', '7급': 'ext_271',
+    '6급Ⅱ': 'ext_3202', '6급II': 'ext_1065', '6급': 'ext_272',
+};
+export const gradeLabel = (grade, t) => t(GRADE_KEY_MAP[grade] || grade);
 
 // 급수별 선택 그리드 — 모든 화면 공용
 const GradeGrid = ({ selected, onSelect, lockedGrades = [] }) => {
     const { isPremium, showPremiumGate } = usePremium();
+    const { t } = useLang();
     return (
     <div className="grid grid-cols-3 gap-x-4 gap-y-[1.4rem] w-full animate-in fade-in duration-500">
         {GRADES.map(g => {
@@ -18,8 +27,8 @@ const GradeGrid = ({ selected, onSelect, lockedGrades = [] }) => {
                         locked 
                         ? 'bg-[#F8FAF9] dark:bg-slate-800/60 border-[#E9EDF2] dark:border-slate-700 text-slate-200 dark:text-slate-600 cursor-not-allowed'
                         : isSel
-                            ? 'dm-selected-glow bg-white dark:bg-slate-800 border-[#FFA88D] text-[#5B677A] dark:text-slate-100 shadow-lg'
-                            : 'bg-white dark:bg-slate-800 border-[#E9EDF2] dark:border-slate-700 text-[#5B677A] dark:text-slate-200 hover:border-[#E9EDF2] dark:hover:border-slate-600'
+                            ? 'dm-selected-glow bg-white dark:bg-slate-800 border-[#FFA88D] text-[color:var(--color-text-muted)] dark:text-slate-100 shadow-lg'
+                            : 'bg-white dark:bg-slate-800 border-[#E9EDF2] dark:border-slate-700 text-[color:var(--color-text-muted)] dark:text-slate-200 hover:border-[#E9EDF2] dark:hover:border-slate-600'
                     }`}
                 >
                     {locked ? (
@@ -28,7 +37,7 @@ const GradeGrid = ({ selected, onSelect, lockedGrades = [] }) => {
                         </svg>
                     ) : (
                         <>
-                            <span>{g}</span>
+                            <span>{gradeLabel(g, t)}</span>
                             {isSel && (
                                 <div className="absolute -top-2 -right-2 bg-[#FFA88D] text-white rounded-full p-1 shadow-md">
                                     <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-white stroke-[4]" strokeLinecap="round" strokeLinejoin="round">
@@ -48,6 +57,7 @@ const GradeGrid = ({ selected, onSelect, lockedGrades = [] }) => {
 // 주제별 카드 — 모든 화면 공용
 export const TopicCard = ({ name, isSelected, onClick, locked }) => {
     const { isPremium, showPremiumGate } = usePremium();
+    const { t } = useLang();
     const handleClick = locked ? undefined : () => { if (!isPremium) { showPremiumGate(); return; } onClick?.(); };
     return (
     <button
@@ -56,8 +66,8 @@ export const TopicCard = ({ name, isSelected, onClick, locked }) => {
             locked
             ? 'bg-[#F8FAF9] dark:bg-slate-800/60 border-[#E9EDF2] dark:border-slate-700 text-slate-200 dark:text-slate-600 cursor-not-allowed'
             : isSelected
-                ? 'dm-selected-glow bg-white dark:bg-slate-800 border-[#FFA88D] text-[#5B677A] dark:text-slate-100 shadow-lg'
-                : 'bg-white dark:bg-slate-800 border-[#E9EDF2] dark:border-slate-700 text-[#5B677A] dark:text-slate-200 hover:border-[#E9EDF2] dark:hover:border-slate-600'
+                ? 'dm-selected-glow bg-white dark:bg-slate-800 border-[#FFA88D] text-[color:var(--color-text-muted)] dark:text-slate-100 shadow-lg'
+                : 'bg-white dark:bg-slate-800 border-[#E9EDF2] dark:border-slate-700 text-[color:var(--color-text-muted)] dark:text-slate-200 hover:border-[#E9EDF2] dark:hover:border-slate-600'
         }`}
     >
         {locked ? (

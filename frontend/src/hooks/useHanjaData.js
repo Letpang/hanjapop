@@ -20,10 +20,13 @@
  */
 
 import { useState, useCallback } from 'react';
+import {
+    DEFAULT_LEARNING_EF,
+    saveLearningRecord,
+    updateLearningSchedule,
+} from './learningRecordUtils.js';
 
 const KEY = 'hanja_data';
-const MIN_EF = 1.3;
-const DEFAULT_EF = 2.5;
 
 // ── 마이그레이션 (구 mastery_data + srs_data → hanja_data) ──────────────────
 const migrate = () => {
@@ -47,7 +50,7 @@ const migrate = () => {
                 wrongCount: m.wrongCount ?? 0,
                 firstSeen: m.firstSeen || s.lastReviewed || new Date().toISOString(),
                 lastSeen: m.lastSeen || s.lastReviewed || new Date().toISOString(),
-                ef: s.ef ?? DEFAULT_EF,
+                ef: s.ef ?? DEFAULT_LEARNING_EF,
                 interval: s.interval ?? 0,
                 repetitions: s.repetitions ?? 0,
                 nextReview: s.nextReview || null,
@@ -58,42 +61,8 @@ const migrate = () => {
     } catch { return {}; }
 };
 
-// ── SM-2 알고리즘 ─────────────────────────────────────────────────────────────
-const sm2Update = (card, quality) => {
-    const ef = Math.max(MIN_EF, Number.isFinite(card?.ef) ? card.ef : DEFAULT_EF);
-    const interval = Number.isFinite(card?.interval) && card.interval >= 0 ? card.interval : 0;
-    const reps = Number.isFinite(card?.repetitions) ? Math.floor(card.repetitions) : 0;
-
-    let newEf = ef;
-    let newInterval, newReps;
-
-    if (quality >= 3) {
-        newInterval = reps === 0 ? 1 : reps === 1 ? 3 : reps === 2 ? 7 : Math.round(interval * ef);
-        newReps = reps + 1;
-        newEf = Math.max(MIN_EF, ef + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-    } else {
-        newInterval = 1;
-        newReps = 0;
-        newEf = Math.max(MIN_EF, ef - 0.2);
-    }
-
-    if (!Number.isFinite(newInterval) || newInterval < 1) newInterval = 1;
-    newInterval = Math.min(newInterval, 365);
-
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + newInterval);
-    nextReview.setHours(0, 0, 0, 0);
-
-    return {
-        ef: Math.round(newEf * 100) / 100,
-        interval: newInterval,
-        repetitions: newReps,
-        nextReview: nextReview.toISOString(),
-    };
-};
-
 const save = (data) => {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+    saveLearningRecord(KEY, data);
 };
 
 export const useHanjaData = () => {
@@ -126,7 +95,7 @@ export const useHanjaData = () => {
             const now = new Date().toISOString();
             const streak = (curr.streak || 0) + 1;
             const level = streak >= 3 ? 2 : Math.max(curr.level || 0, 1);
-            const srs = sm2Update(curr, quality);
+            const srs = updateLearningSchedule(curr, quality);
             return {
                 ...curr, ...srs,
                 level, streak,
@@ -143,7 +112,7 @@ export const useHanjaData = () => {
         if (hanjaId == null) return;
         update(hanjaId, curr => {
             const now = new Date().toISOString();
-            const srs = sm2Update(curr, 1);
+            const srs = updateLearningSchedule(curr, 1);
             return {
                 ...curr, ...srs,
                 level: Math.max(0, (curr.level || 0) - 1),

@@ -1,4 +1,5 @@
 import CtaButton from './CtaButton.jsx';
+import { useLang } from '../../hooks/useLang.js';
 
 const GradeTestIntro = ({
     title,
@@ -13,6 +14,8 @@ const GradeTestIntro = ({
     onBack,
     onStart,
 }) => {
+    const { t } = useLang();
+
     return (
         <div className="grade-test-intro-screen w-full h-[100dvh] flex flex-col max-w-screen-xl mx-auto bg-[#F7FAF9] dark:bg-slate-900 overflow-y-auto overflow-x-hidden">
             <div className="w-full shrink-0 flex items-center justify-between px-5 pb-2 relative" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
@@ -22,7 +25,7 @@ const GradeTestIntro = ({
                 >
                     <span>←</span>
                 </button>
-                <h2 className="text-[2rem] leading-tight font-medium text-[#3D4B4A] dark:text-slate-100 tracking-tight absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <h2 className="text-[2rem] leading-tight font-medium text-[#3D4B4A] dark:text-slate-100 tracking-normal absolute left-1/2 -translate-x-1/2 max-w-[80vw] text-center">
                     {title}
                 </h2>
                 <div className="w-11" />
@@ -35,7 +38,7 @@ const GradeTestIntro = ({
                     </div>
 
                     <div>
-                        <h3 className="text-[2.25rem] leading-tight font-medium text-[#2F3545] dark:text-slate-100 tracking-tight break-keep">
+                        <h3 className="text-[2.25rem] leading-tight font-medium text-[#2F3545] dark:text-slate-100 tracking-normal break-keep">
                             {title}
                         </h3>
                         <p className="text-[1.15rem] leading-snug font-normal text-[#AEB7C5] mt-1.5 break-keep">
@@ -45,12 +48,12 @@ const GradeTestIntro = ({
 
                     <div className="grid grid-cols-2 gap-2.5 w-full">
                         <div className="bg-[#F8FAFC] dark:bg-slate-900 rounded-[1.75rem] px-3 py-3 flex flex-col items-center border-2 border-[#EEF2F7] dark:border-slate-700">
-                            <span className="text-[1rem] text-[#AEB7C5] font-normal tracking-tight">문제 수</span>
-                            <span className="text-[1.75rem] leading-tight font-normal text-[#334155] mt-1">{total}문항</span>
+                            <span className="text-[1rem] text-[#AEB7C5] font-normal tracking-normal">{t('ext_1474')}</span>
+                            <span className="text-[1.75rem] leading-tight font-normal text-[#334155] mt-1">{t('ext_1743', { total })}</span>
                         </div>
                         <div className="bg-[#F8FAFC] dark:bg-slate-900 rounded-[1.75rem] px-3 py-3 flex flex-col items-center border-2 border-[#EEF2F7] dark:border-slate-700">
-                            <span className="text-[1rem] text-[#AEB7C5] font-normal tracking-tight">합격 기준</span>
-                            <span className="text-[1.75rem] leading-tight font-normal text-[#334155] mt-1">{passCount}개 이상</span>
+                            <span className="text-[1rem] text-[#AEB7C5] font-normal tracking-normal">{t('ext_1478')}</span>
+                            <span className="text-[1.75rem] leading-tight font-normal text-[#334155] mt-1">{t('ext_2091', { passCount })}</span>
                         </div>
                     </div>
 
@@ -79,13 +82,13 @@ const GradeTestIntro = ({
 
                 <div className="w-full max-w-md flex flex-col gap-2">
                     <CtaButton onClick={onStart} theme="coral">
-                        시험 시작
+                        {t('ext_544')}
                     </CtaButton>
                     <button
                         onClick={onBack}
-                        className="w-full py-3 rounded-[2rem] bg-white dark:bg-slate-800 font-normal text-body-lg text-[#5B677A] dark:text-slate-200 border-2 border-[#E9EDF2] dark:border-slate-600 shadow-sm active:scale-95 transition-all"
+                        className="w-full py-3 rounded-[2rem] bg-white dark:bg-slate-800 font-normal text-body-lg text-[color:var(--color-text-muted)] dark:text-slate-200 border-2 border-[#E9EDF2] dark:border-slate-600 shadow-sm active:scale-95 transition-all"
                     >
-                        돌아가기
+                        {t('ext_1068')}
                     </button>
                 </div>
             </div>

@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* --- Typography Tokens v2.0 (Premium & High-Readability) --- */
+    --text-display: clamp(4rem, 20vw, 7rem);      /* 초대형 한자 (64px ~ 112px) */
+    --text-h1:      clamp(2.25rem, 12vw, 4rem);   /* 메인 타이틀 (36px ~ 64px) */
+    --text-h2:      clamp(1.5rem, 8vw, 2.75rem);  /* 섹션 제목 (24px ~ 44px) - 2줄 넘침 방지 조정 */
+    --text-h3:      clamp(1.25rem, 6vw, 2rem);     /* 퀴즈 질문/소제목 (20px ~ 32px) */
+    --text-h4:      clamp(1.2rem, 5.5vw, 1.5rem); /* 학습지 문제 등 중간 제목 (19px ~ 24px) */
+    --text-body-lg: clamp(1.25rem, 4.5vw, 1.5rem);/* 퀴즈 보기/강조 본문 (20px ~ 24px) */
+    --text-body:    clamp(1.125rem, 4vw, 1.375rem);/* 일반 본문/설명 (18px ~ 22px) */
+    --text-sm:      clamp(1rem, 3.5vw, 1.125rem);   /* 버튼/상태라벨 (16px ~ 18px) */
+    --text-xs:      clamp(1rem, 3vw, 1.0625rem);    /* 최저 하한선 (16px ~ 17px) */
+
+    /* Role-based typography */
+    --font-ui: 'SUIT', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    --font-display: 'GmarketSans', 'SUIT', sans-serif;
+    --font-hanja: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+
+    /* Semantic Color System (Light Mode) */
+    --color-bg-base: #F7FAF9;
+    --color-bg-surface: rgba(255, 255, 255, 0.65);
+    --color-bg-gradient-start: #F8FAFC;
+    --color-bg-gradient-end: #E2E8F0;
+
+    --color-primary-blue: #4A51D4;
+    --color-text-main: #5D544F;
+    --color-text-muted: #5B677A;
+    --color-text-faint: #8793A5;
+
+    --color-border-subtle: rgba(255, 255, 255, 0.85);
+    --color-border-card: #EAE2D9;
+
+    /* Legacy Colors (To be phased out) */
+    --primary-warm: #5D544F;
+    --bg-warm: #F7FAF9;
+
+    /* UI Dimensions & Scales */
+    --line-height-standard: 1.5;
+    --hp-readable-min: 1rem;
+    --hp-readable-body: 1.125rem;
+    --hp-readable-control: 1.25rem;
+    --hp-readable-choice: clamp(1.5rem, 5.3vw, 1.8rem);
+    --hp-readable-choice-compact: clamp(1.35rem, 4.7vw, 1.6rem);
+    --hp-readable-choice-medium: clamp(1.5rem, 5.3vw, 1.8rem);
+    --hp-readable-choice-long: clamp(1.5rem, 5.3vw, 1.8rem);
+    --hp-study-gutter: clamp(0.75rem, 3vw, 1rem);
+    --hp-study-gap: clamp(0.42rem, 0.9dvh, 0.62rem);
+    --hp-study-max-width: 35rem;
+    --hp-card-radius: 1.65rem;
+    --hp-card-border: 4px;
+    --hp-control-min-height: 56px;
+    --hp-choice-min-height: clamp(4rem, 7.2dvh, 4.6rem);
+    --hp-btn-radius: 1.8rem;
+    --hp-btn-inner-radius: 1.6rem;
+    --hp-btn-pad-y: 1rem;
+    --hp-btn-pad-x: 1.25rem;
+    --hp-btn-font: clamp(1.95rem, 5.4vw, 2.35rem);
+    --hp-cta-radius: 1.5rem;
+    --hp-cta-pad-y: 0.65rem;
+    --hp-cta-pad-x: 1.25rem;
+    --hp-cta-min-height: 56px;
+}
+
+/* Typography Utilities (Responsive & Standard Names) */
+.text-display { font-size: var(--text-display); }
+.text-h1-res, .text-h1           { font-size: var(--text-h1); }
+.text-h2-res, .text-h2           { font-size: var(--text-h2); }
+.text-h3-res, .text-h3           { font-size: var(--text-h3); }
+.text-h4-res, .text-h4           { font-size: var(--text-h4); }
+.text-body-lg-res, .text-body-lg { font-size: var(--text-body-lg); line-height: 1.5; }
+.text-body-res, .text-body       { font-size: var(--text-body); line-height: 1.5; }
+.text-sm-res, .text-sm           { font-size: var(--text-sm); }
+.text-xs-res, .text-xs           { font-size: var(--text-xs); }
+.text-balance                    { text-wrap: balance; }
+.break-keep                      { word-break: keep-all; }
+.hanja-char                      { font-family: var(--font-hanja); }
+
+h1, h2 { font-family: var(--font-display); font-weight: 500; }
+
+/* 모든 flex/grid 자식이 내용 크기 이하로 줄어들 수 있게 — 텍스트 가로 넘침 방지 */
+*, *::before, *::after { min-width: 0; }
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-ui);
+    font-weight: 400;
+    letter-spacing: 0;
+    word-spacing: normal;
+    color: var(--color-text-main);
+    background-color: var(--color-bg-base);
+    overflow-x: hidden;
+    transition: background-color 0.5s ease, color 0.5s ease;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+/* (Removed neon auroras for warm cream aesthetic) */
+.space-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-color: #F7FAF9;
+}
+
+.stars-overlay {
+    display: none; /* Removed neon stars */
+}
+
+
+body.dark-mode {
+    /* Semantic Color System (Dark Mode) */
+    --color-bg-base: #0a0a1a;
+    --color-bg-surface: rgba(15, 23, 42, 0.7);
+    --color-bg-gradient-start: #0F172A;
+    --color-bg-gradient-end: #1E293B;
+
+    --color-text-main: #e2e8f0;
+    --color-text-muted: #AEB7C5;
+    --color-text-faint: #5B677A;
+
+    --color-border-subtle: rgba(99, 102, 241, 0.2);
+    --color-border-card: #2d3748;
+}
+
+.dark-mode .space-bg {
+    background-color: var(--color-bg-base);
+}

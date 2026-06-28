@@ -3,7 +3,7 @@ const CHAR_TYPES = ['garae', 'jeolmi', 'chapssal'];
 // Generate 1000 mock users with decreasing XP
 export const MOCK_USERS = Array.from({ length: 1000 }, (_, i) => ({
     id: `m${i}`,
-    name: `탐험가 ${i + 1}`,
+    name: `Explorer ${i + 1}`,
     xp: Math.floor(30000 * Math.pow(0.995, i)), // Curve from 30000 down
     charType: CHAR_TYPES[Math.floor(Math.random() * 3)]
 }));
@@ -84,28 +84,28 @@ export const getRankDetails = (xp, charType, position = 9999) => {
     const imageRank = levelToImageRank(level);
 
     const fullName = {
-        garae: '가래뭉치',
-        jeolmi: '절미뭉치',
-        chapssal: '찹쌀뭉치',
-        muzi: '무지뭉치'
+        garae: 'ext_1361',
+        jeolmi: 'ext_1362',
+        chapssal: 'ext_1363',
+        muzi: 'ext_1364',
     };
 
     const rankNames = [
-        '새싹', '새싹', 
-        '성장', '성장', 
-        '중급', '중급', 
-        '고급', '고급', 
-        '마스터', '마스터', 
-        '영웅', '영웅', 
-        '전설', '전설', 
-        '신화', '신화', 
-        '천상', '천상', 
-        '불멸', '불멸'
+        'ext_926', 'ext_926',
+        'ext_927', 'ext_927',
+        'ext_928', 'ext_928',
+        'ext_520', 'ext_520',
+        'ext_1063', 'ext_1063',
+        'ext_929', 'ext_929',
+        'ext_930', 'ext_930',
+        'ext_931', 'ext_931',
+        'ext_932', 'ext_932',
+        'ext_933', 'ext_933',
     ];
-    const rankName = rankNames[level - 1] || '불멸';
+    const rankName = rankNames[level - 1] || 'ext_933';
 
     return {
-        name: fullName[type] || '뭉치',
+        name: fullName[type] || 'ext_1361',
         avatar: `/assets/images/characters/${type}/rank_${imageRank}.webp`,
         level,
         imageRank,

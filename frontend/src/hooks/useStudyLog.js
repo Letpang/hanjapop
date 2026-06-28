@@ -30,104 +30,25 @@
  */
 
 import { useState, useCallback } from 'react';
-
-const KEY = 'study_log';
-
-const getTodayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-// ── 마이그레이션 ─────────────────────────────────────────────────────────────
-const migrate = () => {
-    try {
-        const existing = localStorage.getItem(KEY);
-        if (existing) {
-            const parsed = JSON.parse(existing);
-            // 구조 검증
-            if (parsed.total && parsed.days) return parsed;
-        }
-
-        // 구 total_activity_stats 가져오기
-        const oldTotal = JSON.parse(localStorage.getItem('total_activity_stats') || '{}');
-        // 구 daily_study_log 가져오기
-        const oldDays = JSON.parse(localStorage.getItem('daily_study_log') || '{}');
-        // 구 today_stats 가져오기
-        const oldToday = JSON.parse(localStorage.getItem('today_stats') || '{}');
-
-        const today = new Date().toDateString();
-
-        // total 마이그레이션
-        const total = {
-            totalDays: oldTotal.totalDays || 0,
-            lastAttendDate: oldTotal.lastAttendDate || today,
-            shootGame: oldTotal.shootGame || 0,
-            matchGame: oldTotal.matchGame || 0,
-            writing: oldTotal.writing || 0,
-            wordQuiz: oldTotal.wordQuiz || 0,
-            sentenceQuiz: oldTotal.sentenceQuiz || 0,
-            flashcard: oldTotal.flashcard || 0,
-            wordCorrect: oldTotal.wordCorrect || 0,
-        };
-
-        // 오늘 활동을 total에 반영 (today_stats가 오늘 날짜인 경우)
-        if (oldToday.date === today) {
-            ['shootGame', 'matchGame', 'writing', 'wordQuiz', 'sentenceQuiz', 'flashcard'].forEach(k => {
-                if (oldToday[k]) total[k] = Math.max(total[k], oldToday[k]);
-            });
-        }
-
-        // days 마이그레이션
-        const days = {};
-        Object.entries(oldDays).forEach(([date, v]) => {
-            days[date] = {
-                hanjaIds: v.hanjaIds || [],
-                wordIds: v.wordIds || [],
-                correctWordIds: v.correctWordIds || [],
-                wrongWordIds: v.wrongWordIds || [],
-                activities: [],
-                xp: v.xp || 0,
-            };
-        });
-
-        const result = { total, days };
-        localStorage.setItem(KEY, JSON.stringify(result));
-        return result;
-    } catch { 
-        return { total: { totalDays: 0, lastAttendDate: new Date().toDateString() }, days: {} }; 
-    }
-};
-
-const save = (data) => {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
-};
-
-const ensureToday = (log) => {
-    const today = getTodayStr();
-    if (!log.days[today]) {
-        log.days[today] = { hanjaIds: [], wordIds: [], correctWordIds: [], wrongWordIds: [], activities: [], xp: 0 };
-    }
-    log.days[today].xp = log.days[today].xp || 0;
-    return log.days[today];
-};
+import {
+    cloneStudyLog,
+    ensureAttendance,
+    ensureToday,
+    getTodayStats,
+    getTodayStr,
+    migrateStudyLog,
+    saveStudyLog,
+} from './studyLogUtils.js';
 
 export const useStudyLog = () => {
     const [log, setLog] = useState(() => {
-        const data = migrate();
-        // 출석일 자동 카운트
-        const today = new Date().toDateString();
-        if (data.total.lastAttendDate !== today) {
-            data.total.totalDays = (data.total.totalDays || 0) + 1;
-            data.total.lastAttendDate = today;
-            save(data);
-        }
-        return data;
+        return ensureAttendance(migrateStudyLog());
     });
 
     const updateLog = useCallback((updater) => {
         setLog(prev => {
-            const next = updater(JSON.parse(JSON.stringify(prev))); // deep clone
-            save(next);
+            const next = updater(cloneStudyLog(prev));
+            saveStudyLog(next);
             return next;
         });
     }, []);
@@ -211,19 +132,7 @@ export const useStudyLog = () => {
     }, [log]);
 
     // 오늘 통계 (MainMenu 등에서 사용)
-    const todayStats = (() => {
-        const today = getTodayStr();
-        const acts = log.days[today]?.activities || [];
-        const count = (type) => acts.filter(a => a === type).length;
-        return {
-            flashcard: count('flashcard'),
-            writing: count('writing'),
-            matchGame: count('matchGame'),
-            shootGame: count('shootGame'),
-            sentenceQuiz: count('sentenceQuiz'),
-            wordQuiz: count('wordQuiz'),
-        };
-    })();
+    const todayStats = getTodayStats(log);
 
     return {
         log,

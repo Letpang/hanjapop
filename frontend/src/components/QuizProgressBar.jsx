@@ -1,5 +1,3 @@
-import React from 'react';
-
 const QuizProgressBar = ({ current, total, answered = false, completing = false, avatar, fillColor }) => {
     const pct = completing ? 100 : ((current + (answered ? 1 : 0)) / total) * 100;
     return (

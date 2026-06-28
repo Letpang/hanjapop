@@ -1,5 +1,6 @@
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import CtaButton from './CtaButton.jsx';
+import { useLang } from '../../hooks/useLang.js';
 
 const ResultModalShell = forwardRef(function ResultModalShell({
     children,
@@ -10,13 +11,14 @@ const ResultModalShell = forwardRef(function ResultModalShell({
     size = 'sm',
     labelledBy,
 }, ref) {
+    const { t } = useLang();
     return (
         <div className={`result-modal-overlay result-modal-overlay--${tone} mobile-center-overlay ${className}`}>
             <button
                 type="button"
                 className="result-modal-backdrop"
                 onClick={onBackdropClick}
-                aria-label="결과 화면 닫기"
+                aria-label={t('ext_1654')}
                 tabIndex={onBackdropClick ? 0 : -1}
             />
             <section

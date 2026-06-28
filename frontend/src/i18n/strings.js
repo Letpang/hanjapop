@@ -34,6 +34,8 @@ export const strings = {
     timeOutMsg: '시간이 다 됐어요! 다시 도전해볼까요?',
     stageClearTitle: 'STAGE CLEAR!',
     gameOverTitle: 'GAME OVER',
+    authAlreadyLinked: '이 소셜 계정은 이미 다른 계정에 연동되어 있습니다. 해당 계정으로 로그인하여 회원 탈퇴 등을 진행한 후 연동해 주세요.',
+    authLinkFailed: '연동 실패: ',
   },
   en: {
     appTitle: 'Hanja Explorer',
@@ -47,6 +49,8 @@ export const strings = {
     resetBtn: 'Reset All Data ↺',
     backMenu: '← Home',
     flashcardTitle: 'Hanja Cards',
+    tapToLearn: 'Tap to Learn',
+    tapToFlipHint: 'Tap to flip! 👆',
     matchTitle: 'Memory Game',
     backStages: '← Back',
     stageClearMsg: 'All matched! ✨',
@@ -65,5 +69,7 @@ export const strings = {
     timeOutMsg: "Time's up! Shall we try again?",
     stageClearTitle: 'STAGE CLEAR!',
     gameOverTitle: 'GAME OVER',
+    authAlreadyLinked: 'This social account is already linked to another account. Please log in with that account to unlink or delete it before trying again.',
+    authLinkFailed: 'Link failed: ',
   },
 };
